@@ -4,15 +4,11 @@
   
   
   <url>
-    <loc>https://fridljda.github.io/</loc><lastmod>2030-06-01T13:00:00+00:00</lastmod><changefreq>weekly</changefreq></url>
-  <url>
-    <loc>https://fridljda.github.io/talk/example-talk/</loc><lastmod>2030-06-01T13:00:00+00:00</lastmod><changefreq>weekly</changefreq></url>
-  <url>
-    <loc>https://fridljda.github.io/event/</loc><lastmod>2030-06-01T13:00:00+00:00</lastmod><changefreq>weekly</changefreq></url>
-  <url>
     <loc></loc><lastmod>2022-07-01T00:00:00+00:00</lastmod><changefreq>weekly</changefreq></url>
   <url>
     <loc>https://fridljda.github.io/publication-type/3/</loc><lastmod>2022-07-01T00:00:00+00:00</lastmod><changefreq>weekly</changefreq></url>
+  <url>
+    <loc>https://fridljda.github.io/</loc><lastmod>2022-07-01T00:00:00+00:00</lastmod><changefreq>weekly</changefreq></url>
   <url>
     <loc></loc><lastmod>2022-07-01T00:00:00+00:00</lastmod><changefreq>weekly</changefreq></url>
   <url>
@@ -33,6 +29,10 @@
     <loc></loc><lastmod>2022-07-01T00:00:00+00:00</lastmod><changefreq>weekly</changefreq></url>
   <url>
     <loc>https://fridljda.github.io/publication/example/</loc><lastmod>2022-07-01T00:00:00+00:00</lastmod><changefreq>weekly</changefreq></url>
+  <url>
+    <loc>https://fridljda.github.io/talk/better-multiple-testing-using-multivariate-co-data-for-hypotheses/</loc><lastmod>2022-01-28T13:00:00+00:00</lastmod><changefreq>weekly</changefreq></url>
+  <url>
+    <loc>https://fridljda.github.io/event/</loc><lastmod>2022-01-28T13:00:00+00:00</lastmod><changefreq>weekly</changefreq></url>
   <url>
     <loc>https://fridljda.github.io/tag/academic/</loc><lastmod>2020-12-13T00:00:00+00:00</lastmod><changefreq>weekly</changefreq></url>
   <url>
