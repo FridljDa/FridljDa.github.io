@@ -11,23 +11,21 @@ Important file locations:
 - website/personal-website/content/authors/admin/_index.md # Author Information
 
 - static/uploads/resume.pdf # Resume
-- assets $>$ media $>$ icons $>$ brands
+- assets/media/icons/brands
 
 - content/publication/journal-article/cite.bib
 - content/publication/journal-article/index.md
-
 
 Maybe useful?
 - content/project/external-project/index.md
 - content/post/blog-with-jupyter/index.md
 
-- ./assets/media/icon.png #TODO replace with other icon
+- ./assets/media/icon.png
+
 --------------
 Old locations?
 - content/home/experience.md # Experiences
 - content/_index.md
-
-
 
 - content/publication/preprint/index.md
 

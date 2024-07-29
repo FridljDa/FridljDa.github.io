@@ -107,6 +107,17 @@ sections:
               * Successfully applied the developed method to genome-wide association study, identifying key genetic markers linked to diseases.
               * Presented research findings at seven scientific events, including a seminar talks at [Yale University](https://www.yale.edu/) and [University of North Carolina at Chapel Hill](https://www.unc.edu/) and a competitively selected oral contribution at [DAGStat 2022](https://www.dagstat2022.uni-hamburg.de/bilder/booklet.pdf), attended by 100 scholars.
               * Conducted the peer review for manuscript at Bioinformatics Advances, contributed the peer review for manuscript at Cell Biology.
+        - title: Master Student in Mathematics
+          company: Heidelberg University
+          company_url: 'https://www.uni-heidelberg.de/en'
+          company_logo: Logo_University_of_Heidelberg
+          location: Heidelberg, Germany
+          date_start: '2023-06-01'
+          date_end: '2020-10-01'
+          description: |2-
+              * Final Grade: 1.0
+              * Thesis advisor: Dr. Wolfgang Huber (EMBL), Prof. Dr. Jan Johannes
+              * Thesis title: Better multiple Testing: Using multivariate co-data for hypotheses
         - title: Exchange student
           company: Hebrew University of Jerusalem
           company_url: 'https://en.huji.ac.il/en'
@@ -115,6 +126,17 @@ sections:
           date_start: '2019-09-01'
           date_end: '2020-03-12'
           description: Graduate-level courses in Functional Analysis, Algebraic Combinatorics, and Quantitative Models at Einstein Institute of Mathematics.
+        - title: Bachelor Student in Mathematics
+          company: Heidelberg University
+          company_url: 'https://www.uni-heidelberg.de/en'
+          company_logo: Logo_University_of_Heidelberg
+          location: Heidelberg, Germany
+          date_start: '2017-10-01'
+          date_end: '2020-09-30'
+          description: |2-
+              * Final Grade: 1.4
+              * Thesis advisor: Prof. Dr. Jan Johannes
+              * Online estimation of the geometric median in Hilbert spaces
     design:
       columns: '2'
 #  - block: collection
