@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <!-- This site was created with Hugo Blox. https://hugoblox.com -->
-<!-- Last Published: July 28, 2024 --><html lang="en-us" >
+<!-- Last Published: July 29, 2024 --><html lang="en-us" >
 
 
-<head>
+<head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
@@ -70,7 +70,7 @@
 
   
 
-  <link rel="stylesheet" href="/css/vendor-bundle.min.26c458e6907dc03073573976b7f4044e.css" media="print" onload="this.media='all'">
+  <link rel="stylesheet" href="/css/vendor-bundle.min.css" media="print" onload="this.media='all'">
 
   
   
@@ -214,7 +214,7 @@
   
   
   
-  <link rel="stylesheet" href="/css/wowchemy.f6689966c0a10712f95f034011917db0.css" />
+  <link rel="stylesheet" href="/css/wowchemy.css" />
 
   
   
@@ -285,8 +285,8 @@ We demonstrate IHW-forest’s benefits in simulations and in a bioinformatic app
 
 
 
-<link rel="alternate" hreflang="en-us" href="https://fridljda.github.io/talk/workshop-on-adaptive-designs-and-multiple-testing-procedures/" />
-<link rel="canonical" href="https://fridljda.github.io/talk/workshop-on-adaptive-designs-and-multiple-testing-procedures/" />
+<link rel="alternate" hreflang="en-us" href="http://localhost:1313/talk/workshop-on-adaptive-designs-and-multiple-testing-procedures/" />
+<link rel="canonical" href="http://localhost:1313/talk/workshop-on-adaptive-designs-and-multiple-testing-procedures/" />
 
 
 
@@ -320,7 +320,7 @@ We demonstrate IHW-forest’s benefits in simulations and in a bioinformatic app
 
   <meta property="twitter:site" content="@GetResearchDev" />
   <meta property="twitter:creator" content="@GetResearchDev" />
-<meta property="twitter:image" content="https://fridljda.github.io/media/icon_hu0b7a4cb9992c9ac0e91bd28ffd38dd00_9727_512x512_fill_lanczos_center_3.png" />
+<meta property="twitter:image" content="http://localhost:1313/media/icon_hu0b7a4cb9992c9ac0e91bd28ffd38dd00_9727_512x512_fill_lanczos_center_3.png" />
 
 
 
@@ -328,11 +328,11 @@ We demonstrate IHW-forest’s benefits in simulations and in a bioinformatic app
 
 <meta property="og:type" content="website" />
 <meta property="og:site_name" content="Daniel Fridljand" />
-<meta property="og:url" content="https://fridljda.github.io/talk/workshop-on-adaptive-designs-and-multiple-testing-procedures/" />
+<meta property="og:url" content="http://localhost:1313/talk/workshop-on-adaptive-designs-and-multiple-testing-procedures/" />
 <meta property="og:title" content="Workshop on adaptive designs and multiple testing procedures | Daniel Fridljand" />
 <meta property="og:description" content="Consider a multiple testing task, where for each test we have access to its p-value and additional information represented by a uni- or multivariate covariate. The covariates may contain information on prior probabilities of null and alternative hypotheses and/or on the test’s power. As per several recent proposals, the independent hypothesis weighting (IHW, Ignatiadis and Huber, 2021) framework capitalizes on these covariates for the multiple testing procedure. IHW partitions the covariate space into a finite number of bins and learns weights, used to prioritize each bin a-priori based on the covariate. IHW guarantees false discovery rate control (FDR), while increasing the proportion of correct discoveries (power) compared to unweighted methods such as the Benjamini-Hochberg procedure (BH).
 (Ignatiadis and Huber, 2021) use per-covariate quantiles for the partition. Limitations of this are, that the number of quantile combinations explode with multiple covariates and the bins have fixed side length. Here we propose a random forest-based approach (IHW-Forest), where the leaves of the trees form a partition for the covariates. The objective function is chosen such that the splits are sensitive to the prior probability of a hypothesis being true. IHW-Forest scales well to high-dimensional covariates and can detect small regions with signal. IHW-Forest can deal with heterogeneous covariates and ignore uninformative covariates. Latter is useful in practice, when the user does not know which covariates are relevant for the hypotheses under study. This extends the application of IHW by automatic selection of the most relevant covariate. Lastly, IHW-Forest takes advantage of the p-values to construct the partition, yielding homogeneous bins and hence increases power.
-We demonstrate IHW-forest’s benefits in simulations and in a bioinformatic application. IHWs power vanishes with increasing number of covariate dimensions, while IHW-Forest&#39;s power remains stable and well above BH and IHW. With the signal concentrated in a shrinking region, IHW-Forest outperforms BH, IHW and other competing methods in power. We apply IHW-Forest to a hQTL analysis, which looks for associations between genetic variation and histone modifications on the human chromosomes. This resulted in 16 billion tests on the first two chromosomes. We used 16 different covariates, among them the genomic distance and his-tone modifications. Due to an exponential increase of the number of per-covariate quantiles with the number of covariates, IHW is not applicable anymore. The updated package will be available from Bioconductor http://www.bioconductor.org/packages/IHW in release 3.15." /><meta property="og:image" content="https://fridljda.github.io/media/icon_hu0b7a4cb9992c9ac0e91bd28ffd38dd00_9727_512x512_fill_lanczos_center_3.png" /><meta property="og:locale" content="en-us" />
+We demonstrate IHW-forest’s benefits in simulations and in a bioinformatic application. IHWs power vanishes with increasing number of covariate dimensions, while IHW-Forest&#39;s power remains stable and well above BH and IHW. With the signal concentrated in a shrinking region, IHW-Forest outperforms BH, IHW and other competing methods in power. We apply IHW-Forest to a hQTL analysis, which looks for associations between genetic variation and histone modifications on the human chromosomes. This resulted in 16 billion tests on the first two chromosomes. We used 16 different covariates, among them the genomic distance and his-tone modifications. Due to an exponential increase of the number of per-covariate quantiles with the number of covariates, IHW is not applicable anymore. The updated package will be available from Bioconductor http://www.bioconductor.org/packages/IHW in release 3.15." /><meta property="og:image" content="http://localhost:1313/media/icon_hu0b7a4cb9992c9ac0e91bd28ffd38dd00_9727_512x512_fill_lanczos_center_3.png" /><meta property="og:locale" content="en-us" />
 
   
     <meta
@@ -362,7 +362,7 @@ We demonstrate IHW-forest’s benefits in simulations and in a bioinformatic app
   "@type": "Event",
   "mainEntityOfPage": {
     "@type": "WebPage",
-    "@id": "https://fridljda.github.io/talk/workshop-on-adaptive-designs-and-multiple-testing-procedures/"
+    "@id": "http://localhost:1313/talk/workshop-on-adaptive-designs-and-multiple-testing-procedures/"
   },
   "name": "Workshop on adaptive designs and multiple testing procedures",
   
@@ -431,7 +431,7 @@ We demonstrate IHW-forest’s benefits in simulations and in a bioinformatic app
   
   
   
-  <script src="/js/wowchemy-init.min.9e4214442a7711d35691acd58f6f6361.js"></script>
+  <script src="/js/wowchemy-init.min.js"></script>
 
   
 
@@ -841,7 +841,7 @@ We demonstrate IHW-forest’s benefits in simulations and in a bioinformatic app
       
       
       <li>
-        <a href="https://twitter.com/intent/tweet?url=https%3A%2F%2Ffridljda.github.io%2Ftalk%2Fworkshop-on-adaptive-designs-and-multiple-testing-procedures%2F&amp;text=Workshop&#43;on&#43;adaptive&#43;designs&#43;and&#43;multiple&#43;testing&#43;procedures" target="_blank" rel="noopener" class="share-btn-twitter" aria-label="twitter">
+        <a href="https://twitter.com/intent/tweet?url=http%3A%2F%2Flocalhost%3A1313%2Ftalk%2Fworkshop-on-adaptive-designs-and-multiple-testing-procedures%2F&amp;text=Workshop&#43;on&#43;adaptive&#43;designs&#43;and&#43;multiple&#43;testing&#43;procedures" target="_blank" rel="noopener" class="share-btn-twitter" aria-label="twitter">
           <i class="fab fa-twitter"></i>
         </a>
       </li>
@@ -858,7 +858,7 @@ We demonstrate IHW-forest’s benefits in simulations and in a bioinformatic app
       
       
       <li>
-        <a href="https://www.facebook.com/sharer.php?u=https%3A%2F%2Ffridljda.github.io%2Ftalk%2Fworkshop-on-adaptive-designs-and-multiple-testing-procedures%2F&amp;t=Workshop&#43;on&#43;adaptive&#43;designs&#43;and&#43;multiple&#43;testing&#43;procedures" target="_blank" rel="noopener" class="share-btn-facebook" aria-label="facebook">
+        <a href="https://www.facebook.com/sharer.php?u=http%3A%2F%2Flocalhost%3A1313%2Ftalk%2Fworkshop-on-adaptive-designs-and-multiple-testing-procedures%2F&amp;t=Workshop&#43;on&#43;adaptive&#43;designs&#43;and&#43;multiple&#43;testing&#43;procedures" target="_blank" rel="noopener" class="share-btn-facebook" aria-label="facebook">
           <i class="fab fa-facebook"></i>
         </a>
       </li>
@@ -877,7 +877,7 @@ We demonstrate IHW-forest’s benefits in simulations and in a bioinformatic app
         
       
       <li>
-        <a href="mailto:?subject=Workshop%20on%20adaptive%20designs%20and%20multiple%20testing%20procedures&amp;body=https%3A%2F%2Ffridljda.github.io%2Ftalk%2Fworkshop-on-adaptive-designs-and-multiple-testing-procedures%2F" target="_blank" rel="noopener" class="share-btn-email" aria-label="envelope">
+        <a href="mailto:?subject=Workshop%20on%20adaptive%20designs%20and%20multiple%20testing%20procedures&amp;body=http%3A%2F%2Flocalhost%3A1313%2Ftalk%2Fworkshop-on-adaptive-designs-and-multiple-testing-procedures%2F" target="_blank" rel="noopener" class="share-btn-email" aria-label="envelope">
           <i class="fas fa-envelope"></i>
         </a>
       </li>
@@ -894,7 +894,7 @@ We demonstrate IHW-forest’s benefits in simulations and in a bioinformatic app
       
       
       <li>
-        <a href="https://www.linkedin.com/shareArticle?url=https%3A%2F%2Ffridljda.github.io%2Ftalk%2Fworkshop-on-adaptive-designs-and-multiple-testing-procedures%2F&amp;title=Workshop&#43;on&#43;adaptive&#43;designs&#43;and&#43;multiple&#43;testing&#43;procedures" target="_blank" rel="noopener" class="share-btn-linkedin" aria-label="linkedin-in">
+        <a href="https://www.linkedin.com/shareArticle?url=http%3A%2F%2Flocalhost%3A1313%2Ftalk%2Fworkshop-on-adaptive-designs-and-multiple-testing-procedures%2F&amp;title=Workshop&#43;on&#43;adaptive&#43;designs&#43;and&#43;multiple&#43;testing&#43;procedures" target="_blank" rel="noopener" class="share-btn-linkedin" aria-label="linkedin-in">
           <i class="fab fa-linkedin-in"></i>
         </a>
       </li>
@@ -911,7 +911,7 @@ We demonstrate IHW-forest’s benefits in simulations and in a bioinformatic app
       
       
       <li>
-        <a href="whatsapp://send?text=Workshop&#43;on&#43;adaptive&#43;designs&#43;and&#43;multiple&#43;testing&#43;procedures%20https%3A%2F%2Ffridljda.github.io%2Ftalk%2Fworkshop-on-adaptive-designs-and-multiple-testing-procedures%2F" target="_blank" rel="noopener" class="share-btn-whatsapp" aria-label="whatsapp">
+        <a href="whatsapp://send?text=Workshop&#43;on&#43;adaptive&#43;designs&#43;and&#43;multiple&#43;testing&#43;procedures%20http%3A%2F%2Flocalhost%3A1313%2Ftalk%2Fworkshop-on-adaptive-designs-and-multiple-testing-procedures%2F" target="_blank" rel="noopener" class="share-btn-whatsapp" aria-label="whatsapp">
           <i class="fab fa-whatsapp"></i>
         </a>
       </li>
@@ -944,11 +944,11 @@ We demonstrate IHW-forest’s benefits in simulations and in a bioinformatic app
   <div class="media author-card content-widget-hr">
     
       
-      <a href="https://fridljda.github.io/"><img class="avatar mr-3 avatar-circle" src="/authors/admin/avatar_hudabb31d4ce3996d21eb1ae207ecc0fae_650549_270x270_fill_q75_lanczos_center.jpg" alt="Daniel Fridljand"></a>
+      <a href="http://localhost:1313/"><img class="avatar mr-3 avatar-circle" src="/authors/admin/avatar_hudabb31d4ce3996d21eb1ae207ecc0fae_650549_270x270_fill_q75_lanczos_center.jpg" alt="Daniel Fridljand"></a>
     
 
     <div class="media-body">
-      <h5 class="card-title"><a href="https://fridljda.github.io/">Daniel Fridljand</a></h5>
+      <h5 class="card-title"><a href="http://localhost:1313/">Daniel Fridljand</a></h5>
       <h6 class="card-subtitle">Research Assistant</h6>
       <p class="card-text">Statistical methods development for biological data.</p>
       <ul class="network-icon" aria-hidden="true">
@@ -1131,7 +1131,7 @@ We demonstrate IHW-forest’s benefits in simulations and in a bioinformatic app
   
 
 
-<script src="/js/vendor-bundle.min.391d344a129df56f7ad674c2c2ed04e8.js"></script>
+<script src="/js/vendor-bundle.min.js"></script>
 
 
 
@@ -1212,7 +1212,7 @@ We demonstrate IHW-forest’s benefits in simulations and in a bioinformatic app
 <script id="page-data" type="application/json">{"use_headroom":true}</script>
 
 
-  <script src="/js/wowchemy-headroom.db4755770454eb63685f8de785c0a172.js" type="module"></script>
+  <script src="/js/wowchemy-headroom.js" type="module"></script>
 
 
 
@@ -1226,11 +1226,11 @@ We demonstrate IHW-forest’s benefits in simulations and in a bioinformatic app
   
 
 
-<script src="/en/js/wowchemy.min.7f5ebaff62ae468cff8bb3dd1337bb9b.js"></script>
+<script src="/en/js/wowchemy.min.js"></script>
 
 
 
-  <script src="/js/wowchemy-map.a26e9d2f7238ba5b868384f1c5bc6477.js" type="module"></script>
+  <script src="/js/wowchemy-map.js" type="module"></script>
 
 
 
@@ -1263,7 +1263,7 @@ We demonstrate IHW-forest’s benefits in simulations and in a bioinformatic app
 </div>
 
 
-  <script src="/js/wowchemy-publication.9c0e895144aef5a693008b5c5d450147.js" type="module"></script>
+  <script src="/js/wowchemy-publication.js" type="module"></script>
 
 
 
