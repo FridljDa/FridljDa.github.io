@@ -21,7 +21,7 @@ Maybe useful?
 - content/project/external-project/index.md
 - content/post/blog-with-jupyter/index.md
 
-
+- ./assets/media/icon.png #TODO replace with other icon
 --------------
 Old locations?
 - content/home/experience.md # Experiences
