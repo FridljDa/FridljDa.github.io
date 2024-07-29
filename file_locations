@@ -1,0 +1,37 @@
+Important commands:
+bash update.sh -"
+bash view.sh
+
+Download Hugo:
+https://docs.hugoblox.com/getting-started/install-hugo/
+brew install git golang hugo nodeo
+
+Important file locations:
+- personal-website1/content/_index.md #main everything
+- website/personal-website/content/authors/admin/_index.md # Author Information
+
+- static/uploads/resume.pdf # Resume
+- assets $>$ media $>$ icons $>$ brands
+
+- content/publication/journal-article/cite.bib
+- content/publication/journal-article/index.md
+
+
+Maybe useful?
+- content/project/external-project/index.md
+- content/post/blog-with-jupyter/index.md
+
+
+--------------
+Old locations?
+- content/home/experience.md # Experiences
+- content/_index.md
+
+
+
+- content/publication/preprint/index.md
+
+- content/publication/conference-paper/cite.bib
+- content/publication/conference-paper/index.md
+
+- post/getting-started/index.md
