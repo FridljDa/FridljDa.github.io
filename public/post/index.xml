@@ -2,21 +2,21 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Posts | Daniel Fridljand</title>
-    <link>http://localhost:1313/post/</link>
-      <atom:link href="http://localhost:1313/post/index.xml" rel="self" type="application/rss+xml" />
+    <link>https://fridljda.github.io/post/</link>
+      <atom:link href="https://fridljda.github.io/post/index.xml" rel="self" type="application/rss+xml" />
     <description>Posts</description>
     <generator>Hugo Blox Builder (https://hugoblox.com)</generator><language>en-us</language><lastBuildDate>Thu, 02 May 2024 00:00:00 +0000</lastBuildDate>
     <image>
-      <url>http://localhost:1313/media/icon_hu0b7a4cb9992c9ac0e91bd28ffd38dd00_9727_512x512_fill_lanczos_center_3.png</url>
+      <url>https://fridljda.github.io/media/icon_hu0b7a4cb9992c9ac0e91bd28ffd38dd00_9727_512x512_fill_lanczos_center_3.png</url>
       <title>Posts</title>
-      <link>http://localhost:1313/post/</link>
+      <link>https://fridljda.github.io/post/</link>
     </image>
     
     <item>
       <title>Hierachical Dirichlet Model for mutational signature estimation</title>
-      <link>http://localhost:1313/post/writing-technical-content/</link>
+      <link>https://fridljda.github.io/post/writing-technical-content/</link>
       <pubDate>Thu, 02 May 2024 00:00:00 +0000</pubDate>
-      <guid>http://localhost:1313/post/writing-technical-content/</guid>
+      <guid>https://fridljda.github.io/post/writing-technical-content/</guid>
       <description>&lt;p&gt;Let 
 
 $X$ be the mutation matrix of size  $M \times N$. $N$ is the number of observations/samples.&lt;/p&gt;
