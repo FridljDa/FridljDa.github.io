@@ -112,8 +112,8 @@ sections:
           company_url: 'https://www.uni-heidelberg.de/en'
           company_logo: Logo_University_of_Heidelberg
           location: Heidelberg, Germany
-          date_start: '2023-06-01'
-          date_end: '2020-10-01'
+          date_start: '2020-10-01'
+          date_end: '2023-06-01'
           description: |2-
               * Final Grade: 1.0
               * Thesis advisor: Dr. Wolfgang Huber (EMBL), Prof. Dr. Jan Johannes

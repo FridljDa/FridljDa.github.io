@@ -7,8 +7,8 @@ https://docs.hugoblox.com/getting-started/install-hugo/
 brew install git golang hugo nodeo
 
 Important file locations:
-- personal-website1/content/_index.md #main everything
-- website/personal-website/content/authors/admin/_index.md # Author Information
+- content/_index.md #main everything
+- content/authors/admin/_index.md # Author Information
 
 - static/uploads/resume.pdf # Resume
 - assets/media/icons/brands
@@ -22,6 +22,10 @@ Maybe useful?
 
 - ./assets/media/icon.png
 
+- config/_default/params.yaml
+  - marketing
+    - description
+    - Short description of Website which displayed sometimes.
 --------------
 Old locations?
 - content/home/experience.md # Experiences
