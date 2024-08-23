@@ -13,12 +13,15 @@ Important file locations:
 - static/uploads/resume.pdf # Resume
 - assets/media/icons/brands
 
+  Publication:
 - content/publication/journal-article/cite.bib
 - content/publication/journal-article/index.md
 
-Maybe useful?
-- content/project/external-project/index.md
-- content/post/blog-with-jupyter/index.md
+  Post:
+- content/post/writing-technical-content/index.md
+- content/post_template_inspiration/writing-technical-content
+#- content/project/external-project/index.md
+#- content/post/blog-with-jupyter/index.md
 
 - ./assets/media/icon.png
 
