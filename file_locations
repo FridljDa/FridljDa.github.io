@@ -17,7 +17,8 @@ Important file locations:
 - content/publication/journal-article/cite.bib
 - content/publication/journal-article/index.md
 
-  Post:
+# Activate in block with id: posts in content/_index.md
+Post:
 - content/post/writing-technical-content/index.md
 - content/post_template_inspiration/writing-technical-content
 #- content/project/external-project/index.md
