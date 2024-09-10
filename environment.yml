@@ -1,0 +1,11 @@
+name: website
+channels:
+- defaults
+dependencies:
+- python 
+#- ...
+- ipykernel
+- pre_commit
+- pip
+- pip:
+  - obsidian-to-hugo

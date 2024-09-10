@@ -1,7 +1,7 @@
 ---
-date: 2024-09-10T13:30
-created: 2024-08-22T10:54
-updated: 2024-09-10T13:30
+created: 2024-09-10T14:28
+updated: 2024-09-10T14:30
+updated: 2024-09-10T14:30
 math: true
 ---
 
@@ -9,9 +9,7 @@ math: true
 
 A key characteristic of cancer is the elevated mutation rate in somatic cells. Recognizing the patterns of somatic mutations in cancer is essential for understanding the underlying mechanisms that drive the disease (Fischer et al., 2013). This knowledge is crucial for advancing cancer treatment and prevention.
 
-One such somatic mutation Single Nucleotide Variants (SNV), also called Single Base Substitution. That is the mutation of a basepair in in the genome into another basepair. There are a total of 6 possible base pair mutations (C:G\>A:T, C:G\>G:C, C:G\>T:A, T:A\>A:T, T:A\>C:G, T:A\>G:C). When considering the context of the immediate 5' and the 3' neighbour, we obtain a total of $6 \times 4 \times 4=96$ mutations. Those are called trinucleotide mutation channels. Examples of trinucleotide mutations include ACA:TGT\>AAA:TTT, ACT:TGA\>AGT:TCA. We will simply write ACA\>AAA as a short version.
-
-One type of somatic mutation is the Single Nucleotide Variant (SNV), also known as Single Base Substitution. This occurs when one base pair in the genome is replaced by another. There are six possible base pair substitutions: C:G\>A:T, C:G\>G:C, C:G\>T:A, T:A\>A:T, T:A\>C:G, and T:A\>G:C. When considering the sequence context of the immediate 5' and 3' neighboring bases, this expands to $6 \times 4 \times 4=96$ possible mutation types. These are referred to as trinucleotide mutation channels. For example, ACA:TGT\>AAA:TTT or ACT:TGA\>AGT:TCA. For simplicity, these can be abbreviated, such as ACA\>AAA.
+One type of somatic mutation is the single nucleotide variant (SNV), also referred to as a single base substitution. This involves the replacement of one base pair in the genome with another. There are six possible base pair mutations: C:G\>A:T, C:G\>G:C, C:G\>T:A, T:A\>A:T, T:A\>C:G, and T:A\>G:C. When considering the context of the immediate 5' and 3' neighboring bases, the total number of mutations increases to 96, calculated as $6 \times 4 \times 4 = 96$. These are known as trinucleotide mutation channels. Examples of such mutations include ACA:TGT\>AAA:TTT and ACT:TGA\>AGT:TCA. For simplicity, we will abbreviate these mutations as ACA\>AAA and ACT\>AGT respectively.
 
 ## Mutational Signature
 
@@ -28,8 +26,8 @@ A mutational signature $\theta$ can be visualised as in the following.
 <figure>
 <img
 src="media/a9711185bb2959bf64bf6004e591ab8de652fedf.png"
-title="wikilink" alt="500" />
-<figcaption aria-hidden="true">500</figcaption>
+ alt="500" />
+
 </figure>
 
 The framework for studying somatic mutations through mutational signatures was introduced in a landmark study by Alexandrov et al. (2013), where over 7,000 bulk-sequenced cancer samples were analyzed. Conceptually, a mutational signature represents a biological process acting on the genome, leaving a distinct imprint captured in a probability vector, $\theta$. Well-established examples include the mutational signatures associated with tobacco exposure and UV light. A comprehensive list of mutational signatures and their proposed underlying biological processes is available through the [COSMIC project](https://cancer.sanger.ac.uk/signatures/sbs/). However, experimentally verifying a mutational signature, or its corresponding probability vector $\theta$, remains a significant challenge.
@@ -79,7 +77,7 @@ Here, $\operatorname{Stick}$ refers to the stick-breaking process. As seen from 
 
 ### Mathematical properties of Dirichlet Process
 
-It can be shown that the base distribution H represents the mean of $\boldsymbol{G}$ in the sense that, for any set $A$,
+It can be shown that the prior distribution $H$ represents the mean of $\boldsymbol{G}$ in the sense that, for any set $A$,
 
 {{< math >}}
 $$
@@ -141,13 +139,13 @@ We assume that we have no initial information distinguishing the components, whi
 ##### Graphical model for known number of components $K$
 
 We can visualise the process generating the trinucleotide mutation in a sample as a graphical model:
-![300](media/7d5261339cd5d516f8153605fe36589a23255d8d.png "wikilink")
+![](media/7d5261339cd5d516f8153605fe36589a23255d8d.png )
 
 Here the grey background of the circle behind $x\_i$ indicates that $x\_i$ is an observed variable.
 
 #### Step 2: Equivalent model as mixture
 
-We want to integrate out the indicator variable $z\_i=k$ in our model. Let $H=\operatorname{Dir}\left(\frac{1}{96} \cdot \mathbf{1}\_{96}\right)$. We rewrite the equations from [Final_report#Step 1 Known number of components \$K\$](Final_report#Step 1 Known number of components $K$ "wikilink") as follows.
+We want to integrate out the indicator variable $z\_i=k$ in our model. Let $H=\operatorname{Dir}\left(\frac{1}{96} \cdot \mathbf{1}\_{96}\right)$. We rewrite the equations from [Final_report#Step 1 Known number of components \$K\$](Final_report#Step 1 Known number of components $K$ ) as follows.
 
 {{< math >}}
 $$
@@ -171,7 +169,7 @@ $$
 $$
 {{< /math >}}
 
-We would now like to extend this model from [Final_report#Step 2 Equivalent model as mixture](Final_report#Step 2 Equivalent model as mixture "wikilink") to work without pre-specifying a fixed number of components $K$. Any $K\in \mathbb{N}$ should be possible but we would prefer small $K$. All this is accomplished by
+We would now like to extend this model from [Final_report#Step 2 Equivalent model as mixture](Final_report#Step 2 Equivalent model as mixture ) to work without pre-specifying a fixed number of components $K$. Any $K\in \mathbb{N}$ should be possible but we would prefer small $K$. All this is accomplished by
 
 {{< math >}}
 $$
@@ -210,8 +208,8 @@ We can visualise the Dirichlet process as a graphical model:
 <figure>
 <img
 src="media/cae3659c625ecead8e187392389b2cc3e01df00c.png"
-title="wikilink" alt="300" />
-<figcaption aria-hidden="true">300</figcaption>
+ alt="300" />
+
 </figure>
 
 ## Hierarchical Dirichlet Process (HDP)
@@ -220,17 +218,17 @@ By taking composition of multiple [Dirichlet Processes](Final_report#Dirichlet%2
 
 ### Example
 
-In the [Final_report#Example](Final_report#Example "wikilink") we have trinucleotide mutation of a single sample. When we have multiple samples, we expect that the observed trinucleotide mutations in a sample show clear trends and are more similar within a sample than in another sample.
+In the [Final_report#Example](Final_report#Example ) we have trinucleotide mutation of a single sample. When we have multiple samples, we expect that the observed trinucleotide mutations in a sample show clear trends and are more similar within a sample than in another sample.
 
 ### Graphical Model of Hierarchical Dirichlet Process
 
-We extend the graphical model from [Final_report#Graphical Model of Dirichlet Process ](Final_report#Graphical Model of Dirichlet Process  "wikilink") to include hierarchies:
+We extend the graphical model from [Final_report#Graphical Model of Dirichlet Process ](Final_report#Graphical Model of Dirichlet Process  ) to include hierarchies:
 
 <figure>
 <img
 src="media/7ed449672108468c8b92b5be803a1b3bf01459e5.png"
-title="wikilink" alt="500" />
-<figcaption aria-hidden="true">500</figcaption>
+ alt="500" />
+
 </figure>
 
 ### Generating model of Hierarchical Dirichlet Process

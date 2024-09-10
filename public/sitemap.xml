@@ -2,121 +2,121 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
-    <loc>http://localhost:61257/publication-type/2/</loc>
+    <loc>http://localhost:1313/publication-type/2/</loc>
     <lastmod>2024-07-01T00:00:00+00:00</lastmod>
     <changefreq>weekly</changefreq>
   </url><url>
-    <loc>http://localhost:61257/publication/preprint/</loc>
+    <loc>http://localhost:1313/publication/preprint/</loc>
     <lastmod>2024-07-01T00:00:00+00:00</lastmod>
     <changefreq>weekly</changefreq>
   </url><url>
-    <loc>http://localhost:61257/publication_types/</loc>
+    <loc>http://localhost:1313/publication_types/</loc>
     <lastmod>2024-07-01T00:00:00+00:00</lastmod>
     <changefreq>weekly</changefreq>
   </url><url>
-    <loc>http://localhost:61257/publication/</loc>
+    <loc>http://localhost:1313/publication/</loc>
     <lastmod>2024-07-01T00:00:00+00:00</lastmod>
     <changefreq>weekly</changefreq>
   </url><url>
-    <loc>http://localhost:61257/post_template_inspiration/blog-with-jupyter/</loc>
+    <loc>http://localhost:1313/post_template_inspiration/blog-with-jupyter/</loc>
     <lastmod>2023-11-04T00:00:00+00:00</lastmod>
     <changefreq>weekly</changefreq>
   </url><url>
-    <loc>http://localhost:61257/post_template_inspiration/</loc>
+    <loc>http://localhost:1313/post_template_inspiration/</loc>
     <lastmod>2023-11-04T00:00:00+00:00</lastmod>
     <changefreq>weekly</changefreq>
   </url><url>
-    <loc>http://localhost:61257/</loc>
+    <loc>http://localhost:1313/</loc>
     <lastmod>2022-10-24T00:00:00+00:00</lastmod>
     <changefreq>weekly</changefreq>
   </url><url>
-    <loc>http://localhost:61257/event/</loc>
+    <loc>http://localhost:1313/event/</loc>
     <lastmod>2022-06-29T13:00:00+00:00</lastmod>
     <changefreq>weekly</changefreq>
   </url><url>
-    <loc>http://localhost:61257/talk/workshop-on-adaptive-designs-and-multiple-testing-procedures/</loc>
+    <loc>http://localhost:1313/talk/workshop-on-adaptive-designs-and-multiple-testing-procedures/</loc>
     <lastmod>2022-06-29T13:00:00+00:00</lastmod>
     <changefreq>weekly</changefreq>
   </url><url>
-    <loc>http://localhost:61257/talk/german-region-of-the-international-biometric-society/</loc>
+    <loc>http://localhost:1313/talk/german-region-of-the-international-biometric-society/</loc>
     <lastmod>2022-06-01T15:07:03+02:00</lastmod>
     <changefreq>weekly</changefreq>
   </url><url>
-    <loc>http://localhost:61257/talk/dagstat-conference-german-statistical-society/</loc>
+    <loc>http://localhost:1313/talk/dagstat-conference-german-statistical-society/</loc>
     <lastmod>2022-03-29T13:00:00+00:00</lastmod>
     <changefreq>weekly</changefreq>
   </url><url>
-    <loc>http://localhost:61257/talk/snapshots-of-theory@embl-mini-symposium/</loc>
+    <loc>http://localhost:1313/talk/snapshots-of-theory@embl-mini-symposium/</loc>
     <lastmod>2022-01-28T13:00:00+00:00</lastmod>
     <changefreq>weekly</changefreq>
   </url><url>
-    <loc>http://localhost:61257/tag/academic/</loc>
+    <loc>http://localhost:1313/tag/academic/</loc>
     <lastmod>2020-12-13T00:00:00+00:00</lastmod>
     <changefreq>weekly</changefreq>
   </url><url>
-    <loc>http://localhost:61257/categories/</loc>
+    <loc>http://localhost:1313/categories/</loc>
     <lastmod>2020-12-13T00:00:00+00:00</lastmod>
     <changefreq>weekly</changefreq>
   </url><url>
-    <loc>http://localhost:61257/category/demo/</loc>
+    <loc>http://localhost:1313/category/demo/</loc>
     <lastmod>2020-12-13T00:00:00+00:00</lastmod>
     <changefreq>weekly</changefreq>
   </url><url>
-    <loc>http://localhost:61257/tags/</loc>
+    <loc>http://localhost:1313/tags/</loc>
     <lastmod>2020-12-13T00:00:00+00:00</lastmod>
     <changefreq>weekly</changefreq>
   </url><url>
-    <loc>http://localhost:61257/post_template_inspiration/getting-started/</loc>
+    <loc>http://localhost:1313/post_template_inspiration/getting-started/</loc>
     <lastmod>2020-12-13T00:00:00+00:00</lastmod>
     <changefreq>weekly</changefreq>
   </url><url>
-    <loc>http://localhost:61257/tag/%E5%BC%80%E6%BA%90/</loc>
+    <loc>http://localhost:1313/tag/%E5%BC%80%E6%BA%90/</loc>
     <lastmod>2020-12-13T00:00:00+00:00</lastmod>
     <changefreq>weekly</changefreq>
   </url><url>
-    <loc>http://localhost:61257/category/%E6%95%99%E7%A8%8B/</loc>
+    <loc>http://localhost:1313/category/%E6%95%99%E7%A8%8B/</loc>
     <lastmod>2020-12-13T00:00:00+00:00</lastmod>
     <changefreq>weekly</changefreq>
   </url><url>
-    <loc>http://localhost:61257/post_template_inspiration/writing-technical-content/</loc>
+    <loc>http://localhost:1313/post_template_inspiration/writing-technical-content/</loc>
     <lastmod>2019-07-12T00:00:00+00:00</lastmod>
     <changefreq>weekly</changefreq>
   </url><url>
-    <loc>http://localhost:61257/slides/</loc>
+    <loc>http://localhost:1313/slides/</loc>
     <lastmod>2019-02-05T00:00:00+00:00</lastmod>
     <changefreq>weekly</changefreq>
   </url><url>
-    <loc>http://localhost:61257/slides/example/</loc>
+    <loc>http://localhost:1313/slides/example/</loc>
     <lastmod>2019-02-05T00:00:00+00:00</lastmod>
     <changefreq>weekly</changefreq>
   </url><url>
-    <loc>http://localhost:61257/tag/deep-learning/</loc>
+    <loc>http://localhost:1313/tag/deep-learning/</loc>
     <lastmod>2016-04-27T00:00:00+00:00</lastmod>
     <changefreq>weekly</changefreq>
   </url><url>
-    <loc>http://localhost:61257/tag/demo/</loc>
+    <loc>http://localhost:1313/tag/demo/</loc>
     <lastmod>2016-04-27T00:00:00+00:00</lastmod>
     <changefreq>weekly</changefreq>
   </url><url>
-    <loc>http://localhost:61257/project/example/</loc>
+    <loc>http://localhost:1313/project/example/</loc>
     <lastmod>2016-04-27T00:00:00+00:00</lastmod>
     <changefreq>weekly</changefreq>
   </url><url>
-    <loc>http://localhost:61257/project/external-project/</loc>
+    <loc>http://localhost:1313/project/external-project/</loc>
     <lastmod>2016-04-27T00:00:00+00:00</lastmod>
     <changefreq>weekly</changefreq>
   </url><url>
-    <loc>http://localhost:61257/project/</loc>
+    <loc>http://localhost:1313/project/</loc>
     <lastmod>2016-04-27T00:00:00+00:00</lastmod>
     <changefreq>weekly</changefreq>
   </url><url>
-    <loc>http://localhost:61257/post/writing-technical-content/</loc>
+    <loc>http://localhost:1313/post/writing-technical-content/</loc>
     <changefreq>weekly</changefreq>
   </url><url>
-    <loc>http://localhost:61257/home/</loc>
+    <loc>http://localhost:1313/home/</loc>
     <changefreq>weekly</changefreq>
   </url><url>
-    <loc>http://localhost:61257/post/</loc>
+    <loc>http://localhost:1313/post/</loc>
     <changefreq>weekly</changefreq>
   </url>
 </urlset>
