@@ -170,7 +170,7 @@ $$
 &lt;/p&gt;
 &lt;p&gt;Here the grey background of the circle behind $x_i$ indicates that $x_i$ is an observed variable.&lt;/p&gt;
 &lt;h4 id=&#34;step-2-equivalent-model-as-mixture&#34;&gt;Step 2: Equivalent model as mixture&lt;/h4&gt;
-&lt;p&gt;We want to integrate out the indicator variable $z_i=k$ in our model. Let $H=\operatorname{Dir}\left(\frac{1}{96} \cdot \mathbf{1}_{96}\right)$. We rewrite the equations from [Final_report#Step 1 Known number of components $K$](Final_report#Step 1 Known number of components $K$ ) as follows.&lt;/p&gt;
+&lt;p&gt;We want to integrate out the indicator variable $z_i=k$ in our model. Let $H=\operatorname{Dir}\left(\frac{1}{96} \cdot \mathbf{1}_{96}\right)$. We rewrite the equations from [Step 1 Known number of components $K$](#Step 1 Known number of components $K$ ) as follows.&lt;/p&gt;
 
 
 
@@ -193,7 +193,7 @@ $$
 \Delta^{\infty} = \left\{ (\theta_1, \theta_2, \ldots, ) \in \mathbb{R}^{\infty} \mid \theta_i \geq 0 \text{ for all } i \text{ and } \sum_{i=1}^{\infty} \theta_i = 1 \right\}.
 $$
 &lt;/p&gt;
-&lt;p&gt;We would now like to extend this model from [Final_report#Step 2 Equivalent model as mixture](Final_report#Step 2 Equivalent model as mixture ) to work without pre-specifying a fixed number of components $K$. Any $K\in \mathbb{N}$ should be possible but we would prefer small $K$. All this is accomplished by&lt;/p&gt;
+&lt;p&gt;We would now like to extend this model from [Step 2 Equivalent model as mixture](#Step 2 Equivalent model as mixture ) to work without pre-specifying a fixed number of components $K$. Any $K\in \mathbb{N}$ should be possible but we would prefer small $K$. All this is accomplished by&lt;/p&gt;
 
 
 
@@ -230,11 +230,11 @@ src=&#34;media/cae3659c625ecead8e187392389b2cc3e01df00c.png&#34;
  alt=&#34;300&#34; /&gt;
 &lt;/figure&gt;
 &lt;h2 id=&#34;hierarchical-dirichlet-process-hdp&#34;&gt;Hierarchical Dirichlet Process (HDP)&lt;/h2&gt;
-&lt;p&gt;By taking composition of multiple &lt;a href=&#34;Final_report#Dirichlet%20Process%20%28DP%29%5D&#34;&gt;Dirichlet Processes&lt;/a&gt;, we obtain a Hierarchical Dirichlet Process (HDP). Recall that Dirichlet processes excel at modelling mixtures with an unknown number of components. HDPs are tailored for the situation when we have groups of mixture components and/or hierarchies between mixture components. HDP can be viewed as a non-parametric Bayesian clustering method.&lt;/p&gt;
+&lt;p&gt;By taking composition of multiple &lt;a href=&#34;#Dirichlet%20Process%20%28DP%29%5D&#34;&gt;Dirichlet Processes&lt;/a&gt;, we obtain a Hierarchical Dirichlet Process (HDP). Recall that Dirichlet processes excel at modelling mixtures with an unknown number of components. HDPs are tailored for the situation when we have groups of mixture components and/or hierarchies between mixture components. HDP can be viewed as a non-parametric Bayesian clustering method.&lt;/p&gt;
 &lt;h3 id=&#34;example&#34;&gt;Example&lt;/h3&gt;
-&lt;p&gt;In the &lt;a href=&#34;Final_report#Example&#34;&gt;Final_report#Example&lt;/a&gt; we have trinucleotide mutation of a single sample. When we have multiple samples, we expect that the observed trinucleotide mutations in a sample show clear trends and are more similar within a sample than in another sample.&lt;/p&gt;
+&lt;p&gt;In the &lt;a href=&#34;#Example&#34;&gt;Example&lt;/a&gt; we have trinucleotide mutation of a single sample. When we have multiple samples, we expect that the observed trinucleotide mutations in a sample show clear trends and are more similar within a sample than in another sample.&lt;/p&gt;
 &lt;h3 id=&#34;graphical-model-of-hierarchical-dirichlet-process&#34;&gt;Graphical Model of Hierarchical Dirichlet Process&lt;/h3&gt;
-&lt;p&gt;We extend the graphical model from [Final_report#Graphical Model of Dirichlet Process ](Final_report#Graphical Model of Dirichlet Process  ) to include hierarchies:&lt;/p&gt;
+&lt;p&gt;We extend the graphical model from [Graphical Model of Dirichlet Process ](#Graphical Model of Dirichlet Process  ) to include hierarchies:&lt;/p&gt;
 &lt;figure&gt;
 &lt;img
 src=&#34;media/7ed449672108468c8b92b5be803a1b3bf01459e5.png&#34;
@@ -601,7 +601,7 @@ data.head()
 
 
 
-&lt;div id=&#34;chart-579423168&#34; class=&#34;chart&#34;&gt;&lt;/div&gt;
+&lt;div id=&#34;chart-468921537&#34; class=&#34;chart&#34;&gt;&lt;/div&gt;
 &lt;script&gt;
   (function() {
     let a = setInterval( function() {
@@ -611,7 +611,7 @@ data.head()
       clearInterval( a );
 
       Plotly.d3.json(&#34;./line-chart.json&#34;, function(chart) {
-        Plotly.plot(&#39;chart-579423168&#39;, chart.data, chart.layout, {responsive: true});
+        Plotly.plot(&#39;chart-468921537&#39;, chart.data, chart.layout, {responsive: true});
       });
     }, 500 );
   })();

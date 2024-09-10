@@ -310,18 +310,17 @@
 
 
   
-  
 
 
 
 
 
 
-<meta property="twitter:card" content="summary" />
+<meta property="twitter:card" content="summary_large_image" />
 
   <meta property="twitter:site" content="@GetResearchDev" />
   <meta property="twitter:creator" content="@GetResearchDev" />
-<meta property="twitter:image" content="http://localhost:1313/media/icon_hu37f7dfefee3baeb2367e356372ffdf42_4657190_512x512_fill_lanczos_center_3.png" />
+<meta property="twitter:image" content="http://localhost:1313/post/mutational-signature-with-hierarchical-dirichlet-process/featured.jpg" />
 
 
 
@@ -331,7 +330,7 @@
 <meta property="og:site_name" content="Daniel Fridljand" />
 <meta property="og:url" content="http://localhost:1313/post/mutational-signature-with-hierarchical-dirichlet-process/" />
 <meta property="og:title" content="Mutational signature estimation with Hierarchical Dirichlet Process | Daniel Fridljand" />
-<meta property="og:description" content="Introduction A key characteristic of cancer is the elevated mutation rate in somatic cells. Recognizing the patterns of somatic mutations in cancer is essential for understanding the underlying mechanisms that drive the disease (Fischer et al." /><meta property="og:image" content="http://localhost:1313/media/icon_hu37f7dfefee3baeb2367e356372ffdf42_4657190_512x512_fill_lanczos_center_3.png" /><meta property="og:locale" content="en-us" />
+<meta property="og:description" content="Introduction A key characteristic of cancer is the elevated mutation rate in somatic cells. Recognizing the patterns of somatic mutations in cancer is essential for understanding the underlying mechanisms that drive the disease (Fischer et al." /><meta property="og:image" content="http://localhost:1313/post/mutational-signature-with-hierarchical-dirichlet-process/featured.jpg" /><meta property="og:locale" content="en-us" />
 
   
     <meta
@@ -369,6 +368,10 @@
     "@id": "http://localhost:1313/post/mutational-signature-with-hierarchical-dirichlet-process/"
   },
   "headline": "Mutational signature estimation with Hierarchical Dirichlet Process",
+  
+  "image": [
+    "http://localhost:1313/post/mutational-signature-with-hierarchical-dirichlet-process/featured.jpg"
+  ],
   
   "datePublished": "2024-09-10T00:00:00Z",
   "dateModified": "2024-09-10T00:00:00Z",
@@ -755,18 +758,26 @@
 
 
 
-  
+
+
+
+
+
+
+
+
 
   
   
-  
+
+
+
 <div class="article-container pt-3">
   <h1>Mutational signature estimation with Hierarchical Dirichlet Process</h1>
 
   
 
   
-    
 
 
 <div class="article-metadata">
@@ -803,13 +814,20 @@
 
 </div>
 
-    
-
-
-
-
-
   
+
+
+
+
+
+</div>
+
+
+<div class="article-header container featured-image-wrapper mt-4 mb-4" style="max-width: 663px; max-height: 409px;">
+  <div style="position: relative">
+    <img src="/post/mutational-signature-with-hierarchical-dirichlet-process/featured_hu0f680d1473a07e50301e548a5d763b6b_45463_6e716c881f32a729ae84951894c5896e.webp" width="663" height="409" alt="" class="featured-image">
+    <span class="article-header-caption">Visualised mutational signature</span>
+  </div>
 </div>
 
 
@@ -970,7 +988,7 @@ $$
 </p>
 <p>Here the grey background of the circle behind $x_i$ indicates that $x_i$ is an observed variable.</p>
 <h4 id="step-2-equivalent-model-as-mixture">Step 2: Equivalent model as mixture</h4>
-<p>We want to integrate out the indicator variable $z_i=k$ in our model. Let $H=\operatorname{Dir}\left(\frac{1}{96} \cdot \mathbf{1}_{96}\right)$. We rewrite the equations from [Final_report#Step 1 Known number of components $K$](Final_report#Step 1 Known number of components $K$ ) as follows.</p>
+<p>We want to integrate out the indicator variable $z_i=k$ in our model. Let $H=\operatorname{Dir}\left(\frac{1}{96} \cdot \mathbf{1}_{96}\right)$. We rewrite the equations from [Step 1 Known number of components $K$](#Step 1 Known number of components $K$ ) as follows.</p>
 
 
 
@@ -993,7 +1011,7 @@ $$
 \Delta^{\infty} = \left\{ (\theta_1, \theta_2, \ldots, ) \in \mathbb{R}^{\infty} \mid \theta_i \geq 0 \text{ for all } i \text{ and } \sum_{i=1}^{\infty} \theta_i = 1 \right\}.
 $$
 </p>
-<p>We would now like to extend this model from [Final_report#Step 2 Equivalent model as mixture](Final_report#Step 2 Equivalent model as mixture ) to work without pre-specifying a fixed number of components $K$. Any $K\in \mathbb{N}$ should be possible but we would prefer small $K$. All this is accomplished by</p>
+<p>We would now like to extend this model from [Step 2 Equivalent model as mixture](#Step 2 Equivalent model as mixture ) to work without pre-specifying a fixed number of components $K$. Any $K\in \mathbb{N}$ should be possible but we would prefer small $K$. All this is accomplished by</p>
 
 
 
@@ -1030,11 +1048,11 @@ src="media/cae3659c625ecead8e187392389b2cc3e01df00c.png"
  alt="300" />
 </figure>
 <h2 id="hierarchical-dirichlet-process-hdp">Hierarchical Dirichlet Process (HDP)</h2>
-<p>By taking composition of multiple <a href="Final_report#Dirichlet%20Process%20%28DP%29%5D">Dirichlet Processes</a>, we obtain a Hierarchical Dirichlet Process (HDP). Recall that Dirichlet processes excel at modelling mixtures with an unknown number of components. HDPs are tailored for the situation when we have groups of mixture components and/or hierarchies between mixture components. HDP can be viewed as a non-parametric Bayesian clustering method.</p>
+<p>By taking composition of multiple <a href="#Dirichlet%20Process%20%28DP%29%5D">Dirichlet Processes</a>, we obtain a Hierarchical Dirichlet Process (HDP). Recall that Dirichlet processes excel at modelling mixtures with an unknown number of components. HDPs are tailored for the situation when we have groups of mixture components and/or hierarchies between mixture components. HDP can be viewed as a non-parametric Bayesian clustering method.</p>
 <h3 id="example">Example</h3>
-<p>In the <a href="Final_report#Example">Final_report#Example</a> we have trinucleotide mutation of a single sample. When we have multiple samples, we expect that the observed trinucleotide mutations in a sample show clear trends and are more similar within a sample than in another sample.</p>
+<p>In the <a href="#Example">Example</a> we have trinucleotide mutation of a single sample. When we have multiple samples, we expect that the observed trinucleotide mutations in a sample show clear trends and are more similar within a sample than in another sample.</p>
 <h3 id="graphical-model-of-hierarchical-dirichlet-process">Graphical Model of Hierarchical Dirichlet Process</h3>
-<p>We extend the graphical model from [Final_report#Graphical Model of Dirichlet Process ](Final_report#Graphical Model of Dirichlet Process  ) to include hierarchies:</p>
+<p>We extend the graphical model from [Graphical Model of Dirichlet Process ](#Graphical Model of Dirichlet Process  ) to include hierarchies:</p>
 <figure>
 <img
 src="media/7ed449672108468c8b92b5be803a1b3bf01459e5.png"

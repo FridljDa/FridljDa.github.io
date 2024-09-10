@@ -6,7 +6,7 @@ updated: 2024-05-02T09:51
 math: true 
 image:
   placement: 2
-  caption: 'Image credit: [**John Moeses Bauan**](https://unsplash.com/photos/OGZtQF8iC0g)'
+  caption: 'Visualised mutational signature'
 ---
 
 Let {{< math >}}$X${{< /math >}} be the mutation matrix of size  $M \times N$. $N$ is the number of observations/samples.
