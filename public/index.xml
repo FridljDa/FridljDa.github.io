@@ -13,85 +13,329 @@
     </image>
     
     <item>
+      <title>Mutational signature estimation with Hierarchical Dirichlet Process</title>
+      <link>http://localhost:1313/post/mutational-signature-with-hierarchical-dirichlet-process/</link>
+      <pubDate>Tue, 10 Sep 2024 00:00:00 +0000</pubDate>
+      <guid>http://localhost:1313/post/mutational-signature-with-hierarchical-dirichlet-process/</guid>
+      <description>&lt;h2 id=&#34;introduction&#34;&gt;Introduction&lt;/h2&gt;
+&lt;p&gt;A key characteristic of cancer is the elevated mutation rate in somatic cells. Recognizing the patterns of somatic mutations in cancer is essential for understanding the underlying mechanisms that drive the disease (Fischer et al., 2013). This knowledge is crucial for advancing cancer treatment and prevention.&lt;/p&gt;
+&lt;p&gt;One type of somatic mutation is the single nucleotide variant (SNV), also referred to as a single base substitution. This involves the replacement of one base pair in the genome with another. There are six possible base pair mutations: C:G&amp;gt;A:T, C:G&amp;gt;G:C, C:G&amp;gt;T:A, T:A&amp;gt;A:T, T:A&amp;gt;C:G, and T:A&amp;gt;G:C. When considering the context of the immediate 5&amp;rsquo; and 3&amp;rsquo; neighboring bases, the total number of mutations increases to 96, calculated as $6 \times 4 \times 4 = 96$. These are known as trinucleotide mutation channels. Examples of such mutations include ACA:TGT&amp;gt;AAA:TTT and ACT:TGA&amp;gt;AGT:TCA. For simplicity, we will abbreviate these mutations as ACA&amp;gt;AAA and ACT&amp;gt;AGT respectively.&lt;/p&gt;
+&lt;h2 id=&#34;mutational-signature&#34;&gt;Mutational Signature&lt;/h2&gt;
+&lt;p&gt;A mutational signature $\theta$ with respect to trinucleotide mutation channels is a discrete probability distribution over the 96 mutational channels i.e. $\theta\in \Delta^{96}$ where&lt;/p&gt;
+
+
+
+$$
+\Delta^{n} = \left\{ (x_1, x_2, \ldots, x_{n}) \in \mathbb{R}^{n} \mid x_i \geq 0 \text{ for all } i \text{ and } \sum_{i=1}^{n} x_i = 1 \right\}.
+$$
+
+&lt;p&gt;A mutational signature $\theta$ can be visualised as in the following.&lt;/p&gt;
+&lt;figure&gt;
+&lt;img
+src=&#34;media/a9711185bb2959bf64bf6004e591ab8de652fedf.png&#34;
+ alt=&#34;500&#34; /&gt;
+&lt;/figure&gt;
+&lt;p&gt;The framework for studying somatic mutations through mutational signatures was introduced in a landmark study by Alexandrov et al. (2013), where over 7,000 bulk-sequenced cancer samples were analyzed. Conceptually, a mutational signature represents a biological process acting on the genome, leaving a distinct imprint captured in a probability vector, $\theta$. Well-established examples include the mutational signatures associated with tobacco exposure and UV light. A comprehensive list of mutational signatures and their proposed underlying biological processes is available through the &lt;a href=&#34;https://cancer.sanger.ac.uk/signatures/sbs/&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;COSMIC project&lt;/a&gt;. However, experimentally verifying a mutational signature, or its corresponding probability vector $\theta$, remains a significant challenge.&lt;/p&gt;
+&lt;p&gt;A particular sample is acted upon by different mutational signatures. The sample-specific mutational signature activity of each mutational signatures has been used clinically to stratify patient cohorts.&lt;/p&gt;
+&lt;p&gt;To estimate mutational signatures and their activities, Alexandrov et al. (2013) employed Non-Negative Matrix Factorization (NMF). NMF and its variations remain the most widely used methods for estimating mutational signatures and mutational signature activities.&amp;quot;&lt;/p&gt;
+&lt;details&gt;
+&lt;summary&gt;
+Extracts from different papers on overall legitimacy of mutational signatures and proposed underlying biological process
+&lt;/summary&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;mark class=&#34;hltr-green&#34;&gt;&amp;ldquo;Furthermore, while earlier analyses reported single signatures, for example of UV radiation (that is, SBS7)2, more recent studies reported multiple versions of these signatures (that is, SBS7a, SBS7b, SBS7c and SBS7d)3, leading the community to question whether some find­ ings are reflective of biology or are simply mathemat­ ical artefacts. Efforts to experimentally validate these abstract mathematical results are therefore warranted.&amp;quot;&lt;/mark&gt;&lt;/li&gt;
+&lt;li&gt;&lt;mark class=&#34;hltr-green&#34;&gt;&amp;ldquo;Regardless of the algorithms used for signature identification, common signatures tend to be consistently identifiable in most cohorts examined,&amp;quot;&lt;/mark&gt;&lt;/li&gt;
+&lt;li&gt;Whether these new signatures &lt;mark class=&#34;hltr-yellow&#34;&gt;&amp;ldquo;true biologically or are merely a mathematical outcome is less clear and awaits independent verification.&amp;quot;&lt;/mark&gt;&lt;/li&gt;
+&lt;li&gt;&lt;mark class=&#34;hltr-yellow&#34;&gt;&amp;ldquo;This lack of robustness is often due to the non-uniqueness of the NMF decomposition, which &amp;mdash; for any given matrix &amp;mdash; has a potentially infinite set of valid solutions&amp;rdquo;&lt;/mark&gt;&lt;/li&gt;
+&lt;li&gt;&lt;mark class=&#34;hltr-yellow&#34;&gt;&amp;ldquo;observed mutation counts and the ones predicted from the given set of signatures&amp;rdquo;&lt;/mark&gt;&lt;/li&gt;
+&lt;li&gt;&lt;mark class=&#34;hltr-yellow&#34;&gt;&amp;ldquo;still no objective way to determine whether the inferred signatures actually correspond to any known mutational&amp;rdquo;&lt;/mark&gt;&lt;/li&gt;
+&lt;li&gt;&lt;mark class=&#34;hltr-yellow&#34;&gt;&amp;ldquo;often confirmed through experimental data (Segovia et al., 2015; Drost et al., 2017).&amp;quot;&lt;/mark&gt;
+Recommended Material on legitamcy of mutational signatures:&lt;/li&gt;
+&lt;li&gt;Koh, G., Degasperi, A., Zou, X., Momen, S., &amp;amp; Nik-Zainal, S. (2021). Mutational signatures: Emerging concepts, caveats and clinical applications. &lt;em&gt;Nature Reviews Cancer&lt;/em&gt;, &lt;em&gt;21&lt;/em&gt;(10), 619&amp;ndash;637. &lt;a href=&#34;https://doi.org/10.1038/s41568-021-00377-7&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;https://doi.org/10.1038/s41568-021-00377-7&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;Kaufmann, T. L., &amp;amp; Schwarz, R. F. (2024). Improved identification of cancer mutational processes. &lt;em&gt;Nature Genetics&lt;/em&gt;, &lt;em&gt;56&lt;/em&gt;(3), 365&amp;ndash;366. &lt;a href=&#34;https://doi.org/10.1038/s41588-024-01679-w&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;https://doi.org/10.1038/s41588-024-01679-w&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;Apart from that, there&amp;rsquo;s a simulation study, which is quite cool: &lt;a href=&#34;https://www.biorxiv.org/content/biorxiv/early/2020/12/15/2020.12.14.422764.full.pdf&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;https://www.biorxiv.org/content/biorxiv/early/2020/12/15/2020.12.14.422764.full.pdf&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/details&gt;
+&lt;details&gt;
+&lt;summary&gt;
+Recommended material on mutational signatures
+&lt;/summary&gt;
+&lt;ul&gt;
+&lt;li&gt;Koh, G., Degasperi, A., Zou, X., Momen, S., &amp;amp; Nik-Zainal, S. (2021). Mutational signatures: Emerging concepts, caveats and clinical applications. &lt;em&gt;Nature Reviews Cancer&lt;/em&gt;, &lt;em&gt;21&lt;/em&gt;(10), 619&amp;ndash;637. &lt;a href=&#34;https://doi.org/10.1038/s41568-021-00377-7&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;https://doi.org/10.1038/s41568-021-00377-7&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;Alexandrov, L. B., Nik-Zainal, S., Wedge, D. C., Aparicio, S. A. J. R., Behjati, S., Biankin, A. V., Bignell, G. R., Bolli, N., Borg, A., Børresen-Dale, A.-L., Boyault, S., Burkhardt, B., Butler, A. P., Caldas, C., Davies, H. R., Desmedt, C., Eils, R., Eyfjörd, J. E., Foekens, J. A., &amp;hellip; Stratton, M. R. (2013). Signatures of mutational processes in human cancer. &lt;em&gt;Nature&lt;/em&gt;, &lt;em&gt;500&lt;/em&gt;(7463), 415&amp;ndash;421. &lt;a href=&#34;https://doi.org/10.1038/nature12477&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;https://doi.org/10.1038/nature12477&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/details&gt;
+&lt;h2 id=&#34;dirichlet-process-dp&#34;&gt;Dirichlet Process (DP)&lt;/h2&gt;
+&lt;p&gt;A useful mathematical concept for our study will be the Dirichlet Process. The Dirichlet process, $\mathrm{DP}\left(\alpha, H\right)$, is a measure on measures. Hence, a sample $\boldsymbol{G} \sim \mathrm{DP}(\alpha, H)$ from the Dirichlet Process is a probabilty measure. An overview of the Dirichlet Process is given in the following table.&lt;/p&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;Parameters&lt;/th&gt;
+&lt;th&gt;scaling parameter $\alpha&amp;gt;0$, base probability measure $H$.&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;Support&lt;/td&gt;
+&lt;td&gt;Space of probability measures with the same support as $H$.&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;Construction&lt;/td&gt;
+&lt;td&gt;Let $(e_1, e_2, \ldots) \sim \operatorname{Stick}(\alpha)$ and $\boldsymbol{\theta}_1, \boldsymbol{\theta}_2, \ldots \stackrel{\text{iid}}{\sim} H$. Then $\boldsymbol{G} = \sum_{k=1}^{\infty} e_k \delta_{\boldsymbol{\theta}_k} \sim \mathrm{DP}(\alpha, H)$.&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;Here, $\operatorname{Stick}$ refers to the stick-breaking process. As seen from its construction, $\boldsymbol{G}$ is a discrete probability measure, meaning it has countable support $\boldsymbol{\theta}_1, \boldsymbol{\theta}_2, \ldots$. Dirichlet processes are particularly well-suited for modeling mixtures when the number of components is unknown, providing flexibility in the number of components.&lt;/p&gt;
+&lt;h3 id=&#34;mathematical-properties-of-dirichlet-process&#34;&gt;Mathematical properties of Dirichlet Process&lt;/h3&gt;
+&lt;p&gt;It can be shown that the prior distribution $H$ represents the mean of $\boldsymbol{G}$ in the sense that, for any set $A$,&lt;/p&gt;
+
+
+
+$$
+\mathrm{E}_{\boldsymbol{G} \sim \mathrm{DP}(\alpha, H)}(\boldsymbol{G}(A)) = H(A).
+$$
+
+&lt;p&gt;Additionally, as $\alpha \rightarrow \infty$, $\boldsymbol{G}$ converges to $H$ in the weak topology. This implies that the concentration parameter $\alpha$ controls the proximity of $\boldsymbol{G}$ to the base distribution $H$.&lt;/p&gt;
+&lt;p&gt;In summary, $\boldsymbol{G}$ is distributed around the prior distribution $H$, with the variability governed by the value of $\alpha$.&lt;/p&gt;
+&lt;h3 id=&#34;references&#34;&gt;References&lt;/h3&gt;
+&lt;details&gt;
+&lt;summary&gt;
+Recommended material for Dirichlet Process
+&lt;/summary&gt;
+&lt;ul&gt;
+&lt;li&gt;I like Lectures 11 and 12 from Jeff Miller&amp;rsquo;s course: &lt;a href=&#34;http://jwmi.github.io/BMB/index.html&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;http://jwmi.github.io/BMB/index.html&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://en.wikipedia.org/wiki/Dirichlet_process&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;https://en.wikipedia.org/wiki/Dirichlet_process&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://www.geeksforgeeks.org/dirichlet-process-mixture-models-dpmms/&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;https://www.geeksforgeeks.org/dirichlet-process-mixture-models-dpmms/&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://towardsdatascience.com/dont-be-afraid-of-nonparametric-topic-models-d259c237a840&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;https://towardsdatascience.com/dont-be-afraid-of-nonparametric-topic-models-d259c237a840&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://pawel-czyz.github.io/posts/dirichlet-process.html&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;https://pawel-czyz.github.io/posts/dirichlet-process.html&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/details&gt;
+&lt;details&gt;
+&lt;summary&gt;
+NoteBook Impelementation of the Dirichlet Process
+&lt;/summary&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&#34;https://datamicroscopes.github.io/ncluster.html&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;https://datamicroscopes.github.io/ncluster.html&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://github.com/tdhopper/notes-on-dirichlet-processes/tree/master&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;https://github.com/tdhopper/notes-on-dirichlet-processes/tree/master&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://github.com/tdhopper/notes-on-dirichlet-processes/blob/master/pages/2015-07-28-dirichlet-distribution-dirichlet-process.ipynb&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;https://github.com/tdhopper/notes-on-dirichlet-processes/blob/master/pages/2015-07-28-dirichlet-distribution-dirichlet-process.ipynb&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/details&gt;
+&lt;h2 id=&#34;modelling-mutational-signature-with-dp&#34;&gt;Modelling mutational signature with DP&lt;/h2&gt;
+&lt;p&gt;We want to derive a Dirichlet Process model for trinucleotide mutations generated by mutational signatures. We will start with a more intuitive mixture model. Let&amp;rsquo;s consider the trinucleotide mutations in a single sample. Recall that there are 96 trinucleotide mutations. We can encode a trinucleotide mutation as $x\in \{{1,\ldots, 96}\}$ .&lt;/p&gt;
+&lt;h4 id=&#34;step-1-known-number-of-mutational-signatures-k&#34;&gt;Step 1: Known number of mutational signatures $K$&lt;/h4&gt;
+&lt;p&gt;Let&amp;rsquo;s assume we know the number of acting mutational signatures $K$. Let&amp;rsquo;s assume we observe $M$ trinucleotide mutations. We, model the process generating a trinucleotide mutation by a mixture of acting mutational signatures $\tilde{\theta}_1, \ldots, \tilde{\theta}_K$:&lt;/p&gt;
+
+
+
+$$
+\begin{aligned}
+\Delta^{K} \ni \boldsymbol{e} \mid \alpha,K &amp; \sim \operatorname{Dir}\left(\frac{\alpha}{K} \cdot \mathbf{1}_K\right) \\
+[0,1]\ni \mathrm{P}\left(z_i=k\right) &amp; =e_k \text{ for } i=1,\ldots, M\\
+\Delta^{96} \ni \tilde{\theta}_k  &amp; \sim \operatorname{Dir}\left(\frac{1}{96} \cdot \mathbf{1}_{96}\right) 
+\text{ for } k=1,\ldots, K\\
+\{{1,\ldots, 96}\} \ni x_i \mid z_i=k, \tilde{\theta}_k &amp; \sim \operatorname{Categorical} \left(\tilde{\theta}_{k}\right)  \text{ for } i=1,\ldots, M
+\end{aligned}
+$$
+
+&lt;p&gt;We assume that we have no initial information distinguishing the components, which is captured by the symmetric prior $\operatorname{Dir}\left(\alpha / K \cdot \mathbf{1}_K\right)$. Here $\operatorname{Dir}$ is the Dirichlet distribution. The event that the $i$th mutation was generated by the $k$-th mutational signature is denoted as $z_i=k$. The $i$th mutation was generated by the $k$-th mutational signature with probability $e_k$. We assign independent and identical prior distributions $\operatorname{Dir}\left(\frac{1}{96} \cdot \mathbf{1}_{96}\right)$ to the mutational signature of each component. The $k$-th component has the mutational signature $\tilde{\theta}_k \in \Delta^{96}$. Each trinucleotide mutation $x_i\in {{1,\ldots, 96}}$ is drawn from a categorical distribution.&lt;/p&gt;
+&lt;h5 id=&#34;graphical-model-for-known-number-of-components-k&#34;&gt;Graphical model for known number of components $K$&lt;/h5&gt;
+&lt;p&gt;We can visualise the process generating the trinucleotide mutation in a sample as a graphical model:
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+&lt;figure  &gt;
+  &lt;div class=&#34;d-flex justify-content-center&#34;&gt;
+    &lt;div class=&#34;w-100&#34; &gt;&lt;img alt=&#34;&#34; srcset=&#34;
+               /post/mutational-signature-with-hierarchical-dirichlet-process/media/7d5261339cd5d516f8153605fe36589a23255d8d_hu74e059dc2b26a8010c8c3a597e96ba5f_25250_c1628b71ce4e320bb31ca4af19db39ab.webp 400w,
+               /post/mutational-signature-with-hierarchical-dirichlet-process/media/7d5261339cd5d516f8153605fe36589a23255d8d_hu74e059dc2b26a8010c8c3a597e96ba5f_25250_e323806fbbf2fc745dc4e98c71c90dbb.webp 760w,
+               /post/mutational-signature-with-hierarchical-dirichlet-process/media/7d5261339cd5d516f8153605fe36589a23255d8d_hu74e059dc2b26a8010c8c3a597e96ba5f_25250_1200x1200_fit_q75_h2_lanczos_3.webp 1200w&#34;
+               src=&#34;http://localhost:1313/post/mutational-signature-with-hierarchical-dirichlet-process/media/7d5261339cd5d516f8153605fe36589a23255d8d_hu74e059dc2b26a8010c8c3a597e96ba5f_25250_c1628b71ce4e320bb31ca4af19db39ab.webp&#34;
+               width=&#34;459&#34;
+               height=&#34;760&#34;
+               loading=&#34;lazy&#34; data-zoomable /&gt;&lt;/div&gt;
+  &lt;/div&gt;&lt;/figure&gt;
+&lt;/p&gt;
+&lt;p&gt;Here the grey background of the circle behind $x_i$ indicates that $x_i$ is an observed variable.&lt;/p&gt;
+&lt;h4 id=&#34;step-2-equivalent-model-as-mixture&#34;&gt;Step 2: Equivalent model as mixture&lt;/h4&gt;
+&lt;p&gt;We want to integrate out the indicator variable $z_i=k$ in our model. Let $H=\operatorname{Dir}\left(\frac{1}{96} \cdot \mathbf{1}_{96}\right)$. We rewrite the equations from [Final_report#Step 1 Known number of components $K$](Final_report#Step 1 Known number of components $K$ ) as follows.&lt;/p&gt;
+
+
+
+$$
+\begin{aligned}
+\Delta^{K} \ni\boldsymbol{e} \mid \alpha,K &amp; \sim \operatorname{Dir}\left(\frac{\alpha}{K} \cdot \mathbf{1}_K\right) \\
+\Delta^{96} \ni \tilde{\theta}_k &amp; \sim H \text{ for } k=1,\ldots, K\\ 
+\Delta^{96} \ni\theta_i &amp; \sim G=\sum_{k=1}^K e_k \delta_{\tilde{\theta}_k}\left(\theta_i\right) \text{ for } i=1,\ldots, M\\
+\{{1,\ldots, 96}\} \ni x_i \mid \theta_i &amp; \sim \operatorname{Categorical} \left(\theta_i\right) \text{ for } i=1,\ldots, M 
+\end{aligned}
+$$
+
+&lt;p&gt;Instead of explicit, component-specific $\theta_k$, we work with the mixture $\theta_i$. We draw $\theta_i$ from $\{\tilde{\theta}_1, \ldots, \tilde{\theta}_K\}$ with the corresponding probabilities $\{e_1, \ldots, e_K\}$. Instead of imagining that each data point is first assigned a component and then drawn from the distribution associated with that cluster, we now think of each observation as being associated with parameter $\theta_i$ drawn from some finite distribution $G$ with support on the $K$ means.&lt;/p&gt;
+&lt;h4 id=&#34;step-3-unknown-unbounded-number-of-components-k&#34;&gt;Step 3: Unknown, unbounded number of components $K$&lt;/h4&gt;
+&lt;p&gt;Let
+
+
+
+$$
+\Delta^{\infty} = \left\{ (\theta_1, \theta_2, \ldots, ) \in \mathbb{R}^{\infty} \mid \theta_i \geq 0 \text{ for all } i \text{ and } \sum_{i=1}^{\infty} \theta_i = 1 \right\}.
+$$
+&lt;/p&gt;
+&lt;p&gt;We would now like to extend this model from [Final_report#Step 2 Equivalent model as mixture](Final_report#Step 2 Equivalent model as mixture ) to work without pre-specifying a fixed number of components $K$. Any $K\in \mathbb{N}$ should be possible but we would prefer small $K$. All this is accomplished by&lt;/p&gt;
+
+
+
+$$
+\begin{aligned}
+\Delta^{\infty}\ni \boldsymbol{e} \mid \alpha &amp;\sim \operatorname{Stick}(\alpha)\\
+\Delta^{96}\ni \tilde{\theta}_k &amp; \sim H \text{ for } k=1,2,\ldots \\ 
+G&amp;=\sum_{k=1}^{\infty} e_k \delta_{\tilde{\theta}_k}\left(\theta_i\right) \\
+\Delta^{96}\ni\theta_i &amp; \sim G \text{ for } i=1,\ldots, M \\
+\{{1,\ldots, 96}\} \ni x_i \mid \theta_i &amp; \sim \operatorname{Categorical} \left(\theta_i\right) \text{ for } i=1,\ldots, M   
+\end{aligned}
+$$
+
+&lt;p&gt;Here, $\boldsymbol{e}={e_1, e_2, \ldots}$ is generated by the stick-breaking process $\operatorname{Stick}$. The the stick-breaking process induces a distribution on $\Delta^{\infty}$. Intuitively, stick-breaking process work by repeatedly breaking off and discarding a random fraction (sampled from a Beta distribution) of a &amp;ldquo;stick&amp;rdquo; that is initially of length 1. Each broken off part of the stick has a length $e_k$. Instead of finite support, $G$ now has countably infinite support $\{\tilde{\theta}_1, \tilde{\theta}_2, \ldots\}$. We draw $\theta_i$ from $\{\tilde{\theta}_1, \tilde{\theta}_2, \ldots\}$ with the corresponding probabilities $\{e_1, e_2, \ldots\}$.&lt;/p&gt;
+&lt;h4 id=&#34;step-4-short-hand-notation&#34;&gt;Step 4: Short hand notation&lt;/h4&gt;
+&lt;p&gt;We are not particularly interested in $e$ and $\theta_k$ as parameters. We summarize the first three lines in the last equation and say that $G$ was genereated by the Dirichlet Process $\mathrm{DP}$ with the parameters $\alpha$ and $H$. This way the above equations simplify to&lt;/p&gt;
+
+
+
+$$
+\begin{aligned}
+G &amp;\sim \mathrm{DP}(\alpha, H)\\ 
+\Delta^{96}\ni \theta_i \mid G &amp;\sim G \text{ for } i=1,\ldots, M \\
+\{{1,\ldots, 96}\} \ni x_i \mid \theta_i &amp; \sim \operatorname{Categorical} \left(\theta_i\right) \text{ for } i=1,\ldots, M   
+\end{aligned}
+$$
+
+&lt;p&gt;This concludes our derivation of how we can model trinucleotide mutations with a Dirichlet Process. This presents an alternative approach to estimate mutational signature and signature activity as alternative to the classical approach based on Non-negative Matrix Factorisation used in (Alexandrov, 2013).&lt;/p&gt;
+&lt;h5 id=&#34;graphical-model-of-dirichlet-process&#34;&gt;Graphical Model of Dirichlet Process&lt;/h5&gt;
+&lt;p&gt;We can visualise the Dirichlet process as a graphical model:&lt;/p&gt;
+&lt;figure&gt;
+&lt;img
+src=&#34;media/cae3659c625ecead8e187392389b2cc3e01df00c.png&#34;
+ alt=&#34;300&#34; /&gt;
+&lt;/figure&gt;
+&lt;h2 id=&#34;hierarchical-dirichlet-process-hdp&#34;&gt;Hierarchical Dirichlet Process (HDP)&lt;/h2&gt;
+&lt;p&gt;By taking composition of multiple &lt;a href=&#34;Final_report#Dirichlet%20Process%20%28DP%29%5D&#34;&gt;Dirichlet Processes&lt;/a&gt;, we obtain a Hierarchical Dirichlet Process (HDP). Recall that Dirichlet processes excel at modelling mixtures with an unknown number of components. HDPs are tailored for the situation when we have groups of mixture components and/or hierarchies between mixture components. HDP can be viewed as a non-parametric Bayesian clustering method.&lt;/p&gt;
+&lt;h3 id=&#34;example&#34;&gt;Example&lt;/h3&gt;
+&lt;p&gt;In the &lt;a href=&#34;Final_report#Example&#34;&gt;Final_report#Example&lt;/a&gt; we have trinucleotide mutation of a single sample. When we have multiple samples, we expect that the observed trinucleotide mutations in a sample show clear trends and are more similar within a sample than in another sample.&lt;/p&gt;
+&lt;h3 id=&#34;graphical-model-of-hierarchical-dirichlet-process&#34;&gt;Graphical Model of Hierarchical Dirichlet Process&lt;/h3&gt;
+&lt;p&gt;We extend the graphical model from [Final_report#Graphical Model of Dirichlet Process ](Final_report#Graphical Model of Dirichlet Process  ) to include hierarchies:&lt;/p&gt;
+&lt;figure&gt;
+&lt;img
+src=&#34;media/7ed449672108468c8b92b5be803a1b3bf01459e5.png&#34;
+ alt=&#34;500&#34; /&gt;
+&lt;/figure&gt;
+&lt;h3 id=&#34;generating-model-of-hierarchical-dirichlet-process&#34;&gt;Generating model of Hierarchical Dirichlet Process&lt;/h3&gt;
+&lt;p&gt;We start with the prior distribution $H$. We draw multiple Dirichlet Processes:&lt;/p&gt;
+
+
+
+$$
+\begin{aligned}
+G_0 &amp;\sim \mathrm{DP}(\alpha_0, H)\\ 
+G_j \mid G_0 &amp;\sim \mathrm{DP}(\alpha_j, G_0) \text{ for } j = 1,2,\ldots N \text{ number of patients }\\
+\\ \theta_{j i} \mid G_j &amp;\sim G_j \text{ for } i = 1,2,\ldots M_j \text{ number of observations in group }j \\
+\left(x_{ji} \mid \theta_{j i}\right) &amp; \sim \operatorname{Categorical} \left(\theta_{j i}\right) 
+\end{aligned}
+$$
+
+&lt;h3 id=&#34;estimation-of-mutational-signature-and-mutational-signature-activity&#34;&gt;Estimation of mutational signature and mutational signature activity&lt;/h3&gt;
+&lt;p&gt;Let&amp;rsquo;s assume we have the mutational signatures $\left(\theta_k\right)_{k\in \mathbb{N}}\subset \Delta^{96}$ acting on the genome. Borrowing notation from the model with a finite number of mutational signatures, let $z_{ji}\in \mathbb{N}$ denote the mutational signature that generated the mutation $x_{ji}\in \{1,\ldots,96\}$. By fitting a HDP to our data we will obtain an estimate $\hat{z}_{ji}$ of $z_{ji}$. Our estimate $\hat{\theta}_k$ for the associated probability vector $\theta_k \in \Delta^{96}$ of mutational signature $k$ is&lt;/p&gt;
+&lt;p&gt;
+
+
+$$\hat{\theta}_k=\frac{\sum_{l=1}^{96}\sum_{j=1}^N\sum_{i=1}^{M_j} \mathbb{1}(\hat{z}_{ji}=k)\mathbb{1}(x_{ji}=l)\delta_l}{\sum_{j=1}^N\sum_{i=1}^{M_j} \mathbb{1}(\hat{z}_{ji}=k)},$$
+
+where $\delta_l\in \Delta^{96}$ has mass $1$ at position $l$. Further, we estimate the mutational signature activity $e_{kj}$ of mutational signature $k$ in sample $j$ by&lt;br&gt;
+
+
+
+$$\hat{e}_{kj}=1/M_j\sum_{i=1}^{M_j} \mathbb{1}(\hat{z}_{ji}=k).$$
+&lt;/p&gt;
+&lt;h3 id=&#34;advantages-of-hdp-approach-compared-to-the-classical-nmf-approach-for-mutational-signature-estimation&#34;&gt;Advantages of HDP approach compared to the classical NMF approach for mutational signature estimation&lt;/h3&gt;
+&lt;p&gt;The HDP approach offers several advantages over the classical NMF approach. First, it allows for the imposition of group structures and the integration of prior knowledge, such as the expectation that certain features should behave in coordinated ways (Roberts, N.D., 2018). Additionally, HDP enables simultaneous matching of the observed mutational catalogue to an existing signature library while discovering new signatures. This is done by pseudo-counting the existing signature library as observational data. Another key benefit is the ability to easily quantify uncertainty, though some variations of NMF also offer this feature. Finally, HDP facilitates learning the number of signatures directly from the data, which is often challenging with the classical NMF approach due to the difficulty in selecting the appropriate number of signatures.&lt;/p&gt;
+&lt;h3 id=&#34;references-1&#34;&gt;References&lt;/h3&gt;
+&lt;details&gt;
+&lt;summary&gt;
+Python Implementations 1
+&lt;/summary&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&#34;https://radimrehurek.com/gensim/models/hdpmodel.html&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;https://radimrehurek.com/gensim/models/hdpmodel.html&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;Gensim is a Python library for &lt;em&gt;topic modelling&lt;/em&gt;, &lt;em&gt;document indexing&lt;/em&gt; and &lt;em&gt;similarity retrieval&lt;/em&gt; with large corpora. Target audience is the &lt;em&gt;natural language processing&lt;/em&gt; (NLP) and &lt;em&gt;information retrieval&lt;/em&gt; (IR) community.&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://github.com/piskvorky/gensim/blob/develop/gensim/models/hdpmodel.py&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;https://github.com/piskvorky/gensim/blob/develop/gensim/models/hdpmodel.py&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;based on &lt;a href=&#34;https://github.com/blei-lab/online-hdp&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;https://github.com/blei-lab/online-hdp&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://towardsdatascience.com/dont-be-afraid-of-nonparametric-topic-models-d259c237a840&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;https://towardsdatascience.com/dont-be-afraid-of-nonparametric-topic-models-d259c237a840&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://towardsdatascience.com/dont-be-afraid-of-nonparametric-topic-models-part-2-python-e5666db347a&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;https://towardsdatascience.com/dont-be-afraid-of-nonparametric-topic-models-part-2-python-e5666db347a&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://github.com/ecoronado92/hdp&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;https://github.com/ecoronado92/hdp&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://github.com/morrisgreenberg/hdp-py&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;https://github.com/morrisgreenberg/hdp-py&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/details&gt;
+&lt;details&gt;
+&lt;summary&gt;
+Python Implementations 2
+&lt;/summary&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&#34;https://radimrehurek.com/gensim/models/hdpmodel.html&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;https://radimrehurek.com/gensim/models/hdpmodel.html&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;Gensim is a Python library for &lt;em&gt;topic modelling&lt;/em&gt;, &lt;em&gt;document indexing&lt;/em&gt; and &lt;em&gt;similarity retrieval&lt;/em&gt; with large corpora. Target audience is the &lt;em&gt;natural language processing&lt;/em&gt; (NLP) and &lt;em&gt;information retrieval&lt;/em&gt; (IR) community.&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://github.com/piskvorky/gensim/blob/develop/gensim/models/hdpmodel.py&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;https://github.com/piskvorky/gensim/blob/develop/gensim/models/hdpmodel.py&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;based on &lt;a href=&#34;https://github.com/blei-lab/online-hdp&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;https://github.com/blei-lab/online-hdp&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://towardsdatascience.com/dont-be-afraid-of-nonparametric-topic-models-d259c237a840&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;https://towardsdatascience.com/dont-be-afraid-of-nonparametric-topic-models-d259c237a840&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://towardsdatascience.com/dont-be-afraid-of-nonparametric-topic-models-part-2-python-e5666db347a&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;https://towardsdatascience.com/dont-be-afraid-of-nonparametric-topic-models-part-2-python-e5666db347a&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://github.com/ecoronado92/hdp&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;https://github.com/ecoronado92/hdp&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://github.com/morrisgreenberg/hdp-py&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;https://github.com/morrisgreenberg/hdp-py&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;Simple Jupyter notebook: &lt;a href=&#34;https://github.com/tdhopper/notes-on-dirichlet-processes/blob/master/pages/2015-07-30-sampling-from-a-hierarchical-dirichlet-process.ipynb&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;https://github.com/tdhopper/notes-on-dirichlet-processes/blob/master/pages/2015-07-30-sampling-from-a-hierarchical-dirichlet-process.ipynb&lt;/a&gt; (just for sampling?)&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/details&gt;
+&lt;details&gt;
+&lt;summary&gt;
+Recommended Material for HDP
+&lt;/summary&gt;
+&lt;ul&gt;
+&lt;li&gt;Teh, Y. W., Jordan, M. I., Beal, M. J., &amp;amp; work(s):, D. M. B. R. (2006). Hierarchical Dirichlet Processes. &lt;em&gt;Journal of the American Statistical Association&lt;/em&gt;, &lt;em&gt;101&lt;/em&gt;(476), 1566&amp;ndash;1581.&lt;/li&gt;
+&lt;li&gt;Used in: Li, Y., Roberts, N. D., Wala, J. A., Shapira, O., Schumacher, S. E., Kumar, K., Khurana, E., Waszak, S., Korbel, J. O., Haber, J. E., Imielinski, M., PCAWG Structural Variation Working Group, Akdemir, K. C., Alvarez, E. G., Baez-Ortega, A., Beroukhim, R., Boutros, P. C., Bowtell, D. D. L., Brors, B., &amp;hellip; Von Mering, C. (2020). Patterns of somatic structural variation in human cancer genomes. &lt;em&gt;Nature&lt;/em&gt;, &lt;em&gt;578&lt;/em&gt;(7793), 112&amp;ndash;121. &lt;a href=&#34;https://doi.org/10.1038/s41586-019-1913-9&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;https://doi.org/10.1038/s41586-019-1913-9&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;I like Lectures 11 and 12 from Jeff Miller&amp;rsquo;s course: &lt;a href=&#34;http://jwmi.github.io/BMB/index.html&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;http://jwmi.github.io/BMB/index.html&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1011299&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;Covering Hierarchical Dirichlet Mixture Models on binary data to enhance genomic stratifications in onco-hematology&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;Alam, Md Hijbul, et al. &amp;ldquo;Tree-structured hierarchical Dirichlet process.&amp;rdquo; &lt;em&gt;Distributed Computing and Artificial Intelligence, Special Sessions, 15th International Conference 15&lt;/em&gt;. Springer International Publishing, 2019.&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://en.wikipedia.org/wiki/Hierarchical_Dirichlet_process&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;https://en.wikipedia.org/wiki/Hierarchical_Dirichlet_process&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://mlg.eng.cam.ac.uk/zoubin/tut06/ywt.pdf&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;https://mlg.eng.cam.ac.uk/zoubin/tut06/ywt.pdf&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/details&gt;
+&lt;details&gt;
+&lt;summary&gt;
+References on HDP for mutational signautre estimation
+&lt;/summary&gt;
+&lt;ul&gt;
+&lt;li&gt;Used in: Li, Y., Roberts, N. D., Wala, J. A., Shapira, O., Schumacher, S. E., Kumar, K., Khurana, E., Waszak, S., Korbel, J. O., Haber, J. E., Imielinski, M., PCAWG Structural Variation Working Group, Akdemir, K. C., Alvarez, E. G., Baez-Ortega, A., Beroukhim, R., Boutros, P. C., Bowtell, D. D. L., Brors, B., &amp;hellip; Von Mering, C. (2020). Patterns of somatic structural variation in human cancer genomes. &lt;em&gt;Nature&lt;/em&gt;, &lt;em&gt;578&lt;/em&gt;(7793), 112&amp;ndash;121. &lt;a href=&#34;https://doi.org/10.1038/s41586-019-1913-9&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;https://doi.org/10.1038/s41586-019-1913-9&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://github.com/nicolaroberts/hdp&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;https://github.com/nicolaroberts/hdp&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;Roberts, N.D., 2018. &lt;em&gt;Patterns of somatic genome rearrangement in human cancer&lt;/em&gt; (Doctoral dissertation).&lt;/li&gt;
+&lt;li&gt;Appendix B &lt;a href=&#34;zotero://open-pdf/library/items/A44HM2CK?page=234&amp;amp;annotation=FQ4MT4UV&#34;&gt;Page 234&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;Chapter 4 &lt;a href=&#34;zotero://open-pdf/library/items/A44HM2CK?page=132&amp;amp;annotation=492B8JQX&#34;&gt;Page 132&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/details&gt;
+</description>
+    </item>
+    
+    <item>
       <title>Disparities in air pollution attributable mortality in the US population by race/ethnicity and sociodemographic factors</title>
       <link>http://localhost:1313/publication/preprint/</link>
       <pubDate>Mon, 01 Jul 2024 00:00:00 +0000</pubDate>
       <guid>http://localhost:1313/publication/preprint/</guid>
       <description></description>
-    </item>
-    
-    <item>
-      <title>Hierachical Dirichlet Model for mutational signature estimation</title>
-      <link>http://localhost:1313/post/writing-technical-content/</link>
-      <pubDate>Thu, 02 May 2024 00:00:00 +0000</pubDate>
-      <guid>http://localhost:1313/post/writing-technical-content/</guid>
-      <description>&lt;p&gt;Let 
-
-$X$ be the mutation matrix of size  $M \times N$. $N$ is the number of observations/samples.&lt;/p&gt;
-&lt;h3 id=&#34;math&#34;&gt;Math&lt;/h3&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-latex&#34; data-lang=&#34;latex&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nb&#34;&gt;{{&lt;/span&gt;&amp;lt; math &amp;gt;&lt;span class=&#34;nb&#34;&gt;}}&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;sb&#34;&gt;$$&lt;/span&gt;&lt;span class=&#34;nb&#34;&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nb&#34;&gt;&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;\gamma&lt;/span&gt;&lt;span class=&#34;nb&#34;&gt;_{n} &lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;nb&#34;&gt; &lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;\frac&lt;/span&gt;&lt;span class=&#34;nb&#34;&gt;{ &lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;\left&lt;/span&gt;&lt;span class=&#34;nb&#34;&gt; | &lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;\left&lt;/span&gt;&lt;span class=&#34;nb&#34;&gt; &lt;/span&gt;&lt;span class=&#34;o&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;\mathbf&lt;/span&gt;&lt;span class=&#34;nb&#34;&gt; x_{n} &lt;/span&gt;&lt;span class=&#34;o&#34;&gt;-&lt;/span&gt;&lt;span class=&#34;nb&#34;&gt; &lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;\mathbf&lt;/span&gt;&lt;span class=&#34;nb&#34;&gt; x_{n&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;-&lt;/span&gt;&lt;span class=&#34;m&#34;&gt;1&lt;/span&gt;&lt;span class=&#34;nb&#34;&gt;} &lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;\right&lt;/span&gt;&lt;span class=&#34;nb&#34;&gt; &lt;/span&gt;&lt;span class=&#34;o&#34;&gt;)&lt;/span&gt;&lt;span class=&#34;nb&#34;&gt;^T &lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;\left&lt;/span&gt;&lt;span class=&#34;nb&#34;&gt; &lt;/span&gt;&lt;span class=&#34;o&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;\nabla&lt;/span&gt;&lt;span class=&#34;nb&#34;&gt; F &lt;/span&gt;&lt;span class=&#34;o&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;\mathbf&lt;/span&gt;&lt;span class=&#34;nb&#34;&gt; x_{n}&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;)&lt;/span&gt;&lt;span class=&#34;nb&#34;&gt; &lt;/span&gt;&lt;span class=&#34;o&#34;&gt;-&lt;/span&gt;&lt;span class=&#34;nb&#34;&gt; &lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;\nabla&lt;/span&gt;&lt;span class=&#34;nb&#34;&gt; F &lt;/span&gt;&lt;span class=&#34;o&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;\mathbf&lt;/span&gt;&lt;span class=&#34;nb&#34;&gt; x_{n&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;-&lt;/span&gt;&lt;span class=&#34;m&#34;&gt;1&lt;/span&gt;&lt;span class=&#34;nb&#34;&gt;}&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;)&lt;/span&gt;&lt;span class=&#34;nb&#34;&gt; &lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;\right&lt;/span&gt;&lt;span class=&#34;nb&#34;&gt; &lt;/span&gt;&lt;span class=&#34;o&#34;&gt;]&lt;/span&gt;&lt;span class=&#34;nb&#34;&gt; &lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;\right&lt;/span&gt;&lt;span class=&#34;nb&#34;&gt; |}{&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;\left&lt;/span&gt;&lt;span class=&#34;nb&#34;&gt; &lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;\|\nabla&lt;/span&gt;&lt;span class=&#34;nb&#34;&gt; F&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;\mathbf&lt;/span&gt;&lt;span class=&#34;nb&#34;&gt;{x}_{n}&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;)&lt;/span&gt;&lt;span class=&#34;nb&#34;&gt; &lt;/span&gt;&lt;span class=&#34;o&#34;&gt;-&lt;/span&gt;&lt;span class=&#34;nb&#34;&gt; &lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;\nabla&lt;/span&gt;&lt;span class=&#34;nb&#34;&gt; F&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;\mathbf&lt;/span&gt;&lt;span class=&#34;nb&#34;&gt;{x}_{n&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;-&lt;/span&gt;&lt;span class=&#34;m&#34;&gt;1&lt;/span&gt;&lt;span class=&#34;nb&#34;&gt;}&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;)&lt;/span&gt;&lt;span class=&#34;nb&#34;&gt; &lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;\right&lt;/span&gt;&lt;span class=&#34;nb&#34;&gt; &lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;\|&lt;/span&gt;&lt;span class=&#34;nb&#34;&gt;^&lt;/span&gt;&lt;span class=&#34;m&#34;&gt;2&lt;/span&gt;&lt;span class=&#34;nb&#34;&gt;}
-&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nb&#34;&gt;&lt;/span&gt;&lt;span class=&#34;s&#34;&gt;$$&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nb&#34;&gt;{{&lt;/span&gt;&amp;lt; /math &amp;gt;&lt;span class=&#34;nb&#34;&gt;}}&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;renders as&lt;/p&gt;
-
-
-
-$$\gamma_{n} = \frac{ \left | \left (\mathbf x_{n} - \mathbf x_{n-1} \right )^T \left [\nabla F (\mathbf x_{n}) - \nabla F (\mathbf x_{n-1}) \right ] \right |}{\left \|\nabla F(\mathbf{x}_{n}) - \nabla F(\mathbf{x}_{n-1}) \right \|^2}$$
-
-&lt;p&gt;Example &lt;strong&gt;inline math&lt;/strong&gt; &lt;code&gt;{{&amp;lt; math &amp;gt;}}$\nabla F(\mathbf{x}_{n})${{&amp;lt; /math &amp;gt;}}&lt;/code&gt; renders as 
-
-$\nabla F(\mathbf{x}_{n})$.&lt;/p&gt;
-&lt;p&gt;Example &lt;strong&gt;multi-line math&lt;/strong&gt; using the math linebreak (&lt;code&gt;\\&lt;/code&gt;):&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-latex&#34; data-lang=&#34;latex&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nb&#34;&gt;{{&lt;/span&gt;&amp;lt; math &amp;gt;&lt;span class=&#34;nb&#34;&gt;}}&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;sb&#34;&gt;$$&lt;/span&gt;&lt;span class=&#34;nb&#34;&gt;f&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;nb&#34;&gt;k;p_{&lt;/span&gt;&lt;span class=&#34;m&#34;&gt;0&lt;/span&gt;&lt;span class=&#34;nb&#34;&gt;}^{&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;*&lt;/span&gt;&lt;span class=&#34;nb&#34;&gt;}&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;)&lt;/span&gt;&lt;span class=&#34;nb&#34;&gt; &lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;nb&#34;&gt; &lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;\begin&lt;/span&gt;&lt;span class=&#34;nb&#34;&gt;{cases}p_{&lt;/span&gt;&lt;span class=&#34;m&#34;&gt;0&lt;/span&gt;&lt;span class=&#34;nb&#34;&gt;}^{&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;*&lt;/span&gt;&lt;span class=&#34;nb&#34;&gt;} &amp;amp; &lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;\text&lt;/span&gt;&lt;span class=&#34;nb&#34;&gt;{if }k&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;m&#34;&gt;1&lt;/span&gt;&lt;span class=&#34;nb&#34;&gt;, &lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;\\&lt;/span&gt;&lt;span class=&#34;nb&#34;&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nb&#34;&gt;&lt;/span&gt;&lt;span class=&#34;m&#34;&gt;1&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;-&lt;/span&gt;&lt;span class=&#34;nb&#34;&gt;p_{&lt;/span&gt;&lt;span class=&#34;m&#34;&gt;0&lt;/span&gt;&lt;span class=&#34;nb&#34;&gt;}^{&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;*&lt;/span&gt;&lt;span class=&#34;nb&#34;&gt;} &amp;amp; &lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;\text&lt;/span&gt;&lt;span class=&#34;nb&#34;&gt;{if }k&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;m&#34;&gt;0&lt;/span&gt;&lt;span class=&#34;nb&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;\end&lt;/span&gt;&lt;span class=&#34;nb&#34;&gt;{cases}&lt;/span&gt;&lt;span class=&#34;s&#34;&gt;$$&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nb&#34;&gt;{{&lt;/span&gt;&amp;lt; /math &amp;gt;&lt;span class=&#34;nb&#34;&gt;}}&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;renders as&lt;/p&gt;
-
-
-
-
-$$
-f(k;p_{0}^{*}) = \begin{cases}p_{0}^{*} &amp; \text{if }k=1, \\
-1-p_{0}^{*} &amp; \text{if }k=0.\end{cases}
-$$
-
-
-&lt;h3 id=&#34;callouts&#34;&gt;Callouts&lt;/h3&gt;
-&lt;p&gt;Academic supports a &lt;a href=&#34;https://docs.hugoblox.com/content/writing-markdown-latex/#callouts&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;shortcode for callouts&lt;/a&gt;, also referred to as &lt;em&gt;asides&lt;/em&gt;, &lt;em&gt;hints&lt;/em&gt;, or &lt;em&gt;alerts&lt;/em&gt;. By wrapping a paragraph in &lt;code&gt;{{% callout note %}} ... {{% /callout %}}&lt;/code&gt;, it will render as an aside.&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-markdown&#34; data-lang=&#34;markdown&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;{{% callout note %}}
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;A Markdown aside is useful for displaying notices, hints, or definitions to your readers.
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;{{% /callout %}}
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;renders as&lt;/p&gt;
-&lt;div class=&#34;alert alert-note&#34;&gt;
-  &lt;div&gt;
-    A Markdown aside is useful for displaying notices, hints, or definitions to your readers.
-  &lt;/div&gt;
-&lt;/div&gt;
-&lt;h3 id=&#34;spoilers&#34;&gt;Spoilers&lt;/h3&gt;
-&lt;p&gt;Add a spoiler to a page to reveal text, such as an answer to a question, after a button is clicked.&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-markdown&#34; data-lang=&#34;markdown&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;{{&lt;span class=&#34;p&#34;&gt;&amp;lt;&lt;/span&gt; &lt;span class=&#34;nt&#34;&gt;spoiler&lt;/span&gt; &lt;span class=&#34;na&#34;&gt;text&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;s&#34;&gt;&amp;#34;Click to view the spoiler&amp;#34;&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;&amp;gt;&lt;/span&gt;}}
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;You found me!
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;{{&lt;span class=&#34;p&#34;&gt;&amp;lt;&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;/&lt;/span&gt;&lt;span class=&#34;nt&#34;&gt;spoiler&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;&amp;gt;&lt;/span&gt;}}
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;renders as&lt;/p&gt;
-&lt;details class=&#34;spoiler &#34;  id=&#34;spoiler-5&#34;&gt;
-  &lt;summary&gt;Click to view the spoiler&lt;/summary&gt;
-  &lt;p&gt;You found me!&lt;/p&gt;
-&lt;/details&gt;
-&lt;h3 id=&#34;code&#34;&gt;Code&lt;/h3&gt;
-&lt;p&gt;There is an &lt;a href=&#34;https://github.com/nicolaroberts/hdp&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;implementation&lt;/a&gt; in 
-  &lt;i class=&#34;fab fa-r-project  pr-1 fa-fw&#34;&gt;&lt;/i&gt;.&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-R&#34; data-lang=&#34;R&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;n&#34;&gt;devtools&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;::&lt;/span&gt;&lt;span class=&#34;nf&#34;&gt;install_github&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;s&#34;&gt;&amp;#34;nicolaroberts/hdp&amp;#34;&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;build_vignettes&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;kc&#34;&gt;TRUE&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nf&#34;&gt;set.seed&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;m&#34;&gt;10&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;n&#34;&gt;quick_hdp&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;&amp;lt;-&lt;/span&gt; &lt;span class=&#34;nf&#34;&gt;hdp_quick_init&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;example_data_hdp&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;n&#34;&gt;quick_hdp&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;n&#34;&gt;quick_chain&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;&amp;lt;-&lt;/span&gt; &lt;span class=&#34;nf&#34;&gt;hdp_posterior&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;quick_hdp&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;burnin&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;m&#34;&gt;500&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;n&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;m&#34;&gt;100&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;space&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;m&#34;&gt;40&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;seed&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;m&#34;&gt;1234&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;n&#34;&gt;quick_chain&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;</description>
     </item>
     
     <item>
@@ -357,7 +601,7 @@ data.head()
 
 
 
-&lt;div id=&#34;chart-794136582&#34; class=&#34;chart&#34;&gt;&lt;/div&gt;
+&lt;div id=&#34;chart-875623941&#34; class=&#34;chart&#34;&gt;&lt;/div&gt;
 &lt;script&gt;
   (function() {
     let a = setInterval( function() {
@@ -367,7 +611,7 @@ data.head()
       clearInterval( a );
 
       Plotly.d3.json(&#34;./line-chart.json&#34;, function(chart) {
-        Plotly.plot(&#39;chart-794136582&#39;, chart.data, chart.layout, {responsive: true});
+        Plotly.plot(&#39;chart-875623941&#39;, chart.data, chart.layout, {responsive: true});
       });
     }, 500 );
   })();
@@ -790,6 +1034,14 @@ $$&lt;/p&gt;
       <link>http://localhost:1313/project/external-project/</link>
       <pubDate>Wed, 27 Apr 2016 00:00:00 +0000</pubDate>
       <guid>http://localhost:1313/project/external-project/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title></title>
+      <link>http://localhost:1313/post_template_inspiration/mutational-signature-with-hierarchical-dirichlet-process/index_subset_relevant/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:1313/post_template_inspiration/mutational-signature-with-hierarchical-dirichlet-process/index_subset_relevant/</guid>
       <description></description>
     </item>
     

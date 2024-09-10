@@ -2,6 +2,14 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
+    <loc>http://localhost:1313/post/mutational-signature-with-hierarchical-dirichlet-process/</loc>
+    <lastmod>2024-09-10T00:00:00+00:00</lastmod>
+    <changefreq>weekly</changefreq>
+  </url><url>
+    <loc>http://localhost:1313/post/</loc>
+    <lastmod>2024-09-10T00:00:00+00:00</lastmod>
+    <changefreq>weekly</changefreq>
+  </url><url>
     <loc>http://localhost:1313/publication-type/2/</loc>
     <lastmod>2024-07-01T00:00:00+00:00</lastmod>
     <changefreq>weekly</changefreq>
@@ -16,14 +24,6 @@
   </url><url>
     <loc>http://localhost:1313/publication/</loc>
     <lastmod>2024-07-01T00:00:00+00:00</lastmod>
-    <changefreq>weekly</changefreq>
-  </url><url>
-    <loc>http://localhost:1313/post/writing-technical-content/</loc>
-    <lastmod>2024-05-02T00:00:00+00:00</lastmod>
-    <changefreq>weekly</changefreq>
-  </url><url>
-    <loc>http://localhost:1313/post/</loc>
-    <lastmod>2024-05-02T00:00:00+00:00</lastmod>
     <changefreq>weekly</changefreq>
   </url><url>
     <loc>http://localhost:1313/post_template_inspiration/blog-with-jupyter/</loc>
@@ -116,6 +116,9 @@
   </url><url>
     <loc>http://localhost:1313/project/</loc>
     <lastmod>2016-04-27T00:00:00+00:00</lastmod>
+    <changefreq>weekly</changefreq>
+  </url><url>
+    <loc>http://localhost:1313/post_template_inspiration/mutational-signature-with-hierarchical-dirichlet-process/index_subset_relevant/</loc>
     <changefreq>weekly</changefreq>
   </url><url>
     <loc>http://localhost:1313/home/</loc>

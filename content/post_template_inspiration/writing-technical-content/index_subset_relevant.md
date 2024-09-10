@@ -3,7 +3,7 @@ title: Hierachical Dirichlet Model for mutational signature estimation
 date: 2024-05-02
 created: 2024-02-15T01:00
 updated: 2024-05-02T09:51
-math: true
+math: true 
 image:
   placement: 2
   caption: 'Image credit: [**John Moeses Bauan**](https://unsplash.com/photos/OGZtQF8iC0g)'
