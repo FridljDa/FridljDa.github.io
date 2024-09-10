@@ -5,7 +5,7 @@
     <link>http://localhost:1313/post/</link>
       <atom:link href="http://localhost:1313/post/index.xml" rel="self" type="application/rss+xml" />
     <description>Posts</description>
-    <generator>Hugo Blox Builder (https://hugoblox.com)</generator><language>en-us</language>
+    <generator>Hugo Blox Builder (https://hugoblox.com)</generator><language>en-us</language><lastBuildDate>Tue, 10 Sep 2024 00:00:00 +0000</lastBuildDate>
     <image>
       <url>http://localhost:1313/media/icon_hu37f7dfefee3baeb2367e356372ffdf42_4657190_512x512_fill_lanczos_center_3.png</url>
       <title>Posts</title>
@@ -13,10 +13,10 @@
     </image>
     
     <item>
-      <title></title>
-      <link>http://localhost:1313/post/writing-technical-content/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:1313/post/writing-technical-content/</guid>
+      <title>Mutational signature estimation with Hierarchical Dirichlet Process</title>
+      <link>http://localhost:1313/post/mutational-signature-with-hierarchical-dirichlet-process/</link>
+      <pubDate>Tue, 10 Sep 2024 00:00:00 +0000</pubDate>
+      <guid>http://localhost:1313/post/mutational-signature-with-hierarchical-dirichlet-process/</guid>
       <description>&lt;h2 id=&#34;introduction&#34;&gt;Introduction&lt;/h2&gt;
 &lt;p&gt;A key characteristic of cancer is the elevated mutation rate in somatic cells. Recognizing the patterns of somatic mutations in cancer is essential for understanding the underlying mechanisms that drive the disease (Fischer et al., 2013). This knowledge is crucial for advancing cancer treatment and prevention.&lt;/p&gt;
 &lt;p&gt;One type of somatic mutation is the single nucleotide variant (SNV), also referred to as a single base substitution. This involves the replacement of one base pair in the genome with another. There are six possible base pair mutations: C:G&amp;gt;A:T, C:G&amp;gt;G:C, C:G&amp;gt;T:A, T:A&amp;gt;A:T, T:A&amp;gt;C:G, and T:A&amp;gt;G:C. When considering the context of the immediate 5&amp;rsquo; and 3&amp;rsquo; neighboring bases, the total number of mutations increases to 96, calculated as $6 \times 4 \times 4 = 96$. These are known as trinucleotide mutation channels. Examples of such mutations include ACA:TGT&amp;gt;AAA:TTT and ACT:TGA&amp;gt;AGT:TCA. For simplicity, we will abbreviate these mutations as ACA&amp;gt;AAA and ACT&amp;gt;AGT respectively.&lt;/p&gt;
@@ -159,10 +159,10 @@ $$
 &lt;figure  &gt;
   &lt;div class=&#34;d-flex justify-content-center&#34;&gt;
     &lt;div class=&#34;w-100&#34; &gt;&lt;img alt=&#34;&#34; srcset=&#34;
-               /post/writing-technical-content/media/7d5261339cd5d516f8153605fe36589a23255d8d_hu74e059dc2b26a8010c8c3a597e96ba5f_25250_c1628b71ce4e320bb31ca4af19db39ab.webp 400w,
-               /post/writing-technical-content/media/7d5261339cd5d516f8153605fe36589a23255d8d_hu74e059dc2b26a8010c8c3a597e96ba5f_25250_e323806fbbf2fc745dc4e98c71c90dbb.webp 760w,
-               /post/writing-technical-content/media/7d5261339cd5d516f8153605fe36589a23255d8d_hu74e059dc2b26a8010c8c3a597e96ba5f_25250_1200x1200_fit_q75_h2_lanczos_3.webp 1200w&#34;
-               src=&#34;http://localhost:1313/post/writing-technical-content/media/7d5261339cd5d516f8153605fe36589a23255d8d_hu74e059dc2b26a8010c8c3a597e96ba5f_25250_c1628b71ce4e320bb31ca4af19db39ab.webp&#34;
+               /post/mutational-signature-with-hierarchical-dirichlet-process/media/7d5261339cd5d516f8153605fe36589a23255d8d_hu74e059dc2b26a8010c8c3a597e96ba5f_25250_c1628b71ce4e320bb31ca4af19db39ab.webp 400w,
+               /post/mutational-signature-with-hierarchical-dirichlet-process/media/7d5261339cd5d516f8153605fe36589a23255d8d_hu74e059dc2b26a8010c8c3a597e96ba5f_25250_e323806fbbf2fc745dc4e98c71c90dbb.webp 760w,
+               /post/mutational-signature-with-hierarchical-dirichlet-process/media/7d5261339cd5d516f8153605fe36589a23255d8d_hu74e059dc2b26a8010c8c3a597e96ba5f_25250_1200x1200_fit_q75_h2_lanczos_3.webp 1200w&#34;
+               src=&#34;http://localhost:1313/post/mutational-signature-with-hierarchical-dirichlet-process/media/7d5261339cd5d516f8153605fe36589a23255d8d_hu74e059dc2b26a8010c8c3a597e96ba5f_25250_c1628b71ce4e320bb31ca4af19db39ab.webp&#34;
                width=&#34;459&#34;
                height=&#34;760&#34;
                loading=&#34;lazy&#34; data-zoomable /&gt;&lt;/div&gt;

@@ -1,8 +1,9 @@
 ---
+title: Mutational signature estimation with Hierarchical Dirichlet Process
 created: 2024-09-10T14:28
-updated: 2024-09-10T14:30
-updated: 2024-09-10T14:30
 math: true
+updated: 2024-09-10T14:30
+date: 2024-09-10
 ---
 
 ## Introduction
