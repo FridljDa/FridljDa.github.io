@@ -1,10 +1,17 @@
 ---
 title: Mutational signature estimation with Hierarchical Dirichlet Process
-created: 2024-09-10T14:28
-math: true
-updated: 2024-09-10T14:30
-date: 2024-09-10
+math: true 
+image: 
+  placement: 2 
+  caption: "Visualised mutational signature"
+created: 2024-09-10
+date: 2024-09-15
+updated: 2024-09-15
 ---
+
+The Hierarchical Dirichlet Process (HDP) is a popular and elegant model that has gained traction in various fields, including cancer genomics. While researching methods for mutational signature estimation, I noticed that several studies employed HDPs for this purpose. However, many of these studies were published in biological journals and often lacked detailed explanations of how HDPs can be effectively applied to mutational signature estimation.
+
+Nicola Roberts' [dissertation](https://doi.org/10.17863/CAM.22674) includes some descriptions of the mathematical model in the appendix, but even these are not fully comprehensive. In this blog post, I aim to bridge this gap by introducing the problem of mutational signature estimation using HDPs in a mathematically rigorous manner. I will begin by discussing a simpler mixture component model for mutational signatures, then explore the Dirichlet Process model, and finally delve into the Hierarchical Dirichlet Process model.
 
 ## Introduction
 
@@ -146,7 +153,7 @@ Here the grey background of the circle behind $x\_i$ indicates that $x\_i$ is an
 
 #### Step 2: Equivalent model as mixture
 
-We want to integrate out the indicator variable $z\_i=k$ in our model. Let $H=\operatorname{Dir}\left(\frac{1}{96} \cdot \mathbf{1}\_{96}\right)$. We rewrite the equations from [Final_report#Step 1 Known number of components \$K\$](Final_report#Step 1 Known number of components $K$ ) as follows.
+We want to integrate out the indicator variable $z\_i=k$ in our model. Let $H=\operatorname{Dir}\left(\frac{1}{96} \cdot \mathbf{1}\_{96}\right)$. We rewrite the equations from [Step 1 Known number of components \$K\$](#Step 1 Known number of components $K$ ) as follows.
 
 {{< math >}}
 $$
@@ -170,7 +177,7 @@ $$
 $$
 {{< /math >}}
 
-We would now like to extend this model from [Final_report#Step 2 Equivalent model as mixture](Final_report#Step 2 Equivalent model as mixture ) to work without pre-specifying a fixed number of components $K$. Any $K\in \mathbb{N}$ should be possible but we would prefer small $K$. All this is accomplished by
+We would now like to extend this model from [Step 2 Equivalent model as mixture](#Step 2 Equivalent model as mixture ) to work without pre-specifying a fixed number of components $K$. Any $K\in \mathbb{N}$ should be possible but we would prefer small $K$. All this is accomplished by
 
 {{< math >}}
 $$
@@ -215,15 +222,15 @@ src="media/cae3659c625ecead8e187392389b2cc3e01df00c.png"
 
 ## Hierarchical Dirichlet Process (HDP)
 
-By taking composition of multiple [Dirichlet Processes](Final_report#Dirichlet%20Process%20(DP)%5D), we obtain a Hierarchical Dirichlet Process (HDP). Recall that Dirichlet processes excel at modelling mixtures with an unknown number of components. HDPs are tailored for the situation when we have groups of mixture components and/or hierarchies between mixture components. HDP can be viewed as a non-parametric Bayesian clustering method.
+By taking composition of multiple [Dirichlet Processes](#Dirichlet%20Process%20(DP)%5D), we obtain a Hierarchical Dirichlet Process (HDP). Recall that Dirichlet processes excel at modelling mixtures with an unknown number of components. HDPs are tailored for the situation when we have groups of mixture components and/or hierarchies between mixture components. HDP can be viewed as a non-parametric Bayesian clustering method.
 
 ### Example
 
-In the [Final_report#Example](Final_report#Example ) we have trinucleotide mutation of a single sample. When we have multiple samples, we expect that the observed trinucleotide mutations in a sample show clear trends and are more similar within a sample than in another sample.
+In the [Example](#Example ) we have trinucleotide mutation of a single sample. When we have multiple samples, we expect that the observed trinucleotide mutations in a sample show clear trends and are more similar within a sample than in another sample.
 
 ### Graphical Model of Hierarchical Dirichlet Process
 
-We extend the graphical model from [Final_report#Graphical Model of Dirichlet Process ](Final_report#Graphical Model of Dirichlet Process  ) to include hierarchies:
+We extend the graphical model from [Graphical Model of Dirichlet Process ](#Graphical Model of Dirichlet Process  ) to include hierarchies:
 
 <figure>
 <img
