@@ -5,9 +5,13 @@ image:
   placement: 2 
   caption: "Visualised mutational signature"
 created: 2024-09-10
-date: 2024-09-10
-updated: 2024-09-10
+date: 2024-09-15
+updated: 2024-09-15
 ---
+
+The Hierarchical Dirichlet Process (HDP) is a popular and elegant model that has gained traction in various fields, including cancer genomics. While researching methods for mutational signature estimation, I noticed that several studies employed HDPs for this purpose. However, many of these studies were published in biological journals and often lacked detailed explanations of how HDPs can be effectively applied to mutational signature estimation.
+
+Nicola Roberts' [dissertation](https://doi.org/10.17863/CAM.22674) includes some descriptions of the mathematical model in the appendix, but even these are not fully comprehensive. In this blog post, I aim to bridge this gap by introducing the problem of mutational signature estimation using HDPs in a mathematically rigorous manner. I will begin by discussing a simpler mixture component model for mutational signatures, then explore the Dirichlet Process model, and finally delve into the Hierarchical Dirichlet Process model.
 
 ## Introduction
 
