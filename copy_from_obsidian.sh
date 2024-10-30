@@ -1,15 +1,20 @@
 #mutational-signature-with-hierarchical-dirichlet-process
 
-#cp Obsidian_Vault/Output/Blog_post/Blog_post_hugo.md /Users/dfridljand/Desktop/FridljDa.github.io/content/post/mutational-signature-with-hierarchical-dirichlet-process/hdp_mutational_signature.md
-#cp -r Obsidian_Vault/Output/Blog_post/Blog_post_hugo /Users/dfridljand/Desktop/FridljDa.github.io/content/post/mutational-signature-with-hierarchical-dirichlet-process/hdp_mutational_signature
-#cd /Users/dfridljand/Desktop/FridljDa.github.io/content/post/mutational-signature-with-hierarchical-dirichlet-process
-
-#ls /Users/dfridljand/Desktop/mutational_signature_with_trees_hdp/Obsidian_Vault/Output/Blog_post
 
 #copy all files in /Users/dfridljand/Desktop/mutational_signature_with_trees_hdp/Obsidian_Vault/Output/Blog_post to /Users/dfridljand/Desktop/FridljDa.github.io/content/post/mutational-signature-with-hierarchical-dirichlet-process
-cp -r /Users/dfridljand/Desktop/mutational_signature_with_trees_hdp/Obsidian_Vault/Output/Blog_post/Blog_post_hugo /Users/dfridljand/Desktop/FridljDa.github.io/content/post/mutational-signature-with-hierarchical-dirichlet-process/media 
-cp /Users/dfridljand/Desktop/mutational_signature_with_trees_hdp/Obsidian_Vault/Output/Blog_post/Blog_post_hugo.md /Users/dfridljand/Desktop/FridljDa.github.io/content/post/mutational-signature-with-hierarchical-dirichlet-process/index.md
-cd /Users/dfridljand/Desktop/FridljDa.github.io/content/post/mutational-signature-with-hierarchical-dirichlet-process
+# Define variables for the paths
+SOURCE_DIR="/Users/default/Desktop/temporary"
+DEST_DIR="/Users/default/Desktop/FridljDa.github.io/content/post/mutational-signature-with-hierarchical-dirichlet-process"
+MEDIA_DIR="$DEST_DIR/media"
+INDEX_FILE="$DEST_DIR/index.md"
+SOURCE_MD="$SOURCE_DIR/Blog_post_hugo.md"
+
+# Copy directories and files using the variables
+cp -r "$SOURCE_DIR" "$MEDIA_DIR"
+cp "$SOURCE_MD" "$INDEX_FILE"
+
+# Change to the destination directory
+cd "$DEST_DIR"
 
 #----- find and replace stuff-----
 #Consider the file index.md. replace the second line ---, add a line math: true
