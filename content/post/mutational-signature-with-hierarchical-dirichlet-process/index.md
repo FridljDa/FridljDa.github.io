@@ -7,6 +7,8 @@ image:
 created: 2024-09-10
 date: 2024-09-15
 updated: 2024-09-15
+tags:
+- Science
 ---
 
 The Hierarchical Dirichlet Process (HDP) is a popular and elegant model that has gained traction in various fields, including cancer genomics. While researching methods for mutational signature estimation, I noticed that several studies employed HDPs for this purpose. However, many of these studies were published in biological journals and often lacked detailed explanations of how HDPs can be effectively applied to mutational signature estimation.
