@@ -1,11 +1,17 @@
-The Hierarchical Dirichlet Process (HDP) is a popular and elegant model that has gained traction in various fields, including cancer genomics. While researching methods for mutational signature estimation, I noticed that several studies employed HDPs for this purpose. However, many of these studies were published in biological journals and often lacked detailed explanations of how HDPs can be effectively applied to mutational signature estimation.
+---
 title: Mutational signature estimation with Hierarchical Dirichlet Process
 math: true 
 image: 
   placement: 2 
   caption: "Visualised mutational signature"
+created: 2024-09-10
+date: 2024-09-15
+updated: 2024-09-15
+---
 
-Nicola Roberts' [dissertation](https://doi.org/10.17863/CAM.22674) includes some descriptions of the mathematical model in the appendix, but even these are not fully comprehensive. In this blog post, I aim to bridge this gap by introducing the problem of mutational signature estimation using HDPs in a mathematically rigorous manner. I will begin by discussing a simpler mixture component model for mutational signatures, then explore the Dirichlet Process model, and finally delve into the Hierarchical Dirichlet Process model.
+The Hierarchical Dirichlet Process (HDP) is a popular and elegant model that has gained traction in various fields, including cancer genomics. While researching methods for mutational signature estimation, I noticed that several studies employed HDPs for this purpose. However, many of these studies were published in biological journals and often lacked detailed explanations of how HDPs can be effectively applied to mutational signature estimation.
+
+Nicola Roberts' [dissertation](https://doi.org/10.17863/CAM.22674) includes some descriptions of the mathematical model in the appendix, but even these are not fully comprehensive. In this blog post, I aim to bridge this gap by introducing the problem of mutational signature estimation using HDPs in a mathematically rigorous manner. I will begin by discussing a simpler mixture component model for mutational signatures, then explore the Dirichlet Process model, and finally delve into the Hierarchical Dirichlet Process model.
 
 ## Introduction
 
@@ -26,15 +32,14 @@ $$
 A mutational signature $\theta$ can be visualised as in the following.
 
 <figure>
-<img
-src="media/a9711185bb2959bf64bf6004e591ab8de652fedf.png"
+<img src="media/a9711185bb2959bf64bf6004e591ab8de652fedf.png"
  alt="500" />
 
 </figure>
 
-The framework for studying somatic mutations through mutational signatures was introduced in a landmark study by Alexandrov et al. (2013), where over 7,000 bulk-sequenced cancer samples were analyzed. Conceptually, a mutational signature represents a biological process acting on the genome, leaving a distinct imprint captured in a probability vector, $\theta$. A comprehensive list of mutational signatures and their proposed underlying biological processes is available through the [COSMIC project](https://cancer.sanger.ac.uk/signatures/sbs/). Some of the mutational signatures and their associated probability vectors $\theta$ in the COSMIC project are consistently identifiable across most examined cohorts and signature identification algorithms \[@kohMutationalSignaturesEmerging2021\].
+The framework for studying somatic mutations through mutational signatures was introduced in a landmark study by Alexandrov et al. (2013), where over 7,000 bulk-sequenced cancer samples were analyzed. Conceptually, a mutational signature represents a biological process acting on the genome, leaving a distinct imprint captured in a probability vector, $\theta$. A comprehensive list of mutational signatures and their proposed underlying biological processes is available through the [COSMIC project](https://cancer.sanger.ac.uk/signatures/sbs/). Some of the mutational signatures and their associated probability vectors $\theta$ in the COSMIC project are consistently identifiable across most examined cohorts and signature identification algorithms [(cite)](https://pubmed.ncbi.nlm.nih.gov/34316057/).
 
-To estimate mutational signatures and their activities, \[@alexandrovDecipheringSignaturesMutational2013\] employed Non-Negative Matrix Factorization (NMF). NMF and its variations remain the most widely used methods for estimating mutational signatures and mutational signature activities.
+To estimate mutational signatures and their activities, [Alexandrov et al.](https://pubmed.ncbi.nlm.nih.gov/23318258/) employed Non-Negative Matrix Factorization (NMF). NMF and its variations remain the most widely used methods for estimating mutational signatures and mutational signature activities.
 
 ## Dirichlet Process (DP)
 
@@ -93,7 +98,7 @@ NoteBook Impelementation of the Dirichlet Process
 
 ## Modelling mutational signature with DP
 
-Dirichlet processes have been utilized in previous studies to model trinucleotide mutations associated with mutational signatures \[@robertsPatternsSomaticGenome\] and \[@liPatternsSomaticStructural2020\]. Although Appendix B (p. 234) and Chapter 4 (p. 132) in \[@robertsPatternsSomaticGenome\] provide a mathematical overview of the model, they lack sufficient detail and are not fully comprehensive. This section aims to address that gap by deriving the Dirichlet Process model for trinucleotide mutations in a thorough and accessible manner. We will begin by introducing a more intuitive approach to modeling trinucleotide mutations using a mixture model. To illustrate, consider the trinucleotide mutations within a single sample, which can be encoded as $x \in \\{1, \ldots, 96\\}$, representing the 96 possible trinucleotide mutation types.
+Dirichlet processes have been utilized in previous studies to model trinucleotide mutations associated with mutational signatures [(cite)](https://doi.org/10.17863/CAM.22674) and [(cite)](https://www.nature.com/articles/s41586-019-1913-9). Although Appendix B (p. 234) and Chapter 4 (p. 132) in [(cite)](https://doi.org/10.17863/CAM.22674) provide a mathematical overview of the model, they lack sufficient detail and are not fully comprehensive. This section aims to address that gap by deriving the Dirichlet Process model for trinucleotide mutations in a thorough and accessible manner. We will begin by introducing a more intuitive approach to modeling trinucleotide mutations using a mixture model. To illustrate, consider the trinucleotide mutations within a single sample, which can be encoded as $x \in \\{1, \ldots, 96\\}$, representing the 96 possible trinucleotide mutation types.
 
 #### Step 1: Known number of mutational signatures $K$
 
@@ -140,8 +145,7 @@ This completes our model, which describes how the mutational signatures $\left\\
 We can visualize the process that generates trinucleotide mutations in a sample using a graphical model:
 
 <figure>
-<img
-src="media/7d5261339cd5d516f8153605fe36589a23255d8d.png"
+<img src="media/7d5261339cd5d516f8153605fe36589a23255d8d.png"
  alt="300" />
 
 </figure>
@@ -236,7 +240,8 @@ $$
 \end{aligned}
 $$
 {{< /math >}}
-\#### Step 4: Short hand notation
+
+#### Step 4: Short hand notation
 
 We summarize the first three lines in the last equation and say that $G$ was genereated by the Dirichlet Process $\mathrm{DP}$ with the parameters $\alpha$ and $H$. This way the above equations simplify to
 
@@ -250,23 +255,21 @@ G &\sim \mathrm{DP}(\alpha, H)\\
 $$
 {{< /math >}}
 
-This concludes our derivation of how we can model trinucleotide mutations with a Dirichlet Process, as used in \[@liPatternsSomaticStructural2020\]. The Dirichlet Process approach presents an alternative approach to estimate mutational signature and signature activity as alternative to the classical approach based on Non-negative Matrix Factorisation used in \[@alexandrovSignaturesMutationalProcesses2013a\].
+This concludes our derivation of how we can model trinucleotide mutations with a Dirichlet Process, as used in [(cite)](https://www.nature.com/articles/s41586-019-1913-9). The Dirichlet Process approach presents an alternative approach to estimate mutational signature and signature activity as alternative to the classical approach based on Non-negative Matrix Factorisation used in [(cite)](https://www.nature.com/articles/nature12477).
 
 ##### Graphical Model of Dirichlet Process
 
 We can visualise the Dirichlet process as a graphical model:
 
 <figure>
-<img
-src="media/cae3659c625ecead8e187392389b2cc3e01df00c.png"
+<img src="media/cae3659c625ecead8e187392389b2cc3e01df00c.png"
  alt="ThegraphicalmodelofaDirichletProcess." />
-<figcaption
-aria-hidden="true">ThegraphicalmodelofaDirichletProcess.</figcaption>
+<figcaption aria-hidden="true">ThegraphicalmodelofaDirichletProcess.</figcaption>
 </figure>
 
 ## Hierarchical Dirichlet Process (HDP)
 
-By taking composition of multiple Dirichlet Processes, we obtain a Hierarchical Dirichlet Process (HDP) \[@tehHierarchicalDirichletProcesses2006\]. Recall that Dirichlet processes excel at modelling mixtures with an unknown number of components. HDPs are tailored for the situation when we have groups of mixture components and/or hierarchies between mixture components. For our model of trinucleotide mutations, we can use HDP to account for multiple samples. We expect from biology that there are general trends of mutational signature activity. However, we expect those trends to be more similar within a sample than between samples. In a mixture modelling approach, this would be captured by separate mixture models for each sample and information sharing between the weights of each sample. In the Dirichlet Process approach, this can be reflected by the HDP model. As before, we start with the prior distribution $H$. We draw a common base distribution $G\_0$ from a Dirichlet Process as
+By taking composition of multiple Dirichlet Processes, we obtain a Hierarchical Dirichlet Process (HDP) [(cite)](https://www.tandfonline.com/doi/abs/10.1198/016214506000000302). Recall that Dirichlet processes excel at modelling mixtures with an unknown number of components. HDPs are tailored for the situation when we have groups of mixture components and/or hierarchies between mixture components. For our model of trinucleotide mutations, we can use HDP to account for multiple samples. We expect from biology that there are general trends of mutational signature activity. However, we expect those trends to be more similar within a sample than between samples. In a mixture modelling approach, this would be captured by separate mixture models for each sample and information sharing between the weights of each sample. In the Dirichlet Process approach, this can be reflected by the HDP model. As before, we start with the prior distribution $H$. We draw a common base distribution $G\_0$ from a Dirichlet Process as
 {{< math >}}
 $$
 \begin{aligned}
@@ -296,8 +299,7 @@ $$
 The corresponding graphical model is:
 
 <figure>
-<img
-src="media/7ed449672108468c8b92b5be803a1b3bf01459e5.png"
+<img src="media/7d5261339cd5d516f8153605fe36589a23255d8d.png"
  alt="500" />
 
 </figure>
@@ -316,8 +318,9 @@ $$\hat{e}_{kj}=1/M_j\sum_{i=1}^{M_j} \mathbb{I}(\hat{z}_{ji}=k).$$
 
 ### Advantages of HDP approach compared to the classical NMF approach for mutational signature estimation
 
-The Hierarchical Dirichlet Process (HDP) approach offers several advantages over the classical Non-negative Matrix Factorization (NMF) method. It allows for the incorporation of prior knowledge and the imposition of group structures, such as the expectation that certain features should behave in coordinated ways \[@robertsPatternsSomaticGenome\]. In mutational signature analysis, two key tasks---(1) de novo discovery of mutational signatures and (2) estimation of signature activity---can be performed simultaneously using HDP. The method can match the observed mutational catalog to an existing signature library while also identifying new signatures by pseudo-counting the existing library as observational data. Additionally, HDP facilitates the direct learning of the number of signatures from the data, overcoming a common challenge in NMF, which often struggles to select the appropriate number of signatures. While some NMF variants can quantify uncertainty, HDP provides this capability more easily.
-\### References
+The Hierarchical Dirichlet Process (HDP) approach offers several advantages over the classical Non-negative Matrix Factorization (NMF) method. It allows for the incorporation of prior knowledge and the imposition of group structures, such as the expectation that certain features should behave in coordinated ways [(cite)](https://doi.org/10.17863/CAM.22674). In mutational signature analysis, two key tasks---(1) de novo discovery of mutational signatures and (2) estimation of signature activity---can be performed simultaneously using HDP. The method can match the observed mutational catalog to an existing signature library while also identifying new signatures by pseudo-counting the existing library as observational data. Additionally, HDP facilitates the direct learning of the number of signatures from the data, overcoming a common challenge in NMF, which often struggles to select the appropriate number of signatures. While some NMF variants can quantify uncertainty, HDP provides this capability more easily.
+
+### References
 
 <details>
 
