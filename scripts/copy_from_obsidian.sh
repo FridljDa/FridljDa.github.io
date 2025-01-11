@@ -5,12 +5,13 @@
 # Define variables for the paths
 SOURCE_DIR="/Users/default/Desktop/temporary"
 DEST_DIR="/Users/default/Desktop/FridljDa.github.io/content/post/mutational-signature-with-hierarchical-dirichlet-process"
+MEDIA_SOURCE_DIR="$SOURCE_DIR/Blog_post_hugo"
 MEDIA_DIR="$DEST_DIR/media"
 INDEX_FILE="$DEST_DIR/index.md"
 SOURCE_MD="$SOURCE_DIR/Blog_post_hugo.md"
 
 # Copy directories and files using the variables
-cp -r "$SOURCE_DIR" "$MEDIA_DIR"
+cp -r "$MEDIA_SOURCE_DIR" "$MEDIA_DIR"
 cp "$SOURCE_MD" "$INDEX_FILE"
 
 # Change to the destination directory
