@@ -6,21 +6,21 @@ title: Daniel Fridljand
 superuser: true
 
 # Role/position/tagline
-role: Research Assistant
+role: Software Consultant 
 
 # Organizations/Affiliations to show in About widget
 organizations:
-- name: ETH Zürich
-  url: https://ethz.ch/en.html
+- name: TNG technology 
+  url: https://www.tngtech.com/en/
 
 
 # Short bio (displayed in user profile at end of posts)
-bio: Statistical methods development for biological data.
+bio: Statistical methods development for biological data. #TODO
 
 # Interests to show in About widget
 interests:
 - Statistics
-- Applied Mathematics
+- Applied Mathematics #TODO
 - Bioinformatics
 
 # Education to show in About widget
@@ -40,10 +40,10 @@ education:
 social:
 - icon: envelope
   icon_pack: fas
-  link: 'mailto:daniel.fridljand@ethz.ch'
-- icon: twitter
-  icon_pack: fab
-  link: https://twitter.com/DanielFridljand
+  link: 'mailto:daniel.fridljand@gmail.com'
+#- icon: twitter
+#  icon_pack: fab
+#  link: https://twitter.com/DanielFridljand
 - icon: graduation-cap  # Alternatively, use `google-scholar` icon from `ai` icon pack
   icon_pack: fas
   link: https://scholar.google.com/citations?user=SIoMbdMAAAAJ
@@ -65,9 +65,9 @@ social:
 email: ""
 
 # Highlight the author in author lists? (true/false)
-highlight_name: true
+highlight_name: true #TODO
 ---
 
-I am enthusiastic about applying mathematical ideas to solve real-world problems, by developing interpretable statistical methods, accompanied by robust software implementations. From a statistical perspective, this interest encompasses high-dimensional data, selective inference, and supervised learning.
+I am enthusiastic about applying mathematical ideas to solve real-world problems, by developing interpretable statistical methods, accompanied by robust software implementations. From a statistical perspective, this interest encompasses high-dimensional data, selective inference, and supervised learning. 
 
 {{< icon name="download" pack="fas" >}} Download my {{< staticref "uploads/resume.pdf" "newtab" >}}resumé{{< /staticref >}}.

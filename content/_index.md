@@ -63,13 +63,21 @@ sections:
       #   Leave `date_end` empty if it's your current employer.
       #   Begin multi-line descriptions with YAML's `|2-` multi-line prefix.
       items:
+        - title: Software Consultant
+          company: TNG Technology
+          company_url: 'https://www.tngtech.com/en/'
+          company_logo: tng_logo #TODO improve
+          location: Munich, Germany
+          date_start: '2024-12-01'
+          #date_end: '2023-05-30'
+          description: TODO
         - title: Research Assistant
           company: ETH Zürich
           company_url: 'https://applied.math.yale.edu/'
           company_logo: ETH_Logo
           location: Basel, Switzerland
-          date_start: '2024-01-01'
-          #date_end: '2023-05-30'
+          date_start: '2024-02-01'
+          date_end: '2024-09-30'
           description: Researching statistical methods for mutational patterns estimation with tree structures in the lab of [Niko Beerenwinkel](https://bsse.ethz.ch/cbg/group.html) with focus on data from the [Tumor Profiler](https://eth-nexus.github.io/tu-pro_website/).
         - title: Research Assistant
           company: Stanford University
@@ -82,10 +90,12 @@ sections:
               * Analyzed the role of air pollution in the race-ethnicity to premature mortality causal chain, under [Pascal Geldsetzer](https://profiles.stanford.edu/pascal-geldsetzer)'s guidance, leading to key insights that contribute to policy-shaping discussions.
               * Spearheaded the project with minimal supervision. 
               * Devised and [implemented](https://github.com/FridljDa/pm25_inequality) a comprehensive statistical analysis in R, synthesized findings from 150 pertinent publications, wrote the initial manuscript and technical supplement, and drove the manuscript from conceptualization to successful publication.
-              * Harmonized geospatial and tabular data on air pollution, mortality, population numbers, and orchestrated analyses of 10 different steps. 
-              * Executed major revisions of the manuscript and conducted new analyses, including 15 new figures, within a strict 2-month deadline as part of the 'Revise and Resubmit' response.
-              * Developed an interactive [Shiny web application](https://github.com/FridljDa/ui_pm_attributable) to visualize 17-dimensional data, enhancing collaboration and data interpretation among the research team.
-              * Collaborated with seven Stanford co-authors to systematically gather and integrate critical feedback throughout various project stages, driving a significant enhancement in research quality.
+              * <details>
+                * Harmonized geospatial and tabular data on air pollution, mortality, population numbers, and orchestrated analyses of 10 different steps. 
+                * Executed major revisions of the manuscript and conducted new analyses, including 15 new figures, within a strict 2-month deadline as part of the 'Revise and Resubmit' response.
+                * Developed an interactive [Shiny web application](https://github.com/FridljDa/ui_pm_attributable) to visualize 17-dimensional data, enhancing collaboration and data interpretation among the research team.
+                * Collaborated with seven Stanford co-authors to systematically gather and integrate critical feedback throughout various project stages, driving a significant enhancement in research quality.
+                </details>
         - title: Exchange student
           company: Yale University
           company_url: 'https://www.yale.edu/'
