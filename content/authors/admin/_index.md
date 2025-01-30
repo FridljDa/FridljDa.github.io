@@ -15,13 +15,13 @@ organizations:
 
 
 # Short bio (displayed in user profile at end of posts)
-bio: Statistical methods development for biological data. #TODO
+bio: Software development with a strong academic background in mathematics. 
 
 # Interests to show in About widget
 interests:
 - Statistics
-- Applied Mathematics #TODO
-- Bioinformatics
+- Machine Learning  
+- Software Development
 
 # Education to show in About widget
 education:
@@ -65,9 +65,9 @@ social:
 email: ""
 
 # Highlight the author in author lists? (true/false)
-highlight_name: true #TODO
+highlight_name: true #TODO resume
 ---
 
-I am enthusiastic about applying mathematical ideas to solve real-world problems, by developing interpretable statistical methods, accompanied by robust software implementations. From a statistical perspective, this interest encompasses high-dimensional data, selective inference, and supervised learning. 
+I am a driven software consultant with a strong academic background in mathematics, statistics, and bioinformatics. My passion for machine learning, software development, and statistics has led me to work on projects across diverse domains, including public health, genetics, and oncology. With three years of scientific software development experience and a first-author publication in a high-impact journal, I’m committed to leveraging computational skills to solve real-world challenges.
 
 {{< icon name="download" pack="fas" >}} Download my {{< staticref "uploads/resume.pdf" "newtab" >}}resumé{{< /staticref >}}.
