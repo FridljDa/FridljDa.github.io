@@ -66,11 +66,18 @@ sections:
         - title: Software Consultant
           company: TNG Technology
           company_url: 'https://www.tngtech.com/en/'
-          company_logo: tng_logo #TODO improve
+          company_logo: tng_logo 
           location: Munich, Germany
           date_start: '2024-12-01'
           #date_end: '2023-05-30'
-          description: TODO
+          description: |2-
+              * Modernization and further development of a supply chain management application in an international development team
+              * Service for requesting quotation, bidding, displaying and confirming delivery orders
+              * Agile development with a two-week sprint cycle, continuous integration, and regular production releases within the sprint
+              * Setup of CI pipelines (Jenkins, SonarQube, Gradle)
+              * Enhancement of test automation capabilities
+              * Full-stack development with
+                * React, TypeScript, Java 8/17, JBoss, Oracle DB, Gradle, JUnit, Docker, Podman, Jenkins, SonarQube
         - title: Research Assistant
           company: ETH Zürich
           company_url: 'https://applied.math.yale.edu/'
