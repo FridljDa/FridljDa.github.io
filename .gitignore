@@ -1,3 +1,6 @@
 envs
 **/index.html
 **/index.xml
+**.html
+**.xml
+**.json
