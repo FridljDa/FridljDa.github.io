@@ -2,6 +2,18 @@
 https://docs.hugoblox.com/getting-started/install-hugo/
 `brew install git golang hugo nodeo`
 
+To fix error on this branch:
+Upgrade Hugo (address module compatibility warning): The warning indicates you need Hugo v0.134.1+ extended. Current version is v0.123.7. Follow Hugo's installation guide to get the latest extended version.
+
+Fix missing shortcode (main error): Either:
+
+Add the missing staticref shortcode in layouts/shortcodes/staticref.html
+Or ensure Hugo Blox modules are properly installed:
+hugo mod tidy
+hugo mod npm pack
+npm install
+
+
 # Important bash commands:
 ```
 bash update.sh -"
