@@ -134,7 +134,9 @@ sections:
           description: |2-
               * Final Grade: 1.4
               * Thesis advisor: Prof. Dr. Jan Johannes
-              * Online estimation of the geometric median in Hilbert spaces
+              * Thesis title: Online estimation of the geometric median in Hilbert spaces
+              * Minor in Computer Science
+              * Course work in statistics, algorithms and data structures, linear algebra, abstract algebra
     design:
       columns: '2'
   - block: collection
