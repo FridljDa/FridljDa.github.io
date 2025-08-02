@@ -113,16 +113,16 @@ sections:
           location: New Haven, USA
           date_start: '2022-09-01'
           date_end: '2023-05-30'
-          description: Chosen as one of two master's students to represent the University of Heidelberg in a year-long study abroad program at Yale University. Hosted by the [Applied Mathematics Program](https://applied.math.yale.edu/). Advised by [Smita Krishnaswamy](https://krishnaswamylab.org/).
+          description: Chosen as one of two Master's students to represent the University of Heidelberg in a year-long study abroad program at Yale University. Hosted by the [Applied Mathematics Program](https://applied.math.yale.edu/). Advised by [Smita Krishnaswamy](https://krishnaswamylab.org/).
         - title: Research Assistant 
           company: European Molecular Biology Laboratory
-          company_url: '(https://www.embl.org/'
+          company_url: 'https://www.embl.org/'
           company_logo: European_Molecular_Biology_Laboratory_Logo
           location: Heidelberg, Germany
           date_start: '2021-10-01'
           date_end: '2022-05-31'
           description: |2-
-              * Developed and implemented a novel statistical method in R under the guidance of [Wolfgang Huber](https://www.huber.embl.de/) and [Nikos Ignatiadis](https://nignatiadis.github.io/) to identify outliers in large-scale data sets, enhancing detection capabilities in the presence of high-dimensional side-information.
+              * Developed and implemented a novel statistical method in R under the guidance of [Wolfgang Huber](https://www.huber.embl.de/) and [Nikos Ignatiadis](https://nignatiadis.github.io/) to identify outliers in large-scale datasets, enhancing detection capabilities in the presence of high-dimensional side information.
               * Tripled statistical detection power in a high-dimensional setting by integrating Selective Inference, Machine Learning, and Empirical Bayes approaches.
               * Successfully applied the developed method to genome-wide association study, identifying key genetic markers linked to diseases.
               * Presented research findings at seven scientific events, including a seminar talk at [Yale University](https://www.yale.edu/) and [University of North Carolina at Chapel Hill](https://www.unc.edu/) and a competitively selected oral contribution at [DAGStat 2022](https://www.dagstat2022.uni-hamburg.de/bilder/booklet.pdf), attended by 100 scholars.
