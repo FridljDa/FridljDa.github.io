@@ -74,10 +74,10 @@ sections:
               * Modernization and further development of a supply chain management application in an international development team
               * Service for requesting quotation, bidding, displaying and confirming delivery orders
               * Agile development with a two-week sprint cycle, continuous integration, and regular production releases within the sprint
-              * Setup of CI pipelines (Jenkins, SonarQube, Gradle)
+              * Setup of CI pipelines (Jenkins, SonarQube, Playwright)
               * Enhancement of test automation capabilities
               * Full-stack development with
-                * React, TypeScript, Java 8/17, JBoss, Oracle DB, Gradle, JUnit, Docker, Podman, Jenkins, SonarQube
+                * React, TypeScript, Java 17, JBoss, Spring, Oracle DB, Gradle, JUnit, Docker, Podman
         - title: Research Assistant
           company: ETH Zürich
           company_url: 'https://applied.math.yale.edu/'
@@ -85,7 +85,10 @@ sections:
           location: Basel, Switzerland
           date_start: '2024-02-01'
           date_end: '2024-09-30'
-          description: Researching statistical methods for mutational patterns estimation with tree structures in the lab of [Niko Beerenwinkel](https://bsse.ethz.ch/cbg/group.html) with focus on data from the [Tumor Profiler](https://eth-nexus.github.io/tu-pro_website/).
+          description: |2-
+              * Researching statistical methods for mutational patterns estimation with tree structures in the lab of [Niko Beerenwinkel](https://bsse.ethz.ch/cbg/group.html) with focus on data from the [Tumor Profiler](https://eth-nexus.github.io/tu-pro_website/).
+              * Lecture on Statistical Models in Computational Biology covering hidden Markov models, EM algorithm, Variational inference.
+              * [HDP](https://danielfridljand.de/post/mutational-signature-with-hierarchical-dirichlet-process/).
         - title: Research Assistant
           company: Stanford University
           company_url: 'https://www.stanford.edu/'
@@ -122,8 +125,8 @@ sections:
               * Developed and implemented a novel statistical method in R under the guidance of [Wolfgang Huber](https://www.huber.embl.de/) and [Nikos Ignatiadis](https://nignatiadis.github.io/) to identify outliers in large-scale data sets, enhancing detection capabilities in the presence of high-dimensional side-information.
               * Tripled statistical detection power in a high-dimensional setting by integrating Selective Inference, Machine Learning, and Empirical Bayes approaches.
               * Successfully applied the developed method to genome-wide association study, identifying key genetic markers linked to diseases.
-              * Presented research findings at seven scientific events, including a seminar talks at [Yale University](https://www.yale.edu/) and [University of North Carolina at Chapel Hill](https://www.unc.edu/) and a competitively selected oral contribution at [DAGStat 2022](https://www.dagstat2022.uni-hamburg.de/bilder/booklet.pdf), attended by 100 scholars.
-              * Conducted the peer review for manuscript at Bioinformatics Advances, contributed the peer review for manuscript at Cell Biology.
+              * Presented research findings at seven scientific events, including a seminar talk at [Yale University](https://www.yale.edu/) and [University of North Carolina at Chapel Hill](https://www.unc.edu/) and a competitively selected oral contribution at [DAGStat 2022](https://www.dagstat2022.uni-hamburg.de/bilder/booklet.pdf), attended by 100 scholars.
+              * Conducted peer review for manuscripts at Bioinformatics Advances and Cell Biology.
         - title: Master Student in Mathematics
           company: Heidelberg University
           company_url: 'https://www.uni-heidelberg.de/en'
@@ -134,7 +137,8 @@ sections:
           description: |2-
               * Final Grade: 1.0
               * Thesis advisor: Dr. Wolfgang Huber (EMBL), Prof. Dr. Jan Johannes
-              * Thesis title: Better multiple Testing: Using multivariate co-data for hypotheses
+              * Thesis title: Better Multiple Testing: Using multivariate co-data for hypotheses
+              * Course work on high-dimensional statistics, Probability theory, nonparametric and parametric statistics, Algebraic Topology. 
         - title: Exchange student
           company: Hebrew University of Jerusalem
           company_url: 'https://en.huji.ac.il/en'
