@@ -116,14 +116,15 @@ sections:
               * Thesis advisor: Dr. Wolfgang Huber (EMBL), Prof. Dr. Jan Johannes
               * Thesis title: Better Multiple Testing: Using multivariate co-data for hypotheses
               * Course work on high-dimensional statistics, Probability theory, nonparametric and parametric statistics, Algebraic Topology. 
-        - title: Exchange student
+        - title: Exchange Student
           company: Hebrew University of Jerusalem
           company_url: 'https://en.huji.ac.il/en'
           company_logo: Hebrew_University_Logo
           location: Jerusalem, Israel
           date_start: '2019-09-01'
           date_end: '2020-03-12'
-          description: Graduate-level courses in Functional Analysis, Algebraic Combinatorics, and Quantitative Models at Einstein Institute of Mathematics.
+          description: |2-
+              * Graduate-level coursework in Functional Analysis, Algebraic Combinatorics, and Quantitative Models at the Einstein Institute of Mathematics.
         - title: Bachelor Student in Mathematics
           company: Heidelberg University
           company_url: 'https://www.uni-heidelberg.de/en'
@@ -132,11 +133,11 @@ sections:
           date_start: '2017-10-01'
           date_end: '2020-09-30'
           description: |2-
-              * Final Grade: 1.4
+              * Final grade: 1.4
               * Thesis advisor: Prof. Dr. Jan Johannes
-              * Thesis title: Online estimation of the geometric median in Hilbert spaces
+              * Thesis title: Online Estimation of the Geometric Median in Hilbert Spaces
               * Minor in Computer Science
-              * Course work in statistics, algorithms and data structures, linear algebra, abstract algebra
+              * Coursework in Statistics, Algorithms and Data Structures, Linear Algebra, Abstract Algebra
     design:
       columns: '2'
   - block: collection
