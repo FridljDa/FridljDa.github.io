@@ -54,8 +54,7 @@ sections:
               * Agile development with a two-week sprint cycle, continuous integration, and regular production releases within the sprint
               * Setup of CI pipelines (Jenkins, SonarQube, Playwright)
               * Enhanced test automation capabilities
-              * Co-initiated and contributed to the internal blog series "AI Tool of the Week," providing consultants with concise weekly summaries of the latest advancements in AI. The series covers topics such as AI-assisted coding, agentic workflows, and multi-modal AI processing tools, ensuring the team stays up to date with state-of-the-art technologies.     * Full-stack development with
-                * React, TypeScript, Java 17, JBoss, Spring, Oracle DB, Gradle, JUnit, Docker, Podman
+              * Co-organised and contributed to the internal blog series "AI Tool of the Week," providing consultants with concise weekly summaries of the latest advancements in AI. Topics covered include AI-assisted coding, agentic workflows, and multi-modal AI processing tools, ensuring the team stays up-to-date with cutting-edge technologies.     * * Full-stack development with: Java 17, JBoss, Spring, Oracle DB, Gradle, JUnit, Docker, Podman, React, TypeScript
         - title: Research Assistant
           company: ETH Zürich
           company_url: 'https://applied.math.yale.edu/'
