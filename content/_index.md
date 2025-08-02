@@ -53,8 +53,8 @@ sections:
               * Service for requesting quotation, bidding, displaying and confirming delivery orders
               * Agile development with a two-week sprint cycle, continuous integration, and regular production releases within the sprint
               * Setup of CI pipelines (Jenkins, SonarQube, Playwright)
-              * Enhancement of test automation capabilities
-              * Full-stack development with
+              * Enhanced test automation capabilities
+              * Co-initiated and contributed to the internal blog series "AI Tool of the Week," providing consultants with concise weekly summaries of the latest advancements in AI. The series covers topics such as AI-assisted coding, agentic workflows, and multi-modal AI processing tools, ensuring the team stays up to date with state-of-the-art technologies.     * Full-stack development with
                 * React, TypeScript, Java 17, JBoss, Spring, Oracle DB, Gradle, JUnit, Docker, Podman
         - title: Research Assistant
           company: ETH Zürich
