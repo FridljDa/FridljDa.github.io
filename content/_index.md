@@ -8,6 +8,7 @@ sections:
   - block: hero
     demo: true # Only display this section in the Hugo Blox Builder demo site
     content:
+      text: ''
     design:
       background:
         gradient_end: '#1976d2'
