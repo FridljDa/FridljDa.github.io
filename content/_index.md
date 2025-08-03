@@ -99,10 +99,12 @@ sections:
           date_start: '2021-10-01'
           date_end: '2022-05-31'
           description: |2-
-              * Developed and implemented a novel statistical method in R under the guidance of [Wolfgang Huber](https://www.huber.embl.de/) and [Nikos Ignatiadis](https://nignatiadis.github.io/) to identify outliers in large-scale datasets, enhancing detection capabilities in the presence of high-dimensional side information.
-              * Tripled statistical detection power in a high-dimensional setting by integrating Selective Inference, Machine Learning, and Empirical Bayes approaches.
-              * Successfully applied the developed method to genome-wide association study, identifying key genetic markers linked to diseases.
-              * Presented research findings at seven scientific events, including a seminar talk at [Yale University](https://www.yale.edu/) and [University of North Carolina at Chapel Hill](https://www.unc.edu/) and a competitively selected oral contribution at [DAGStat 2022](https://www.dagstat2022.uni-hamburg.de/bilder/booklet.pdf), attended by 100 scholars.
+              * Developed IHW-Forest, a robust and scalable solution to the "curse of dimensionality" that prevented the standard IHW method from being used with complex, high-dimensional datasets.
+              * under the guidance of [Wolfgang Huber](https://www.huber.embl.de/) and [Nikos Ignatiadis](https://nignatiadis.github.io/)
+              * Engineered a novel stratification algorithm that automatically identifies and prioritizes informative covariates while ignoring noise, making the method robust for real-world data with unknown feature relevance.
+              * Drove the project from conception to dissemination, presenting findings to scientific audiences at 7 scientific events, including a seminar talk at [Yale University](https://www.yale.edu/) and [University of North Carolina at Chapel Hill](https://www.unc.edu/) and a competitively selected oral contribution at [DAGStat 2022](https://www.dagstat2022.uni-hamburg.de/bilder/booklet.pdf), attended by 100 scholars.
+              * Applied IHW-Forest in a massive-scale production analysis of 16 billion genetic tests, successfully leveraging 11 covariates to increase the discovery of significant SNP-histone associations by over 30% compared to alternative approaches.
+              * Leveraged concepts from selective inference, machine learning, and empirical Bayes approaches.
               * Conducted peer review for manuscripts at Bioinformatics Advances and Cell Biology.
         - title: Master Student in Mathematics
           company: Heidelberg University
@@ -136,6 +138,7 @@ sections:
               * Final grade: 1.4
               * Thesis advisor: Prof. Dr. Jan Johannes
               * Thesis title: Online Estimation of the Geometric Median in Hilbert Spaces
+              * Thesis summary: Mathematically analyzed a novel, efficient algorithm for estimating the geometric median in Hilbert spaces, proving its almost sure consistency, convergence rate, and asymptotic normality.
               * Minor in Computer Science
               * Coursework in Statistics, Algorithms and Data Structures, Linear Algebra, Abstract Algebra
     design:
