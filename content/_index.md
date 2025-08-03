@@ -52,6 +52,7 @@ sections:
               * Modernizing and developing a supply chain management application within an international development team
               * Building services for quotation requests, bidding processes, and delivery order management
               * Working in an agile environment with two-week sprints, continuous integration, and regular production releases
+              * Selected by the team to participate in Program Increment (PI) planning sessions, contributing to strategic planning and cross-team coordination
               * Setting up CI pipelines using Jenkins, SonarQube, and Playwright
               * Enhancing test automation capabilities across the application stack
               * Driving initiatives to address developer pain points across teams, reducing artifactory pipeline runtime from 8 hours to 30 seconds, minimizing wait times for feature developers using new libraries
