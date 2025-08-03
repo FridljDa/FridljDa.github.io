@@ -80,7 +80,7 @@ sections:
           date_start: '2023-07-01'
           date_end: '2023-11-30'
           description: |2-
-              * Led the end-to-end statistical analysis for a landmark study on US health disparities, resulting in a first-author publication in Nature Medicine
+              * Led the end-to-end statistical analysis for a landmark study on US health disparities, resulting in a [first-author publication in Nature Medicine](https://www.nature.com/articles/s41591-024-03117-0)
               * Analyzed the role of air pollution in the race-ethnicity to premature mortality causal chain, under [Pascal Geldsetzer](https://profiles.stanford.edu/pascal-geldsetzer)'s guidance
               * Spearheaded the project with minimal supervision, [implementing](https://github.com/FridljDa/pm25_inequality) comprehensive statistical analysis in R and synthesizing findings from 150 pertinent publications
               * <details>
