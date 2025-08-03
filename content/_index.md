@@ -99,13 +99,13 @@ sections:
           date_start: '2021-10-01'
           date_end: '2022-05-31'
           description: |2-
-              * Developed IHW-Forest, a robust and scalable solution to the "curse of dimensionality" that prevented the standard IHW method from being used with complex, high-dimensional datasets.
-              * under the guidance of [Wolfgang Huber](https://www.huber.embl.de/) and [Nikos Ignatiadis](https://nignatiadis.github.io/)
-              * Engineered a novel stratification algorithm that automatically identifies and prioritizes informative covariates while ignoring noise, making the method robust for real-world data with unknown feature relevance.
-              * Drove the project from conception to dissemination, presenting findings to scientific audiences at 7 scientific events, including a seminar talk at [Yale University](https://www.yale.edu/) and [University of North Carolina at Chapel Hill](https://www.unc.edu/) and a competitively selected oral contribution at [DAGStat 2022](https://www.dagstat2022.uni-hamburg.de/bilder/booklet.pdf), attended by 100 scholars.
-              * Applied IHW-Forest in a massive-scale production analysis of 16 billion genetic tests, successfully leveraging 11 covariates to increase the discovery of significant SNP-histone associations by over 30% compared to alternative approaches.
-              * Leveraged concepts from selective inference, machine learning, and empirical Bayes approaches.
-              * Conducted peer review for manuscripts at Bioinformatics Advances and Cell Biology.
+              * Developed IHW-Forest, a scalable solution to the "curse of dimensionality" that previously limited the standard IHW method for high-dimensional datasets.
+              * Supervised by [Wolfgang Huber](https://www.huber.embl.de/) and [Nikos Ignatiadis](https://nignatiadis.github.io/).
+              * Designed an innovative stratification algorithm that automatically selects and ranks informative covariates, enhancing robustness to noisy and unknown features in real-world data.
+              * Led the project from inception to dissemination, presenting results at seven scientific events, including invited talks at [Yale University](https://www.yale.edu/), [University of North Carolina at Chapel Hill](https://www.unc.edu/), and a competitively selected oral presentation at [DAGStat 2022](https://www.dagstat2022.uni-hamburg.de/bilder/booklet.pdf) before 100 scholars.
+              * Applied IHW-Forest in a large-scale production analysis of 16 billion genetic tests, utilizing 11 covariates to boost the discovery of significant SNP-histone associations by over 30% compared to alternative methods.
+              * Incorporated concepts from selective inference, machine learning, and empirical Bayes.
+              * Served as a peer reviewer for Bioinformatics Advances and Cell Biology.     
         - title: Master Student in Mathematics
           company: Heidelberg University
           company_url: 'https://www.uni-heidelberg.de/en'
