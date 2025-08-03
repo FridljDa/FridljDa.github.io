@@ -80,9 +80,9 @@ sections:
           date_start: '2023-07-01'
           date_end: '2023-11-30'
           description: |2-
-              * Analyzed the role of air pollution in the race-ethnicity to premature mortality causal chain, under [Pascal Geldsetzer](https://profiles.stanford.edu/pascal-geldsetzer)'s guidance, leading to key insights that contribute to policy-shaping discussions.
-              * Spearheaded the project with minimal supervision. 
-              * Devised and [implemented](https://github.com/FridljDa/pm25_inequality) a comprehensive statistical analysis in R, synthesized findings from 150 pertinent publications, wrote the initial manuscript and technical supplement, and drove the manuscript from conceptualization to successful publication.
+              * Led the end-to-end statistical analysis for a landmark study on US health disparities, resulting in a first-author publication in Nature Medicine
+              * Analyzed the role of air pollution in the race-ethnicity to premature mortality causal chain, under [Pascal Geldsetzer](https://profiles.stanford.edu/pascal-geldsetzer)'s guidance
+              * Spearheaded the project with minimal supervision, [implementing](https://github.com/FridljDa/pm25_inequality) comprehensive statistical analysis in R and synthesizing findings from 150 pertinent publications
               * <details>
                 * Harmonized geospatial and tabular data on air pollution, mortality, population numbers, and orchestrated analyses of 10 different steps. 
                 * Executed major revisions of the manuscript and conducted new analyses, including 15 new figures, within a strict 2-month deadline as part of the 'Revise and Resubmit' response.
