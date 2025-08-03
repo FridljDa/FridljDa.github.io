@@ -99,7 +99,7 @@ sections:
           date_start: '2021-10-01'
           date_end: '2022-05-31'
           description: |2-
-              * Developed IHW-Forest, a scalable solution to the "curse of dimensionality" that previously limited the standard IHW method for high-dimensional datasets.
+              * Developed IHW-Forest, a scalable solution to the "curse of dimensionality" that previously limited the standard [IHW method](https://bioconductor.org/packages/release/bioc/html/IHW.html) for high-dimensional datasets.
               * Supervised by [Wolfgang Huber](https://www.huber.embl.de/) and [Nikos Ignatiadis](https://nignatiadis.github.io/).
               * Designed an innovative stratification algorithm that automatically selects and ranks informative covariates, enhancing robustness to noisy and unknown features in real-world data.
               * Led the project from inception to dissemination, presenting results at seven scientific events, including invited talks at [Yale University](https://www.yale.edu/), [University of North Carolina at Chapel Hill](https://www.unc.edu/), and a competitively selected oral presentation at [DAGStat 2022](https://www.dagstat2022.uni-hamburg.de/bilder/booklet.pdf) before 100 scholars.
