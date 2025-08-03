@@ -49,12 +49,17 @@ sections:
           date_start: '2024-12-01'
           #date_end: '2023-05-30'
           description: |2-
-              * Modernization and further development of a supply chain management application in an international development team
-              * Service for requesting quotation, bidding, displaying and confirming delivery orders
-              * Agile development with a two-week sprint cycle, continuous integration, and regular production releases within the sprint
-              * Setup of CI pipelines (Jenkins, SonarQube, Playwright)
-              * Enhanced test automation capabilities
-              * Co-organised and contributed to the internal blog series "AI Tool of the Week," providing consultants with concise weekly summaries of the latest advancements in AI. Topics covered include AI-assisted coding, agentic workflows, and multi-modal AI processing tools, ensuring the team stays up-to-date with cutting-edge technologies.     * * Full-stack development with: Java 17, JBoss, Spring, Oracle DB, Gradle, JUnit, Docker, Podman, React, TypeScript
+              * Modernizing and developing a supply chain management application within an international development team
+              * Building services for quotation requests, bidding processes, and delivery order management
+              * Working in an agile environment with two-week sprints, continuous integration, and regular production releases
+              * Setting up CI pipelines using Jenkins, SonarQube, and Playwright
+              * Enhancing test automation capabilities across the application stack
+              * Driving initiatives to address developer pain points across teams, reducing artifactory pipeline runtime from 8 hours to 30 seconds, minimizing wait times for feature developers using new libraries
+              * Creating synergies between feature teams working on different applications
+              * Navigating complex client projects with diverse stakeholder teams and legacy system constraints
+              * Full-stack development using Java 17, JBoss, Spring, Oracle DB, Gradle, JUnit, Docker, Podman, React, and TypeScript
+              * Co-organizing and contributing to the internal "AI Tool of the Week" blog series, providing weekly summaries of AI advancements including AI-assisted coding, agentic workflows, and multi-modal processing tools     
+        
         - title: Research Assistant
           company: ETH Zürich
           company_url: 'https://applied.math.yale.edu/'
@@ -90,7 +95,7 @@ sections:
           location: New Haven, USA
           date_start: '2022-09-01'
           date_end: '2023-05-30'
-          description: Chosen as one of two Master's students to represent the University of Heidelberg in a year-long study abroad program at Yale University. Hosted by the [Applied Mathematics Program](https://applied.math.yale.edu/). Advised by [Smita Krishnaswamy](https://krishnaswamylab.org/).
+          description: Chosen as one of two Master's students to represent the University of Heidelberg in a year-long study abroad program at Yale University. Hosted by the [Applied Mathematics Program](https://applied.math.yale.edu/). Advised by [Smita Krishnaswamy](https://krishnaswamylab.org/). Course work on Geometric & Topological Methods in Machine Learning, Differentiable Manifolds, Deep Learning, Statistical Methods in Human Genetics
         - title: Research Assistant 
           company: European Molecular Biology Laboratory
           company_url: 'https://www.embl.org/'
