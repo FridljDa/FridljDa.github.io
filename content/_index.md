@@ -80,11 +80,13 @@ sections:
               * Led the end-to-end statistical analysis for a landmark study on US health disparities, resulting in a [first-author publication in Nature Medicine](https://www.nature.com/articles/s41591-024-03117-0)
               * Analyzed the role of air pollution in the race-ethnicity to premature mortality causal chain, under [Pascal Geldsetzer](https://profiles.stanford.edu/pascal-geldsetzer)'s guidance
               * Spearheaded the project with minimal supervision, [implementing](https://github.com/FridljDa/pm25_inequality) comprehensive statistical analysis in R and synthesizing findings from 150 pertinent publications
-              * <details>
-                * Harmonized geospatial and tabular data on air pollution, mortality, population numbers, and orchestrated analyses of 10 different steps. 
-                * Executed major revisions of the manuscript and conducted new analyses, including 15 new figures, within a strict 2-month deadline as part of the 'Revise and Resubmit' response.
-                * Developed an interactive [Shiny web application](https://github.com/FridljDa/ui_pm_attributable) to visualize 17-dimensional data, enhancing collaboration and data interpretation among the research team.
-                * Collaborated with seven Stanford co-authors to systematically gather and integrate critical feedback throughout various project stages, driving a significant enhancement in research quality.
+              * <details><summary>Key achievements and detailed contributions</summary>
+                <ul>
+                <li>Harmonized geospatial and tabular data on air pollution, mortality, population numbers, and orchestrated analyses of 10 different steps.</li>
+                <li>Executed major revisions of the manuscript and conducted new analyses, including 15 new figures, within a strict 2-month deadline as part of the 'Revise and Resubmit' response.</li>
+                <li>Developed an interactive [Shiny web application](https://github.com/FridljDa/ui_pm_attributable) to visualize 17-dimensional data, enhancing collaboration and data interpretation among the research team.</li>
+                <li>Collaborated with seven Stanford co-authors to systematically gather and integrate critical feedback throughout various project stages, driving a significant enhancement in research quality.</li>
+                </ul>
                 </details>
         - title: Exchange student
           company: Yale University
