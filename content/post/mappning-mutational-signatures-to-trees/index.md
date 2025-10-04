@@ -79,8 +79,8 @@ The sampling of $G_0$, $\theta_{j i}$, and $x_{ji}$ works exactly as in the clas
 $$
 \begin{aligned}
 G_0 &\sim \mathrm{DP}(\alpha_0, H),\\ 
- \theta_{j i} \mid G_j &\sim G_j \text{ for } i = 1,2,\ldots M_j,  \\
-x_{ji} \mid \theta_{j i} & \sim \operatorname{Categorical} \left(\theta_{j i}\right) .
+\theta_{j i} \mid G_j &\sim G_j \text{ for } i = 1,2,\ldots M_j, \\
+x_{ji} \mid \theta_{j i} & \sim \operatorname{Categorical} \left(\theta_{j i}\right).
 \end{aligned}
 $$
 
