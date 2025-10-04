@@ -119,7 +119,7 @@ A crucial next step is to benchmark the tree-structured HDP against standard app
 Instead of the Hierarchical Dirichlet Process approach, we could utilize variations of Non-negative Matrix Factorization. Given observed mutation catalogue $X$ and a constructed tree topology $\mathcal{T}$, we could introduce a penalization term $R_{\mathcal{T}}(E)$ to ensure that the tree topology is respected:
 
 $$
-\min _{S, E \geq 0} D(X, S E)+\lambda R_{\mathcal{T}}(E).
+\min_{S, E \geq 0} D(X, S E) + \lambda R_{\mathcal{T}}(E).
 $$
 
 A desirable property of the function $R_{\mathcal{T}}$ would be that for samples $i,j\in \{1,...,l \}$ attached to nodes in the graph $\mathcal{T}$ which are close to each other, we have similar $E_{\cdot i}$ and $E_{\cdot j}$. 
