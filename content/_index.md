@@ -50,15 +50,12 @@ sections:
           #date_end: '2023-05-30'
           description: |2-
               * Modernizing and developing a supply chain management application within an international development team
-              * Building services for quotation requests, bidding processes, and delivery order management
-              * Working in an agile environment with two-week sprints, continuous integration, and regular production releases
               * Selected by the team to participate in Program Increment (PI) planning sessions, contributing to strategic planning and cross-team coordination
-              * Setting up CI pipelines using Jenkins, SonarQube, and Playwright
-              * Enhancing test automation capabilities across the application stack
+              * Maintaining up CI pipelines based on Jenkins, particularly the OWASP scan
               * Driving initiatives to address developer pain points across teams, reducing artifactory pipeline runtime from 8 hours to 30 seconds, minimizing wait times for feature developers using new libraries
               * Creating synergies between feature teams working on different applications
               * Navigating complex client projects with diverse stakeholder teams and legacy system constraints
-              * Full-stack development using Java 17, JBoss, Spring, Oracle DB, Gradle, JUnit, Docker, Podman, React, and TypeScript
+              * Full-stack development using Java 17, JBoss, Spring, Oracle DB, Gradle, JUnit, Docker, Podman, Jenkins, React, and TypeScript
               * Co-organizing and contributing to the internal "AI Tool of the Week" blog series, providing weekly summaries of AI advancements including AI-assisted coding, agentic workflows, and multi-modal processing tools     
         
         - title: Research Assistant
@@ -71,7 +68,7 @@ sections:
           description: |2-
               * Researching statistical methods for mutational patterns estimation with tree structures in the lab of [Niko Beerenwinkel](https://bsse.ethz.ch/cbg/group.html) with focus on data from the [Tumor Profiler](https://eth-nexus.github.io/tu-pro_website/).
               * Lecture on Statistical Models in Computational Biology covering hidden Markov models, EM algorithm, Variational inference.
-              * I developed a novel Bayesian model using Hierarchical Dirichlet Processes (HDP) to analyze mutational signatures by integrating data from evolutionary trees. The model is designed to leverage the phylogenetic relationships between cancer subclones, assuming that evolutionarily closer cells exhibit more similar mutational signature activities. This non-parametric approach learns the number of signatures directly from the data while using the tree structure as a prior to guide the estimation of signature activities. A prototype was implemented and applied to single-cell sequencing data, allowing for the simultaneous discovery of signatures and the mapping of their activities across the cellular phylogeny. My blog post can be found (here)(https://danielfridljand.de/post/mutational-signature-with-hierarchical-dirichlet-process/).
+              * I developed a novel Bayesian model using Hierarchical Dirichlet Processes (HDP) to analyze mutational signatures by integrating data from evolutionary trees. The model is designed to leverage the phylogenetic relationships between cancer subclones, assuming that evolutionarily closer cells exhibit more similar mutational signature activities. This non-parametric approach learns the number of signatures directly from the data while using the tree structure as a prior to guide the estimation of signature activities. A prototype was implemented and applied to single-cell sequencing data, allowing for the simultaneous discovery of signatures and the mapping of their activities across the cellular phylogeny. My blog post can be found [here](https://danielfridljand.de/post/mutational-signature-with-hierarchical-dirichlet-process/).
         - title: Research Assistant
           company: Stanford University
           company_url: 'https://www.stanford.edu/'
