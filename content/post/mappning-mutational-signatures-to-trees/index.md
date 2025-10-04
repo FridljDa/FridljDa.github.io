@@ -24,12 +24,12 @@ With the advent of high-resolution techniques such as single-cell sequencing, we
 
 In cancer, a subclone represents a set of tumor cells descending from the same ancestor and hence sharing mutations. For many measurement modalities, there are established methods to infer relationships between subclones, often represented as tree structures. Examples include:
 
-- SNV: SCITE [@jahnTreeInferenceSinglecell2016] Onconem [@rossOncoNEMInferringTumor2016] 
-- CN: SCICoNE [@kuipersSinglecellCopyNumber2020]  
-- SNV+CN: COMPASS [@sollierCOMPASSJointCopy2023]
+- SNV: [SCITE](https://doi.org/10.1186/s13059-016-0936-x) [OncoNEM](https://doi.org/10.1186/s13059-016-0929-9) 
+- CN: [SCICoNE](http://biorxiv.org/lookup/doi/10.1101/2020.04.28.065755)  
+- SNV+CN: [COMPASS](https://www.nature.com/articles/s41467-023-40378-8)
 - CN+RNA: SCATrEx [@ferreiraMappingSinglecellTranscriptomes]
-- SCI Phi [@singerSinglecellMutationIdentification2018]
-- SIEVE [@kangSIEVEJointInference2022]
+- [SCI Phi](https://www.nature.com/articles/s41467-018-07627-7)
+- [SIEVE](https://genomebiology.biomedcentral.com/articles/10.1186/s13059-022-02813-9)
 
 For our purposes, the specific tree construction method is less important than having a reliable tree topology. Depending on the type of mutational event under consideration and the available data, we can use any of these methods to infer relationships.
 
@@ -125,15 +125,15 @@ $$
 
 A desirable property of the function $R_{\mathcal{T}}$ would be that for samples $i,j\in \{1,...,l \}$ attached to nodes in the graph $\mathcal{T}$ which are close to each other, we have similar $E_{\cdot i}$ and $E_{\cdot j}$. 
 
-Alternatively, we could explore hierarchical NMF approaches. There is abundant literature on NMF and its variations, including [@sugaharaHierarchicalMatrixFactorization2024], [@dingPopulationBasedHierarchicalNonnegative2022], [@ferreiraDeepExponentialFamilies2022], and [@schmidtRegressionBasedApproach2024].
+Alternatively, we could explore hierarchical NMF approaches. There is abundant literature on NMF and its variations, including [Sugahara et al.](http://arxiv.org/abs/2311.13277), [Ding et al.](http://arxiv.org/abs/2209.04968), [Ferreira et al.](http://biorxiv.org/lookup/doi/10.1101/2022.10.15.512383), and [Schmidt & Raphael](http://biorxiv.org/lookup/doi/10.1101/2024.04.23.590844).
 
 ### Integration with Existing Signature Libraries
 
-We observed that when comparing our results to the COSMIC dataset, there is little similarity between the COSMIC database mutational signatures and the ones estimated by our model. A possible explanation is the limited sample size of our input dataset. We could include established mutational signatures as prior knowledge in our HDP model, as described in section 4.2.3 of [@robertsPatternsSomaticGenome].
+We observed that when comparing our results to the COSMIC dataset, there is little similarity between the COSMIC database mutational signatures and the ones estimated by our model. A possible explanation is the limited sample size of our input dataset. We could include established mutational signatures as prior knowledge in our HDP model, as described in section 4.2.3 of [Roberts](https://danielfridljand.de/content/post/mappning-mutational-signatures-to-trees/media/zotero_library.bib#robertsPatternsSomaticGenome).
 
 ### Extension to Other Mutational Events
 
-Instead of focusing solely on trinucleotide mutational events, we could study other mutational events with the proposed model. For example, we could study chromosomal instability events using the approach described in [@drewsPancancerCompendiumChromosomal2022]. However, this would introduce additional requirements to the input data, such as high read depth, and such datasets are not yet widely available.
+Instead of focusing solely on trinucleotide mutational events, we could study other mutational events with the proposed model. For example, we could study chromosomal instability events using the approach described in [Drews et al.](https://www.nature.com/articles/s41586-022-04789-9). However, this would introduce additional requirements to the input data, such as high read depth, and such datasets are not yet widely available.
 
 <details>
 <summary>
@@ -142,12 +142,12 @@ Recommended material for chromosomal instability events
 - https://markowetz.cruk.cam.ac.uk/cincompendium/ 
 - https://github.com/markowetzlab/CINSignatureQuantification
 	- calculateFeatures function
-	- R package to quantify signatures of chromosomal instability on absolute copy number profiles as described in [@drewsPancancerCompendiumChromosomal2022] 
+	- R package to quantify signatures of chromosomal instability on absolute copy number profiles as described in [Drews et al.](https://www.nature.com/articles/s41586-022-04789-9) 
 </details>
 
 ### Comparison with Existing Literature
 
-It would be beneficial to explore how the proposed approach compares to existing literature, such as [@alamTreeStructuredHierarchicalDirichlet2019], to understand the theoretical and practical advantages of our tree-structured approach.
+It would be beneficial to explore how the proposed approach compares to existing literature, such as [Alam et al.](https://doi.org/10.1007/978-3-319-99608-0_33), to understand the theoretical and practical advantages of our tree-structured approach.
 
 ## Conclusion
 
