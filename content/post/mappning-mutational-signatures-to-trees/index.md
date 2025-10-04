@@ -138,10 +138,15 @@ Instead of focusing solely on trinucleotide mutational events, we could study ot
 <summary>
 Recommended material for chromosomal instability events
 </summary>
-- https://markowetz.cruk.cam.ac.uk/cincompendium/ 
-- https://github.com/markowetzlab/CINSignatureQuantification
-	- calculateFeatures function
-	- R package to quantify signatures of chromosomal instability on absolute copy number profiles as described in [Drews et al.](https://www.nature.com/articles/s41586-022-04789-9) 
+<ul>
+<li><a href="https://markowetz.cruk.cam.ac.uk/cincompendium/">https://markowetz.cruk.cam.ac.uk/cincompendium/</a></li>
+<li><a href="https://github.com/markowetzlab/CINSignatureQuantification">https://github.com/markowetzlab/CINSignatureQuantification</a>
+	<ul>
+	<li>calculateFeatures function</li>
+	<li>R package to quantify signatures of chromosomal instability on absolute copy number profiles as described in <a href="https://www.nature.com/articles/s41586-022-04789-9">Drews et al.</a></li>
+	</ul>
+</li>
+</ul>
 </details>
 
 ### Comparison with Existing Literature
