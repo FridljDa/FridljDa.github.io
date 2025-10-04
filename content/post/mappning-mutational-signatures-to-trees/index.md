@@ -27,7 +27,6 @@ In cancer, a subclone represents a set of tumor cells descending from the same a
 - SNV: [SCITE](https://doi.org/10.1186/s13059-016-0936-x) [OncoNEM](https://doi.org/10.1186/s13059-016-0929-9) 
 - CN: [SCICoNE](http://biorxiv.org/lookup/doi/10.1101/2020.04.28.065755)  
 - SNV+CN: [COMPASS](https://www.nature.com/articles/s41467-023-40378-8)
-- CN+RNA: SCATrEx [@ferreiraMappingSinglecellTranscriptomes]
 - [SCI Phi](https://www.nature.com/articles/s41467-018-07627-7)
 - [SIEVE](https://genomebiology.biomedcentral.com/articles/10.1186/s13059-022-02813-9)
 
