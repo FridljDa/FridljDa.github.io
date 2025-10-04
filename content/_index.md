@@ -84,7 +84,7 @@ sections:
                 <ul>
                 <li>Harmonized geospatial and tabular data on air pollution, mortality, population numbers, and orchestrated analyses of 10 different steps.</li>
                 <li>Executed major revisions of the manuscript and conducted new analyses, including 15 new figures, within a strict 2-month deadline as part of the 'Revise and Resubmit' response.</li>
-                <li>Developed an interactive [Shiny web application](https://github.com/FridljDa/ui_pm_attributable) to visualize 17-dimensional data, enhancing collaboration and data interpretation among the research team.</li>
+                <li>Developed an interactive <a href="https://github.com/FridljDa/ui_pm_attributable">Shiny web application</a> to visualize 17-dimensional data, enhancing collaboration and data interpretation among the research team.</li>
                 <li>Collaborated with seven Stanford co-authors to systematically gather and integrate critical feedback throughout various project stages, driving a significant enhancement in research quality.</li>
                 </ul>
                 </details>
