@@ -1,10 +1,10 @@
 #mutational-signature-with-hierarchical-dirichlet-process
 
 
-#copy all files in /Users/dfridljand/Desktop/mutational_signature_with_trees_hdp/Obsidian_Vault/Output/Blog_post to /Users/dfridljand/Desktop/FridljDa.github.io/content/post/mutational-signature-with-hierarchical-dirichlet-process
+#copy all files in /Users/dfridljand/Desktop/mutational_signature_with_trees_hdp/Obsidian_Vault/Output/Blog_post to /Users/dfridljand/Desktop/FridljDa.github.io/content/blog/mutational-signature-with-hierarchical-dirichlet-process
 # Define variables for the paths
 SOURCE_DIR="/Users/default/Desktop/temporary"
-DEST_DIR="/Users/default/Desktop/FridljDa.github.io/content/post/mutational-signature-with-hierarchical-dirichlet-process"
+DEST_DIR="/Users/default/Desktop/FridljDa.github.io/content/blog/mutational-signature-with-hierarchical-dirichlet-process"
 MEDIA_SOURCE_DIR="$SOURCE_DIR/Blog_post_hugo"
 MEDIA_DIR="$DEST_DIR/media"
 INDEX_FILE="$DEST_DIR/index.md"

@@ -1,0 +1,5 @@
+# URL redirects for migrated content paths
+/post/*  /blog/:splat  301
+/publication/*  /publications/:splat  301
+/project/*  /projects/:splat  301
+/event/*  /events/:splat  301
