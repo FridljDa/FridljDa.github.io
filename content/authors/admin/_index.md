@@ -1,13 +1,13 @@
 ---
 # Display name
-title: Alex Johnson
+title: Daniel Fridljand
 
 # Name pronunciation (optional)
 name_pronunciation: ''
 
 # Full name (for SEO)
-first_name: Alex
-last_name: Johnson
+first_name: Daniel
+last_name: Fridljand
 
 # Pronouns (optional)
 pronouns: he/him
@@ -23,62 +23,44 @@ superuser: true
 highlight_name: true
 
 # Role/position/tagline
-role: Senior AI Research Scientist
+role: Software Consultant
 
 # Organizations/Affiliations to display in Biography blox
 organizations:
-  - name: Meta AI
-    url: https://ai.meta.com/
+  - name: TNG technology
+    url: https://www.tngtech.com/en/
 
 # Social network links
 # Need to use another icon? Simply download the SVG icon to your `assets/media/icons/` folder.
 profiles:
   - icon: at-symbol
-    url: 'mailto:alex.johnson@meta.com'
+    url: 'mailto:daniel.fridljand@gmail.com'
     label: E-mail Me
-  - icon: brands/x
-    url: https://twitter.com/AlexAIResearch
   - icon: brands/github
-    url: https://github.com/alexjohnsonai
+    url: https://github.com/FridljDa
   - icon: brands/linkedin
-    url: https://www.linkedin.com/in/alexjohnsonai/
+    url: https://www.linkedin.com/in/daniel-fridljand-8707a2208/
   - icon: academicons/google-scholar
-    url: https://scholar.google.com/citations?user=alexjohnson
-  - icon: academicons/orcid
-    url: https://orcid.org/0000-0002-1825-0097
+    url: https://scholar.google.com/citations?user=SIoMbdMAAAAJ
 
 interests:
-  - Large Language Models
-  - Computer Vision
-  - Reinforcement Learning
-  - AI Ethics
+  - Statistics
+  - Machine Learning
+  - Software Development
 
 education:
-  - area: PhD Computer Science (AI Focus)
-    institution: Stanford University
-    date_start: 2015-09-01
-    date_end: 2019-06-30
+  - area: MSc in Mathematics
+    institution: University of Heidelberg
+    date_start: 2020-10-01
+    date_end: 2023-09-30
     summary: |
-      Thesis on _Scaling Laws for Neural Language Models_. Supervised by Prof. Andrew Ng. Published 5 papers in NeurIPS and ICML, with 2 best paper awards.
-    button:
-      text: 'Read Thesis'
-      url: 'https://example.com/thesis.pdf'
-  - area: MS Computer Science
-    institution: Carnegie Mellon University
-    date_start: 2013-09-01
-    date_end: 2015-05-31
+      Master's degree in Mathematics with focus on statistics and machine learning.
+  - area: BSc in Mathematics
+    institution: University of Heidelberg
+    date_start: 2017-10-01
+    date_end: 2020-09-30
     summary: |
-      GPA: 4.0/4.0
-
-      Specialized in machine learning and robotics.
-  - area: BS Computer Science
-    institution: MIT
-    date_start: 2009-09-01
-    date_end: 2013-05-31
-    summary: |
-      GPA: 3.9/4.0
-
-      Minored in Mathematics. President of AI Club.
+      Bachelor's degree in Mathematics with strong foundation in statistics and computational methods.
 
 work:
   - position: Senior AI Research Scientist
@@ -166,4 +148,6 @@ awards:
       Recognized for contributions to scaling laws in deep learning.
 ---
 
-Alex Johnson is a Senior AI Research Scientist at Meta AI, where he leads groundbreaking work on large language models and multimodal systems. His research has been published in top conferences like NeurIPS and ICML, with over 10,000 citations. Alex is passionate about pushing the boundaries of AI while ensuring ethical development. Outside of work, he enjoys hiking in the Rockies, building custom PCs, and mentoring the next generation of AI talent.
+I am a driven software consultant with a strong academic background in mathematics, statistics, and bioinformatics. My passion for machine learning, software development, and statistics has led me to work on projects across diverse domains, including public health, genetics, and oncology. With three years of scientific software development experience and a first-author publication in a high-impact journal, I'm committed to leveraging computational skills to solve real-world challenges.
+
+{{< icon name="download" pack="fas" >}} Download my [resumé](uploads/resume.pdf).
