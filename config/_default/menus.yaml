@@ -13,8 +13,8 @@ main:
   - name: Posts
     url: /#posts
     weight: 30
-  - name: Papers
-    url: /#papers
+  - name: Paper
+    url: /#paper
     weight: 40
   - name: Talks
     url: /#talks
