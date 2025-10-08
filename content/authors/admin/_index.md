@@ -63,22 +63,30 @@ education:
       Bachelor's degree in Mathematics with strong foundation in statistics and computational methods.
 
 work:
-  - position: Senior AI Research Scientist
-    company_name: Meta AI
-    company_url: 'https://ai.meta.com/'
+  - position: Research assistant - Biostatistics
+    company_name: Quantitative Biology and Statistics group, European Molecular Biology Laboratory
+    company_url: 'https://www.huber.embl.de/'
     company_logo: ''
-    date_start: 2020-01-01
-    date_end: ''
+    date_start: '2021-10-01'
+    date_end: '2022-05-31'
     summary: |2-
-      Leading research on multimodal AI systems. Contributed to Llama 2 and other open-source models. 50+ citations in 3 years.
-  - position: AI Research Intern
-    company_name: OpenAI
-    company_url: 'https://openai.com/'
+      Research project at the [Huber lab](https://www.huber.embl.de/) at [EMBL](https://www.embl.org/). I am extending a multiple testing procedure ([IHW](https://bioconductor.org/packages/release/bioc/html/IHW.html)) to multi-dimensional input data through the use of random forests.
+  - position: Research assistant - Public Health
+    company_name: Heidelberg Institute for Global Health
+    company_url: 'https://www.klinikum.uni-heidelberg.de/heidelberger-institut-fuer-global-health/'
     company_logo: ''
-    date_start: 2019-06-01
-    date_end: 2019-12-31
-    summary: |
-      Worked on GPT-3 scaling. Co-authored paper on prompt engineering.
+    date_start: '2020-10-01'
+    date_end: '2021-09-30'
+    summary: |2-
+      Research project in collaboration with [Pascal Geldsetzer](https://profiles.stanford.edu/pascal-geldsetzer). We are analysing the health disparities attributable to particulate matter exposure between different socio-demographic groups in the United States.
+  - position: Non-graduating exchange student
+    company_name: Hebrew University of Jerusalem, Einstein Institute of Mathematics
+    company_url: 'https://en.huji.ac.il/en'
+    company_logo: ''
+    date_start: '2019-09-01'
+    date_end: '2020-03-12'
+    summary: |2-
+      Graduate-level courses in Functional Analysis, Algebraic Combinatorics, and Quantitative Models.
 
 # Skills
 # Add your own SVG icons to `assets/media/icons/`
