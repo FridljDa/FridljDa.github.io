@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- This site was created with Hugo Blox. https://hugoblox.com -->
-<!-- Last Published: September 10, 2024 --><html lang="en-us" >
+<!-- Last Published: October 12, 2025 --><html lang="en-us" >
 
 
 <head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script>
@@ -66,6 +66,9 @@
   
 
   
+  
+    
+    <script src="/js/mathjax-config.js"></script>
   
 
   
@@ -185,9 +188,9 @@
 
       
       
-        
-      
 
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" integrity="" crossorigin="anonymous" async></script>
       
     
       
@@ -259,9 +262,6 @@
 
 
 
-
-
-
   
   
   
@@ -292,8 +292,8 @@
 
 
 
-<link rel="icon" type="image/png" href="/media/icon_hu37f7dfefee3baeb2367e356372ffdf42_4657190_32x32_fill_lanczos_center_3.png" />
-<link rel="apple-touch-icon" type="image/png" href="/media/icon_hu37f7dfefee3baeb2367e356372ffdf42_4657190_180x180_fill_lanczos_center_3.png" />
+<link rel="icon" type="image/png" href="/media/icon_hu_6698497dad6a3c8a.png" />
+<link rel="apple-touch-icon" type="image/png" href="/media/icon_hu_f7c1592650856cd8.png" />
 
 <meta name="theme-color" content="#1565c0" />
 
@@ -318,7 +318,7 @@
 
   <meta property="twitter:site" content="@GetResearchDev" />
   <meta property="twitter:creator" content="@GetResearchDev" />
-<meta property="twitter:image" content="http://localhost:1313/media/icon_hu37f7dfefee3baeb2367e356372ffdf42_4657190_512x512_fill_lanczos_center_3.png" />
+<meta property="twitter:image" content="http://localhost:1313/media/icon_hu_8b2bb02e4ea9155a.png" />
 
 
 
@@ -328,10 +328,10 @@
 <meta property="og:site_name" content="Daniel Fridljand" />
 <meta property="og:url" content="http://localhost:1313/post/" />
 <meta property="og:title" content="Posts | Daniel Fridljand" />
-<meta property="og:description" content="Personal website of Daniel Fridljand." /><meta property="og:image" content="http://localhost:1313/media/icon_hu37f7dfefee3baeb2367e356372ffdf42_4657190_512x512_fill_lanczos_center_3.png" /><meta property="og:locale" content="en-us" />
+<meta property="og:description" content="Personal website of Daniel Fridljand." /><meta property="og:image" content="http://localhost:1313/media/icon_hu_8b2bb02e4ea9155a.png" /><meta property="og:locale" content="en-us" />
 
   
-    <meta property="og:updated_time" content="2024-09-10T00:00:00&#43;00:00" />
+    <meta property="og:updated_time" content="2024-09-20T00:00:00&#43;00:00" />
   
 
 
@@ -745,13 +745,13 @@
   <div class="media-body">
 
     <div class="section-subheading article-title mb-0 mt-0">
-      <a href="/post/mutational-signature-with-hierarchical-dirichlet-process/" >Mutational signature estimation with Hierarchical Dirichlet Process</a>
+      <a href="/post/mapping-mutational-signatures-to-trees/" >Extending HDP for Mutational Signatures: Incorporating Evolutionary Trees</a>
     </div>
 
     
-    <a href="/post/mutational-signature-with-hierarchical-dirichlet-process/"  class="summary-link">
+    <a href="/post/mapping-mutational-signatures-to-trees/"  class="summary-link">
       <div class="article-style">
-        Introduction A key characteristic of cancer is the elevated mutation rate in somatic cells. Recognizing the patterns of somatic mutations in cancer is essential for understanding the underlying mechanisms that drive the disease (Fischer et al.
+        <p>In my <a href="https://danielfridljand.de/post/mutational-signature-with-hierarchical-dirichlet-process/" target="_blank" rel="noopener">previous blog post</a>, I introduced the Hierarchical Dirichlet Process (HDP) as an elegant approach for mutational signature estimation. The HDP model allows us to simultaneously discover mutational signatures and estimate their activities across multiple samples while learning the number of signatures directly from the data.</p>
       </div>
     </a>
     
@@ -775,7 +775,7 @@
     
       
     
-    Sep 10, 2024
+    Sep 20, 2024
   </span>
   
 
@@ -784,7 +784,101 @@
   
   <span class="middot-divider"></span>
   <span class="article-reading-time">
-    13 min read
+    8 min read
+  </span>
+  
+
+  
+  
+  
+  
+
+  
+  
+
+</div>
+
+      
+    </div>
+
+    
+
+  </div>
+  <div class="ml-3">
+    
+    
+      
+      
+      <a href="/post/mapping-mutational-signatures-to-trees/" >
+        <img src="/post/mapping-mutational-signatures-to-trees/featured_hu_dacb974c7ecd6d94.webp" height="208" width="150"
+            alt="Extending HDP for Mutational Signatures: Incorporating Evolutionary Trees" loading="lazy">
+      </a>
+    
+  </div>
+</div>
+
+  
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+<div class="media stream-item view-compact">
+  <div class="media-body">
+
+    <div class="section-subheading article-title mb-0 mt-0">
+      <a href="/post/mutational-signature-with-hierarchical-dirichlet-process/" >Mutational signature estimation with Hierarchical Dirichlet Process</a>
+    </div>
+
+    
+    <a href="/post/mutational-signature-with-hierarchical-dirichlet-process/"  class="summary-link">
+      <div class="article-style">
+        <p>The Hierarchical Dirichlet Process (HDP) is a popular and elegant model that has gained traction in various fields, including cancer genomics. While researching methods for mutational signature estimation, I noticed that several studies employed HDPs for this purpose. However, many of these studies were published in biological journals and often lacked detailed explanations of how HDPs can be effectively applied to mutational signature estimation.</p>
+      </div>
+    </a>
+    
+
+    <div class="stream-meta article-metadata">
+
+      
+
+      
+        
+
+
+<div class="article-metadata">
+
+  
+  
+
+  
+  <span class="article-date">
+    
+    
+      
+    
+    Sep 15, 2024
+  </span>
+  
+
+  
+
+  
+  <span class="middot-divider"></span>
+  <span class="article-reading-time">
+    12 min read
   </span>
   
 
@@ -810,7 +904,7 @@
       
       
       <a href="/post/mutational-signature-with-hierarchical-dirichlet-process/" >
-        <img src="/post/mutational-signature-with-hierarchical-dirichlet-process/featured_hu0f680d1473a07e50301e548a5d763b6b_45463_8ec39539a8af2f8de5c6fff77ea90821.webp" height="93" width="150"
+        <img src="/post/mutational-signature-with-hierarchical-dirichlet-process/featured_hu_8537fde4437a80fb.webp" height="93" width="150"
             alt="Mutational signature estimation with Hierarchical Dirichlet Process" loading="lazy">
       </a>
     
@@ -851,6 +945,16 @@
   
 
 
+<p class="powered-by">
+  
+  <a href="/privacy/">Privacy Policy</a>
+  
+  
+   &middot; 
+  <a href="/terms/">Terms</a>
+  
+</p>
+
 
 
 
@@ -864,7 +968,7 @@
 
   
   <p class="powered-by copyright-license-text">
-    © 2024 Daniel Fridljand
+    © 2025 Daniel Fridljand
   </p>
   
 

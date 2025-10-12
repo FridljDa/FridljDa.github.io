@@ -12,8 +12,6 @@ tags:
 - Follow-up
 ---
 
-# Extending HDP for Mutational Signatures: Incorporating Evolutionary Trees
-
 In my [previous blog post](https://danielfridljand.de/post/mutational-signature-with-hierarchical-dirichlet-process/), I introduced the Hierarchical Dirichlet Process (HDP) as an elegant approach for mutational signature estimation. The HDP model allows us to simultaneously discover mutational signatures and estimate their activities across multiple samples while learning the number of signatures directly from the data.
 
 However, the standard HDP approach treats each sample independently, missing a crucial biological insight: **evolutionarily related cells should exhibit more similar mutational signature activities**. In this follow-up post, I'll present an extension of the HDP model that incorporates phylogenetic tree structures to capture this evolutionary relationship.

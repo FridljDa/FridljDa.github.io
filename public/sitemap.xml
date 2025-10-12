@@ -2,12 +2,28 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
-    <loc>http://localhost:1313/post/mutational-signature-with-hierarchical-dirichlet-process/</loc>
-    <lastmod>2024-09-10T00:00:00+00:00</lastmod>
+    <loc>http://localhost:1313/post/mapping-mutational-signatures-to-trees/</loc>
+    <lastmod>2024-09-20T00:00:00+00:00</lastmod>
+    <changefreq>weekly</changefreq>
+  </url><url>
+    <loc>http://localhost:1313/tag/follow-up/</loc>
+    <lastmod>2024-09-20T00:00:00+00:00</lastmod>
     <changefreq>weekly</changefreq>
   </url><url>
     <loc>http://localhost:1313/post/</loc>
-    <lastmod>2024-09-10T00:00:00+00:00</lastmod>
+    <lastmod>2024-09-20T00:00:00+00:00</lastmod>
+    <changefreq>weekly</changefreq>
+  </url><url>
+    <loc>http://localhost:1313/tag/science/</loc>
+    <lastmod>2024-09-20T00:00:00+00:00</lastmod>
+    <changefreq>weekly</changefreq>
+  </url><url>
+    <loc>http://localhost:1313/tags/</loc>
+    <lastmod>2024-09-20T00:00:00+00:00</lastmod>
+    <changefreq>weekly</changefreq>
+  </url><url>
+    <loc>http://localhost:1313/post/mutational-signature-with-hierarchical-dirichlet-process/</loc>
+    <lastmod>2024-09-15T00:00:00+00:00</lastmod>
     <changefreq>weekly</changefreq>
   </url><url>
     <loc>http://localhost:1313/publication-type/2/</loc>
@@ -70,10 +86,6 @@
     <lastmod>2020-12-13T00:00:00+00:00</lastmod>
     <changefreq>weekly</changefreq>
   </url><url>
-    <loc>http://localhost:1313/tags/</loc>
-    <lastmod>2020-12-13T00:00:00+00:00</lastmod>
-    <changefreq>weekly</changefreq>
-  </url><url>
     <loc>http://localhost:1313/post_template_inspiration/getting-started/</loc>
     <lastmod>2020-12-13T00:00:00+00:00</lastmod>
     <changefreq>weekly</changefreq>
@@ -96,6 +108,14 @@
   </url><url>
     <loc>http://localhost:1313/slides/example/</loc>
     <lastmod>2019-02-05T00:00:00+00:00</lastmod>
+    <changefreq>weekly</changefreq>
+  </url><url>
+    <loc>http://localhost:1313/privacy/</loc>
+    <lastmod>2018-06-28T00:00:00+01:00</lastmod>
+    <changefreq>weekly</changefreq>
+  </url><url>
+    <loc>http://localhost:1313/terms/</loc>
+    <lastmod>2018-06-28T00:00:00+01:00</lastmod>
     <changefreq>weekly</changefreq>
   </url><url>
     <loc>http://localhost:1313/tag/deep-learning/</loc>

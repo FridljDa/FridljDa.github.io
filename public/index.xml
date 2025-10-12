@@ -7,17 +7,125 @@
     <description>Daniel Fridljand</description>
     <generator>Hugo Blox Builder (https://hugoblox.com)</generator><language>en-us</language><lastBuildDate>Mon, 24 Oct 2022 00:00:00 +0000</lastBuildDate>
     <image>
-      <url>http://localhost:1313/media/icon_hu37f7dfefee3baeb2367e356372ffdf42_4657190_512x512_fill_lanczos_center_3.png</url>
+      <url>http://localhost:1313/media/icon_hu_8b2bb02e4ea9155a.png</url>
       <title>Daniel Fridljand</title>
       <link>http://localhost:1313/</link>
     </image>
     
     <item>
+      <title>Extending HDP for Mutational Signatures: Incorporating Evolutionary Trees</title>
+      <link>http://localhost:1313/post/mapping-mutational-signatures-to-trees/</link>
+      <pubDate>Fri, 20 Sep 2024 00:00:00 +0000</pubDate>
+      <guid>http://localhost:1313/post/mapping-mutational-signatures-to-trees/</guid>
+      <description>&lt;p&gt;In my &lt;a href=&#34;https://danielfridljand.de/post/mutational-signature-with-hierarchical-dirichlet-process/&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;previous blog post&lt;/a&gt;, I introduced the Hierarchical Dirichlet Process (HDP) as an elegant approach for mutational signature estimation. The HDP model allows us to simultaneously discover mutational signatures and estimate their activities across multiple samples while learning the number of signatures directly from the data.&lt;/p&gt;
+&lt;p&gt;However, the standard HDP approach treats each sample independently, missing a crucial biological insight: &lt;strong&gt;evolutionarily related cells should exhibit more similar mutational signature activities&lt;/strong&gt;. In this follow-up post, I&amp;rsquo;ll present an extension of the HDP model that incorporates phylogenetic tree structures to capture this evolutionary relationship.&lt;/p&gt;
+&lt;h2 id=&#34;the-biological-motivation&#34;&gt;The Biological Motivation&lt;/h2&gt;
+&lt;p&gt;With the advent of high-resolution techniques such as single-cell sequencing, we can now model the varying activities of mutational signatures within a tumor at unprecedented resolution. A key insight is that &lt;strong&gt;evolutionarily related cells should have more similar mutational signature activities&lt;/strong&gt; than distantly related ones.&lt;/p&gt;
+&lt;p&gt;In cancer, a subclone represents a set of tumor cells descending from the same ancestor and hence sharing mutations. For many measurement modalities, there are established methods to infer relationships between subclones, often represented as tree structures. Examples include:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;SNV: &lt;a href=&#34;https://doi.org/10.1186/s13059-016-0936-x&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;SCITE&lt;/a&gt; &lt;a href=&#34;https://doi.org/10.1186/s13059-016-0929-9&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;OncoNEM&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;CN: &lt;a href=&#34;http://biorxiv.org/lookup/doi/10.1101/2020.04.28.065755&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;SCICoNE&lt;/a&gt;  &lt;/li&gt;
+&lt;li&gt;SNV+CN: &lt;a href=&#34;https://www.nature.com/articles/s41467-023-40378-8&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;COMPASS&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://www.nature.com/articles/s41467-018-07627-7&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;SCI Phi&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://genomebiology.biomedcentral.com/articles/10.1186/s13059-022-02813-9&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;SIEVE&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;For our purposes, the specific tree construction method is less important than having a reliable tree topology. Depending on the type of mutational event under consideration and the available data, we can use any of these methods to infer relationships.&lt;/p&gt;
+&lt;p&gt;Consider the following example tree, where edges represent evolutionary relatedness:&lt;/p&gt;
+&lt;figure&gt;
+&lt;img src=&#34;media/tree.png&#34;
+ alt=&#34;300&#34; /&gt;
+&lt;/figure&gt;
+&lt;p&gt;Note that we have varying numbers of cells per node. In particular, we can have 0 cells attached to a node of the tree. Let&amp;rsquo;s drop the number of cells per node and enumerate the nodes:&lt;/p&gt;
+&lt;figure&gt;
+&lt;img src=&#34;media/LateX/202409_Graphs/20240906_basic_tree_colored.png&#34;
+ alt=&#34;500&#34; /&gt;
+&lt;/figure&gt;
+&lt;p&gt;Let $\mathcal{T}$ represent the topology of the tree. Without loss of generality, we assume a single tree for our input data. If multiple trees exist, such as when separate trees are constructed for different tumors, we can combine them by introducing a new root node and connecting the root nodes of the individual trees to this new root.&lt;/p&gt;
+&lt;p&gt;This tree consists of nodes $V(\mathcal{T})={\color{#BEBEBE} v_1, \color{#BB6438} v_2, \color{#B25870} v_3, \color{#7630A9} v_4, \color{#6672C9} v_5}$. Each node can represent a subclone or serve as a connecting node. For each node $v_j$ we observe trinucleotide mutations $x_{j,1},\ldots, x_{j,M_j}\in {1,\ldots,96}$. Note that $M_j=0$ is allowed. Let $e_{\cdot j}\in \Delta^{\infty}$ denote the activity catalogue in node $j$.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;The key biological insight&lt;/strong&gt;: Subclones with closer evolutionary history should have more similar mutational signature activity. Let $d$ be a measure of dissimilarity on $\Delta^{\infty}$. In the above example we expect that $d(\color{#7630A9} e_{\cdot 4}, \color{#6672C9} e_{\cdot 5}) \leq d(\color{#BB6438} e_{\cdot 2}, \color{#6672C9} e_{\cdot 5})$. When we have access to tree topology $\mathcal{T}$, we can incorporate $\mathcal{T}$ into our model as prior knowledge when inferring $\hat{z}_{ji}$ and consequently $\hat{\theta}&lt;em&gt;k$ and $\hat{e}&lt;/em&gt;{kj}$.&lt;/p&gt;
+&lt;h2 id=&#34;the-tree-structured-hdp-model&#34;&gt;The Tree-Structured HDP Model&lt;/h2&gt;
+&lt;p&gt;Building on the standard HDP framework from my previous post, I now extend it to incorporate tree structure. The key modification is that instead of having all samples share a common base distribution $G_0$, we now have a hierarchical structure where each node in the tree has its own Dirichlet Process that depends on its parent.&lt;/p&gt;
+&lt;p&gt;Sticking to the color coding from above, the graphical model of the proposed model looks as follows:&lt;/p&gt;
+&lt;figure&gt;
+&lt;img src=&#34;media/LateX/202409_Graphs/20240502_hdp_mutationalsignature_graphicalmodel_tree_colored.png&#34;
+ alt=&#34;500&#34; /&gt;
+&lt;/figure&gt;
+&lt;p&gt;Each variable $G$ is a Dirichlet Process. For simplicity, we have omitted the scaling parameters $\alpha_j$ for each Dirichlet process from the graph. In this example, we observe trinucleotide mutations in nodes $v_2, v_4, v_5$ but not in $v_1, v_3$.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;The key insight&lt;/strong&gt;: Recall from the mathematical properties of the Dirichlet Process that $G_4$ and $G_5$ vary around $G_3$. Similarly, $G_2$ and $G_3$ vary around $G_1$. Hence, we can expect that the distribution of $G_5$ is more similar to $G_4$ than to $G_2$. This means that $\color{#6672C9} e_{\cdot 5}$ should be more similar to $\color{#7630A9} e_{\cdot 4}$ than to $\color{#BB6438} e_{\cdot 2}$, which directly addresses our biological motivation.&lt;/p&gt;
+&lt;p&gt;In the above example, $G_2$ is the base probability distribution of $G_1$. Therefore, the support of $G_2$ is a subset of the support of $G_1$, i.e., $\operatorname{supp}(G_2) \subset \operatorname{supp}(G_1) = {\tilde{\theta}_1^{G_1}, \tilde{\theta}_2^{G_1}, \dots}$. A major shift in signature activity from node $v_1$ to $v_2$ could present a challenge for the model. It would be valuable to investigate whether such a shift is biologically plausible and, if so, to test the model in that scenario.&lt;/p&gt;
+&lt;h2 id=&#34;mathematical-formulation&#34;&gt;Mathematical Formulation&lt;/h2&gt;
+&lt;p&gt;The sampling of $G_0$, $\theta_{j i}$, and $x_{ji}$ works exactly as in the classical HDP model from my previous post:&lt;/p&gt;
+&lt;p&gt;$$
+\begin{aligned}
+G_0 &amp;amp;\sim \mathrm{DP}(\alpha_0, H),\
+\theta_{j i} \mid G_j &amp;amp;\sim G_j \text{ for } i = 1,2,\ldots M_j, \
+x_{ji} \mid \theta_{j i} &amp;amp; \sim \operatorname{Categorical} \left(\theta_{j i}\right).
+\end{aligned}
+$$&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;The key innovation&lt;/strong&gt; is in the sampling of $G_j$. Consider a tree topology $\mathcal{T}$. We write $(v_i,v_s)\in \mathcal{T}$ if and only if the $i$-th node is a child of the $s$-th node. Then we model the Dirichlet Process at each node $v_j$ of the tree $\mathcal{T}$ as:&lt;/p&gt;
+&lt;p&gt;$$
+\begin{aligned}
+G_j \mid G_s &amp;amp;\sim \mathrm{DP}(\alpha_j, G_s) \text{ for } (v_i,v_s)\in \mathcal{T}.
+\end{aligned}
+$$&lt;/p&gt;
+&lt;p&gt;In words, at each node of the tree we draw $G_j$ from a Dirichlet Process with an individual scaling parameter $\alpha_j$ and the base probability distribution $G_s$ from the parent node. By the mathematical properties of the Dirichlet Process, $G_j$ varies around the probability distribution $G_s$ of its parent node. Hence, distribution properties of $G_s$ get propagated to $G_j$ and further down the tree, ensuring that evolutionarily related nodes have similar mutational signature activities.&lt;/p&gt;
+&lt;h2 id=&#34;challenges-and-limitations&#34;&gt;Challenges and Limitations&lt;/h2&gt;
+&lt;p&gt;There are several challenges anticipated in making the proposed model practical. The first set of challenges relates to the input data requirements. To construct a tree of relatedness, we need sequencing at a subtumor level, such as sequencing at single-cell or subclonal level. The tumor sample must contain a sufficient number of trinucleotide mutations, typically seen in late-stage tumors. To be able to measure a sufficient number of the trinucleotide mutations, sequencing must cover a large enough genomic region.&lt;/p&gt;
+&lt;h2 id=&#34;next-steps-and-future-directions&#34;&gt;Next Steps and Future Directions&lt;/h2&gt;
+&lt;h3 id=&#34;implementation&#34;&gt;Implementation&lt;/h3&gt;
+&lt;p&gt;The current implemented prototype is a fork of the &lt;a href=&#34;https://github.com/nicolaroberts/hdp&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;HDP implementation by Nicola Roberts&lt;/a&gt; in R with some helper functions. As a next step, an implementation of the package in Python would be interesting to make it more accessible to the broader community.&lt;/p&gt;
+&lt;h3 id=&#34;benchmarking-against-standard-methods&#34;&gt;Benchmarking Against Standard Methods&lt;/h3&gt;
+&lt;p&gt;A crucial next step is to benchmark the tree-structured HDP against standard approaches. The evaluation strategy would involve:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;strong&gt;Dataset Selection&lt;/strong&gt;: Choose a dataset suitable for the proposed method with available tree topology&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Method Comparison&lt;/strong&gt;: Estimate mutational signatures using:
+&lt;ul&gt;
+&lt;li&gt;Classical NMF approach: $\Theta^{\text{NMF}}$ and $E^{\text{NMF}}$&lt;/li&gt;
+&lt;li&gt;Tree-structured HDP: $\Theta^{\text{Tree-HDP}}$ and $E^{\text{Tree-HDP}}$&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Evaluation&lt;/strong&gt;: Compare how well the estimated signature activities $D^{\text{NMF}}$ and $D^{\text{Tree-HDP}}$ respect the known tree topology $\mathcal{T}$&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h3 id=&#34;alternative-approaches&#34;&gt;Alternative Approaches&lt;/h3&gt;
+&lt;p&gt;Instead of the Hierarchical Dirichlet Process approach, we could utilize variations of Non-negative Matrix Factorization. Given observed mutation catalogue $X$ and a constructed tree topology $\mathcal{T}$, we could introduce a penalization term $R_{\mathcal{T}}(E)$ to ensure that the tree topology is respected:&lt;/p&gt;
+&lt;p&gt;$$
+\min_{S, E \geq 0} D(X, S E) + \lambda R_{\mathcal{T}}(E).
+$$&lt;/p&gt;
+&lt;p&gt;A desirable property of the function $R_{\mathcal{T}}$ would be that for samples $i,j\in {1,&amp;hellip;,l }$ attached to nodes in the graph $\mathcal{T}$ which are close to each other, we have similar $E_{\cdot i}$ and $E_{\cdot j}$.&lt;/p&gt;
+&lt;p&gt;Alternatively, we could explore hierarchical NMF approaches. There is abundant literature on NMF and its variations, including &lt;a href=&#34;http://arxiv.org/abs/2311.13277&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;Sugahara et al.&lt;/a&gt;, &lt;a href=&#34;http://arxiv.org/abs/2209.04968&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;Ding et al.&lt;/a&gt;, &lt;a href=&#34;http://biorxiv.org/lookup/doi/10.1101/2022.10.15.512383&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;Ferreira et al.&lt;/a&gt;, and &lt;a href=&#34;http://biorxiv.org/lookup/doi/10.1101/2024.04.23.590844&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;Schmidt &amp;amp; Raphael&lt;/a&gt;.&lt;/p&gt;
+&lt;h3 id=&#34;extension-to-other-mutational-events&#34;&gt;Extension to Other Mutational Events&lt;/h3&gt;
+&lt;p&gt;Instead of focusing solely on trinucleotide mutational events, we could study other mutational events with the proposed model. For example, we could study chromosomal instability events using the approach described in &lt;a href=&#34;https://www.nature.com/articles/s41586-022-04789-9&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;Drews et al.&lt;/a&gt;. However, this would introduce additional requirements to the input data, such as high read depth, and such datasets are not yet widely available.&lt;/p&gt;
+&lt;details&gt;
+&lt;summary&gt;
+Recommended material for chromosomal instability events
+&lt;/summary&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&#34;https://markowetz.cruk.cam.ac.uk/cincompendium/&#34;&gt;https://markowetz.cruk.cam.ac.uk/cincompendium/&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://github.com/markowetzlab/CINSignatureQuantification&#34;&gt;https://github.com/markowetzlab/CINSignatureQuantification&lt;/a&gt;
+	&lt;ul&gt;
+	&lt;li&gt;calculateFeatures function&lt;/li&gt;
+	&lt;li&gt;R package to quantify signatures of chromosomal instability on absolute copy number profiles as described in &lt;a href=&#34;https://www.nature.com/articles/s41586-022-04789-9&#34;&gt;Drews et al.&lt;/a&gt;&lt;/li&gt;
+	&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/details&gt;
+&lt;h3 id=&#34;comparison-with-existing-literature&#34;&gt;Comparison with Existing Literature&lt;/h3&gt;
+&lt;p&gt;It would be beneficial to explore how the proposed approach compares to existing literature, such as &lt;a href=&#34;https://doi.org/10.1007/978-3-319-99608-0_33&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;Alam et al.&lt;/a&gt;, to understand the theoretical and practical advantages of our tree-structured approach.&lt;/p&gt;
+&lt;h2 id=&#34;conclusion&#34;&gt;Conclusion&lt;/h2&gt;
+&lt;p&gt;This follow-up post has presented an extension of the standard HDP model for mutational signature estimation that incorporates evolutionary tree structure. By leveraging the biological insight that evolutionarily related cells should have more similar mutational signature activities, the tree-structured HDP model provides a principled way to incorporate phylogenetic information into mutational signature analysis.&lt;/p&gt;
+&lt;p&gt;The key innovation lies in the hierarchical structure where each node in the tree has its own Dirichlet Process that depends on its parent, ensuring that distribution properties propagate down the tree. This addresses a fundamental limitation of standard approaches that treat samples independently.&lt;/p&gt;
+&lt;p&gt;While there are practical challenges related to data requirements and implementation, the theoretical framework provides a solid foundation for future work in this area. The next steps involve implementation, benchmarking, and exploring alternative approaches to validate and improve upon this initial proposal.&lt;/p&gt;
+</description>
+    </item>
+    
+    <item>
       <title>Mutational signature estimation with Hierarchical Dirichlet Process</title>
       <link>http://localhost:1313/post/mutational-signature-with-hierarchical-dirichlet-process/</link>
-      <pubDate>Tue, 10 Sep 2024 00:00:00 +0000</pubDate>
+      <pubDate>Sun, 15 Sep 2024 00:00:00 +0000</pubDate>
       <guid>http://localhost:1313/post/mutational-signature-with-hierarchical-dirichlet-process/</guid>
-      <description>&lt;h2 id=&#34;introduction&#34;&gt;Introduction&lt;/h2&gt;
+      <description>&lt;p&gt;The Hierarchical Dirichlet Process (HDP) is a popular and elegant model that has gained traction in various fields, including cancer genomics. While researching methods for mutational signature estimation, I noticed that several studies employed HDPs for this purpose. However, many of these studies were published in biological journals and often lacked detailed explanations of how HDPs can be effectively applied to mutational signature estimation.&lt;/p&gt;
+&lt;p&gt;Nicola Roberts&amp;rsquo; &lt;a href=&#34;https://doi.org/10.17863/CAM.22674&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;dissertation&lt;/a&gt; includes some descriptions of the mathematical model in the appendix, but even these are not fully comprehensive. In this blog post, I aim to bridge this gap by introducing the problem of mutational signature estimation using HDPs in a mathematically rigorous manner. I will begin by discussing a simpler mixture component model for mutational signatures, then explore the Dirichlet Process model, and finally delve into the Hierarchical Dirichlet Process model.&lt;/p&gt;
+&lt;h2 id=&#34;introduction&#34;&gt;Introduction&lt;/h2&gt;
 &lt;p&gt;A key characteristic of cancer is the elevated mutation rate in somatic cells. Recognizing the patterns of somatic mutations in cancer is essential for understanding the underlying mechanisms that drive the disease (Fischer et al., 2013). This knowledge is crucial for advancing cancer treatment and prevention.&lt;/p&gt;
 &lt;p&gt;One type of somatic mutation is the single nucleotide variant (SNV), also referred to as a single base substitution. This involves the replacement of one base pair in the genome with another. There are six possible base pair mutations: C:G&amp;gt;A:T, C:G&amp;gt;G:C, C:G&amp;gt;T:A, T:A&amp;gt;A:T, T:A&amp;gt;C:G, and T:A&amp;gt;G:C. When considering the context of the immediate 5&amp;rsquo; and 3&amp;rsquo; neighboring bases, the total number of mutations increases to 96, calculated as $6 \times 4 \times 4 = 96$. These are known as trinucleotide mutation channels. Examples of such mutations include ACA:TGT&amp;gt;AAA:TTT and ACT:TGA&amp;gt;AGT:TCA. For simplicity, we will abbreviate these mutations as ACA&amp;gt;AAA and ACT&amp;gt;AGT respectively.&lt;/p&gt;
 &lt;h2 id=&#34;mutational-signature&#34;&gt;Mutational Signature&lt;/h2&gt;
@@ -31,79 +139,38 @@ $$
 
 &lt;p&gt;A mutational signature $\theta$ can be visualised as in the following.&lt;/p&gt;
 &lt;figure&gt;
-&lt;img
-src=&#34;media/a9711185bb2959bf64bf6004e591ab8de652fedf.png&#34;
+&lt;img src=&#34;media/a9711185bb2959bf64bf6004e591ab8de652fedf.png&#34;
  alt=&#34;500&#34; /&gt;
 &lt;/figure&gt;
-&lt;p&gt;The framework for studying somatic mutations through mutational signatures was introduced in a landmark study by Alexandrov et al. (2013), where over 7,000 bulk-sequenced cancer samples were analyzed. Conceptually, a mutational signature represents a biological process acting on the genome, leaving a distinct imprint captured in a probability vector, $\theta$. Well-established examples include the mutational signatures associated with tobacco exposure and UV light. A comprehensive list of mutational signatures and their proposed underlying biological processes is available through the &lt;a href=&#34;https://cancer.sanger.ac.uk/signatures/sbs/&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;COSMIC project&lt;/a&gt;. However, experimentally verifying a mutational signature, or its corresponding probability vector $\theta$, remains a significant challenge.&lt;/p&gt;
-&lt;p&gt;A particular sample is acted upon by different mutational signatures. The sample-specific mutational signature activity of each mutational signatures has been used clinically to stratify patient cohorts.&lt;/p&gt;
-&lt;p&gt;To estimate mutational signatures and their activities, Alexandrov et al. (2013) employed Non-Negative Matrix Factorization (NMF). NMF and its variations remain the most widely used methods for estimating mutational signatures and mutational signature activities.&amp;quot;&lt;/p&gt;
-&lt;details&gt;
-&lt;summary&gt;
-Extracts from different papers on overall legitimacy of mutational signatures and proposed underlying biological process
-&lt;/summary&gt;
-&lt;ul&gt;
-&lt;li&gt;&lt;mark class=&#34;hltr-green&#34;&gt;&amp;ldquo;Furthermore, while earlier analyses reported single signatures, for example of UV radiation (that is, SBS7)2, more recent studies reported multiple versions of these signatures (that is, SBS7a, SBS7b, SBS7c and SBS7d)3, leading the community to question whether some find­ ings are reflective of biology or are simply mathemat­ ical artefacts. Efforts to experimentally validate these abstract mathematical results are therefore warranted.&amp;quot;&lt;/mark&gt;&lt;/li&gt;
-&lt;li&gt;&lt;mark class=&#34;hltr-green&#34;&gt;&amp;ldquo;Regardless of the algorithms used for signature identification, common signatures tend to be consistently identifiable in most cohorts examined,&amp;quot;&lt;/mark&gt;&lt;/li&gt;
-&lt;li&gt;Whether these new signatures &lt;mark class=&#34;hltr-yellow&#34;&gt;&amp;ldquo;true biologically or are merely a mathematical outcome is less clear and awaits independent verification.&amp;quot;&lt;/mark&gt;&lt;/li&gt;
-&lt;li&gt;&lt;mark class=&#34;hltr-yellow&#34;&gt;&amp;ldquo;This lack of robustness is often due to the non-uniqueness of the NMF decomposition, which &amp;mdash; for any given matrix &amp;mdash; has a potentially infinite set of valid solutions&amp;rdquo;&lt;/mark&gt;&lt;/li&gt;
-&lt;li&gt;&lt;mark class=&#34;hltr-yellow&#34;&gt;&amp;ldquo;observed mutation counts and the ones predicted from the given set of signatures&amp;rdquo;&lt;/mark&gt;&lt;/li&gt;
-&lt;li&gt;&lt;mark class=&#34;hltr-yellow&#34;&gt;&amp;ldquo;still no objective way to determine whether the inferred signatures actually correspond to any known mutational&amp;rdquo;&lt;/mark&gt;&lt;/li&gt;
-&lt;li&gt;&lt;mark class=&#34;hltr-yellow&#34;&gt;&amp;ldquo;often confirmed through experimental data (Segovia et al., 2015; Drost et al., 2017).&amp;quot;&lt;/mark&gt;
-Recommended Material on legitamcy of mutational signatures:&lt;/li&gt;
-&lt;li&gt;Koh, G., Degasperi, A., Zou, X., Momen, S., &amp;amp; Nik-Zainal, S. (2021). Mutational signatures: Emerging concepts, caveats and clinical applications. &lt;em&gt;Nature Reviews Cancer&lt;/em&gt;, &lt;em&gt;21&lt;/em&gt;(10), 619&amp;ndash;637. &lt;a href=&#34;https://doi.org/10.1038/s41568-021-00377-7&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;https://doi.org/10.1038/s41568-021-00377-7&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;Kaufmann, T. L., &amp;amp; Schwarz, R. F. (2024). Improved identification of cancer mutational processes. &lt;em&gt;Nature Genetics&lt;/em&gt;, &lt;em&gt;56&lt;/em&gt;(3), 365&amp;ndash;366. &lt;a href=&#34;https://doi.org/10.1038/s41588-024-01679-w&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;https://doi.org/10.1038/s41588-024-01679-w&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;Apart from that, there&amp;rsquo;s a simulation study, which is quite cool: &lt;a href=&#34;https://www.biorxiv.org/content/biorxiv/early/2020/12/15/2020.12.14.422764.full.pdf&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;https://www.biorxiv.org/content/biorxiv/early/2020/12/15/2020.12.14.422764.full.pdf&lt;/a&gt;&lt;/li&gt;
-&lt;/ul&gt;
-&lt;/details&gt;
-&lt;details&gt;
-&lt;summary&gt;
-Recommended material on mutational signatures
-&lt;/summary&gt;
-&lt;ul&gt;
-&lt;li&gt;Koh, G., Degasperi, A., Zou, X., Momen, S., &amp;amp; Nik-Zainal, S. (2021). Mutational signatures: Emerging concepts, caveats and clinical applications. &lt;em&gt;Nature Reviews Cancer&lt;/em&gt;, &lt;em&gt;21&lt;/em&gt;(10), 619&amp;ndash;637. &lt;a href=&#34;https://doi.org/10.1038/s41568-021-00377-7&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;https://doi.org/10.1038/s41568-021-00377-7&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;Alexandrov, L. B., Nik-Zainal, S., Wedge, D. C., Aparicio, S. A. J. R., Behjati, S., Biankin, A. V., Bignell, G. R., Bolli, N., Borg, A., Børresen-Dale, A.-L., Boyault, S., Burkhardt, B., Butler, A. P., Caldas, C., Davies, H. R., Desmedt, C., Eils, R., Eyfjörd, J. E., Foekens, J. A., &amp;hellip; Stratton, M. R. (2013). Signatures of mutational processes in human cancer. &lt;em&gt;Nature&lt;/em&gt;, &lt;em&gt;500&lt;/em&gt;(7463), 415&amp;ndash;421. &lt;a href=&#34;https://doi.org/10.1038/nature12477&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;https://doi.org/10.1038/nature12477&lt;/a&gt;&lt;/li&gt;
-&lt;/ul&gt;
-&lt;/details&gt;
+&lt;p&gt;The framework for studying somatic mutations through mutational signatures was introduced in a landmark study by Alexandrov et al. (2013), where over 7,000 bulk-sequenced cancer samples were analyzed. Conceptually, a mutational signature represents a biological process acting on the genome, leaving a distinct imprint captured in a probability vector, $\theta$. A comprehensive list of mutational signatures and their proposed underlying biological processes is available through the &lt;a href=&#34;https://cancer.sanger.ac.uk/signatures/sbs/&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;COSMIC project&lt;/a&gt;. Some of the mutational signatures and their associated probability vectors $\theta$ in the COSMIC project are consistently identifiable across most examined cohorts and signature identification algorithms &lt;a href=&#34;https://pubmed.ncbi.nlm.nih.gov/34316057/&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;(cite)&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;To estimate mutational signatures and their activities, &lt;a href=&#34;https://pubmed.ncbi.nlm.nih.gov/23318258/&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;Alexandrov et al.&lt;/a&gt; employed Non-Negative Matrix Factorization (NMF). NMF and its variations remain the most widely used methods for estimating mutational signatures and mutational signature activities.&lt;/p&gt;
 &lt;h2 id=&#34;dirichlet-process-dp&#34;&gt;Dirichlet Process (DP)&lt;/h2&gt;
-&lt;p&gt;A useful mathematical concept for our study will be the Dirichlet Process. The Dirichlet process, $\mathrm{DP}\left(\alpha, H\right)$, is a measure on measures. Hence, a sample $\boldsymbol{G} \sim \mathrm{DP}(\alpha, H)$ from the Dirichlet Process is a probabilty measure. An overview of the Dirichlet Process is given in the following table.&lt;/p&gt;
-&lt;table&gt;
-&lt;thead&gt;
-&lt;tr&gt;
-&lt;th&gt;Parameters&lt;/th&gt;
-&lt;th&gt;scaling parameter $\alpha&amp;gt;0$, base probability measure $H$.&lt;/th&gt;
-&lt;/tr&gt;
-&lt;/thead&gt;
-&lt;tbody&gt;
-&lt;tr&gt;
-&lt;td&gt;Support&lt;/td&gt;
-&lt;td&gt;Space of probability measures with the same support as $H$.&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-&lt;td&gt;Construction&lt;/td&gt;
-&lt;td&gt;Let $(e_1, e_2, \ldots) \sim \operatorname{Stick}(\alpha)$ and $\boldsymbol{\theta}_1, \boldsymbol{\theta}_2, \ldots \stackrel{\text{iid}}{\sim} H$. Then $\boldsymbol{G} = \sum_{k=1}^{\infty} e_k \delta_{\boldsymbol{\theta}_k} \sim \mathrm{DP}(\alpha, H)$.&lt;/td&gt;
-&lt;/tr&gt;
-&lt;/tbody&gt;
-&lt;/table&gt;
-&lt;p&gt;Here, $\operatorname{Stick}$ refers to the stick-breaking process. As seen from its construction, $\boldsymbol{G}$ is a discrete probability measure, meaning it has countable support $\boldsymbol{\theta}_1, \boldsymbol{\theta}_2, \ldots$. Dirichlet processes are particularly well-suited for modeling mixtures when the number of components is unknown, providing flexibility in the number of components.&lt;/p&gt;
+&lt;p&gt;A key mathematical tool for our study is the Dirichlet Process (DP). Formally, the Dirichlet process, denoted as $\mathrm{DP}(\alpha, H)$, is a distribution over probability measures. When we sample $G \sim \mathrm{DP}(\alpha, H)$, we obtain a probability measure $G$. The Dirichlet Process has two parameters: the concentration parameter $\alpha&amp;gt;0$, and the base measure $H$. The support of $G$ is a subset of the support of the base measure $H$.&lt;/p&gt;
+&lt;p&gt;To sample from the Dirichlet process, we begin by drawing an infinite sequence of i.i.d. samples $\tilde{\theta}_1, \tilde{\theta}_2, \ldots \sim H$. Then, we draw a vector $\boldsymbol{e} = \{e_1, e_2, \ldots\} \sim \operatorname{Stick}(\alpha)$, where $\operatorname{Stick}(\alpha)$ refers to the stick-breaking process. Intuitively, the stick-breaking process works by repeatedly breaking off and discarding a random fraction of a &amp;ldquo;stick&amp;rdquo; that is initially of length $1$. Each broken off part of the stick has a length $e_k$. The stick-breaking process generates a sequence $\boldsymbol{e} \in \Delta^\infty$, where the total length of all the broken pieces is 1.&lt;/p&gt;
+&lt;p&gt;Finally, we construct the random measure $G$ as:
+
+
+
+$$G = \sum_{k=1}^{\infty} e_k \delta_{\tilde{\theta}_k}$$
+
+where $\delta_{\tilde{\theta}_k}$ is a Dirac delta function centered at $\tilde{\theta}_k$. The resulting measure $G$ is discrete, with countable support given by $\{\tilde{\theta}_1, \tilde{\theta}_2, \ldots\}$.&lt;/p&gt;
 &lt;h3 id=&#34;mathematical-properties-of-dirichlet-process&#34;&gt;Mathematical properties of Dirichlet Process&lt;/h3&gt;
-&lt;p&gt;It can be shown that the prior distribution $H$ represents the mean of $\boldsymbol{G}$ in the sense that, for any set $A$,&lt;/p&gt;
+&lt;p&gt;The base measure $H$ serves as the mean of the random measure $G$. Specifically, for any measurable set $A$, the expectation of $G(A)$ under the Dirichlet process is given by [@millerDirichletProcessModels]:&lt;/p&gt;
 
 
 
 $$
-\mathrm{E}_{\boldsymbol{G} \sim \mathrm{DP}(\alpha, H)}(\boldsymbol{G}(A)) = H(A).
+\mathrm{E}_{G \sim \mathrm{DP}(\alpha, H)}[G(A)]=H(A)
 $$
 
-&lt;p&gt;Additionally, as $\alpha \rightarrow \infty$, $\boldsymbol{G}$ converges to $H$ in the weak topology. This implies that the concentration parameter $\alpha$ controls the proximity of $\boldsymbol{G}$ to the base distribution $H$.&lt;/p&gt;
-&lt;p&gt;In summary, $\boldsymbol{G}$ is distributed around the prior distribution $H$, with the variability governed by the value of $\alpha$.&lt;/p&gt;
+&lt;p&gt;As $\alpha \rightarrow \infty$, the distribution of $G$ converges to $H$ in the weak topology, meaning that larger values of $\alpha$ make $G$ more closely resemble the base measure $H$.&lt;/p&gt;
+&lt;p&gt;In summary, $G$ is centered around the prior distribution $H$, with the concentration parameter $\alpha$ controlling how tightly $G$ clusters around $H$. A higher $\alpha$ reduces variability, causing $G$ to approximate $H$ more closely.&lt;/p&gt;
 &lt;h3 id=&#34;references&#34;&gt;References&lt;/h3&gt;
 &lt;details&gt;
 &lt;summary&gt;
-Recommended material for Dirichlet Process
+&lt;p&gt;Recommended material for Dirichlet Process&lt;/p&gt;
 &lt;/summary&gt;
 &lt;ul&gt;
-&lt;li&gt;I like Lectures 11 and 12 from Jeff Miller&amp;rsquo;s course: &lt;a href=&#34;http://jwmi.github.io/BMB/index.html&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;http://jwmi.github.io/BMB/index.html&lt;/a&gt;&lt;/li&gt;
 &lt;li&gt;&lt;a href=&#34;https://en.wikipedia.org/wiki/Dirichlet_process&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;https://en.wikipedia.org/wiki/Dirichlet_process&lt;/a&gt;&lt;/li&gt;
 &lt;li&gt;&lt;a href=&#34;https://www.geeksforgeeks.org/dirichlet-process-mixture-models-dpmms/&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;https://www.geeksforgeeks.org/dirichlet-process-mixture-models-dpmms/&lt;/a&gt;&lt;/li&gt;
 &lt;li&gt;&lt;a href=&#34;https://towardsdatascience.com/dont-be-afraid-of-nonparametric-topic-models-d259c237a840&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;https://towardsdatascience.com/dont-be-afraid-of-nonparametric-topic-models-d259c237a840&lt;/a&gt;&lt;/li&gt;
@@ -112,7 +179,7 @@ Recommended material for Dirichlet Process
 &lt;/details&gt;
 &lt;details&gt;
 &lt;summary&gt;
-NoteBook Impelementation of the Dirichlet Process
+&lt;p&gt;NoteBook Impelementation of the Dirichlet Process&lt;/p&gt;
 &lt;/summary&gt;
 &lt;ul&gt;
 &lt;li&gt;&lt;a href=&#34;https://datamicroscopes.github.io/ncluster.html&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;https://datamicroscopes.github.io/ncluster.html&lt;/a&gt;&lt;/li&gt;
@@ -121,69 +188,98 @@ NoteBook Impelementation of the Dirichlet Process
 &lt;/ul&gt;
 &lt;/details&gt;
 &lt;h2 id=&#34;modelling-mutational-signature-with-dp&#34;&gt;Modelling mutational signature with DP&lt;/h2&gt;
-&lt;p&gt;We want to derive a Dirichlet Process model for trinucleotide mutations generated by mutational signatures. We will start with a more intuitive mixture model. Let&amp;rsquo;s consider the trinucleotide mutations in a single sample. Recall that there are 96 trinucleotide mutations. We can encode a trinucleotide mutation as $x\in \{{1,\ldots, 96}\}$ .&lt;/p&gt;
+&lt;p&gt;Dirichlet processes have been utilized in previous studies to model trinucleotide mutations associated with mutational signatures &lt;a href=&#34;https://doi.org/10.17863/CAM.22674&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;(cite)&lt;/a&gt; and &lt;a href=&#34;https://www.nature.com/articles/s41586-019-1913-9&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;(cite)&lt;/a&gt;. Although Appendix B (p. 234) and Chapter 4 (p. 132) in &lt;a href=&#34;https://doi.org/10.17863/CAM.22674&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;(cite)&lt;/a&gt; provide a mathematical overview of the model, they lack sufficient detail and are not fully comprehensive. This section aims to address that gap by deriving the Dirichlet Process model for trinucleotide mutations in a thorough and accessible manner. We will begin by introducing a more intuitive approach to modeling trinucleotide mutations using a mixture model. To illustrate, consider the trinucleotide mutations within a single sample, which can be encoded as $x \in \{1, \ldots, 96\}$, representing the 96 possible trinucleotide mutation types.&lt;/p&gt;
 &lt;h4 id=&#34;step-1-known-number-of-mutational-signatures-k&#34;&gt;Step 1: Known number of mutational signatures $K$&lt;/h4&gt;
-&lt;p&gt;Let&amp;rsquo;s assume we know the number of acting mutational signatures $K$. Let&amp;rsquo;s assume we observe $M$ trinucleotide mutations. We, model the process generating a trinucleotide mutation by a mixture of acting mutational signatures $\tilde{\theta}_1, \ldots, \tilde{\theta}_K$:&lt;/p&gt;
+&lt;p&gt;Let&amp;rsquo;s begin by assuming we know the number of active mutational signatures, denoted as $K$. Each signature is represented by a discrete probability distribution, $\tilde{\theta}_k \in \Delta^{96}$, where $k=1, \ldots, K$. Since we assume that we have no prior knowledge of the specific mutational signatures, we model these distributions as:
 
 
 
 $$
 \begin{aligned}
-\Delta^{K} \ni \boldsymbol{e} \mid \alpha,K &amp; \sim \operatorname{Dir}\left(\frac{\alpha}{K} \cdot \mathbf{1}_K\right) \\
-[0,1]\ni \mathrm{P}\left(z_i=k\right) &amp; =e_k \text{ for } i=1,\ldots, M\\
-\Delta^{96} \ni \tilde{\theta}_k  &amp; \sim \operatorname{Dir}\left(\frac{1}{96} \cdot \mathbf{1}_{96}\right) 
+\tilde{\theta}_k  &amp; \sim \operatorname{Dir}\left(\frac{1}{96} \cdot \mathbf{1}_{96}\right) 
 \text{ for } k=1,\ldots, K\\
+\end{aligned},
+$$
+
+where $\operatorname{Dir}$ denotes the Dirichlet distribution, serving as a symmetric prior. Similarly, we assume no prior information about the activity of these mutational signatures. We model the activity of the $K$ mutational signatures $\boldsymbol{e} \in \Delta^K$ in a sample as:
+
+
+
+$$
+\begin{aligned}
+\boldsymbol{e} \mid \alpha,K &amp; \sim \operatorname{Dir}\left(\frac{\alpha}{K} \cdot \mathbf{1}_K\right). 
+\end{aligned}
+$$
+
+where $\alpha$ is a hyperparameter controlling the concentration of the distribution. Next, let $z_i=k$ represent the event that the $i$-th mutation was generated by the $k$-th mutational signature. If we observe a total of $M$ trinucleotide mutations in our sample, we draw each $z_i\in \{{1,\ldots, K}\}$ according to the mutational signature activity $\boldsymbol{e}$, as follows:&lt;/p&gt;
+
+
+
+$$
+\begin{aligned}
+ z_i \mid \boldsymbol{e} &amp; \sim \operatorname{Categorical} \left(\boldsymbol{e}\right)  \text{ for } i=1,\ldots, M,
+\end{aligned}
+$$
+
+&lt;p&gt;indicating that the probability $\mathrm{P}\left(z_i=k\right)=e_k$, where $e_k$ is the activity level of signature $k$. Finally, the observed trinucleotide mutation $x_i \in\{1, \ldots, 96\}$ is drawn from a categorical distribution based on the corresponding mutational signature $z_i=k$ and its distribution $\tilde{\theta}_k$ :&lt;/p&gt;
+&lt;p&gt;
+
+
+$$
+\begin{aligned}
 \{{1,\ldots, 96}\} \ni x_i \mid z_i=k, \tilde{\theta}_k &amp; \sim \operatorname{Categorical} \left(\tilde{\theta}_{k}\right)  \text{ for } i=1,\ldots, M
 \end{aligned}
 $$
 
-&lt;p&gt;We assume that we have no initial information distinguishing the components, which is captured by the symmetric prior $\operatorname{Dir}\left(\alpha / K \cdot \mathbf{1}_K\right)$. Here $\operatorname{Dir}$ is the Dirichlet distribution. The event that the $i$th mutation was generated by the $k$-th mutational signature is denoted as $z_i=k$. The $i$th mutation was generated by the $k$-th mutational signature with probability $e_k$. We assign independent and identical prior distributions $\operatorname{Dir}\left(\frac{1}{96} \cdot \mathbf{1}_{96}\right)$ to the mutational signature of each component. The $k$-th component has the mutational signature $\tilde{\theta}_k \in \Delta^{96}$. Each trinucleotide mutation $x_i\in {{1,\ldots, 96}}$ is drawn from a categorical distribution.&lt;/p&gt;
+This completes our model, which describes how the mutational signatures $\left\{\tilde{\theta}_1, \ldots, \tilde{\theta}_K\right\}$ generate the observed trinucleotide mutations $\left\{x_1, \ldots, x_M\right\}$&lt;/p&gt;
 &lt;h5 id=&#34;graphical-model-for-known-number-of-components-k&#34;&gt;Graphical model for known number of components $K$&lt;/h5&gt;
-&lt;p&gt;We can visualise the process generating the trinucleotide mutation in a sample as a graphical model:
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-&lt;figure  &gt;
-  &lt;div class=&#34;d-flex justify-content-center&#34;&gt;
-    &lt;div class=&#34;w-100&#34; &gt;&lt;img alt=&#34;&#34; srcset=&#34;
-               /post/mutational-signature-with-hierarchical-dirichlet-process/media/7d5261339cd5d516f8153605fe36589a23255d8d_hu74e059dc2b26a8010c8c3a597e96ba5f_25250_c1628b71ce4e320bb31ca4af19db39ab.webp 400w,
-               /post/mutational-signature-with-hierarchical-dirichlet-process/media/7d5261339cd5d516f8153605fe36589a23255d8d_hu74e059dc2b26a8010c8c3a597e96ba5f_25250_e323806fbbf2fc745dc4e98c71c90dbb.webp 760w,
-               /post/mutational-signature-with-hierarchical-dirichlet-process/media/7d5261339cd5d516f8153605fe36589a23255d8d_hu74e059dc2b26a8010c8c3a597e96ba5f_25250_1200x1200_fit_q75_h2_lanczos_3.webp 1200w&#34;
-               src=&#34;http://localhost:1313/post/mutational-signature-with-hierarchical-dirichlet-process/media/7d5261339cd5d516f8153605fe36589a23255d8d_hu74e059dc2b26a8010c8c3a597e96ba5f_25250_c1628b71ce4e320bb31ca4af19db39ab.webp&#34;
-               width=&#34;459&#34;
-               height=&#34;760&#34;
-               loading=&#34;lazy&#34; data-zoomable /&gt;&lt;/div&gt;
-  &lt;/div&gt;&lt;/figure&gt;
-&lt;/p&gt;
-&lt;p&gt;Here the grey background of the circle behind $x_i$ indicates that $x_i$ is an observed variable.&lt;/p&gt;
+&lt;p&gt;We can visualize the process that generates trinucleotide mutations in a sample using a graphical model:&lt;/p&gt;
+&lt;figure&gt;
+&lt;img src=&#34;media/7d5261339cd5d516f8153605fe36589a23255d8d.png&#34;
+ alt=&#34;300&#34; /&gt;
+&lt;/figure&gt;
+&lt;p&gt;Here the grey background color indicates that $x_i$ is an observed random variable.&lt;/p&gt;
 &lt;h4 id=&#34;step-2-equivalent-model-as-mixture&#34;&gt;Step 2: Equivalent model as mixture&lt;/h4&gt;
-&lt;p&gt;We want to integrate out the indicator variable $z_i=k$ in our model. Let $H=\operatorname{Dir}\left(\frac{1}{96} \cdot \mathbf{1}_{96}\right)$. We rewrite the equations from [Final_report#Step 1 Known number of components $K$](Final_report#Step 1 Known number of components $K$ ) as follows.&lt;/p&gt;
+&lt;p&gt;In the next step, we aim to integrate out the indicator variable $z_i=k$ in our model, seeking a different representation of the same model. As before, we draw the mutational signature activities as follows:
 
 
 
 $$
 \begin{aligned}
-\Delta^{K} \ni\boldsymbol{e} \mid \alpha,K &amp; \sim \operatorname{Dir}\left(\frac{\alpha}{K} \cdot \mathbf{1}_K\right) \\
-\Delta^{96} \ni \tilde{\theta}_k &amp; \sim H \text{ for } k=1,\ldots, K\\ 
-\Delta^{96} \ni\theta_i &amp; \sim G=\sum_{k=1}^K e_k \delta_{\tilde{\theta}_k}\left(\theta_i\right) \text{ for } i=1,\ldots, M\\
-\{{1,\ldots, 96}\} \ni x_i \mid \theta_i &amp; \sim \operatorname{Categorical} \left(\theta_i\right) \text{ for } i=1,\ldots, M 
+\boldsymbol{e} \mid \alpha,K &amp; \sim \operatorname{Dir}\left(\frac{\alpha}{K} \cdot \mathbf{1}_K\right). 
 \end{aligned}
 $$
 
-&lt;p&gt;Instead of explicit, component-specific $\theta_k$, we work with the mixture $\theta_i$. We draw $\theta_i$ from $\{\tilde{\theta}_1, \ldots, \tilde{\theta}_K\}$ with the corresponding probabilities $\{e_1, \ldots, e_K\}$. Instead of imagining that each data point is first assigned a component and then drawn from the distribution associated with that cluster, we now think of each observation as being associated with parameter $\theta_i$ drawn from some finite distribution $G$ with support on the $K$ means.&lt;/p&gt;
+Let $H=\operatorname{Dir}\left(\frac{1}{96} \cdot \mathbf{1}_{96}\right)$. Similar to the last step, we generate the mutational signatures as
+
+
+
+$$
+\begin{aligned}
+\tilde{\theta}_k &amp; \sim H \text{ for } k=1,\ldots, K.
+\end{aligned}
+$$
+&lt;/p&gt;
+&lt;p&gt;Now, instead of assuming that each observation $i=1, \ldots, M$ is first assigned a mutational signature $z_i \in\{1, \ldots, K\}$ and then drawn from the corresponding signature $\tilde{\theta}_{z_i}$ we directly draw $\theta_i$ from $\left\{\tilde{\theta}_1, \ldots, \tilde{\theta}_K\right\}$, with probabilities $\left\{e_1, \ldots, e_K\right\}$ for each observation:&lt;/p&gt;
+&lt;p&gt;
+
+
+$$
+\begin{aligned}
+\theta_i \mid \boldsymbol{e}, \tilde{\theta}_1, \ldots \tilde{\theta}_K &amp; \sim G=\sum_{k=1}^K e_k \delta_{\tilde{\theta}_k}\left(\theta_i\right) \text{ for } i=1,\ldots, M.
+\end{aligned}
+$$
+
+Here, $G$ represents a finite mixture distribution with support on the acting mutational signatures. Finally, we draw the trinucleotide mutation as follows:
+
+
+
+$$
+\begin{aligned}
+x_i \mid \theta_i &amp; \sim \operatorname{Categorical} \left(\theta_i\right) \text{ for } i=1,\ldots, M. 
+\end{aligned}
+$$
+&lt;/p&gt;
 &lt;h4 id=&#34;step-3-unknown-unbounded-number-of-components-k&#34;&gt;Step 3: Unknown, unbounded number of components $K$&lt;/h4&gt;
 &lt;p&gt;Let
 
@@ -193,23 +289,58 @@ $$
 \Delta^{\infty} = \left\{ (\theta_1, \theta_2, \ldots, ) \in \mathbb{R}^{\infty} \mid \theta_i \geq 0 \text{ for all } i \text{ and } \sum_{i=1}^{\infty} \theta_i = 1 \right\}.
 $$
 &lt;/p&gt;
-&lt;p&gt;We would now like to extend this model from [Final_report#Step 2 Equivalent model as mixture](Final_report#Step 2 Equivalent model as mixture ) to work without pre-specifying a fixed number of components $K$. Any $K\in \mathbb{N}$ should be possible but we would prefer small $K$. All this is accomplished by&lt;/p&gt;
+&lt;p&gt;We now extend the model from the previous step to allow for an unknown number of components $K$, with any $K \in \mathbb{N}$ being possible. As in the previous step, we generate the underlying mutational signatures $\tilde{\theta}_k\in \Delta^{96}$ from $H$ as follows:
 
 
 
 $$
 \begin{aligned}
-\Delta^{\infty}\ni \boldsymbol{e} \mid \alpha &amp;\sim \operatorname{Stick}(\alpha)\\
-\Delta^{96}\ni \tilde{\theta}_k &amp; \sim H \text{ for } k=1,2,\ldots \\ 
-G&amp;=\sum_{k=1}^{\infty} e_k \delta_{\tilde{\theta}_k}\left(\theta_i\right) \\
-\Delta^{96}\ni\theta_i &amp; \sim G \text{ for } i=1,\ldots, M \\
-\{{1,\ldots, 96}\} \ni x_i \mid \theta_i &amp; \sim \operatorname{Categorical} \left(\theta_i\right) \text{ for } i=1,\ldots, M   
+\tilde{\theta}_k &amp; \sim H \text{ for } k=1,2,\ldots 
 \end{aligned}
 $$
 
-&lt;p&gt;Here, $\boldsymbol{e}={e_1, e_2, \ldots}$ is generated by the stick-breaking process $\operatorname{Stick}$. The the stick-breaking process induces a distribution on $\Delta^{\infty}$. Intuitively, stick-breaking process work by repeatedly breaking off and discarding a random fraction (sampled from a Beta distribution) of a &amp;ldquo;stick&amp;rdquo; that is initially of length 1. Each broken off part of the stick has a length $e_k$. Instead of finite support, $G$ now has countably infinite support $\{\tilde{\theta}_1, \tilde{\theta}_2, \ldots\}$. We draw $\theta_i$ from $\{\tilde{\theta}_1, \tilde{\theta}_2, \ldots\}$ with the corresponding probabilities $\{e_1, e_2, \ldots\}$.&lt;/p&gt;
+Previously, we sampled a finite set of $K$ mutational signatures $\tilde{\theta}_k$, but now we generate an infinite sequence of signatures. Accordingly, the mutational signature activities $\boldsymbol{e}$ now lie in $\Delta^{\infty}$. To model these activities, we use the Stick-breaking process, which defines a distribution over $\Delta^{\infty}$. Thus, we sample the mutational signature activities as:&lt;/p&gt;
+&lt;p&gt;
+
+
+$$
+\begin{aligned}
+\boldsymbol{e} \mid \alpha &amp;\sim \operatorname{Stick}(\alpha).
+\end{aligned}
+$$
+
+Intuitively, the stick-breaking process works by repeatedly breaking off and discarding a random fraction of a &amp;ldquo;stick&amp;rdquo; that is initially of length $1$. Each broken off part of the stick has a length $e_k$. The stick-breaking process generates a sequence $\boldsymbol{e} \in \Delta^\infty$, where the total length of all the broken pieces is $1$. Consequently, the mixture distribution $G$, which previously had finite support, now has countably infinite support $\left\{\tilde{\theta}_1, \tilde{\theta}_2, \ldots\right\}$ and takes the form:
+
+
+
+$$
+\begin{aligned}
+\mathcal{P}(\Delta^{96}) \ni G&amp;=\sum_{k=1}^{\infty} e_k \delta_{\tilde{\theta}_k}\left(\theta_i\right) , 
+\end{aligned}
+$$
+
+where $\mathcal{P}(\Delta^{96})$ denotes the space of probability distributions on $\Delta^{96}$. We draw $\theta_i$ from the support of $G$, which is $\left\{\tilde{\theta}_1, \tilde{\theta}_2, \ldots\right\}$, as follows:
+
+
+
+$$
+\begin{aligned}
+\theta_i \mid  G &amp; \sim G \text{ for } i=1,\ldots, M \\  
+\end{aligned}
+$$
+&lt;/p&gt;
+&lt;p&gt;Finally, we observe the mutations as
+
+
+
+$$
+\begin{aligned}
+\{{1,\ldots, 96}\} \ni x_i \mid \theta_i &amp; \sim \operatorname{Categorical} \left(\theta_i\right) \text{ for } i=1,\ldots, M 
+\end{aligned}
+$$
+&lt;/p&gt;
 &lt;h4 id=&#34;step-4-short-hand-notation&#34;&gt;Step 4: Short hand notation&lt;/h4&gt;
-&lt;p&gt;We are not particularly interested in $e$ and $\theta_k$ as parameters. We summarize the first three lines in the last equation and say that $G$ was genereated by the Dirichlet Process $\mathrm{DP}$ with the parameters $\alpha$ and $H$. This way the above equations simplify to&lt;/p&gt;
+&lt;p&gt;We summarize the first three lines in the last equation and say that $G$ was genereated by the Dirichlet Process $\mathrm{DP}$ with the parameters $\alpha$ and $H$. This way the above equations simplify to&lt;/p&gt;
 
 
 
@@ -221,58 +352,70 @@ G &amp;\sim \mathrm{DP}(\alpha, H)\\
 \end{aligned}
 $$
 
-&lt;p&gt;This concludes our derivation of how we can model trinucleotide mutations with a Dirichlet Process. This presents an alternative approach to estimate mutational signature and signature activity as alternative to the classical approach based on Non-negative Matrix Factorisation used in (Alexandrov, 2013).&lt;/p&gt;
+&lt;p&gt;This concludes our derivation of how we can model trinucleotide mutations with a Dirichlet Process, as used in &lt;a href=&#34;https://www.nature.com/articles/s41586-019-1913-9&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;(cite)&lt;/a&gt;. The Dirichlet Process approach presents an alternative approach to estimate mutational signature and signature activity as alternative to the classical approach based on Non-negative Matrix Factorisation used in &lt;a href=&#34;https://www.nature.com/articles/nature12477&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;(cite)&lt;/a&gt;.&lt;/p&gt;
 &lt;h5 id=&#34;graphical-model-of-dirichlet-process&#34;&gt;Graphical Model of Dirichlet Process&lt;/h5&gt;
 &lt;p&gt;We can visualise the Dirichlet process as a graphical model:&lt;/p&gt;
 &lt;figure&gt;
-&lt;img
-src=&#34;media/cae3659c625ecead8e187392389b2cc3e01df00c.png&#34;
- alt=&#34;300&#34; /&gt;
+&lt;img src=&#34;media/cae3659c625ecead8e187392389b2cc3e01df00c.png&#34;
+ alt=&#34;ThegraphicalmodelofaDirichletProcess.&#34; /&gt;
+&lt;figcaption aria-hidden=&#34;true&#34;&gt;ThegraphicalmodelofaDirichletProcess.&lt;/figcaption&gt;
 &lt;/figure&gt;
 &lt;h2 id=&#34;hierarchical-dirichlet-process-hdp&#34;&gt;Hierarchical Dirichlet Process (HDP)&lt;/h2&gt;
-&lt;p&gt;By taking composition of multiple &lt;a href=&#34;Final_report#Dirichlet%20Process%20%28DP%29%5D&#34;&gt;Dirichlet Processes&lt;/a&gt;, we obtain a Hierarchical Dirichlet Process (HDP). Recall that Dirichlet processes excel at modelling mixtures with an unknown number of components. HDPs are tailored for the situation when we have groups of mixture components and/or hierarchies between mixture components. HDP can be viewed as a non-parametric Bayesian clustering method.&lt;/p&gt;
-&lt;h3 id=&#34;example&#34;&gt;Example&lt;/h3&gt;
-&lt;p&gt;In the &lt;a href=&#34;Final_report#Example&#34;&gt;Final_report#Example&lt;/a&gt; we have trinucleotide mutation of a single sample. When we have multiple samples, we expect that the observed trinucleotide mutations in a sample show clear trends and are more similar within a sample than in another sample.&lt;/p&gt;
-&lt;h3 id=&#34;graphical-model-of-hierarchical-dirichlet-process&#34;&gt;Graphical Model of Hierarchical Dirichlet Process&lt;/h3&gt;
-&lt;p&gt;We extend the graphical model from [Final_report#Graphical Model of Dirichlet Process ](Final_report#Graphical Model of Dirichlet Process  ) to include hierarchies:&lt;/p&gt;
-&lt;figure&gt;
-&lt;img
-src=&#34;media/7ed449672108468c8b92b5be803a1b3bf01459e5.png&#34;
- alt=&#34;500&#34; /&gt;
-&lt;/figure&gt;
-&lt;h3 id=&#34;generating-model-of-hierarchical-dirichlet-process&#34;&gt;Generating model of Hierarchical Dirichlet Process&lt;/h3&gt;
-&lt;p&gt;We start with the prior distribution $H$. We draw multiple Dirichlet Processes:&lt;/p&gt;
+&lt;p&gt;By taking composition of multiple Dirichlet Processes, we obtain a Hierarchical Dirichlet Process (HDP) &lt;a href=&#34;https://www.tandfonline.com/doi/abs/10.1198/016214506000000302&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;(cite)&lt;/a&gt;. Recall that Dirichlet processes excel at modelling mixtures with an unknown number of components. HDPs are tailored for the situation when we have groups of mixture components and/or hierarchies between mixture components. For our model of trinucleotide mutations, we can use HDP to account for multiple samples. We expect from biology that there are general trends of mutational signature activity. However, we expect those trends to be more similar within a sample than between samples. In a mixture modelling approach, this would be captured by separate mixture models for each sample and information sharing between the weights of each sample. In the Dirichlet Process approach, this can be reflected by the HDP model. As before, we start with the prior distribution $H$. We draw a common base distribution $G_0$ from a Dirichlet Process as
 
 
 
 $$
 \begin{aligned}
-G_0 &amp;\sim \mathrm{DP}(\alpha_0, H)\\ 
-G_j \mid G_0 &amp;\sim \mathrm{DP}(\alpha_j, G_0) \text{ for } j = 1,2,\ldots N \text{ number of patients }\\
-\\ \theta_{j i} \mid G_j &amp;\sim G_j \text{ for } i = 1,2,\ldots M_j \text{ number of observations in group }j \\
-\left(x_{ji} \mid \theta_{j i}\right) &amp; \sim \operatorname{Categorical} \left(\theta_{j i}\right) 
+G_0 &amp;\sim \mathrm{DP}(\alpha_0, H).\\ 
 \end{aligned}
 $$
 
+Let&amp;rsquo;s assume we have $N$ samples. For each sample, we draw a seperate Dirichlet Process $G_j$ from the common base distribution $G_0$ as
+
+
+
+$$
+\begin{aligned}
+G_j \mid G_0 &amp;\sim \mathrm{DP}(\alpha_j, G_0) \text{ for } j = 1,2,\ldots N. 
+\end{aligned}
+$$
+
+In other words, we have a Dirichlet Process $G_0$ at the top and other Dirichlet Processes $G_j$ at the lower hierarchies. As described in the section of the mathematical properties of the Dirichlet Process, each $G_j$ will vary around $G_0$. This allows the different samples $G_j$ to share information via $G_0$. Let&amp;rsquo;s assume we observe $M_j$ mutations in the $j$-th sample. We draw the mutations as before:&lt;/p&gt;
+
+
+
+$$
+\begin{aligned}
+\theta_{j i} \mid G_j &amp;\sim G_j \text{ for } i = 1,2,\ldots M_j , \\
+x_{ji} \mid \theta_{j i} &amp; \sim \operatorname{Categorical} \left(\theta_{j i}\right). 
+\end{aligned}
+$$
+
+&lt;p&gt;The corresponding graphical model is:&lt;/p&gt;
+&lt;figure&gt;
+&lt;img src=&#34;media/7d5261339cd5d516f8153605fe36589a23255d8d.png&#34;
+ alt=&#34;500&#34; /&gt;
+&lt;/figure&gt;
 &lt;h3 id=&#34;estimation-of-mutational-signature-and-mutational-signature-activity&#34;&gt;Estimation of mutational signature and mutational signature activity&lt;/h3&gt;
 &lt;p&gt;Let&amp;rsquo;s assume we have the mutational signatures $\left(\theta_k\right)_{k\in \mathbb{N}}\subset \Delta^{96}$ acting on the genome. Borrowing notation from the model with a finite number of mutational signatures, let $z_{ji}\in \mathbb{N}$ denote the mutational signature that generated the mutation $x_{ji}\in \{1,\ldots,96\}$. By fitting a HDP to our data we will obtain an estimate $\hat{z}_{ji}$ of $z_{ji}$. Our estimate $\hat{\theta}_k$ for the associated probability vector $\theta_k \in \Delta^{96}$ of mutational signature $k$ is&lt;/p&gt;
 &lt;p&gt;
 
 
-$$\hat{\theta}_k=\frac{\sum_{l=1}^{96}\sum_{j=1}^N\sum_{i=1}^{M_j} \mathbb{1}(\hat{z}_{ji}=k)\mathbb{1}(x_{ji}=l)\delta_l}{\sum_{j=1}^N\sum_{i=1}^{M_j} \mathbb{1}(\hat{z}_{ji}=k)},$$
+$$\hat{\theta}_k=\frac{\sum_{l=1}^{96}\sum_{j=1}^N\sum_{i=1}^{M_j} \mathbb{I}(\hat{z}_{ji}=k)\mathbb{I}(x_{ji}=l)\delta_l}{\sum_{j=1}^N\sum_{i=1}^{M_j} \mathbb{I}(\hat{z}_{ji}=k)},$$
 
 where $\delta_l\in \Delta^{96}$ has mass $1$ at position $l$. Further, we estimate the mutational signature activity $e_{kj}$ of mutational signature $k$ in sample $j$ by&lt;br&gt;
 
 
 
-$$\hat{e}_{kj}=1/M_j\sum_{i=1}^{M_j} \mathbb{1}(\hat{z}_{ji}=k).$$
+$$\hat{e}_{kj}=1/M_j\sum_{i=1}^{M_j} \mathbb{I}(\hat{z}_{ji}=k).$$
 &lt;/p&gt;
 &lt;h3 id=&#34;advantages-of-hdp-approach-compared-to-the-classical-nmf-approach-for-mutational-signature-estimation&#34;&gt;Advantages of HDP approach compared to the classical NMF approach for mutational signature estimation&lt;/h3&gt;
-&lt;p&gt;The HDP approach offers several advantages over the classical NMF approach. First, it allows for the imposition of group structures and the integration of prior knowledge, such as the expectation that certain features should behave in coordinated ways (Roberts, N.D., 2018). Additionally, HDP enables simultaneous matching of the observed mutational catalogue to an existing signature library while discovering new signatures. This is done by pseudo-counting the existing signature library as observational data. Another key benefit is the ability to easily quantify uncertainty, though some variations of NMF also offer this feature. Finally, HDP facilitates learning the number of signatures directly from the data, which is often challenging with the classical NMF approach due to the difficulty in selecting the appropriate number of signatures.&lt;/p&gt;
+&lt;p&gt;The Hierarchical Dirichlet Process (HDP) approach offers several advantages over the classical Non-negative Matrix Factorization (NMF) method. It allows for the incorporation of prior knowledge and the imposition of group structures, such as the expectation that certain features should behave in coordinated ways &lt;a href=&#34;https://doi.org/10.17863/CAM.22674&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;(cite)&lt;/a&gt;. In mutational signature analysis, two key tasks&amp;mdash;(1) de novo discovery of mutational signatures and (2) estimation of signature activity&amp;mdash;can be performed simultaneously using HDP. The method can match the observed mutational catalog to an existing signature library while also identifying new signatures by pseudo-counting the existing library as observational data. Additionally, HDP facilitates the direct learning of the number of signatures from the data, overcoming a common challenge in NMF, which often struggles to select the appropriate number of signatures. While some NMF variants can quantify uncertainty, HDP provides this capability more easily.&lt;/p&gt;
 &lt;h3 id=&#34;references-1&#34;&gt;References&lt;/h3&gt;
 &lt;details&gt;
 &lt;summary&gt;
-Python Implementations 1
+&lt;p&gt;Python Implementations 1&lt;/p&gt;
 &lt;/summary&gt;
 &lt;ul&gt;
 &lt;li&gt;&lt;a href=&#34;https://radimrehurek.com/gensim/models/hdpmodel.html&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;https://radimrehurek.com/gensim/models/hdpmodel.html&lt;/a&gt;&lt;/li&gt;
@@ -287,7 +430,7 @@ Python Implementations 1
 &lt;/details&gt;
 &lt;details&gt;
 &lt;summary&gt;
-Python Implementations 2
+&lt;p&gt;Python Implementations 2&lt;/p&gt;
 &lt;/summary&gt;
 &lt;ul&gt;
 &lt;li&gt;&lt;a href=&#34;https://radimrehurek.com/gensim/models/hdpmodel.html&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;https://radimrehurek.com/gensim/models/hdpmodel.html&lt;/a&gt;&lt;/li&gt;
@@ -303,28 +446,11 @@ Python Implementations 2
 &lt;/details&gt;
 &lt;details&gt;
 &lt;summary&gt;
-Recommended Material for HDP
+&lt;p&gt;Recommended Material for HDP&lt;/p&gt;
 &lt;/summary&gt;
 &lt;ul&gt;
-&lt;li&gt;Teh, Y. W., Jordan, M. I., Beal, M. J., &amp;amp; work(s):, D. M. B. R. (2006). Hierarchical Dirichlet Processes. &lt;em&gt;Journal of the American Statistical Association&lt;/em&gt;, &lt;em&gt;101&lt;/em&gt;(476), 1566&amp;ndash;1581.&lt;/li&gt;
-&lt;li&gt;Used in: Li, Y., Roberts, N. D., Wala, J. A., Shapira, O., Schumacher, S. E., Kumar, K., Khurana, E., Waszak, S., Korbel, J. O., Haber, J. E., Imielinski, M., PCAWG Structural Variation Working Group, Akdemir, K. C., Alvarez, E. G., Baez-Ortega, A., Beroukhim, R., Boutros, P. C., Bowtell, D. D. L., Brors, B., &amp;hellip; Von Mering, C. (2020). Patterns of somatic structural variation in human cancer genomes. &lt;em&gt;Nature&lt;/em&gt;, &lt;em&gt;578&lt;/em&gt;(7793), 112&amp;ndash;121. &lt;a href=&#34;https://doi.org/10.1038/s41586-019-1913-9&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;https://doi.org/10.1038/s41586-019-1913-9&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;I like Lectures 11 and 12 from Jeff Miller&amp;rsquo;s course: &lt;a href=&#34;http://jwmi.github.io/BMB/index.html&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;http://jwmi.github.io/BMB/index.html&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a href=&#34;https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1011299&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;Covering Hierarchical Dirichlet Mixture Models on binary data to enhance genomic stratifications in onco-hematology&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;Alam, Md Hijbul, et al. &amp;ldquo;Tree-structured hierarchical Dirichlet process.&amp;rdquo; &lt;em&gt;Distributed Computing and Artificial Intelligence, Special Sessions, 15th International Conference 15&lt;/em&gt;. Springer International Publishing, 2019.&lt;/li&gt;
 &lt;li&gt;&lt;a href=&#34;https://en.wikipedia.org/wiki/Hierarchical_Dirichlet_process&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;https://en.wikipedia.org/wiki/Hierarchical_Dirichlet_process&lt;/a&gt;&lt;/li&gt;
 &lt;li&gt;&lt;a href=&#34;https://mlg.eng.cam.ac.uk/zoubin/tut06/ywt.pdf&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;https://mlg.eng.cam.ac.uk/zoubin/tut06/ywt.pdf&lt;/a&gt;&lt;/li&gt;
-&lt;/ul&gt;
-&lt;/details&gt;
-&lt;details&gt;
-&lt;summary&gt;
-References on HDP for mutational signautre estimation
-&lt;/summary&gt;
-&lt;ul&gt;
-&lt;li&gt;Used in: Li, Y., Roberts, N. D., Wala, J. A., Shapira, O., Schumacher, S. E., Kumar, K., Khurana, E., Waszak, S., Korbel, J. O., Haber, J. E., Imielinski, M., PCAWG Structural Variation Working Group, Akdemir, K. C., Alvarez, E. G., Baez-Ortega, A., Beroukhim, R., Boutros, P. C., Bowtell, D. D. L., Brors, B., &amp;hellip; Von Mering, C. (2020). Patterns of somatic structural variation in human cancer genomes. &lt;em&gt;Nature&lt;/em&gt;, &lt;em&gt;578&lt;/em&gt;(7793), 112&amp;ndash;121. &lt;a href=&#34;https://doi.org/10.1038/s41586-019-1913-9&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;https://doi.org/10.1038/s41586-019-1913-9&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a href=&#34;https://github.com/nicolaroberts/hdp&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;https://github.com/nicolaroberts/hdp&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;Roberts, N.D., 2018. &lt;em&gt;Patterns of somatic genome rearrangement in human cancer&lt;/em&gt; (Doctoral dissertation).&lt;/li&gt;
-&lt;li&gt;Appendix B &lt;a href=&#34;zotero://open-pdf/library/items/A44HM2CK?page=234&amp;amp;annotation=FQ4MT4UV&#34;&gt;Page 234&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;Chapter 4 &lt;a href=&#34;zotero://open-pdf/library/items/A44HM2CK?page=132&amp;amp;annotation=492B8JQX&#34;&gt;Page 132&lt;/a&gt;&lt;/li&gt;
 &lt;/ul&gt;
 &lt;/details&gt;
 </description>
@@ -364,10 +490,10 @@ References on HDP for mutational signautre estimation
 &lt;figure  &gt;
   &lt;div class=&#34;d-flex justify-content-center&#34;&gt;
     &lt;div class=&#34;w-100&#34; &gt;&lt;img alt=&#34;png&#34; srcset=&#34;
-               /post_template_inspiration/blog-with-jupyter/output_1_0_hu1e42f419f47ffd4b1ca9ef8f6670390a_11155_5a714abab5f53c70f7c38e19755638d3.webp 400w,
-               /post_template_inspiration/blog-with-jupyter/output_1_0_hu1e42f419f47ffd4b1ca9ef8f6670390a_11155_6b76da17c04a40aee4c1c633206f8065.webp 760w,
-               /post_template_inspiration/blog-with-jupyter/output_1_0_hu1e42f419f47ffd4b1ca9ef8f6670390a_11155_1200x1200_fit_q75_h2_lanczos_3.webp 1200w&#34;
-               src=&#34;http://localhost:1313/post_template_inspiration/blog-with-jupyter/output_1_0_hu1e42f419f47ffd4b1ca9ef8f6670390a_11155_5a714abab5f53c70f7c38e19755638d3.webp&#34;
+               /post_template_inspiration/blog-with-jupyter/output_1_0_hu_855ea7dacfa263b2.webp 400w,
+               /post_template_inspiration/blog-with-jupyter/output_1_0_hu_a3f65cf93e52db87.webp 760w,
+               /post_template_inspiration/blog-with-jupyter/output_1_0_hu_285d8d9dd5ee2f4a.webp 1200w&#34;
+               src=&#34;http://localhost:1313/post_template_inspiration/blog-with-jupyter/output_1_0_hu_855ea7dacfa263b2.webp&#34;
                width=&#34;601&#34;
                height=&#34;203&#34;
                loading=&#34;lazy&#34; data-zoomable /&gt;&lt;/div&gt;
@@ -462,7 +588,7 @@ References on HDP for mutational signautre estimation
 &lt;/ul&gt;
 &lt;h2 id=&#34;crowd-funded-open-source-software&#34;&gt;Crowd-funded open-source software&lt;/h2&gt;
 &lt;p&gt;To help us develop this template and software sustainably under the MIT license, we ask all individuals and businesses that use it to help support its ongoing maintenance and development via sponsorship.&lt;/p&gt;
-&lt;h3 id=&#34;-click-here-to-become-a-sponsor-and-help-support-wowchemys-future-httpshugobloxcomsponsor&#34;&gt;&lt;a href=&#34;https://hugoblox.com/sponsor/&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;❤️ Click here to become a sponsor and help support Wowchemy&amp;rsquo;s future ❤️&lt;/a&gt;&lt;/h3&gt;
+&lt;h3 id=&#34;-click-here-to-become-a-sponsor-and-help-support-wowchemy&#34;&gt;&lt;a href=&#34;https://hugoblox.com/sponsor/&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;❤️ Click here to become a sponsor and help support Wowchemy&amp;rsquo;s future ❤️&lt;/a&gt;&lt;/h3&gt;
 &lt;p&gt;As a token of appreciation for sponsoring, you can &lt;strong&gt;unlock &lt;a href=&#34;https://hugoblox.com/sponsor/&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;these&lt;/a&gt; awesome rewards and extra features 🦄✨&lt;/strong&gt;&lt;/p&gt;
 &lt;h2 id=&#34;ecosystem&#34;&gt;Ecosystem&lt;/h2&gt;
 &lt;ul&gt;
@@ -601,7 +727,7 @@ data.head()
 
 
 
-&lt;div id=&#34;chart-875623941&#34; class=&#34;chart&#34;&gt;&lt;/div&gt;
+&lt;div id=&#34;chart-637154982&#34; class=&#34;chart&#34;&gt;&lt;/div&gt;
 &lt;script&gt;
   (function() {
     let a = setInterval( function() {
@@ -611,7 +737,7 @@ data.head()
       clearInterval( a );
 
       Plotly.d3.json(&#34;./line-chart.json&#34;, function(chart) {
-        Plotly.plot(&#39;chart-875623941&#39;, chart.data, chart.layout, {responsive: true});
+        Plotly.plot(&#39;chart-637154982&#39;, chart.data, chart.layout, {responsive: true});
       });
     }, 500 );
   })();
@@ -786,8 +912,8 @@ Crash --&gt; [*]
 &lt;/ul&gt;
 &lt;h3 id=&#34;tables&#34;&gt;Tables&lt;/h3&gt;
 &lt;p&gt;Save your spreadsheet as a CSV file in your page&amp;rsquo;s folder and then render it by adding the &lt;em&gt;Table&lt;/em&gt; shortcode to your page:&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-go&#34; data-lang=&#34;go&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;p&#34;&gt;{{&amp;lt;&lt;/span&gt; &lt;span class=&#34;nx&#34;&gt;table&lt;/span&gt; &lt;span class=&#34;nx&#34;&gt;path&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;s&#34;&gt;&amp;#34;results.csv&amp;#34;&lt;/span&gt; &lt;span class=&#34;nx&#34;&gt;header&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;s&#34;&gt;&amp;#34;true&amp;#34;&lt;/span&gt; &lt;span class=&#34;nx&#34;&gt;caption&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;s&#34;&gt;&amp;#34;Table 1: My results&amp;#34;&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;&amp;gt;}}&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;renders as&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-go&#34; data-lang=&#34;go&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;p&#34;&gt;{{&amp;lt;&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;nx&#34;&gt;table&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;nx&#34;&gt;path&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;s&#34;&gt;&amp;#34;results.csv&amp;#34;&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;nx&#34;&gt;header&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;s&#34;&gt;&amp;#34;true&amp;#34;&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;nx&#34;&gt;caption&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;s&#34;&gt;&amp;#34;Table 1: My results&amp;#34;&lt;/span&gt;&lt;span class=&#34;w&#34;&gt; &lt;/span&gt;&lt;span class=&#34;p&#34;&gt;&amp;gt;}}&lt;/span&gt;&lt;span class=&#34;w&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;renders as&lt;/p&gt;
 
 
 
@@ -866,9 +992,9 @@ Crash --&gt; [*]
 &lt;/div&gt;
 &lt;h3 id=&#34;spoilers&#34;&gt;Spoilers&lt;/h3&gt;
 &lt;p&gt;Add a spoiler to a page to reveal text, such as an answer to a question, after a button is clicked.&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-markdown&#34; data-lang=&#34;markdown&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;{{&lt;span class=&#34;p&#34;&gt;&amp;lt;&lt;/span&gt; &lt;span class=&#34;nt&#34;&gt;spoiler&lt;/span&gt; &lt;span class=&#34;na&#34;&gt;text&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;s&#34;&gt;&amp;#34;Click to view the spoiler&amp;#34;&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;&amp;gt;&lt;/span&gt;}}
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-markdown&#34; data-lang=&#34;markdown&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;{{&amp;lt; spoiler text=&amp;#34;Click to view the spoiler&amp;#34; &amp;gt;}}
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;You found me!
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;{{&lt;span class=&#34;p&#34;&gt;&amp;lt;&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;/&lt;/span&gt;&lt;span class=&#34;nt&#34;&gt;spoiler&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;&amp;gt;&lt;/span&gt;}}
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;{{&amp;lt; /spoiler &amp;gt;}}
 &lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;renders as&lt;/p&gt;
 &lt;details class=&#34;spoiler &#34;  id=&#34;spoiler-6&#34;&gt;
   &lt;summary&gt;Click to view the spoiler&lt;/summary&gt;
@@ -877,9 +1003,9 @@ Crash --&gt; [*]
 &lt;h3 id=&#34;icons&#34;&gt;Icons&lt;/h3&gt;
 &lt;p&gt;Academic enables you to use a wide range of &lt;a href=&#34;https://docs.hugoblox.com/getting-started/page-builder/#icons&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;icons from &lt;em&gt;Font Awesome&lt;/em&gt; and &lt;em&gt;Academicons&lt;/em&gt;&lt;/a&gt; in addition to &lt;a href=&#34;https://docs.hugoblox.com/content/writing-markdown-latex/#emojis&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;emojis&lt;/a&gt;.&lt;/p&gt;
 &lt;p&gt;Here are some examples using the &lt;code&gt;icon&lt;/code&gt; shortcode to render icons:&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-markdown&#34; data-lang=&#34;markdown&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;{{&lt;span class=&#34;p&#34;&gt;&amp;lt;&lt;/span&gt; &lt;span class=&#34;nt&#34;&gt;icon&lt;/span&gt; &lt;span class=&#34;na&#34;&gt;name&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;s&#34;&gt;&amp;#34;terminal&amp;#34;&lt;/span&gt; &lt;span class=&#34;na&#34;&gt;pack&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;s&#34;&gt;&amp;#34;fas&amp;#34;&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;&amp;gt;&lt;/span&gt;}} Terminal  
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;{{&lt;span class=&#34;p&#34;&gt;&amp;lt;&lt;/span&gt; &lt;span class=&#34;nt&#34;&gt;icon&lt;/span&gt; &lt;span class=&#34;na&#34;&gt;name&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;s&#34;&gt;&amp;#34;python&amp;#34;&lt;/span&gt; &lt;span class=&#34;na&#34;&gt;pack&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;s&#34;&gt;&amp;#34;fab&amp;#34;&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;&amp;gt;&lt;/span&gt;}} Python  
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;{{&lt;span class=&#34;p&#34;&gt;&amp;lt;&lt;/span&gt; &lt;span class=&#34;nt&#34;&gt;icon&lt;/span&gt; &lt;span class=&#34;na&#34;&gt;name&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;s&#34;&gt;&amp;#34;r-project&amp;#34;&lt;/span&gt; &lt;span class=&#34;na&#34;&gt;pack&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;s&#34;&gt;&amp;#34;fab&amp;#34;&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;&amp;gt;&lt;/span&gt;}} R
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-markdown&#34; data-lang=&#34;markdown&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;{{&amp;lt; icon name=&amp;#34;terminal&amp;#34; pack=&amp;#34;fas&amp;#34; &amp;gt;}} Terminal  
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;{{&amp;lt; icon name=&amp;#34;python&amp;#34; pack=&amp;#34;fab&amp;#34; &amp;gt;}} Python  
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;{{&amp;lt; icon name=&amp;#34;r-project&amp;#34; pack=&amp;#34;fab&amp;#34; &amp;gt;}} R
 &lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;renders as&lt;/p&gt;
 &lt;p&gt;
   &lt;i class=&#34;fas fa-terminal  pr-1 fa-fw&#34;&gt;&lt;/i&gt; Terminal&lt;br&gt;
@@ -997,9 +1123,9 @@ $$&lt;/p&gt;
 
 &lt;h2 id=&#34;custom-slide&#34;&gt;Custom Slide&lt;/h2&gt;
 &lt;p&gt;Customize the slide style and background&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-markdown&#34; data-lang=&#34;markdown&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;{{&lt;span class=&#34;p&#34;&gt;&amp;lt;&lt;/span&gt; &lt;span class=&#34;nt&#34;&gt;slide&lt;/span&gt; &lt;span class=&#34;na&#34;&gt;background-image&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;s&#34;&gt;&amp;#34;/media/boards.jpg&amp;#34;&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;&amp;gt;&lt;/span&gt;}}
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;{{&lt;span class=&#34;p&#34;&gt;&amp;lt;&lt;/span&gt; &lt;span class=&#34;nt&#34;&gt;slide&lt;/span&gt; &lt;span class=&#34;na&#34;&gt;background-color&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;s&#34;&gt;&amp;#34;#0000FF&amp;#34;&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;&amp;gt;&lt;/span&gt;}}
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;{{&lt;span class=&#34;p&#34;&gt;&amp;lt;&lt;/span&gt; &lt;span class=&#34;nt&#34;&gt;slide&lt;/span&gt; &lt;span class=&#34;na&#34;&gt;class&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;s&#34;&gt;&amp;#34;my-style&amp;#34;&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;&amp;gt;&lt;/span&gt;}}
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-markdown&#34; data-lang=&#34;markdown&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;{{&amp;lt; slide background-image=&amp;#34;/media/boards.jpg&amp;#34; &amp;gt;}}
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;{{&amp;lt; slide background-color=&amp;#34;&lt;span class=&#34;ni&#34;&gt;#0000FF&lt;/span&gt;&amp;#34; &amp;gt;}}
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;{{&amp;lt; slide class=&amp;#34;my-style&amp;#34; &amp;gt;}}
 &lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;hr&gt;
 &lt;h2 id=&#34;custom-css-example&#34;&gt;Custom CSS Example&lt;/h2&gt;
 &lt;p&gt;Let&amp;rsquo;s make headers navy colored.&lt;/p&gt;
@@ -1013,6 +1139,24 @@ $$&lt;/p&gt;
 &lt;h1 id=&#34;questions&#34;&gt;Questions?&lt;/h1&gt;
 &lt;p&gt;&lt;a href=&#34;https://discord.gg/z8wNYzb&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;Ask&lt;/a&gt;&lt;/p&gt;
 &lt;p&gt;&lt;a href=&#34;https://docs.hugoblox.com/content/slides/&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;Documentation&lt;/a&gt;&lt;/p&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Privacy Policy</title>
+      <link>http://localhost:1313/privacy/</link>
+      <pubDate>Thu, 28 Jun 2018 00:00:00 +0100</pubDate>
+      <guid>http://localhost:1313/privacy/</guid>
+      <description>&lt;p&gt;Add your privacy policy here and set &lt;code&gt;draft: false&lt;/code&gt; to publish it. Otherwise, delete this file if you don&amp;rsquo;t need it.&lt;/p&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Terms</title>
+      <link>http://localhost:1313/terms/</link>
+      <pubDate>Thu, 28 Jun 2018 00:00:00 +0100</pubDate>
+      <guid>http://localhost:1313/terms/</guid>
+      <description>&lt;p&gt;Add your terms here and set &lt;code&gt;draft: false&lt;/code&gt; to publish it. Otherwise, delete this file if you don&amp;rsquo;t need it.&lt;/p&gt;
 </description>
     </item>
     
