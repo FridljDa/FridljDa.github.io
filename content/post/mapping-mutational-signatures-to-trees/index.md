@@ -126,9 +126,7 @@ A desirable property of the function $R_{\mathcal{T}}$ would be that for samples
 
 Alternatively, we could explore hierarchical NMF approaches. There is abundant literature on NMF and its variations, including [Sugahara et al.](http://arxiv.org/abs/2311.13277), [Ding et al.](http://arxiv.org/abs/2209.04968), [Ferreira et al.](http://biorxiv.org/lookup/doi/10.1101/2022.10.15.512383), and [Schmidt & Raphael](http://biorxiv.org/lookup/doi/10.1101/2024.04.23.590844).
 
-### Integration with Existing Signature Libraries
 
-We observed that when comparing our results to the COSMIC dataset, there is little similarity between the COSMIC database mutational signatures and the ones estimated by our model. A possible explanation is the limited sample size of our input dataset. We could include established mutational signatures as prior knowledge in our HDP model, as described in section 4.2.3 of [Roberts](https://danielfridljand.de/content/post/mappning-mutational-signatures-to-trees/media/zotero_library.bib#robertsPatternsSomaticGenome).
 
 ### Extension to Other Mutational Events
 
