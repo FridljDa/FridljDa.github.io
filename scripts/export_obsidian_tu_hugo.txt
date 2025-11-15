@@ -1,9 +1,0 @@
-curl --proto '=https' --tlsv1.2 -LsSf https://github.com/zoni/obsidian-export/releases/download/v23.12.0/obsidian-export-installer.sh | sh
-
-obsidian-export /Users/dfridljand/Library/CloudStorage/GoogleDrive-daniel.fridljand@gmail.com/My\ Drive/currentDocumants/research /Users/dfridljand/Desktop/blog
-
-obsidian-export /Users/dfridljand/Library/CloudStorage/GoogleDrive-daniel.fridljand@gmail.com/My\ Drive/currentDocumants/research/2024_Beerenwinkel/Beerenwinkel_Obsidian_Vault/Output/Final_report/Final_report.md /Users/dfridljand/Desktop/blog
-
-python -m obsidian_to_hugo --obsidian-vault-dir=/Users/dfridljand/Library/CloudStorage/GoogleDrive-daniel.fridljand@gmail.com/My\ Drive/currentDocumants/research/2024_Beerenwinkel/Beerenwinkel_Obsidian_Vault --hugo-content-dir=/Users/dfridljand/Desktop/blog
-
-python -m obsidian_to_hugo --obsidian-vault-dir=/Users/dfridljand/Library/CloudStorage/GoogleDrive-daniel.fridljand@gmail.com/My\ Drive/currentDocumants/research/2024_Beerenwinkel/Beerenwinkel_Obsidian_Vault/Output/Final_report --hugo-content-dir=/Users/dfridljand/Desktop/blog
