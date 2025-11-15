@@ -1,0 +1,47 @@
+services:
+  langflow:
+    build: .
+    container_name: langflow
+    user: root
+    ports:
+      - "7860:7860"
+    depends_on:
+      - postgres
+    environment:
+      - LANGFLOW_DATABASE_URL=postgresql://langflow:langflow@postgres:5432/langflow
+      # This variable defines where the logs, file storage, monitor data and secret keys are stored.
+      - LANGFLOW_CONFIG_DIR=/app/langflow
+      # Skip authentication for local development
+      - LANGFLOW_SKIP_AUTH_AUTO_LOGIN=true
+      # Enable storing environment variables as global variables
+      - LANGFLOW_STORE_ENVIRONMENT_VARIABLES=true
+      # Tell Langflow to automatically create global variables from these environment variables
+      - LANGFLOW_VARIABLES_TO_GET_FROM_ENVIRONMENT=GOOGLE_AI_STUDIO_API_KEY,ASTRA_DB_API_KEY
+      # The actual environment variable values (will be imported as global variables)
+      # Use placeholder if not set so variable appears in UI (user can update it later in Langflow settings)
+      - GOOGLE_AI_STUDIO_API_KEY=${GOOGLE_AI_STUDIO_API_KEY}
+      - ASTRA_DB_API_KEY=${ASTRA_DB_API_KEY:-SET_YOUR_KEY_HERE}
+    volumes:
+      - ai-playground-langflow-data:/app/langflow
+      # Mount important files from repo root for automatic import on startup
+      - ../../content/_index.md:/app/content/repository-homepage.md:ro
+      - ../../content/authors/admin/_index.md:/app/content/author-information.md:ro
+      - ../../static/uploads/resume.pdf:/app/content/resume.pdf:ro
+      - ../../assets/media/icons/brands:/app/content/brand-icons:ro
+      - ../../content/publication/preprint/cite.bib:/app/content/publication-preprint-cite.bib:ro
+      - ../../content/publication/preprint/index.md:/app/content/publication-preprint.md:ro
+
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: langflow
+      POSTGRES_PASSWORD: langflow
+      POSTGRES_DB: langflow
+    ports:
+      - "5432:5432"
+    volumes:
+      - ai-playground-postgres:/var/lib/postgresql/data
+
+volumes:
+  ai-playground-postgres:
+  ai-playground-langflow-data:
