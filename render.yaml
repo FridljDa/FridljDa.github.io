@@ -1,0 +1,62 @@
+services:
+  # Langflow Web Service
+  - type: web
+    name: langflow
+    runtime: docker
+    dockerfilePath: ./dynamic/ai-playground/Dockerfile
+    dockerContext: ./dynamic/ai-playground
+    plan: standard  # Required: Langflow needs at least 2GB RAM
+    envVars:
+      # Database connection - will be set automatically by Render
+      - key: LANGFLOW_DATABASE_URL
+        fromDatabase:
+          name: langflow-db
+          property: connectionString
+      # Configuration directory
+      - key: LANGFLOW_CONFIG_DIR
+        value: /app/langflow
+      # Authentication - enable for production (set via Render dashboard)
+      # Set to "true" for development/testing, "false" for production
+      - key: LANGFLOW_SKIP_AUTH_AUTO_LOGIN
+        value: "false"
+      # Environment variable handling
+      - key: LANGFLOW_STORE_ENVIRONMENT_VARIABLES
+        value: "true"
+      - key: LANGFLOW_VARIABLES_TO_GET_FROM_ENVIRONMENT
+        value: GOOGLE_AI_STUDIO_API_KEY,ASTRA_DB_API_KEY
+      # API keys - set these in Render dashboard
+      - key: GOOGLE_AI_STUDIO_API_KEY
+        sync: false
+      - key: ASTRA_DB_API_KEY
+        sync: false
+    # Copy content files into the Docker build context before building
+    # This ensures files are available during Docker build
+    buildCommand: |
+      cd dynamic/ai-playground
+      mkdir -p content
+      # Copy files if they exist (using || true to prevent build failure)
+      [ -f ../../content/_index.md ] && cp ../../content/_index.md content/repository-homepage.md || touch content/repository-homepage.md
+      [ -f ../../content/authors/admin/_index.md ] && cp ../../content/authors/admin/_index.md content/author-information.md || touch content/author-information.md
+      [ -f ../../static/uploads/resume.pdf ] && cp ../../static/uploads/resume.pdf content/resume.pdf || touch content/resume.pdf
+      [ -d ../../assets/media/icons/brands ] && cp -r ../../assets/media/icons/brands content/brand-icons || mkdir -p content/brand-icons
+      [ -f ../../content/publication/preprint/cite.bib ] && cp ../../content/publication/preprint/cite.bib content/publication-preprint-cite.bib || touch content/publication-preprint-cite.bib
+      [ -f ../../content/publication/preprint/index.md ] && cp ../../content/publication/preprint/index.md content/publication-preprint.md || touch content/publication-preprint.md
+
+  # Postgres Database
+  - type: pspg
+    name: langflow-db
+    plan: starter  # Can upgrade if needed
+    databaseName: langflow
+    user: langflow
+
+  # Astro Static Site
+  - type: web
+    name: astro-site
+    runtime: static
+    buildCommand: npm run build
+    staticPublishPath: dist
+    envVars:
+      # Langflow URL - set this to your deployed Langflow service URL
+      - key: PUBLIC_LANGFLOW_URL
+        sync: false
+

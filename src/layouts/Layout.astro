@@ -10,6 +10,9 @@ interface Props {
 }
 
 const { title = SITE.title, description = SITE.description } = Astro.props;
+
+// Get Langflow URL from environment variable (defaults to localhost for development)
+const langflowUrl = import.meta.env.PUBLIC_LANGFLOW_URL || 'http://localhost:7860';
 ---
 
 <!doctype html>
@@ -27,6 +30,10 @@ const { title = SITE.title, description = SITE.description } = Astro.props;
       integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV"
       crossorigin="anonymous"
     />
+    <script
+      is:inline
+      src="https://cdn.jsdelivr.net/gh/logspace-ai/langflow-embedded-chat@v1.0.7/dist/build/static/js/bundle.min.js"
+    ></script>
   </head>
   <body class="min-h-screen flex flex-col">
     <Header />
@@ -34,6 +41,13 @@ const { title = SITE.title, description = SITE.description } = Astro.props;
       <slot />
     </main>
     <Footer />
+    <langflow-chat
+      window_title="Chat with my CV"
+      flow_id="a67ffb73-6ec8-47e5-8644-a86f69eb5b2e"
+      host_url={langflowUrl}
+      chat_position="top-left"
+      chat_window_style='{"right": "20px", "bottom": "100px", "width": "380px", "maxHeight": "600px"}'
+    ></langflow-chat>
   </body>
 </html>
 

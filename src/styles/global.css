@@ -54,5 +54,13 @@
   .prose pre code {
     @apply bg-transparent p-0;
   }
+  
+  /* Langflow chat widget positioning */
+  langflow-chat {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 1000;
+  }
 }
 
