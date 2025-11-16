@@ -3,8 +3,8 @@ services:
   - type: web
     name: langflow
     runtime: docker
-    dockerfilePath: ./dynamic/ai-playground/Dockerfile
-    dockerContext: ./dynamic/ai-playground
+    dockerfilePath: ./dynamic/langflow-workspace/Dockerfile
+    dockerContext: ./dynamic/langflow-workspace
     plan: free  # Start with free plan; upgrade to standard if Langflow needs more RAM (2GB+)
     region: frankfurt  # European region
     envVars:
@@ -32,17 +32,17 @@ services:
         sync: false
     # Copy content files into the Docker build context before building
     # This ensures files are available during Docker build
-    # Note: buildCommand runs from repo root, dockerContext is ./dynamic/ai-playground
+    # Note: buildCommand runs from repo root, dockerContext is ./dynamic/langflow-workspace
     buildCommand: |
       # Ensure we're in the repo root and create content directory in docker context
-      mkdir -p dynamic/ai-playground/content
+      mkdir -p dynamic/langflow-workspace/content
       # Copy files if they exist (using || true to prevent build failure)
-      [ -f content/_index.md ] && cp content/_index.md dynamic/ai-playground/content/repository-homepage.md || touch dynamic/ai-playground/content/repository-homepage.md
-      [ -f content/authors/admin/_index.md ] && cp content/authors/admin/_index.md dynamic/ai-playground/content/author-information.md || touch dynamic/ai-playground/content/author-information.md
-      [ -f static/uploads/resume.pdf ] && cp static/uploads/resume.pdf dynamic/ai-playground/content/resume.pdf || touch dynamic/ai-playground/content/resume.pdf
-      [ -d assets/media/icons/brands ] && cp -r assets/media/icons/brands dynamic/ai-playground/content/brand-icons || mkdir -p dynamic/ai-playground/content/brand-icons
-      [ -f content/publication/preprint/cite.bib ] && cp content/publication/preprint/cite.bib dynamic/ai-playground/content/publication-preprint-cite.bib || touch dynamic/ai-playground/content/publication-preprint-cite.bib
-      [ -f content/publication/preprint/index.md ] && cp content/publication/preprint/index.md dynamic/ai-playground/content/publication-preprint.md || touch dynamic/ai-playground/content/publication-preprint.md
+      [ -f content/_index.md ] && cp content/_index.md dynamic/langflow-workspace/content/repository-homepage.md || touch dynamic/langflow-workspace/content/repository-homepage.md
+      [ -f content/authors/admin/_index.md ] && cp content/authors/admin/_index.md dynamic/langflow-workspace/content/author-information.md || touch dynamic/langflow-workspace/content/author-information.md
+      [ -f static/uploads/resume.pdf ] && cp static/uploads/resume.pdf dynamic/langflow-workspace/content/resume.pdf || touch dynamic/langflow-workspace/content/resume.pdf
+      [ -d assets/media/icons/brands ] && cp -r assets/media/icons/brands dynamic/langflow-workspace/content/brand-icons || mkdir -p dynamic/langflow-workspace/content/brand-icons
+      [ -f content/publication/preprint/cite.bib ] && cp content/publication/preprint/cite.bib dynamic/langflow-workspace/content/publication-preprint-cite.bib || touch dynamic/langflow-workspace/content/publication-preprint-cite.bib
+      [ -f content/publication/preprint/index.md ] && cp content/publication/preprint/index.md dynamic/langflow-workspace/content/publication-preprint.md || touch dynamic/langflow-workspace/content/publication-preprint.md
 
   # Astro Static Site
   - type: web

@@ -43,7 +43,7 @@ Note: The `LANGFLOW_DATABASE_URL` is automatically set by Render when you link t
 
 1. Start Langflow locally:
    ```bash
-   cd dynamic/ai-playground
+   cd dynamic/langflow-workspace
    docker compose up -d
    ```
 
