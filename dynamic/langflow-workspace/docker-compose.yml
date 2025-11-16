@@ -26,7 +26,7 @@ services:
       # Mount important files from repo root for automatic import on startup
       - ../../content/_index.md:/app/content/repository-homepage.md:ro
       - ../../content/authors/admin/_index.md:/app/content/author-information.md:ro
-      - ../../static/uploads/resume.pdf:/app/content/resume.pdf:ro
+      - ../../public/uploads/resume.pdf:/app/content/resume.pdf:ro
       - ../../assets/media/icons/brands:/app/content/brand-icons:ro
       - ../../content/publication/preprint/cite.bib:/app/content/publication-preprint-cite.bib:ro
       - ../../content/publication/preprint/index.md:/app/content/publication-preprint.md:ro

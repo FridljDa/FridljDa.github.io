@@ -18,7 +18,7 @@ Service details:
 - **Automatic document import**: On startup, the following files from the repo root are automatically uploaded to Langflow and available for use in flows:
   - `content/_index.md` → `repository-homepage.md`
   - `content/authors/admin/_index.md` → `author-information.md`
-  - `static/uploads/resume.pdf` → `resume.pdf`
+  - `public/uploads/resume.pdf` → `resume.pdf`
   - `content/publication/preprint/cite.bib` → `publication-preprint-cite.bib`
   - `content/publication/preprint/index.md` → `publication-preprint.md`
   - `assets/media/icons/brands/` → mounted as `brand-icons/` directory
