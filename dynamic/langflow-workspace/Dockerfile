@@ -23,7 +23,7 @@ COPY examples/ /app/examples/
 COPY content/ /app/content/
 
 # Copy flow JSON to content directory (combines with content layer for better caching)
-RUN cp "/app/examples/Document Q&A.json" /app/content/document-qa-flow.json 2>/dev/null || echo "WARNING: Document Q&A.json not found in examples/"
+RUN cp /app/examples/Document*.json /app/content/document-qa-flow.json 2>/dev/null || echo "WARNING: Document Q&A.json not found in examples/"
 
 # Set the entrypoint script
 ENTRYPOINT ["/entrypoint.sh"]
