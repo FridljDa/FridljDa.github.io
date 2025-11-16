@@ -6,11 +6,14 @@ set -u  # Only fail on undefined variables
 PORT=${PORT:-7860}
 # Set LANGFLOW_PORT to match PORT so Langflow uses the correct port
 export LANGFLOW_PORT=${PORT}
+# Set LANGFLOW_HOST to 0.0.0.0 to ensure Langflow binds to all interfaces (required for Render)
+export LANGFLOW_HOST=0.0.0.0
 
 # Logging: Environment variable configuration
 echo "=== Langflow Startup Configuration ==="
 echo "PORT environment variable: ${PORT}"
 echo "LANGFLOW_PORT environment variable: ${LANGFLOW_PORT}"
+echo "LANGFLOW_HOST environment variable: ${LANGFLOW_HOST}"
 if [ "${PORT}" = "10000" ]; then
     echo "Detected Render environment (PORT=10000)"
 elif [ "${PORT}" = "7860" ]; then
@@ -214,79 +217,55 @@ import_flow() {
     fi
 }
 
-# Start Langflow in the background
+# Background helper function to handle document uploads and flow imports
+# This runs in the background while Langflow starts in the foreground
+background_setup() {
+    echo "[Background Setup] Starting background setup process..."
+    
+    # Wait for Langflow API to be ready
+    if wait_for_langflow; then
+        echo "[Background Setup] Langflow API is ready, starting document uploads..."
+        
+        # Upload all documents (don't fail container if upload fails)
+        upload_documents || echo "[Background Setup] WARNING: Some document uploads failed, but continuing..."
+        
+        # Import Document Q&A flow (don't fail container if import fails)
+        import_flow "/app/content/document-qa-flow.json" "Document Q&A" || echo "[Background Setup] WARNING: Flow import failed, but continuing..."
+        
+        echo "[Background Setup] Background setup completed successfully."
+    else
+        echo "[Background Setup] ERROR: Failed to wait for Langflow API. Files may not be uploaded."
+    fi
+}
+
+# Start background setup process (document uploads and flow imports)
+# This will run in parallel with Langflow startup
+background_setup &
+BACKGROUND_PID=$!
+echo "[Main] Started background setup process with PID: ${BACKGROUND_PID}"
+
+# Start Langflow in the FOREGROUND (required for Render port detection)
+# Render needs to see the main process binding to the port
 # Always explicitly run langflow with --host 0.0.0.0 --port ${PORT} to ensure
 # Render can detect the port binding (Render requires binding to 0.0.0.0 on PORT)
-echo "=== Starting Langflow ==="
+echo "=== Starting Langflow (Foreground) ==="
 echo "Command: langflow run --host 0.0.0.0 --port ${PORT}"
 echo "Host: 0.0.0.0 (required for Render port detection)"
 echo "Port: ${PORT} (from PORT environment variable)"
-echo "========================="
+echo "LANGFLOW_HOST: ${LANGFLOW_HOST}"
+echo "LANGFLOW_PORT: ${LANGFLOW_PORT}"
+echo "======================================"
+
+# Verify port binding tools are available (for debugging)
+if command -v ss >/dev/null 2>&1 || command -v netstat >/dev/null 2>&1; then
+    echo "[Main] Port verification tools available - will check binding after startup"
+else
+    echo "[Main] WARNING: Neither 'ss' nor 'netstat' available for port verification"
+fi
 
 # Always run langflow with explicit host and port (override base image CMD)
 # This ensures Render's PORT environment variable is always respected
-langflow run --host 0.0.0.0 --port ${PORT} &
-LANGFLOW_PID=$!
-
-# Log the process PID
-echo "Langflow started with PID: ${LANGFLOW_PID}"
-
-# Give Langflow a moment to start and check if process is still running
-sleep 2
-if ! kill -0 $LANGFLOW_PID 2>/dev/null; then
-    echo "ERROR: Langflow process failed to start (PID ${LANGFLOW_PID} not found)"
-    echo "Checking if process exited with error..."
-    wait $LANGFLOW_PID 2>/dev/null
-    exit_code=$?
-    echo "Process exit code: ${exit_code}"
-    exit 1
-fi
-
-# Verify port binding - check which ports are actually listening
-echo "=== Port Binding Verification ==="
-# Try to use netstat or ss to check listening ports
-if command -v ss >/dev/null 2>&1; then
-    echo "Checking listening ports with 'ss':"
-    ss -tlnp 2>/dev/null | grep -E "LISTEN|:${PORT}" || echo "No ports found with ss"
-elif command -v netstat >/dev/null 2>&1; then
-    echo "Checking listening ports with 'netstat':"
-    netstat -tlnp 2>/dev/null | grep -E "LISTEN|:${PORT}" || echo "No ports found with netstat"
-else
-    echo "WARNING: Neither 'ss' nor 'netstat' available for port verification"
-    echo "Cannot verify port binding - please check logs manually"
-fi
-
-# Check specifically for our port on 0.0.0.0
-if command -v ss >/dev/null 2>&1; then
-    if ss -tlnp 2>/dev/null | grep -q "0.0.0.0:${PORT}"; then
-        echo "✓ Port ${PORT} is listening on 0.0.0.0 (correct for Render)"
-    else
-        echo "⚠ WARNING: Port ${PORT} not found listening on 0.0.0.0"
-        echo "Checking for localhost/127.0.0.1 bindings (Render won't detect these):"
-        ss -tlnp 2>/dev/null | grep -E "127.0.0.1:${PORT}|localhost:${PORT}" || echo "  No localhost bindings found"
-    fi
-elif command -v netstat >/dev/null 2>&1; then
-    if netstat -tlnp 2>/dev/null | grep -q "0.0.0.0:${PORT}"; then
-        echo "✓ Port ${PORT} is listening on 0.0.0.0 (correct for Render)"
-    else
-        echo "⚠ WARNING: Port ${PORT} not found listening on 0.0.0.0"
-        echo "Checking for localhost/127.0.0.1 bindings (Render won't detect these):"
-        netstat -tlnp 2>/dev/null | grep -E "127.0.0.1:${PORT}|localhost:${PORT}" || echo "  No localhost bindings found"
-    fi
-fi
-echo "=================================="
-
-# Wait for Langflow to be ready
-if wait_for_langflow; then
-    # Upload all documents (don't fail container if upload fails)
-    upload_documents || echo "WARNING: Some document uploads failed, but continuing..."
-    
-    # Import Document Q&A flow (don't fail container if import fails)
-    import_flow "/app/content/document-qa-flow.json" "Document Q&A" || echo "WARNING: Flow import failed, but continuing..."
-else
-    echo "ERROR: Failed to wait for Langflow. Container will continue but files may not be uploaded."
-fi
-
-# Wait for the Langflow process to keep container running
-wait $LANGFLOW_PID
+# Run in FOREGROUND so Render can detect the process and port binding
+# This will block here, which is what we want - Render will see this as the main process
+exec langflow run --host 0.0.0.0 --port ${PORT}
 
