@@ -22,13 +22,6 @@ This is a personal website built with Astro, featuring a Langflow integration fo
 - `dynamic/langflow-workspace/` - Langflow Docker setup
 - `tests/` - Playwright test files
 
-## Code Style & Conventions
-- Use TypeScript for data files and type safety
-- Astro components use `.astro` extension with frontmatter
-- Use Tailwind utility classes for styling
-- Follow Astro's component-based architecture
-- Blog posts are in MDX format with frontmatter metadata
-
 ## Local Development
 
 ### Setup
@@ -39,9 +32,13 @@ This is a personal website built with Astro, featuring a Langflow integration fo
 ### Development Workflow
 - Update data files in `src/data/` for site-wide changes
 - Add blog posts to `src/content/blog/` with proper frontmatter
-- Test changes with `npm test` (ensure dev server is running)
 - Use Astro's component pattern for reusable UI elements
 - Maintain consistency with existing Tailwind styling patterns
+
+### Testing Changes
+To test changes, you can:
+1. Run `npm test` locally (ensure dev server is running first)
+2. Commit, push, and check how it works on Render using MCP tools
 
 ### Running Locally
 1. Start Astro dev server: `npm run dev`
@@ -52,19 +49,10 @@ This is a personal website built with Astro, featuring a Langflow integration fo
 
 ### Deployment
 - Production is deployed on Render (see `render.yaml`)
-- Astro site is deployed as a static site
-- Langflow is deployed as a Docker web service
-- Postgres database is provisioned for Langflow
 
 ### Production Debugging
 - **Use Render MCP tools** to debug production issues
 - Check service logs, metrics, and deployment status via Render MCP
-- Query Postgres database using Render MCP tools if needed
-- Monitor service health and performance through Render dashboard/MCP
+- Monitor service health and performance through Render MCP
 
-### Important Production Notes
-- Blog posts use content collections - add new posts to `src/content/blog/`
-- Publications and experience data are in `src/data/` TypeScript files
-- The site uses KaTeX for math rendering in markdown/MDX
-- Environment variables (PUBLIC_LANGFLOW_URL, PUBLIC_LANGFLOW_FLOW_ID) must be set in Render dashboard
 
