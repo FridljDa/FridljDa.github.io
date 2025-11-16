@@ -5,7 +5,7 @@ services:
     runtime: docker
     dockerfilePath: ./dynamic/langflow-workspace/Dockerfile
     dockerContext: ./dynamic/langflow-workspace
-    plan: free  # Start with free plan; upgrade to standard if Langflow needs more RAM (2GB+)
+    plan: starter  # Start with free plan; upgrade to standard if Langflow needs more RAM (2GB+)
     region: frankfurt  # European region
     envVars:
       # Database connection - will be set automatically by Render
