@@ -10,7 +10,7 @@ on:
       test_production:
         description: 'Run tests against production site'
         required: false
-        default: 'false'
+        default: false
         type: boolean
 
 # Set default permissions for all jobs
@@ -144,15 +144,13 @@ jobs:
           path: test-results
           retention-days: 7
 
-  # Run Playwright tests against production site
+  # Run Playwright tests against production site (manual only)
   test-production:
     name: Test Production
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    # Run on workflow_dispatch or after successful builds on clean-start-2 branch
-    if: |
-      github.event_name == 'workflow_dispatch' && github.event.inputs.test_production == 'true' ||
-      (github.event_name == 'push' && github.ref == 'refs/heads/clean-start-2')
+    # Only run on manual workflow_dispatch
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.test_production == 'true'
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
