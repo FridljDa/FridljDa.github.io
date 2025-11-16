@@ -23,6 +23,8 @@ services:
       # Use placeholder if not set so variable appears in UI (user can update it later in Langflow settings)
       - GOOGLE_AI_STUDIO_API_KEY=${GOOGLE_AI_STUDIO_API_KEY}
       - ASTRA_DB_API_KEY=${ASTRA_DB_API_KEY:-SET_YOUR_KEY_HERE}
+      # Opt out of anonymous usage data collection
+      - DO_NOT_TRACK=true
     volumes:
       - langflow-workspace-langflow-data:/app/langflow
       # Mount important files from repo root for automatic import on startup

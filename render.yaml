@@ -35,6 +35,9 @@ services:
         sync: false
       - key: ASTRA_DB_API_KEY
         sync: false
+      # Opt out of anonymous usage data collection
+      - key: DO_NOT_TRACK
+        value: "true"
     # Health check path - allows Render to monitor service health and auto-restart if needed
     # Langflow provides /health_check endpoint that validates database and chat service connectivity
     healthCheckPath: /health_check
