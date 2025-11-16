@@ -45,7 +45,7 @@ services:
       [ -d assets/media/icons/brands ] && cp -r assets/media/icons/brands dynamic/langflow-workspace/content/brand-icons || mkdir -p dynamic/langflow-workspace/content/brand-icons
       [ -f content/publication/preprint/cite.bib ] && cp content/publication/preprint/cite.bib dynamic/langflow-workspace/content/publication-preprint-cite.bib || touch dynamic/langflow-workspace/content/publication-preprint-cite.bib
       [ -f content/publication/preprint/index.md ] && cp content/publication/preprint/index.md dynamic/langflow-workspace/content/publication-preprint.md || touch dynamic/langflow-workspace/content/publication-preprint.md
-      # Note: Document Q&A.json is already in examples/ directory and will be copied by Dockerfile
+      # Note: DocumentQA.json is already in examples/ directory and will be copied by Dockerfile
 
   # Astro Static Site
   - type: web
