@@ -15,7 +15,7 @@ RUN chmod +x /entrypoint.sh
 
 # Copy examples first (changes less frequently than content)
 # This layer will be cached unless examples/ changes
-COPY examples/ /app/examples/
+COPY examples/DocumentQA.json /app/examples/DocumentQA.json
 
 # Copy content files last (changes most frequently)
 # The buildCommand ensures the content directory exists before Docker build
