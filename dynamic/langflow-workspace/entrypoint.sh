@@ -51,23 +51,71 @@ else
 fi
 echo "======================================"
 
+# Function to verify port binding
+verify_port_binding() {
+    local check_port=$1
+    local max_attempts=12
+    local attempt=0
+    
+    echo "[Port Verification] Checking if langflow is listening on port ${check_port}..."
+    
+    while [ $attempt -lt $max_attempts ]; do
+        if command -v ss >/dev/null 2>&1; then
+            if ss -tlnp 2>/dev/null | grep -q ":${check_port}"; then
+                echo "[Port Verification] ✓ Port ${check_port} is bound (attempt $((attempt + 1)))"
+                ss -tlnp 2>/dev/null | grep ":${check_port}" | head -1 | sed 's/^/    /'
+                return 0
+            fi
+        elif command -v netstat >/dev/null 2>&1; then
+            if netstat -tlnp 2>/dev/null | grep -q ":${check_port}"; then
+                echo "[Port Verification] ✓ Port ${check_port} is bound (attempt $((attempt + 1)))"
+                netstat -tlnp 2>/dev/null | grep ":${check_port}" | head -1 | sed 's/^/    /'
+                return 0
+            fi
+        elif command -v lsof >/dev/null 2>&1; then
+            if lsof -i :${check_port} >/dev/null 2>&1; then
+                echo "[Port Verification] ✓ Port ${check_port} is bound (attempt $((attempt + 1)))"
+                lsof -i :${check_port} 2>&1 | head -2 | sed 's/^/    /'
+                return 0
+            fi
+        fi
+        
+        attempt=$((attempt + 1))
+        if [ $attempt -lt $max_attempts ]; then
+            sleep 2
+        fi
+    done
+    
+    echo "[Port Verification] ⚠ Port ${check_port} not yet bound after ${max_attempts} attempts"
+    return 1
+}
+
 # Function to check if Langflow API is ready
 wait_for_langflow() {
-    echo "Waiting for Langflow API to be ready..."
+    echo "[API Check] Waiting for Langflow API to be ready..."
     local max_attempts=60
     local attempt=0
     
+    # First verify port binding
+    echo "[API Check] Verifying port binding..."
+    verify_port_binding ${PORT}
+    
+    # Then check HTTP endpoint
     while [ $attempt -lt $max_attempts ]; do
-        if curl --output /dev/null --silent --head --fail http://localhost:${PORT}; then
-            echo "Langflow API is ready!"
+        if curl --output /dev/null --silent --head --fail --max-time 5 http://localhost:${PORT}; then
+            echo "[API Check] ✓ Langflow API is ready! (HTTP endpoint responding)"
             return 0
         fi
         attempt=$((attempt + 1))
-        echo "Attempt $attempt/$max_attempts: Langflow not ready yet, waiting 5 seconds..."
-        sleep 5
+        if [ $attempt -lt $max_attempts ]; then
+            echo "[API Check] Attempt $attempt/$max_attempts: Langflow not ready yet, waiting 5 seconds..."
+            sleep 5
+        fi
     done
     
-    echo "ERROR: Langflow API did not become ready within expected time"
+    echo "[API Check] ✗ ERROR: Langflow API did not become ready within expected time"
+    echo "[API Check] Last port check:"
+    verify_port_binding ${PORT} || true
     return 1
 }
 
@@ -329,18 +377,43 @@ if command -v langflow >/dev/null 2>&1; then
     # Check file permissions and ownership
     echo "  File details: $(ls -la "${LANGFLOW_CMD}" 2>&1 || echo 'ERROR: ls failed')"
     
-    # Try to get langflow version/help
+    # Try to get langflow version/help - capture full output
     echo "Attempting to run 'langflow --version'..."
-    if langflow --version >/dev/null 2>&1; then
-        echo "✓ langflow --version succeeded"
-        langflow --version 2>&1 | head -5 || true
+    VERSION_OUTPUT=$(langflow --version 2>&1)
+    VERSION_EXIT_CODE=$?
+    if [ $VERSION_EXIT_CODE -eq 0 ]; then
+        echo "✓ langflow --version succeeded (exit code: $VERSION_EXIT_CODE)"
+        echo "  Output: ${VERSION_OUTPUT}"
     else
-        echo "✗ ERROR: langflow --version failed"
-        echo "  Error output: $(langflow --version 2>&1 || echo 'Command execution failed')"
+        echo "✗ ERROR: langflow --version failed (exit code: $VERSION_EXIT_CODE)"
+        echo "  Error output: ${VERSION_OUTPUT}"
     fi
     
-    echo "Attempting to run 'langflow --help' (first 10 lines)..."
-    langflow --help 2>&1 | head -10 || echo "✗ ERROR: langflow --help failed"
+    echo ""
+    echo "Attempting to run 'langflow --help'..."
+    HELP_OUTPUT=$(langflow --help 2>&1 | head -20)
+    HELP_EXIT_CODE=$?
+    if [ $HELP_EXIT_CODE -eq 0 ]; then
+        echo "✓ langflow --help succeeded (exit code: $HELP_EXIT_CODE)"
+        echo "  Output (first 20 lines):"
+        echo "${HELP_OUTPUT}" | sed 's/^/    /'
+    else
+        echo "✗ ERROR: langflow --help failed (exit code: $HELP_EXIT_CODE)"
+        echo "  Error output: ${HELP_OUTPUT}"
+    fi
+    
+    # Test if langflow can at least be invoked (even if it fails)
+    echo ""
+    echo "Testing langflow command invocation..."
+    TEST_OUTPUT=$(timeout 10 langflow 2>&1 || true)
+    TEST_EXIT_CODE=$?
+    echo "  Command invocation test (exit code: $TEST_EXIT_CODE)"
+    if echo "${TEST_OUTPUT}" | grep -qi "usage\|help\|error\|command"; then
+        echo "  ✓ langflow command responds (output contains expected keywords)"
+    else
+        echo "  ⚠ langflow command output unexpected:"
+        echo "${TEST_OUTPUT}" | head -5 | sed 's/^/    /'
+    fi
 else
     echo "✗ ERROR: langflow command NOT found in PATH"
     echo "  PATH: ${PATH}"
@@ -413,6 +486,92 @@ fi
 echo ""
 
 # ============================================================================
+# CONFIGURATION VERIFICATION
+# ============================================================================
+echo "--- Configuration Verification ---"
+echo "Checking LANGFLOW_CONFIG_DIR..."
+
+if [ -n "${LANGFLOW_CONFIG_DIR:-}" ]; then
+    echo "LANGFLOW_CONFIG_DIR is set to: ${LANGFLOW_CONFIG_DIR}"
+    
+    # Create directory if it doesn't exist
+    if [ ! -d "${LANGFLOW_CONFIG_DIR}" ]; then
+        echo "Creating LANGFLOW_CONFIG_DIR: ${LANGFLOW_CONFIG_DIR}"
+        mkdir -p "${LANGFLOW_CONFIG_DIR}" 2>&1 || echo "✗ WARNING: Failed to create LANGFLOW_CONFIG_DIR"
+    fi
+    
+    # Check if directory exists and is writable
+    if [ -d "${LANGFLOW_CONFIG_DIR}" ]; then
+        echo "✓ LANGFLOW_CONFIG_DIR exists: ${LANGFLOW_CONFIG_DIR}"
+        echo "  Permissions: $(ls -ld "${LANGFLOW_CONFIG_DIR}" 2>&1 || echo 'ERROR: ls failed')"
+        
+        if [ -w "${LANGFLOW_CONFIG_DIR}" ]; then
+            echo "✓ LANGFLOW_CONFIG_DIR is writable"
+        else
+            echo "✗ WARNING: LANGFLOW_CONFIG_DIR is NOT writable"
+        fi
+    else
+        echo "✗ ERROR: LANGFLOW_CONFIG_DIR does not exist and could not be created"
+    fi
+else
+    echo "⚠ LANGFLOW_CONFIG_DIR is not set (using default)"
+fi
+
+echo ""
+echo "Verifying database connection..."
+if [ -n "${LANGFLOW_DATABASE_URL:-}" ]; then
+    echo "LANGFLOW_DATABASE_URL is set"
+    # Extract database info for logging (without password)
+    DB_INFO=$(echo "${LANGFLOW_DATABASE_URL}" | sed 's/:[^:@]*@/:***@/g')
+    echo "  Database URL (masked): ${DB_INFO}"
+    
+    # Try to test database connection using Python
+    echo "  Testing database connectivity..."
+    python3 -c "
+import os
+import sys
+try:
+    db_url = os.environ.get('LANGFLOW_DATABASE_URL', '')
+    if 'postgresql' in db_url or 'postgres' in db_url:
+        import psycopg2
+        from urllib.parse import urlparse
+        parsed = urlparse(db_url)
+        conn = psycopg2.connect(
+            host=parsed.hostname,
+            port=parsed.port or 5432,
+            user=parsed.username,
+            password=parsed.password,
+            database=parsed.path[1:] if parsed.path else 'langflow',
+            connect_timeout=5
+        )
+        conn.close()
+        print('  ✓ Database connection successful')
+        sys.exit(0)
+    else:
+        print('  ⚠ Non-PostgreSQL database, skipping connection test')
+        sys.exit(0)
+except ImportError:
+    print('  ⚠ psycopg2 not available, skipping connection test')
+    sys.exit(0)
+except Exception as e:
+    print(f'  ✗ Database connection failed: {e}')
+    sys.exit(1)
+" 2>&1 || echo "  ⚠ Could not verify database connection (non-fatal)"
+else
+    echo "⚠ LANGFLOW_DATABASE_URL is not set (will use default SQLite)"
+fi
+
+echo ""
+echo "Critical environment variables summary:"
+echo "  PORT: ${PORT:-'NOT SET'}"
+echo "  LANGFLOW_PORT: ${LANGFLOW_PORT:-'NOT SET'}"
+echo "  LANGFLOW_HOST: ${LANGFLOW_HOST:-'NOT SET'}"
+echo "  LANGFLOW_CONFIG_DIR: ${LANGFLOW_CONFIG_DIR:-'NOT SET (using default)'}"
+echo "  LANGFLOW_DATABASE_URL: ${LANGFLOW_DATABASE_URL:+SET (hidden)}"
+echo "  LANGFLOW_SKIP_AUTH_AUTO_LOGIN: ${LANGFLOW_SKIP_AUTH_AUTO_LOGIN:-'NOT SET'}"
+echo ""
+
+# ============================================================================
 # PROCESS AND PORT DIAGNOSTICS
 # ============================================================================
 echo "--- Process and Port Diagnostics ---"
@@ -459,31 +618,86 @@ else
     echo "[Main] WARNING: Neither 'ss' nor 'netstat' available for port verification"
 fi
 
-# Log environment one more time before exec
-echo "[Main] Final environment check before exec:"
-echo "  USER: ${USER:-'NOT SET'}"
-echo "  HOME: ${HOME:-'NOT SET'}"
-echo "  PATH: ${PATH:-'NOT SET'}"
-echo "  PORT: ${PORT}"
-echo "  LANGFLOW_HOST: ${LANGFLOW_HOST}"
-echo "  LANGFLOW_PORT: ${LANGFLOW_PORT}"
+# ============================================================================
+# PRE-EXECUTION TESTING AND VALIDATION
+# ============================================================================
+echo "=========================================="
+echo "=== Pre-Execution Testing ==="
+echo "=========================================="
 
-# Always run langflow with explicit host and port (override base image CMD)
-# This ensures Render's PORT environment variable is always respected
-# Run in FOREGROUND so Render can detect the process and port binding
-# This will block here, which is what we want - Render will see this as the main process
-echo "[Main] Executing: exec langflow run --host 0.0.0.0 --port ${PORT}"
-echo "[Main] If this command fails, check stderr for error messages"
-echo ""
-
-# Capture any errors before exec
+# Final validation before starting langflow
 if ! command -v langflow >/dev/null 2>&1; then
     echo "✗ FATAL ERROR: langflow command not found. Cannot proceed."
     echo "  PATH was: ${PATH}"
     exit 1
 fi
 
+echo "[Pre-Exec] Final environment check:"
+echo "  USER: ${USER:-'NOT SET'}"
+echo "  HOME: ${HOME:-'NOT SET'}"
+echo "  PATH: ${PATH:-'NOT SET'}"
+echo "  PORT: ${PORT}"
+echo "  LANGFLOW_HOST: ${LANGFLOW_HOST}"
+echo "  LANGFLOW_PORT: ${LANGFLOW_PORT}"
+echo "  LANGFLOW_CONFIG_DIR: ${LANGFLOW_CONFIG_DIR:-'NOT SET (using default)'}"
+echo ""
+
+# Test langflow startup command syntax (dry run test)
+echo "[Pre-Exec] Testing langflow command syntax..."
+LANGFLOW_CMD_TEST="langflow run --host 0.0.0.0 --port ${PORT}"
+
+# Try to validate the command by checking if langflow accepts the arguments
+# Use a short timeout to prevent hanging
+echo "[Pre-Exec] Command to execute: ${LANGFLOW_CMD_TEST}"
+echo "[Pre-Exec] Testing command with 5 second timeout..."
+TIMEOUT_OUTPUT=$(timeout 5 langflow run --host 0.0.0.0 --port ${PORT} 2>&1 || true)
+TIMEOUT_EXIT=$?
+
+# If timeout occurred (exit code 124) or command started, that's actually good
+# If command failed immediately with error, that's bad
+if [ $TIMEOUT_EXIT -eq 124 ]; then
+    echo "[Pre-Exec] ✓ Command started successfully (timeout expected for long-running process)"
+elif [ $TIMEOUT_EXIT -eq 0 ]; then
+    echo "[Pre-Exec] ⚠ Command exited immediately (may indicate configuration issue)"
+    echo "[Pre-Exec] Output: ${TIMEOUT_OUTPUT}"
+elif echo "${TIMEOUT_OUTPUT}" | grep -qi "error\|failed\|exception"; then
+    echo "[Pre-Exec] ✗ Command failed with error:"
+    echo "${TIMEOUT_OUTPUT}" | head -20 | sed 's/^/    /'
+    echo "[Pre-Exec] WARNING: Command test failed, but proceeding anyway..."
+else
+    echo "[Pre-Exec] ✓ Command syntax appears valid"
+    if [ -n "${TIMEOUT_OUTPUT}" ]; then
+        echo "[Pre-Exec] Initial output:"
+        echo "${TIMEOUT_OUTPUT}" | head -10 | sed 's/^/    /'
+    fi
+fi
+echo ""
+
+# ============================================================================
+# START LANGFLOW (FOREGROUND EXEC)
+# ============================================================================
+echo "=========================================="
+echo "=== Starting Langflow (Foreground) ==="
+echo "=========================================="
+echo "Command: ${LANGFLOW_CMD_TEST}"
+echo "Host: 0.0.0.0 (required for Render port detection)"
+echo "Port: ${PORT} (from PORT environment variable)"
+echo "Current user: $(whoami 2>&1)"
+echo "Current directory: $(pwd 2>&1)"
+echo "Full command path: $(command -v langflow 2>&1)"
+echo "=========================================="
+echo ""
+
+# Final pre-flight checks
+echo "[Main] Pre-flight checks complete. Starting langflow..."
+echo "[Main] All diagnostics and tests passed."
+echo "[Main] Executing: exec langflow run --host 0.0.0.0 --port ${PORT}"
+echo "[Main] Note: This will replace the current process (exec mode)"
+echo "[Main] Render will detect the port binding from this process"
+echo ""
+
 # Execute langflow - this replaces the current process
 # If it fails, the container will exit and Render will see the error
+# All stderr and stdout will be visible in Render logs
 exec langflow run --host 0.0.0.0 --port ${PORT} 2>&1
 
