@@ -5,7 +5,7 @@ services:
     runtime: docker
     dockerfilePath: ./dynamic/ai-playground/Dockerfile
     dockerContext: ./dynamic/ai-playground
-    plan: standard  # Required: Langflow needs at least 2GB RAM
+    plan: free  # Start with free plan; upgrade to standard if Langflow needs more RAM (2GB+)
     envVars:
       # Database connection - will be set automatically by Render
       - key: LANGFLOW_DATABASE_URL
@@ -42,17 +42,11 @@ services:
       [ -f ../../content/publication/preprint/cite.bib ] && cp ../../content/publication/preprint/cite.bib content/publication-preprint-cite.bib || touch content/publication-preprint-cite.bib
       [ -f ../../content/publication/preprint/index.md ] && cp ../../content/publication/preprint/index.md content/publication-preprint.md || touch content/publication-preprint.md
 
-  # Postgres Database
-  - type: pspg
-    name: langflow-db
-    plan: starter  # Can upgrade if needed
-    databaseName: langflow
-    user: langflow
-
   # Astro Static Site
   - type: web
     name: astro-site
     runtime: static
+    branch: clean-start-2
     buildCommand: npm run build
     staticPublishPath: dist
     envVars:
@@ -60,3 +54,9 @@ services:
       - key: PUBLIC_LANGFLOW_URL
         sync: false
 
+# Postgres Database
+databases:
+  - name: langflow-db
+    plan: free  # Free tier; can upgrade if needed
+    databaseName: langflow
+    user: langflow
