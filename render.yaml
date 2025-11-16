@@ -50,7 +50,9 @@ services:
     buildCommand: npm run build
     staticPublishPath: dist
     envVars:
-      # Langflow URL - set this to your deployed Langflow service URL
+      # Langflow URL - REQUIRED: Set this to your deployed Langflow service URL
+      # After deploying, get the URL from the Langflow service dashboard (e.g., https://langflow-xxxxx.onrender.com)
+      # and set it in the Render dashboard for this astro-site service
       - key: PUBLIC_LANGFLOW_URL
         sync: false
 
