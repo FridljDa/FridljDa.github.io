@@ -11,6 +11,12 @@ Create a `.env` file in the project root (or set in Render dashboard) with:
 # For local development, use: http://localhost:7860
 # For production (Render), use: https://your-langflow-service.onrender.com
 PUBLIC_LANGFLOW_URL=http://localhost:7860
+
+# Flow ID - Automatically set by Langflow entrypoint script
+# For local development, check Langflow container logs or /app/content/flow-id.txt
+# For production, check Langflow service logs after first deployment
+# The entrypoint script will import the "Document Q&A" flow and log its ID
+PUBLIC_LANGFLOW_FLOW_ID=4f2f5788-d593-4480-b869-3bd78f25c236
 ```
 
 ### Langflow Service Environment Variables
@@ -33,11 +39,15 @@ Note: The `LANGFLOW_DATABASE_URL` is automatically set by Render when you link t
 2. **After deployment:**
    - Get the public URL of your Langflow service
    - Set `PUBLIC_LANGFLOW_URL` in your Astro static site environment variables to point to the Langflow service URL
-   - Redeploy the Astro site to pick up the new environment variable
+   - Check the Langflow service logs for the flow ID (look for "Flow 'Document Q&A' imported successfully with ID: ...")
+   - Set `PUBLIC_LANGFLOW_FLOW_ID` in your Astro static site environment variables with the flow ID from the logs
+   - Redeploy the Astro site to pick up the new environment variables
 
-3. **Flow ID:**
-   - The chat widget is configured to use flow ID: `a67ffb73-6ec8-47e5-8644-a86f69eb5b2e`
-   - Make sure this flow exists in your Langflow instance
+3. **Flow Import:**
+   - The "Document Q&A" flow is automatically imported on Langflow container startup
+   - The entrypoint script checks if the flow exists first (idempotent)
+   - The flow ID is written to `/app/content/flow-id.txt` in the Langflow container
+   - Check container logs or the flow-id.txt file to get the flow ID for the chat widget
 
 ## Local Development
 

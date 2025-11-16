@@ -18,6 +18,10 @@ RUN chmod +x /entrypoint.sh
 # If content/ doesn't exist, the buildCommand should create at least an empty directory
 COPY content/ /app/content/
 
+# Copy the Document Q&A flow JSON file
+COPY examples/ /app/examples/
+RUN cp "/app/examples/Document Q&A.json" /app/content/document-qa-flow.json 2>/dev/null || echo "WARNING: Document Q&A.json not found in examples/"
+
 # Set the entrypoint script
 ENTRYPOINT ["/entrypoint.sh"]
 

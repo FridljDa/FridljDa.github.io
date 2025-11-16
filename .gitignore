@@ -50,3 +50,9 @@ temp/
 .eslintcache
 .pnpm-store
 .DS_Store
+
+# Playwright test results
+test-results/
+playwright-report/
+playwright/.cache/
+.DS_Store

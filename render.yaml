@@ -43,6 +43,7 @@ services:
       [ -d assets/media/icons/brands ] && cp -r assets/media/icons/brands dynamic/langflow-workspace/content/brand-icons || mkdir -p dynamic/langflow-workspace/content/brand-icons
       [ -f content/publication/preprint/cite.bib ] && cp content/publication/preprint/cite.bib dynamic/langflow-workspace/content/publication-preprint-cite.bib || touch dynamic/langflow-workspace/content/publication-preprint-cite.bib
       [ -f content/publication/preprint/index.md ] && cp content/publication/preprint/index.md dynamic/langflow-workspace/content/publication-preprint.md || touch dynamic/langflow-workspace/content/publication-preprint.md
+      # Note: Document Q&A.json is already in examples/ directory and will be copied by Dockerfile
 
   # Astro Static Site
   - type: web
@@ -56,6 +57,12 @@ services:
       # After deploying, get the URL from the Langflow service dashboard (e.g., https://langflow-xxxxx.onrender.com)
       # and set it in the Render dashboard for this astro-site service
       - key: PUBLIC_LANGFLOW_URL
+        sync: false
+      # Flow ID - Set after first Langflow deployment
+      # After Langflow service starts, check the logs for "Flow 'Document Q&A' imported successfully with ID: ..."
+      # Copy that ID and set it here, or check /app/content/flow-id.txt in the Langflow container
+      # The chat widget will use this ID to connect to the correct flow
+      - key: PUBLIC_LANGFLOW_FLOW_ID
         sync: false
 
 # Postgres Database
