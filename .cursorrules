@@ -27,6 +27,9 @@ This is a personal website built with Astro, featuring a Langflow integration fo
 ### Setup
 - The dev server runs on `http://localhost:4321`
 - Langflow runs on `http://localhost:7860` (requires Docker Compose)
+  - Port is configured via `PORT=7860` in `docker-compose.yml` for local development
+  - The entrypoint script uses `PORT` environment variable (with fallback to 7860)
+  - For Render deployment, port is automatically configured via Render's `PORT` environment variable
 - Tests require the dev server to be running first
 
 ### Development Workflow

@@ -2,6 +2,11 @@
 # Don't use set -e here, as we want to continue even if upload fails
 set -u  # Only fail on undefined variables
 
+# Use Render's PORT environment variable, fallback to 7860 for local development
+PORT=${PORT:-7860}
+# Set LANGFLOW_PORT to match PORT so Langflow uses the correct port
+export LANGFLOW_PORT=${PORT}
+
 # Function to check if Langflow API is ready
 wait_for_langflow() {
     echo "Waiting for Langflow API to be ready..."
@@ -9,7 +14,7 @@ wait_for_langflow() {
     local attempt=0
     
     while [ $attempt -lt $max_attempts ]; do
-        if curl --output /dev/null --silent --head --fail http://localhost:7860; then
+        if curl --output /dev/null --silent --head --fail http://localhost:${PORT}; then
             echo "Langflow API is ready!"
             return 0
         fi
@@ -35,7 +40,7 @@ upload_single_document() {
     
     echo "Uploading $display_name to Langflow (will overwrite if exists)..."
     
-    local response=$(curl -X POST "http://localhost:7860/api/v2/files/" \
+    local response=$(curl -X POST "http://localhost:${PORT}/api/v2/files/" \
         -H "accept: application/json" \
         -F "file=@$file_path" \
         -w "\n%{http_code}" \
@@ -78,7 +83,7 @@ check_flow_exists() {
     
     # Try v2 API first, then fallback to v1
     # Use --compressed to handle gzip responses
-    local response=$(curl -X GET "http://localhost:7860/api/v2/flows/?get_all=true" \
+    local response=$(curl -X GET "http://localhost:${PORT}/api/v2/flows/?get_all=true" \
         -H "accept: application/json" \
         -H "Accept-Encoding: gzip" \
         --compressed \
@@ -90,7 +95,7 @@ check_flow_exists() {
     
     # If v2 fails, try v1
     if [ "$http_code" -ne 200 ]; then
-        response=$(curl -X GET "http://localhost:7860/api/v1/flows/?get_all=true" \
+        response=$(curl -X GET "http://localhost:${PORT}/api/v1/flows/?get_all=true" \
             -H "accept: application/json" \
             -H "Accept-Encoding: gzip" \
             --compressed \
@@ -154,7 +159,7 @@ import_flow() {
     echo "Flow '$flow_name' not found. Importing from $flow_file..."
     
     # Try v2 API first, then fallback to v1
-    local response=$(curl -X POST "http://localhost:7860/api/v2/flows/upload/" \
+    local response=$(curl -X POST "http://localhost:${PORT}/api/v2/flows/upload/" \
         -H "accept: application/json" \
         -H "Content-Type: multipart/form-data" \
         -F "file=@$flow_file;type=application/json" \
@@ -167,7 +172,7 @@ import_flow() {
     # If v2 fails, try v1
     if [ "$http_code" -ne 200 ] && [ "$http_code" -ne 201 ]; then
         echo "v2 API failed, trying v1..."
-        response=$(curl -X POST "http://localhost:7860/api/v1/flows/upload/" \
+        response=$(curl -X POST "http://localhost:${PORT}/api/v1/flows/upload/" \
             -H "accept: application/json" \
             -H "Content-Type: multipart/form-data" \
             -F "file=@$flow_file;type=application/json" \
@@ -207,7 +212,7 @@ if [ $# -gt 0 ]; then
     LANGFLOW_PID=$!
 else
     # Fall back to langflow run if no command provided
-    langflow run --host 0.0.0.0 --port 7860 &
+    langflow run --host 0.0.0.0 --port ${PORT} &
     LANGFLOW_PID=$!
 fi
 

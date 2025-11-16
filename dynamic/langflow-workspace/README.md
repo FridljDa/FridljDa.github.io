@@ -62,11 +62,18 @@ Change the port (example 8080) by editing `docker-compose.yml`:
 ```
     ports:
       - "8080:7860"
+    environment:
+      - PORT=7860  # Must match the container port (right side of port mapping)
 ```
-Optionally set environment variables (consult Langflow docs):
+**Important:** When changing the port, you must update both:
+1. The port mapping (e.g., `"8080:7860"` maps host port 8080 to container port 7860)
+2. The `PORT` environment variable to match the container port (right side of mapping)
+
+The entrypoint script uses the `PORT` environment variable (with fallback to 7860) to configure Langflow. The `LANGFLOW_PORT` environment variable is automatically set to match `PORT`.
+
+Optionally set other environment variables (consult Langflow docs):
 ```
     environment:
-      - LANGFLOW_PORT=7860
       - LANGFLOW_LOG_LEVEL=INFO
 ```
 

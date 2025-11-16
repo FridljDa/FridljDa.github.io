@@ -25,6 +25,8 @@ services:
         value: "true"
       - key: LANGFLOW_VARIABLES_TO_GET_FROM_ENVIRONMENT
         value: GOOGLE_AI_STUDIO_API_KEY,ASTRA_DB_API_KEY
+      # Port configuration - LANGFLOW_PORT is automatically set in entrypoint.sh to match Render's PORT
+      # This ensures Langflow binds to the port that Render expects (default 10000)
       # API keys - set these in Render dashboard
       - key: GOOGLE_AI_STUDIO_API_KEY
         sync: false
