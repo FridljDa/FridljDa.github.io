@@ -2,6 +2,34 @@
 # Don't use set -e here, as we want to continue even if upload fails
 set -u  # Only fail on undefined variables
 
+# ============================================================================
+# COMPREHENSIVE DIAGNOSTIC LOGGING
+# ============================================================================
+echo "=========================================="
+echo "=== ENTRYPOINT STARTUP DIAGNOSTICS ==="
+echo "=========================================="
+
+# 1. User and Environment Diagnostics
+echo "--- User and Environment Information ---"
+echo "Current user (whoami): $(whoami 2>&1 || echo 'ERROR: whoami failed')"
+echo "Current user ID (id): $(id 2>&1 || echo 'ERROR: id failed')"
+echo "User's groups: $(groups 2>&1 || echo 'ERROR: groups failed')"
+echo "Home directory: ${HOME:-'NOT SET'}"
+echo "Working directory: $(pwd 2>&1 || echo 'ERROR: pwd failed')"
+echo "Shell: ${SHELL:-'NOT SET'}"
+echo "PATH: ${PATH:-'NOT SET'}"
+echo ""
+
+# 2. Environment Variables
+echo "--- Environment Variables ---"
+echo "PORT: ${PORT:-'NOT SET'}"
+echo "LANGFLOW_PORT: ${LANGFLOW_PORT:-'NOT SET'}"
+echo "LANGFLOW_HOST: ${LANGFLOW_HOST:-'NOT SET'}"
+echo "LANGFLOW_DATABASE_URL: ${LANGFLOW_DATABASE_URL:-'NOT SET'}"
+echo "LANGFLOW_CONFIG_DIR: ${LANGFLOW_CONFIG_DIR:-'NOT SET'}"
+echo "LANGFLOW_SKIP_AUTH_AUTO_LOGIN: ${LANGFLOW_SKIP_AUTH_AUTO_LOGIN:-'NOT SET'}"
+echo ""
+
 # Use Render's PORT environment variable, fallback to 7860 for local development
 PORT=${PORT:-7860}
 # Set LANGFLOW_PORT to match PORT so Langflow uses the correct port
@@ -244,17 +272,185 @@ background_setup &
 BACKGROUND_PID=$!
 echo "[Main] Started background setup process with PID: ${BACKGROUND_PID}"
 
+# ============================================================================
+# PYTHON ENVIRONMENT DIAGNOSTICS
+# ============================================================================
+echo "--- Python Environment Diagnostics ---"
+echo "Checking Python installation..."
+if command -v python3 >/dev/null 2>&1; then
+    PYTHON_CMD=$(command -v python3)
+    echo "✓ python3 found at: ${PYTHON_CMD}"
+    echo "  Version: $(python3 --version 2>&1 || echo 'ERROR: version check failed')"
+    echo "  Path: $(which python3 2>&1 || echo 'ERROR: which failed')"
+else
+    echo "✗ ERROR: python3 command NOT found"
+fi
+
+if command -v python >/dev/null 2>&1; then
+    echo "✓ python found at: $(command -v python)"
+    echo "  Version: $(python --version 2>&1 || echo 'ERROR: version check failed')"
+fi
+
+echo "Checking Python packages..."
+if command -v pip3 >/dev/null 2>&1; then
+    echo "✓ pip3 found at: $(command -v pip3)"
+    echo "  Checking if langflow is installed..."
+    if python3 -c "import langflow" 2>/dev/null; then
+        echo "✓ langflow Python package is importable"
+        python3 -c "import langflow; print(f'  Langflow version: {langflow.__version__}')" 2>&1 || echo "  Could not get version"
+    else
+        echo "✗ ERROR: langflow Python package is NOT importable"
+        python3 -c "import langflow" 2>&1 || true
+    fi
+else
+    echo "✗ WARNING: pip3 not found"
+fi
+echo ""
+
+# ============================================================================
+# LANGFLOW COMMAND DIAGNOSTICS
+# ============================================================================
+echo "--- Langflow Command Diagnostics ---"
+echo "Checking if 'langflow' command exists..."
+
+# Check if langflow command exists
+if command -v langflow >/dev/null 2>&1; then
+    LANGFLOW_CMD=$(command -v langflow)
+    echo "✓ langflow command found at: ${LANGFLOW_CMD}"
+    
+    # Check if it's executable
+    if [ -x "${LANGFLOW_CMD}" ]; then
+        echo "✓ langflow command is executable"
+    else
+        echo "✗ ERROR: langflow command is NOT executable"
+        echo "  Permissions: $(ls -l "${LANGFLOW_CMD}" 2>&1 || echo 'ERROR: ls failed')"
+    fi
+    
+    # Check file permissions and ownership
+    echo "  File details: $(ls -la "${LANGFLOW_CMD}" 2>&1 || echo 'ERROR: ls failed')"
+    
+    # Try to get langflow version/help
+    echo "Attempting to run 'langflow --version'..."
+    if langflow --version >/dev/null 2>&1; then
+        echo "✓ langflow --version succeeded"
+        langflow --version 2>&1 | head -5 || true
+    else
+        echo "✗ ERROR: langflow --version failed"
+        echo "  Error output: $(langflow --version 2>&1 || echo 'Command execution failed')"
+    fi
+    
+    echo "Attempting to run 'langflow --help' (first 10 lines)..."
+    langflow --help 2>&1 | head -10 || echo "✗ ERROR: langflow --help failed"
+else
+    echo "✗ ERROR: langflow command NOT found in PATH"
+    echo "  PATH: ${PATH}"
+    echo "  Searching common locations..."
+    for loc in /usr/local/bin /usr/bin /bin /opt/langflow/bin ~/.local/bin; do
+        if [ -f "${loc}/langflow" ]; then
+            echo "  Found at: ${loc}/langflow"
+            ls -la "${loc}/langflow" 2>&1 || true
+        fi
+    done
+fi
+echo ""
+
+# ============================================================================
+# DIRECTORY AND FILE PERMISSION DIAGNOSTICS
+# ============================================================================
+echo "--- Directory and File Permissions ---"
+echo "Checking /app directory..."
+if [ -d "/app" ]; then
+    echo "✓ /app exists"
+    echo "  Permissions: $(ls -ld /app 2>&1 || echo 'ERROR: ls failed')"
+    echo "  Contents: $(ls -la /app 2>&1 | head -10 || echo 'ERROR: ls failed')"
+else
+    echo "✗ ERROR: /app directory does NOT exist"
+fi
+
+echo "Checking /app/content directory..."
+if [ -d "/app/content" ]; then
+    echo "✓ /app/content exists"
+    echo "  Permissions: $(ls -ld /app/content 2>&1 || echo 'ERROR: ls failed')"
+    echo "  Contents: $(ls -la /app/content 2>&1 | head -10 || echo 'ERROR: ls failed')"
+else
+    echo "✗ WARNING: /app/content directory does NOT exist"
+fi
+
+echo "Checking /app/langflow directory..."
+if [ -d "/app/langflow" ]; then
+    echo "✓ /app/langflow exists"
+    echo "  Permissions: $(ls -ld /app/langflow 2>&1 || echo 'ERROR: ls failed')"
+else
+    echo "  /app/langflow does not exist (may be created at runtime)"
+fi
+
+echo "Checking entrypoint.sh..."
+if [ -f "/entrypoint.sh" ]; then
+    echo "✓ /entrypoint.sh exists"
+    echo "  Permissions: $(ls -l /entrypoint.sh 2>&1 || echo 'ERROR: ls failed')"
+    if [ -x "/entrypoint.sh" ]; then
+        echo "✓ /entrypoint.sh is executable"
+    else
+        echo "✗ ERROR: /entrypoint.sh is NOT executable"
+    fi
+else
+    echo "✗ ERROR: /entrypoint.sh does NOT exist"
+fi
+
+echo "Checking if we can write to /app..."
+if [ -w "/app" ]; then
+    echo "✓ Current user can write to /app"
+else
+    echo "✗ WARNING: Current user CANNOT write to /app"
+fi
+
+echo "Checking if we can write to /app/content..."
+if [ -w "/app/content" ] 2>/dev/null; then
+    echo "✓ Current user can write to /app/content"
+else
+    echo "✗ WARNING: Current user CANNOT write to /app/content"
+fi
+echo ""
+
+# ============================================================================
+# PROCESS AND PORT DIAGNOSTICS
+# ============================================================================
+echo "--- Process and Port Diagnostics ---"
+echo "Checking for existing langflow processes..."
+if command -v ps >/dev/null 2>&1; then
+    ps aux | grep -i langflow | grep -v grep || echo "  No langflow processes found"
+else
+    echo "  ps command not available"
+fi
+
+echo "Checking for processes listening on port ${PORT}..."
+if command -v lsof >/dev/null 2>&1; then
+    lsof -i :${PORT} 2>&1 || echo "  No processes listening on port ${PORT}"
+elif command -v ss >/dev/null 2>&1; then
+    ss -tlnp | grep ":${PORT}" || echo "  No processes listening on port ${PORT}"
+elif command -v netstat >/dev/null 2>&1; then
+    netstat -tlnp | grep ":${PORT}" || echo "  No processes listening on port ${PORT}"
+else
+    echo "  No port checking tools available (lsof, ss, netstat)"
+fi
+echo ""
+
 # Start Langflow in the FOREGROUND (required for Render port detection)
 # Render needs to see the main process binding to the port
 # Always explicitly run langflow with --host 0.0.0.0 --port ${PORT} to ensure
 # Render can detect the port binding (Render requires binding to 0.0.0.0 on PORT)
+echo "=========================================="
 echo "=== Starting Langflow (Foreground) ==="
+echo "=========================================="
 echo "Command: langflow run --host 0.0.0.0 --port ${PORT}"
 echo "Host: 0.0.0.0 (required for Render port detection)"
 echo "Port: ${PORT} (from PORT environment variable)"
 echo "LANGFLOW_HOST: ${LANGFLOW_HOST}"
 echo "LANGFLOW_PORT: ${LANGFLOW_PORT}"
-echo "======================================"
+echo "Current user: $(whoami 2>&1)"
+echo "Current directory: $(pwd 2>&1)"
+echo "Full command path: $(command -v langflow 2>&1 || echo 'NOT FOUND')"
+echo "=========================================="
 
 # Verify port binding tools are available (for debugging)
 if command -v ss >/dev/null 2>&1 || command -v netstat >/dev/null 2>&1; then
@@ -263,9 +459,31 @@ else
     echo "[Main] WARNING: Neither 'ss' nor 'netstat' available for port verification"
 fi
 
+# Log environment one more time before exec
+echo "[Main] Final environment check before exec:"
+echo "  USER: ${USER:-'NOT SET'}"
+echo "  HOME: ${HOME:-'NOT SET'}"
+echo "  PATH: ${PATH:-'NOT SET'}"
+echo "  PORT: ${PORT}"
+echo "  LANGFLOW_HOST: ${LANGFLOW_HOST}"
+echo "  LANGFLOW_PORT: ${LANGFLOW_PORT}"
+
 # Always run langflow with explicit host and port (override base image CMD)
 # This ensures Render's PORT environment variable is always respected
 # Run in FOREGROUND so Render can detect the process and port binding
 # This will block here, which is what we want - Render will see this as the main process
-exec langflow run --host 0.0.0.0 --port ${PORT}
+echo "[Main] Executing: exec langflow run --host 0.0.0.0 --port ${PORT}"
+echo "[Main] If this command fails, check stderr for error messages"
+echo ""
+
+# Capture any errors before exec
+if ! command -v langflow >/dev/null 2>&1; then
+    echo "✗ FATAL ERROR: langflow command not found. Cannot proceed."
+    echo "  PATH was: ${PATH}"
+    exit 1
+fi
+
+# Execute langflow - this replaces the current process
+# If it fails, the container will exit and Render will see the error
+exec langflow run --host 0.0.0.0 --port ${PORT} 2>&1
 
