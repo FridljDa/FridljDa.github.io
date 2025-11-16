@@ -6,6 +6,7 @@ services:
     dockerfilePath: ./dynamic/ai-playground/Dockerfile
     dockerContext: ./dynamic/ai-playground
     plan: free  # Start with free plan; upgrade to standard if Langflow needs more RAM (2GB+)
+    region: frankfurt  # European region
     envVars:
       # Database connection - will be set automatically by Render
       - key: LANGFLOW_DATABASE_URL
@@ -61,5 +62,6 @@ services:
 databases:
   - name: langflow-db
     plan: free  # Free tier; can upgrade if needed
+    region: frankfurt  # European region - must match Langflow service region
     databaseName: langflow
     user: langflow
