@@ -7,6 +7,19 @@ PORT=${PORT:-7860}
 # Set LANGFLOW_PORT to match PORT so Langflow uses the correct port
 export LANGFLOW_PORT=${PORT}
 
+# Logging: Environment variable configuration
+echo "=== Langflow Startup Configuration ==="
+echo "PORT environment variable: ${PORT}"
+echo "LANGFLOW_PORT environment variable: ${LANGFLOW_PORT}"
+if [ "${PORT}" = "10000" ]; then
+    echo "Detected Render environment (PORT=10000)"
+elif [ "${PORT}" = "7860" ]; then
+    echo "Using local development port (PORT=7860)"
+else
+    echo "Using custom port: ${PORT}"
+fi
+echo "======================================"
+
 # Function to check if Langflow API is ready
 wait_for_langflow() {
     echo "Waiting for Langflow API to be ready..."
@@ -202,26 +215,66 @@ import_flow() {
 }
 
 # Start Langflow in the background
-# Try to use the original command from the base image, or fall back to langflow run
-echo "Starting Langflow..."
+# Always explicitly run langflow with --host 0.0.0.0 --port ${PORT} to ensure
+# Render can detect the port binding (Render requires binding to 0.0.0.0 on PORT)
+echo "=== Starting Langflow ==="
+echo "Command: langflow run --host 0.0.0.0 --port ${PORT}"
+echo "Host: 0.0.0.0 (required for Render port detection)"
+echo "Port: ${PORT} (from PORT environment variable)"
+echo "========================="
 
-# Check if we have arguments (original CMD), otherwise use default langflow command
-if [ $# -gt 0 ]; then
-    # Execute the provided command (original CMD from base image)
-    "$@" &
-    LANGFLOW_PID=$!
-else
-    # Fall back to langflow run if no command provided
-    langflow run --host 0.0.0.0 --port ${PORT} &
-    LANGFLOW_PID=$!
-fi
+# Always run langflow with explicit host and port (override base image CMD)
+# This ensures Render's PORT environment variable is always respected
+langflow run --host 0.0.0.0 --port ${PORT} &
+LANGFLOW_PID=$!
+
+# Log the process PID
+echo "Langflow started with PID: ${LANGFLOW_PID}"
 
 # Give Langflow a moment to start and check if process is still running
 sleep 2
 if ! kill -0 $LANGFLOW_PID 2>/dev/null; then
-    echo "ERROR: Langflow process failed to start"
+    echo "ERROR: Langflow process failed to start (PID ${LANGFLOW_PID} not found)"
+    echo "Checking if process exited with error..."
+    wait $LANGFLOW_PID 2>/dev/null
+    exit_code=$?
+    echo "Process exit code: ${exit_code}"
     exit 1
 fi
+
+# Verify port binding - check which ports are actually listening
+echo "=== Port Binding Verification ==="
+# Try to use netstat or ss to check listening ports
+if command -v ss >/dev/null 2>&1; then
+    echo "Checking listening ports with 'ss':"
+    ss -tlnp 2>/dev/null | grep -E "LISTEN|:${PORT}" || echo "No ports found with ss"
+elif command -v netstat >/dev/null 2>&1; then
+    echo "Checking listening ports with 'netstat':"
+    netstat -tlnp 2>/dev/null | grep -E "LISTEN|:${PORT}" || echo "No ports found with netstat"
+else
+    echo "WARNING: Neither 'ss' nor 'netstat' available for port verification"
+    echo "Cannot verify port binding - please check logs manually"
+fi
+
+# Check specifically for our port on 0.0.0.0
+if command -v ss >/dev/null 2>&1; then
+    if ss -tlnp 2>/dev/null | grep -q "0.0.0.0:${PORT}"; then
+        echo "✓ Port ${PORT} is listening on 0.0.0.0 (correct for Render)"
+    else
+        echo "⚠ WARNING: Port ${PORT} not found listening on 0.0.0.0"
+        echo "Checking for localhost/127.0.0.1 bindings (Render won't detect these):"
+        ss -tlnp 2>/dev/null | grep -E "127.0.0.1:${PORT}|localhost:${PORT}" || echo "  No localhost bindings found"
+    fi
+elif command -v netstat >/dev/null 2>&1; then
+    if netstat -tlnp 2>/dev/null | grep -q "0.0.0.0:${PORT}"; then
+        echo "✓ Port ${PORT} is listening on 0.0.0.0 (correct for Render)"
+    else
+        echo "⚠ WARNING: Port ${PORT} not found listening on 0.0.0.0"
+        echo "Checking for localhost/127.0.0.1 bindings (Render won't detect these):"
+        netstat -tlnp 2>/dev/null | grep -E "127.0.0.1:${PORT}|localhost:${PORT}" || echo "  No localhost bindings found"
+    fi
+fi
+echo "=================================="
 
 # Wait for Langflow to be ready
 if wait_for_langflow; then
