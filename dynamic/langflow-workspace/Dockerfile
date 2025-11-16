@@ -3,23 +3,26 @@ FROM langflowai/langflow:1.6.7
 # Switch to root to install curl
 USER root
 
-# Install curl for making HTTP requests
-RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+# Install curl and create content directory in one layer (better caching)
+# This layer will be cached unless apt packages or directory structure changes
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/* && \
+    mkdir -p /app/content
 
-# Create directory for content files
-RUN mkdir -p /app/content
-
-# Copy the entrypoint script into the container
+# Copy the entrypoint script and make it executable in one layer
+# This layer will be cached unless entrypoint.sh changes
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
-# Copy content files (created by render.yaml buildCommand)
+# Copy examples first (changes less frequently than content)
+# This layer will be cached unless examples/ changes
+COPY examples/ /app/examples/
+
+# Copy content files last (changes most frequently)
 # The buildCommand ensures the content directory exists before Docker build
-# If content/ doesn't exist, the buildCommand should create at least an empty directory
+# This layer will be rebuilt when content changes
 COPY content/ /app/content/
 
-# Copy the Document Q&A flow JSON file
-COPY examples/ /app/examples/
+# Copy flow JSON to content directory (combines with content layer for better caching)
 RUN cp "/app/examples/Document Q&A.json" /app/content/document-qa-flow.json 2>/dev/null || echo "WARNING: Document Q&A.json not found in examples/"
 
 # Set the entrypoint script

@@ -1,0 +1,65 @@
+# Ignore unnecessary files to reduce build context size
+# This significantly speeds up Docker builds by reducing what gets sent to the Docker daemon
+
+# Git files
+.git
+.gitignore
+.gitattributes
+
+# Documentation
+README.md
+*.md
+
+# Docker files (don't need to copy these into the image)
+docker-compose.yml
+Dockerfile
+.dockerignore
+
+# Python/development files
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg
+*.egg-info
+dist
+build
+.venv
+venv/
+env/
+ENV/
+
+# IDE files
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Images directory (screenshots, etc. - not needed in container)
+images/
+
+# Lock files (not needed in container)
+uv.lock
+poetry.lock
+package-lock.json
+yarn.lock
+
+# Project config (not needed in container)
+pyproject.toml
+
+# Test files
+tests/
+test/
+*.test.js
+*.spec.js
+
