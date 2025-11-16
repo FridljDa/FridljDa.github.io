@@ -27,11 +27,17 @@ services:
         value: GOOGLE_AI_STUDIO_API_KEY,ASTRA_DB_API_KEY
       # Port configuration - LANGFLOW_PORT is automatically set in entrypoint.sh to match Render's PORT
       # This ensures Langflow binds to the port that Render expects (default 10000)
+      # Host configuration - explicitly set to 0.0.0.0 for Render port detection
+      - key: LANGFLOW_HOST
+        value: "0.0.0.0"
       # API keys - set these in Render dashboard
       - key: GOOGLE_AI_STUDIO_API_KEY
         sync: false
       - key: ASTRA_DB_API_KEY
         sync: false
+    # Health check path - allows Render to monitor service health and auto-restart if needed
+    # Langflow provides /health_check endpoint that validates database and chat service connectivity
+    healthCheckPath: /health_check
     # Copy content files into the Docker build context before building
     # This ensures files are available during Docker build
     # Note: buildCommand runs from repo root, dockerContext is ./dynamic/langflow-workspace
