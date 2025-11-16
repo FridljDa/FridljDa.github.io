@@ -13,6 +13,8 @@ const { title = SITE.title, description = SITE.description } = Astro.props;
 
 // Get Langflow URL from environment variable (defaults to localhost for development)
 const langflowUrl = import.meta.env.PUBLIC_LANGFLOW_URL || 'http://localhost:7860';
+// Get flow ID from environment variable (with fallback to current hardcoded ID)
+const flowId = import.meta.env.PUBLIC_LANGFLOW_FLOW_ID || '4f2f5788-d593-4480-b869-3bd78f25c236';
 ---
 
 <!doctype html>
@@ -42,8 +44,8 @@ const langflowUrl = import.meta.env.PUBLIC_LANGFLOW_URL || 'http://localhost:786
     </main>
     <Footer />
     <langflow-chat
-      window_title="Chat with my CV"
-      flow_id="a67ffb73-6ec8-47e5-8644-a86f69eb5b2e"
+      window_title="Document Q&A"
+      flow_id={flowId}
       host_url={langflowUrl}
       chat_position="top-left"
       chat_window_style='{"right": "20px", "bottom": "100px", "width": "380px", "maxHeight": "600px"}'
