@@ -9,7 +9,8 @@
     "astro": "astro",
     "test": "playwright test",
     "test:ui": "playwright test --ui",
-    "test:headed": "playwright test --headed"
+    "test:headed": "playwright test --headed",
+    "test:production": "PLAYWRIGHT_BASE_URL=https://astro-site-z68a.onrender.com playwright test"
   },
   "dependencies": {
     "astro": "^5.15.8",
