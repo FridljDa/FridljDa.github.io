@@ -13,8 +13,9 @@ RUN mkdir -p /app/content
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
-# Copy content files (these should be created by render.yaml buildCommand)
+# Copy content files (created by render.yaml buildCommand)
 # The buildCommand ensures the content directory exists before Docker build
+# If content/ doesn't exist, the buildCommand should create at least an empty directory
 COPY content/ /app/content/
 
 # Set the entrypoint script

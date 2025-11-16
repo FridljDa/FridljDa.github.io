@@ -31,16 +31,17 @@ services:
         sync: false
     # Copy content files into the Docker build context before building
     # This ensures files are available during Docker build
+    # Note: buildCommand runs from repo root, dockerContext is ./dynamic/ai-playground
     buildCommand: |
-      cd dynamic/ai-playground
-      mkdir -p content
+      # Ensure we're in the repo root and create content directory in docker context
+      mkdir -p dynamic/ai-playground/content
       # Copy files if they exist (using || true to prevent build failure)
-      [ -f ../../content/_index.md ] && cp ../../content/_index.md content/repository-homepage.md || touch content/repository-homepage.md
-      [ -f ../../content/authors/admin/_index.md ] && cp ../../content/authors/admin/_index.md content/author-information.md || touch content/author-information.md
-      [ -f ../../static/uploads/resume.pdf ] && cp ../../static/uploads/resume.pdf content/resume.pdf || touch content/resume.pdf
-      [ -d ../../assets/media/icons/brands ] && cp -r ../../assets/media/icons/brands content/brand-icons || mkdir -p content/brand-icons
-      [ -f ../../content/publication/preprint/cite.bib ] && cp ../../content/publication/preprint/cite.bib content/publication-preprint-cite.bib || touch content/publication-preprint-cite.bib
-      [ -f ../../content/publication/preprint/index.md ] && cp ../../content/publication/preprint/index.md content/publication-preprint.md || touch content/publication-preprint.md
+      [ -f content/_index.md ] && cp content/_index.md dynamic/ai-playground/content/repository-homepage.md || touch dynamic/ai-playground/content/repository-homepage.md
+      [ -f content/authors/admin/_index.md ] && cp content/authors/admin/_index.md dynamic/ai-playground/content/author-information.md || touch dynamic/ai-playground/content/author-information.md
+      [ -f static/uploads/resume.pdf ] && cp static/uploads/resume.pdf dynamic/ai-playground/content/resume.pdf || touch dynamic/ai-playground/content/resume.pdf
+      [ -d assets/media/icons/brands ] && cp -r assets/media/icons/brands dynamic/ai-playground/content/brand-icons || mkdir -p dynamic/ai-playground/content/brand-icons
+      [ -f content/publication/preprint/cite.bib ] && cp content/publication/preprint/cite.bib dynamic/ai-playground/content/publication-preprint-cite.bib || touch dynamic/ai-playground/content/publication-preprint-cite.bib
+      [ -f content/publication/preprint/index.md ] && cp content/publication/preprint/index.md dynamic/ai-playground/content/publication-preprint.md || touch dynamic/ai-playground/content/publication-preprint.md
 
   # Astro Static Site
   - type: web
