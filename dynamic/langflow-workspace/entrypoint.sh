@@ -37,6 +37,20 @@ export LANGFLOW_PORT=${PORT}
 # Set LANGFLOW_HOST to 0.0.0.0 to ensure Langflow binds to all interfaces (required for Render)
 export LANGFLOW_HOST=0.0.0.0
 
+# Determine the correct Python/langflow command to use
+# Prefer uv if available (for uv-managed environments), otherwise use python3
+if command -v uv >/dev/null 2>&1; then
+    PYTHON_CMD="uv run python"
+    LANGFLOW_CMD="uv run python -m langflow"
+    echo "[Config] Using uv environment for Python/langflow"
+else
+    PYTHON_CMD="python3"
+    LANGFLOW_CMD="python3 -m langflow"
+    echo "[Config] Using system python3 for langflow (uv not found)"
+fi
+export PYTHON_CMD
+export LANGFLOW_CMD
+
 # Logging: Environment variable configuration
 echo "=== Langflow Startup Configuration ==="
 echo "PORT environment variable: ${PORT}"
@@ -199,7 +213,8 @@ check_flow_exists() {
     
     if [ "$http_code" -eq 200 ]; then
         # Use python for reliable JSON parsing - output ONLY the flow ID to stdout
-        local flow_id=$(echo "$body" | python3 -c "
+        # Note: PYTHON_CMD is set early in the script and should be available here
+        local flow_id=$(echo "$body" | ${PYTHON_CMD:-python3} -c "
 import sys, json
 try:
     data = json.load(sys.stdin)
@@ -325,11 +340,14 @@ echo "[Main] Started background setup process with PID: ${BACKGROUND_PID}"
 # ============================================================================
 echo "--- Python Environment Diagnostics ---"
 echo "Checking Python installation..."
+echo "Selected Python command: ${PYTHON_CMD}"
+echo "Selected Langflow command: ${LANGFLOW_CMD}"
+
+# Check underlying Python if using uv
 if command -v python3 >/dev/null 2>&1; then
-    PYTHON_CMD=$(command -v python3)
-    echo "✓ python3 found at: ${PYTHON_CMD}"
+    SYSTEM_PYTHON=$(command -v python3)
+    echo "✓ System python3 found at: ${SYSTEM_PYTHON}"
     echo "  Version: $(python3 --version 2>&1 || echo 'ERROR: version check failed')"
-    echo "  Path: $(which python3 2>&1 || echo 'ERROR: which failed')"
 else
     echo "✗ ERROR: python3 command NOT found"
 fi
@@ -339,16 +357,24 @@ if command -v python >/dev/null 2>&1; then
     echo "  Version: $(python --version 2>&1 || echo 'ERROR: version check failed')"
 fi
 
+# Check if uv is available
+if command -v uv >/dev/null 2>&1; then
+    echo "✓ uv found at: $(command -v uv)"
+    echo "  Version: $(uv --version 2>&1 || echo 'ERROR: version check failed')"
+else
+    echo "ℹ uv not found (using system Python)"
+fi
+
 echo "Checking Python packages..."
 if command -v pip3 >/dev/null 2>&1; then
     echo "✓ pip3 found at: $(command -v pip3)"
     echo "  Checking if langflow is installed..."
-    if python3 -c "import langflow" 2>/dev/null; then
-        echo "✓ langflow Python package is importable"
-        python3 -c "import langflow; print(f'  Langflow version: {langflow.__version__}')" 2>&1 || echo "  Could not get version"
+    if ${PYTHON_CMD} -c "import langflow" 2>/dev/null; then
+        echo "✓ langflow Python package is importable via ${PYTHON_CMD}"
+        ${PYTHON_CMD} -c "import langflow; print(f'  Langflow version: {langflow.__version__}')" 2>&1 || echo "  Could not get version"
     else
-        echo "✗ ERROR: langflow Python package is NOT importable"
-        python3 -c "import langflow" 2>&1 || true
+        echo "✗ ERROR: langflow Python package is NOT importable via ${PYTHON_CMD}"
+        ${PYTHON_CMD} -c "import langflow" 2>&1 || true
     fi
 else
     echo "✗ WARNING: pip3 not found"
@@ -356,74 +382,57 @@ fi
 echo ""
 
 # ============================================================================
-# LANGFLOW COMMAND DIAGNOSTICS
+# LANGFLOW COMMAND DIAGNOSTICS (Using Python Module)
 # ============================================================================
-echo "--- Langflow Command Diagnostics ---"
-echo "Checking if 'langflow' command exists..."
+echo "--- Langflow Command Diagnostics (Python Module) ---"
+echo "Using 'python -m langflow' instead of 'langflow' CLI (more reliable in Docker)"
 
-# Check if langflow command exists
+# Check if langflow CLI command exists (for reference, but we'll use Python module)
 if command -v langflow >/dev/null 2>&1; then
     LANGFLOW_CMD=$(command -v langflow)
-    echo "✓ langflow command found at: ${LANGFLOW_CMD}"
-    
-    # Check if it's executable
-    if [ -x "${LANGFLOW_CMD}" ]; then
-        echo "✓ langflow command is executable"
-    else
-        echo "✗ ERROR: langflow command is NOT executable"
-        echo "  Permissions: $(ls -l "${LANGFLOW_CMD}" 2>&1 || echo 'ERROR: ls failed')"
-    fi
-    
-    # Check file permissions and ownership
-    echo "  File details: $(ls -la "${LANGFLOW_CMD}" 2>&1 || echo 'ERROR: ls failed')"
-    
-    # Try to get langflow version/help - capture full output
-    echo "Attempting to run 'langflow --version'..."
-    VERSION_OUTPUT=$(langflow --version 2>&1)
-    VERSION_EXIT_CODE=$?
-    if [ $VERSION_EXIT_CODE -eq 0 ]; then
-        echo "✓ langflow --version succeeded (exit code: $VERSION_EXIT_CODE)"
-        echo "  Output: ${VERSION_OUTPUT}"
-    else
-        echo "✗ ERROR: langflow --version failed (exit code: $VERSION_EXIT_CODE)"
-        echo "  Error output: ${VERSION_OUTPUT}"
-    fi
-    
-    echo ""
-    echo "Attempting to run 'langflow --help'..."
-    HELP_OUTPUT=$(langflow --help 2>&1 | head -20)
-    HELP_EXIT_CODE=$?
-    if [ $HELP_EXIT_CODE -eq 0 ]; then
-        echo "✓ langflow --help succeeded (exit code: $HELP_EXIT_CODE)"
-        echo "  Output (first 20 lines):"
-        echo "${HELP_OUTPUT}" | sed 's/^/    /'
-    else
-        echo "✗ ERROR: langflow --help failed (exit code: $HELP_EXIT_CODE)"
-        echo "  Error output: ${HELP_OUTPUT}"
-    fi
-    
-    # Test if langflow can at least be invoked (even if it fails)
-    echo ""
-    echo "Testing langflow command invocation..."
-    TEST_OUTPUT=$(timeout 10 langflow 2>&1 || true)
-    TEST_EXIT_CODE=$?
-    echo "  Command invocation test (exit code: $TEST_EXIT_CODE)"
-    if echo "${TEST_OUTPUT}" | grep -qi "usage\|help\|error\|command"; then
-        echo "  ✓ langflow command responds (output contains expected keywords)"
-    else
-        echo "  ⚠ langflow command output unexpected:"
-        echo "${TEST_OUTPUT}" | head -5 | sed 's/^/    /'
-    fi
+    echo "ℹ langflow CLI command found at: ${LANGFLOW_CMD} (will use Python module instead)"
 else
-    echo "✗ ERROR: langflow command NOT found in PATH"
-    echo "  PATH: ${PATH}"
-    echo "  Searching common locations..."
-    for loc in /usr/local/bin /usr/bin /bin /opt/langflow/bin ~/.local/bin; do
-        if [ -f "${loc}/langflow" ]; then
-            echo "  Found at: ${loc}/langflow"
-            ls -la "${loc}/langflow" 2>&1 || true
-        fi
-    done
+    echo "ℹ langflow CLI command not found (will use Python module: python -m langflow)"
+fi
+
+# Test Python module invocation - this is what we'll actually use
+echo ""
+echo "Testing '${LANGFLOW_CMD} --version'..."
+PYTHON_VERSION_OUTPUT=$(${LANGFLOW_CMD} --version 2>&1)
+PYTHON_VERSION_EXIT_CODE=$?
+if [ $PYTHON_VERSION_EXIT_CODE -eq 0 ]; then
+    echo "✓ ${LANGFLOW_CMD} --version succeeded (exit code: $PYTHON_VERSION_EXIT_CODE)"
+    echo "  Output: ${PYTHON_VERSION_OUTPUT}"
+else
+    echo "✗ ERROR: ${LANGFLOW_CMD} --version failed (exit code: $PYTHON_VERSION_EXIT_CODE)"
+    echo "  Error output: ${PYTHON_VERSION_OUTPUT}"
+    echo "  This may indicate a problem with the langflow Python package installation"
+fi
+
+echo ""
+echo "Testing '${LANGFLOW_CMD} --help'..."
+PYTHON_HELP_OUTPUT=$(${LANGFLOW_CMD} --help 2>&1 | head -20)
+PYTHON_HELP_EXIT_CODE=$?
+if [ $PYTHON_HELP_EXIT_CODE -eq 0 ]; then
+    echo "✓ ${LANGFLOW_CMD} --help succeeded (exit code: $PYTHON_HELP_EXIT_CODE)"
+    echo "  Output (first 20 lines):"
+    echo "${PYTHON_HELP_OUTPUT}" | sed 's/^/    /'
+else
+    echo "✗ ERROR: ${LANGFLOW_CMD} --help failed (exit code: $PYTHON_HELP_EXIT_CODE)"
+    echo "  Error output: ${PYTHON_HELP_OUTPUT}"
+fi
+
+# Verify Python can import langflow module
+echo ""
+echo "Verifying ${PYTHON_CMD} can import langflow module..."
+if ${PYTHON_CMD} -c "import langflow" 2>&1; then
+    echo "✓ ${PYTHON_CMD} can import langflow module"
+    # Try to get version via Python import
+    PYTHON_IMPORT_VERSION=$(${PYTHON_CMD} -c "import langflow; print(getattr(langflow, '__version__', 'version not available'))" 2>&1 || echo "could not get version")
+    echo "  Version via import: ${PYTHON_IMPORT_VERSION}"
+else
+    echo "✗ ERROR: ${PYTHON_CMD} cannot import langflow module"
+    ${PYTHON_CMD} -c "import langflow" 2>&1 | head -10 | sed 's/^/    /'
 fi
 echo ""
 
@@ -527,7 +536,7 @@ if [ -n "${LANGFLOW_DATABASE_URL:-}" ]; then
     
     # Try to test database connection using Python
     echo "  Testing database connectivity..."
-    python3 -c "
+    ${PYTHON_CMD} -c "
 import os
 import sys
 try:
@@ -626,8 +635,10 @@ echo "=== Pre-Execution Testing ==="
 echo "=========================================="
 
 # Final validation before starting langflow
-if ! command -v langflow >/dev/null 2>&1; then
-    echo "✗ FATAL ERROR: langflow command not found. Cannot proceed."
+# Verify the langflow command works
+if ! ${LANGFLOW_CMD} --version >/dev/null 2>&1; then
+    echo "✗ FATAL ERROR: ${LANGFLOW_CMD} command not working. Cannot proceed."
+    echo "  Attempted command: ${LANGFLOW_CMD} --version"
     echo "  PATH was: ${PATH}"
     exit 1
 fi
@@ -640,17 +651,19 @@ echo "  PORT: ${PORT}"
 echo "  LANGFLOW_HOST: ${LANGFLOW_HOST}"
 echo "  LANGFLOW_PORT: ${LANGFLOW_PORT}"
 echo "  LANGFLOW_CONFIG_DIR: ${LANGFLOW_CONFIG_DIR:-'NOT SET (using default)'}"
+echo "  PYTHON_CMD: ${PYTHON_CMD}"
+echo "  LANGFLOW_CMD: ${LANGFLOW_CMD}"
 echo ""
 
 # Test langflow startup command syntax (dry run test)
 echo "[Pre-Exec] Testing langflow command syntax..."
-LANGFLOW_CMD_TEST="langflow run --host 0.0.0.0 --port ${PORT}"
+LANGFLOW_CMD_TEST="${LANGFLOW_CMD} run --host 0.0.0.0 --port ${PORT}"
 
 # Try to validate the command by checking if langflow accepts the arguments
 # Use a short timeout to prevent hanging
 echo "[Pre-Exec] Command to execute: ${LANGFLOW_CMD_TEST}"
 echo "[Pre-Exec] Testing command with 5 second timeout..."
-TIMEOUT_OUTPUT=$(timeout 5 langflow run --host 0.0.0.0 --port ${PORT} 2>&1 || true)
+TIMEOUT_OUTPUT=$(timeout 5 ${LANGFLOW_CMD} run --host 0.0.0.0 --port ${PORT} 2>&1 || true)
 TIMEOUT_EXIT=$?
 
 # If timeout occurred (exit code 124) or command started, that's actually good
@@ -684,14 +697,15 @@ echo "Host: 0.0.0.0 (required for Render port detection)"
 echo "Port: ${PORT} (from PORT environment variable)"
 echo "Current user: $(whoami 2>&1)"
 echo "Current directory: $(pwd 2>&1)"
-echo "Full command path: $(command -v langflow 2>&1)"
+echo "Python command: ${PYTHON_CMD}"
+echo "Langflow command: ${LANGFLOW_CMD}"
 echo "=========================================="
 echo ""
 
 # Final pre-flight checks
 echo "[Main] Pre-flight checks complete. Starting langflow..."
 echo "[Main] All diagnostics and tests passed."
-echo "[Main] Executing: exec langflow run --host 0.0.0.0 --port ${PORT}"
+echo "[Main] Executing: exec ${LANGFLOW_CMD} run --host 0.0.0.0 --port ${PORT}"
 echo "[Main] Note: This will replace the current process (exec mode)"
 echo "[Main] Render will detect the port binding from this process"
 echo ""
@@ -699,5 +713,5 @@ echo ""
 # Execute langflow - this replaces the current process
 # If it fails, the container will exit and Render will see the error
 # All stderr and stdout will be visible in Render logs
-exec langflow run --host 0.0.0.0 --port ${PORT} 2>&1
+exec ${LANGFLOW_CMD} run --host 0.0.0.0 --port ${PORT} 2>&1
 
