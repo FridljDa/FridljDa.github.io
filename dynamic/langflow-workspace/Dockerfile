@@ -41,5 +41,5 @@ RUN if id -u langflow >/dev/null 2>&1; then \
 USER langflow
 
 # Set the entrypoint script
-ENTRYPOINT ["/entrypoint.sh"]
+#ENTRYPOINT ["/entrypoint.sh"]
 
