@@ -387,13 +387,14 @@ echo ""
 echo "--- Langflow Command Diagnostics (Python Module) ---"
 echo "Using 'python -m langflow' instead of 'langflow' CLI (more reliable in Docker)"
 
-# Check if langflow CLI command exists (for reference, but we'll use Python module)
+# Check if langflow CLI command exists (for reference only - DO NOT overwrite LANGFLOW_CMD)
 if command -v langflow >/dev/null 2>&1; then
-    LANGFLOW_CMD=$(command -v langflow)
-    echo "ℹ langflow CLI command found at: ${LANGFLOW_CMD} (will use Python module instead)"
+    LANGFLOW_CLI_PATH=$(command -v langflow)
+    echo "ℹ langflow CLI command found at: ${LANGFLOW_CLI_PATH} (but using Python module: ${LANGFLOW_CMD})"
 else
-    echo "ℹ langflow CLI command not found (will use Python module: python -m langflow)"
+    echo "ℹ langflow CLI command not found (using Python module: ${LANGFLOW_CMD})"
 fi
+echo "[Config] Final LANGFLOW_CMD: ${LANGFLOW_CMD}"
 
 # Test Python module invocation - this is what we'll actually use
 echo ""
@@ -657,13 +658,35 @@ echo ""
 
 # Test langflow startup command syntax (dry run test)
 echo "[Pre-Exec] Testing langflow command syntax..."
-LANGFLOW_CMD_TEST="${LANGFLOW_CMD} run --host 0.0.0.0 --port ${PORT}"
+echo "[Pre-Exec] Checking if langflow 'run' command supports --host and --port flags..."
+
+# Check help output to see if --host and --port are supported
+HELP_OUTPUT=$(${LANGFLOW_CMD} run --help 2>&1 || echo "")
+if echo "${HELP_OUTPUT}" | grep -qE "(--host|--port)"; then
+    echo "[Pre-Exec] ✓ Langflow 'run' command supports --host and --port flags"
+    USE_CLI_FLAGS=true
+    LANGFLOW_CMD_TEST="${LANGFLOW_CMD} run --host 0.0.0.0 --port ${PORT}"
+else
+    echo "[Pre-Exec] ⚠ Langflow 'run' command may not support --host/--port flags"
+    echo "[Pre-Exec] Will rely on environment variables (LANGFLOW_HOST and LANGFLOW_PORT)"
+    USE_CLI_FLAGS=false
+    LANGFLOW_CMD_TEST="${LANGFLOW_CMD} run"
+fi
+
+# Verify environment variables are set correctly
+echo "[Pre-Exec] Verifying environment variables:"
+echo "[Pre-Exec]   LANGFLOW_HOST=${LANGFLOW_HOST}"
+echo "[Pre-Exec]   LANGFLOW_PORT=${LANGFLOW_PORT}"
+if [ -z "${LANGFLOW_HOST}" ] || [ -z "${LANGFLOW_PORT}" ]; then
+    echo "[Pre-Exec] ✗ ERROR: Required environment variables not set!"
+    exit 1
+fi
 
 # Try to validate the command by checking if langflow accepts the arguments
 # Use a short timeout to prevent hanging
 echo "[Pre-Exec] Command to execute: ${LANGFLOW_CMD_TEST}"
 echo "[Pre-Exec] Testing command with 5 second timeout..."
-TIMEOUT_OUTPUT=$(timeout 5 ${LANGFLOW_CMD} run --host 0.0.0.0 --port ${PORT} 2>&1 || true)
+TIMEOUT_OUTPUT=$(timeout 5 ${LANGFLOW_CMD_TEST} 2>&1 || true)
 TIMEOUT_EXIT=$?
 
 # If timeout occurred (exit code 124) or command started, that's actually good
@@ -673,10 +696,16 @@ if [ $TIMEOUT_EXIT -eq 124 ]; then
 elif [ $TIMEOUT_EXIT -eq 0 ]; then
     echo "[Pre-Exec] ⚠ Command exited immediately (may indicate configuration issue)"
     echo "[Pre-Exec] Output: ${TIMEOUT_OUTPUT}"
-elif echo "${TIMEOUT_OUTPUT}" | grep -qi "error\|failed\|exception"; then
+elif echo "${TIMEOUT_OUTPUT}" | grep -qiE "error|failed|exception|invalid|unrecognized|unknown"; then
     echo "[Pre-Exec] ✗ Command failed with error:"
-    echo "${TIMEOUT_OUTPUT}" | head -20 | sed 's/^/    /'
-    echo "[Pre-Exec] WARNING: Command test failed, but proceeding anyway..."
+    echo "${TIMEOUT_OUTPUT}" | head -30 | sed 's/^/    /'
+    if echo "${TIMEOUT_OUTPUT}" | grep -qiE "unrecognized|unknown|invalid.*argument"; then
+        echo "[Pre-Exec] ERROR: Command syntax appears invalid. Falling back to environment variables only."
+        USE_CLI_FLAGS=false
+        LANGFLOW_CMD_TEST="${LANGFLOW_CMD} run"
+    else
+        echo "[Pre-Exec] WARNING: Command test failed, but proceeding anyway..."
+    fi
 else
     echo "[Pre-Exec] ✓ Command syntax appears valid"
     if [ -n "${TIMEOUT_OUTPUT}" ]; then
@@ -692,26 +721,73 @@ echo ""
 echo "=========================================="
 echo "=== Starting Langflow (Foreground) ==="
 echo "=========================================="
-echo "Command: ${LANGFLOW_CMD_TEST}"
-echo "Host: 0.0.0.0 (required for Render port detection)"
-echo "Port: ${PORT} (from PORT environment variable)"
-echo "Current user: $(whoami 2>&1)"
-echo "Current directory: $(pwd 2>&1)"
-echo "Python command: ${PYTHON_CMD}"
-echo "Langflow command: ${LANGFLOW_CMD}"
+
+# Final pre-flight checks and comprehensive logging
+echo "[Main] Pre-flight checks complete. Starting langflow..."
+echo "[Main] All diagnostics and tests passed."
+echo ""
+echo "[Main] ========================================"
+echo "[Main] FINAL COMMAND CONFIGURATION"
+echo "[Main] ========================================"
+echo "[Main] Full command: ${LANGFLOW_CMD_TEST}"
+echo "[Main] Using CLI flags: ${USE_CLI_FLAGS:-false}"
+echo "[Main] Python command: ${PYTHON_CMD}"
+echo "[Main] Langflow command base: ${LANGFLOW_CMD}"
+echo "[Main] Working directory: $(pwd 2>&1)"
+echo "[Main] Current user: $(whoami 2>&1)"
+echo "[Main] User ID: $(id 2>&1)"
+echo ""
+echo "[Main] Environment Variables:"
+echo "[Main]   PORT=${PORT}"
+echo "[Main]   LANGFLOW_HOST=${LANGFLOW_HOST}"
+echo "[Main]   LANGFLOW_PORT=${LANGFLOW_PORT}"
+echo "[Main]   LANGFLOW_CONFIG_DIR=${LANGFLOW_CONFIG_DIR:-'NOT SET (using default)'}"
+echo "[Main]   LANGFLOW_DATABASE_URL=${LANGFLOW_DATABASE_URL:+SET (hidden)}"
+echo "[Main]   LANGFLOW_SKIP_AUTH_AUTO_LOGIN=${LANGFLOW_SKIP_AUTH_AUTO_LOGIN:-'NOT SET'}"
+echo ""
+echo "[Main] Port Configuration:"
+echo "[Main]   Render PORT: ${PORT}"
+echo "[Main]   Langflow will bind to: ${LANGFLOW_HOST}:${LANGFLOW_PORT}"
+if [ "${PORT}" != "${LANGFLOW_PORT}" ]; then
+    echo "[Main]   ⚠ WARNING: PORT (${PORT}) != LANGFLOW_PORT (${LANGFLOW_PORT})"
+    echo "[Main]   This may cause Render port detection to fail!"
+fi
+echo "[Main] ========================================"
+echo ""
+echo "[Main] Executing command: exec ${LANGFLOW_CMD_TEST}"
+echo "[Main] Note: This will replace the current process (exec mode)"
+echo "[Main] Render will detect the port binding from this process"
+echo "[Main] All output (stdout and stderr) will be visible in Render logs"
+echo ""
+echo "[Main] Starting Langflow now..."
 echo "=========================================="
 echo ""
 
-# Final pre-flight checks
-echo "[Main] Pre-flight checks complete. Starting langflow..."
-echo "[Main] All diagnostics and tests passed."
-echo "[Main] Executing: exec ${LANGFLOW_CMD} run --host 0.0.0.0 --port ${PORT}"
-echo "[Main] Note: This will replace the current process (exec mode)"
-echo "[Main] Render will detect the port binding from this process"
-echo ""
+# Verify the command exists and is executable before exec
+# Handle both "python3" and "uv run python" cases
+if echo "${PYTHON_CMD}" | grep -q "^uv run"; then
+    # For "uv run python", check if uv exists
+    if ! command -v uv >/dev/null 2>&1; then
+        echo "[Main] ✗ FATAL ERROR: uv command not found (required for ${PYTHON_CMD})"
+        exit 1
+    fi
+elif ! command -v ${PYTHON_CMD} >/dev/null 2>&1; then
+    echo "[Main] ✗ FATAL ERROR: Python command not found: ${PYTHON_CMD}"
+    exit 1
+fi
+
+# Final verification that environment variables are set
+if [ -z "${LANGFLOW_HOST}" ] || [ -z "${LANGFLOW_PORT}" ]; then
+    echo "[Main] ✗ FATAL ERROR: Required environment variables not set!"
+    echo "[Main]   LANGFLOW_HOST: ${LANGFLOW_HOST:-'NOT SET'}"
+    echo "[Main]   LANGFLOW_PORT: ${LANGFLOW_PORT:-'NOT SET'}"
+    exit 1
+fi
 
 # Execute langflow - this replaces the current process
 # If it fails, the container will exit and Render will see the error
 # All stderr and stdout will be visible in Render logs
-exec ${LANGFLOW_CMD} run --host 0.0.0.0 --port ${PORT} 2>&1
+# Note: We use the LANGFLOW_CMD_TEST variable which may or may not include CLI flags
+# depending on what langflow supports. Environment variables are always set as fallback.
+exec ${LANGFLOW_CMD_TEST} 2>&1
 
