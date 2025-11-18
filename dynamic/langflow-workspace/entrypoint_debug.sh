@@ -16,14 +16,46 @@ export LANGFLOW_PORT=${PORT}
 export LANGFLOW_HOST=0.0.0.0
 
 # Determine the correct Python/langflow command to use
-if command -v uv >/dev/null 2>&1; then
+# Prefer direct Python execution over uv run to avoid uv deadlock issues
+# The base image already has langflow installed, so direct Python should work
+echo "[Config] Checking Python execution method..."
+if command -v python3 >/dev/null 2>&1; then
+    # Try direct Python first - this avoids uv runtime sync operations
+    if python3 -c "import langflow" 2>/dev/null; then
+        PYTHON_CMD="python3"
+        LANGFLOW_CMD="python3 -m langflow"
+        echo "[Config] ✓ Using direct python3 (langflow available via direct import)"
+    elif command -v uv >/dev/null 2>&1; then
+        # Fallback to uv run only if direct Python doesn't work
+        PYTHON_CMD="uv run python"
+        LANGFLOW_CMD="uv run python -m langflow"
+        echo "[Config] ⚠ Direct python3 failed, falling back to uv run (with UV env vars to prevent deadlock)"
+    else
+        PYTHON_CMD="python3"
+        LANGFLOW_CMD="python3 -m langflow"
+        echo "[Config] ⚠ Using python3 (langflow import check failed, but proceeding anyway)"
+    fi
+elif command -v python >/dev/null 2>&1; then
+    if python -c "import langflow" 2>/dev/null; then
+        PYTHON_CMD="python"
+        LANGFLOW_CMD="python -m langflow"
+        echo "[Config] ✓ Using direct python (langflow available via direct import)"
+    elif command -v uv >/dev/null 2>&1; then
+        PYTHON_CMD="uv run python"
+        LANGFLOW_CMD="uv run python -m langflow"
+        echo "[Config] ⚠ Direct python failed, falling back to uv run (with UV env vars to prevent deadlock)"
+    else
+        PYTHON_CMD="python"
+        LANGFLOW_CMD="python -m langflow"
+        echo "[Config] ⚠ Using python (langflow import check failed, but proceeding anyway)"
+    fi
+elif command -v uv >/dev/null 2>&1; then
     PYTHON_CMD="uv run python"
     LANGFLOW_CMD="uv run python -m langflow"
-    echo "[Config] Using uv environment for Python/langflow"
+    echo "[Config] ⚠ No direct Python found, using uv run (with UV env vars to prevent deadlock)"
 else
-    PYTHON_CMD="python3"
-    LANGFLOW_CMD="python3 -m langflow"
-    echo "[Config] Using system python3 for langflow (uv not found)"
+    echo "[Config] ✗ FATAL: No Python or uv found"
+    exit 1
 fi
 export PYTHON_CMD
 export LANGFLOW_CMD
@@ -40,13 +72,16 @@ echo ""
 
 # Verify Python and langflow are available
 echo "[Debug] Verifying Python and langflow availability..."
-if ! command -v ${PYTHON_CMD%% *} >/dev/null 2>&1; then
-    echo "[Debug] ✗ FATAL: Python command not found: ${PYTHON_CMD}"
+# Extract the base command (python3, python, or uv) for checking
+BASE_CMD=${PYTHON_CMD%% *}
+if ! command -v ${BASE_CMD} >/dev/null 2>&1; then
+    echo "[Debug] ✗ FATAL: Command not found: ${BASE_CMD}"
     exit 1
 fi
 
+# Verify langflow is importable (skip if we already checked during command selection)
 if ! ${PYTHON_CMD} -c "import langflow" 2>/dev/null; then
-    echo "[Debug] ✗ FATAL: langflow module not importable"
+    echo "[Debug] ✗ FATAL: langflow module not importable via ${PYTHON_CMD}"
     exit 1
 fi
 echo "[Debug] ✓ Python and langflow verified"

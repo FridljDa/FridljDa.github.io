@@ -38,6 +38,14 @@ services:
       # Opt out of anonymous usage data collection
       - key: DO_NOT_TRACK
         value: "true"
+      # UV package manager configuration - prevents deadlocks in Docker containers
+      # These settings constrain uv's concurrency to work within Render's resource limits
+      - key: UV_CONCURRENT_DOWNLOADS
+        value: "4"
+      - key: UV_NO_SYNC
+        value: "1"
+      - key: UV_LINK_MODE
+        value: "copy"
     # Health check path - allows Render to monitor service health and auto-restart if needed
     # Langflow provides /health_check endpoint that validates database and chat service connectivity
     healthCheckPath: /health_check
