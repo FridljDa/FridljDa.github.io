@@ -52,9 +52,18 @@ fi
 echo "[Debug] ✓ Python and langflow verified"
 
 # Check if langflow 'run' command supports --host and --port flags
-echo "[Debug] Checking langflow command syntax..."
-HELP_OUTPUT=$(${LANGFLOW_CMD} run --help 2>&1 || echo "")
-if echo "${HELP_OUTPUT}" | grep -qE "(--host|--port)"; then
+# NOTE: This check may hang if langflow tries to initialize and connect to database
+# Use a strict timeout to prevent hanging
+echo "[Debug] Checking langflow command syntax (with 5 second timeout)..."
+HELP_OUTPUT=$(timeout 5 ${LANGFLOW_CMD} run --help 2>&1 || echo "TIMEOUT_OR_ERROR")
+TIMEOUT_EXIT=$?
+
+if [ $TIMEOUT_EXIT -eq 124 ] || [ "$HELP_OUTPUT" = "TIMEOUT_OR_ERROR" ]; then
+    echo "[Debug] ⚠ Help check timed out or failed (langflow may be initializing database connection)"
+    echo "[Debug] Defaulting to environment variables (LANGFLOW_HOST, LANGFLOW_PORT) - more reliable"
+    USE_CLI_FLAGS=false
+    LANGFLOW_CMD_FINAL="${LANGFLOW_CMD} run"
+elif echo "${HELP_OUTPUT}" | grep -qE "(--host|--port)"; then
     echo "[Debug] ✓ Langflow supports --host and --port flags"
     USE_CLI_FLAGS=true
     LANGFLOW_CMD_FINAL="${LANGFLOW_CMD} run --host ${LANGFLOW_HOST} --port ${LANGFLOW_PORT}"
@@ -94,23 +103,10 @@ elif ! command -v ${FIRST_CMD} >/dev/null 2>&1; then
 fi
 echo "[Debug] ✓ Command components verified"
 
-# Test command syntax with a timeout (non-blocking test)
-echo "[Debug] Testing command syntax (5 second timeout)..."
-TIMEOUT_CMD="timeout 5 ${LANGFLOW_CMD_FINAL} 2>&1 || true"
-TIMEOUT_OUTPUT=$(eval ${TIMEOUT_CMD})
-TIMEOUT_EXIT=$?
-
-if [ $TIMEOUT_EXIT -eq 124 ]; then
-    echo "[Debug] ✓ Command started successfully (timeout expected)"
-elif [ $TIMEOUT_EXIT -eq 0 ]; then
-    echo "[Debug] ⚠ Command exited immediately (exit code: 0)"
-    echo "[Debug] Output: ${TIMEOUT_OUTPUT}"
-elif echo "${TIMEOUT_OUTPUT}" | grep -qiE "error|failed|exception|invalid|unrecognized"; then
-    echo "[Debug] ⚠ Command test showed errors (may be expected):"
-    echo "${TIMEOUT_OUTPUT}" | head -5 | sed 's/^/    /'
-else
-    echo "[Debug] ✓ Command syntax appears valid"
-fi
+# Skip command syntax test - it would try to start langflow which requires database connection
+# This test is not necessary since we're about to start langflow anyway
+echo "[Debug] Skipping command syntax test (would require database connection)"
+echo "[Debug] Proceeding directly to start langflow..."
 echo ""
 
 # Final verification
@@ -143,13 +139,9 @@ echo ""
 # Set up signal handlers to log if process is killed
 trap 'echo "[Debug] ✗ Process received signal, exiting..."; exit 1' SIGTERM SIGINT
 
-# Verify we can actually execute the command (syntax check)
-echo "[Debug] Performing final syntax check..."
-if ! eval "${LANGFLOW_CMD_FINAL} --help >/dev/null 2>&1" && ! eval "${LANGFLOW_CMD_FINAL} run --help >/dev/null 2>&1"; then
-    echo "[Debug] ⚠ Command syntax check inconclusive (may be normal)"
-else
-    echo "[Debug] ✓ Command syntax check passed"
-fi
+# Skip final syntax check - it would try to initialize langflow and connect to database
+# This check is not necessary and could hang
+echo "[Debug] Skipping final syntax check (would require database connection)"
 echo ""
 
 # Log process tree before exec
