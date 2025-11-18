@@ -8,10 +8,11 @@ USER root
 RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/* && \
     mkdir -p /app/content
 
-# Copy the entrypoint script and make it executable in one layer
-# This layer will be cached unless entrypoint.sh changes
+# Copy the entrypoint scripts and make them executable in one layer
+# This layer will be cached unless entrypoint scripts change
 COPY entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
+COPY entrypoint_debug.sh /entrypoint_debug.sh
+RUN chmod +x /entrypoint.sh /entrypoint_debug.sh
 
 # Copy examples first (changes less frequently than content)
 # This layer will be cached unless examples/ changes
@@ -35,11 +36,11 @@ RUN if id -u langflow >/dev/null 2>&1; then \
         useradd -m -u 1000 -s /bin/bash langflow || \
         useradd -m -s /bin/bash langflow; \
     fi && \
-    chown -R langflow:langflow /app /entrypoint.sh
+    chown -R langflow:langflow /app /entrypoint.sh /entrypoint_debug.sh
 
 # Switch to non-root user
 USER langflow
 
-# Set the entrypoint script
-#ENTRYPOINT ["/entrypoint.sh"]
+# Set the entrypoint script (using debug version to identify startup issues)
+ENTRYPOINT ["/entrypoint_debug.sh"]
 
