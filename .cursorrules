@@ -1,0 +1,61 @@
+# Repository Instructions for Cursor
+
+## Project Overview
+This is a personal website built with Astro, featuring a Langflow integration for AI chat functionality.
+
+## Tech Stack
+- **Framework**: Astro 5.x
+- **Styling**: Tailwind CSS
+- **Content**: MDX with math support (KaTeX via remark-math and rehype-katex)
+- **Testing**: Playwright
+- **AI Integration**: Langflow (Docker Compose)
+
+## Project Structure
+- `src/components/` - Astro components (Biography, Experience, BlogPostCard, etc.)
+- `src/pages/` - Astro pages and routes
+- `src/data/` - TypeScript data files (site config, publications, experience)
+- `src/content/blog/` - Blog posts as MDX files
+- `src/layouts/` - Layout components
+- `src/styles/` - Global CSS
+- `public/` - Static assets (images, uploads)
+- `content/` - Content collections (authors, publications)
+- `dynamic/langflow-workspace/` - Langflow Docker setup
+- `tests/` - Playwright test files
+
+## Local Development
+
+### Setup
+- The dev server runs on `http://localhost:4321`
+- Langflow runs on `http://localhost:7860` (requires Docker Compose)
+  - Port is configured via `PORT=7860` in `docker-compose.yml` for local development
+  - The entrypoint script uses `PORT` environment variable (with fallback to 7860)
+  - For Render deployment, port is automatically configured via Render's `PORT` environment variable
+- Tests require the dev server to be running first
+
+### Development Workflow
+- Update data files in `src/data/` for site-wide changes
+- Add blog posts to `src/content/blog/` with proper frontmatter
+- Use Astro's component pattern for reusable UI elements
+- Maintain consistency with existing Tailwind styling patterns
+
+### Testing Changes
+To test changes, you can:
+1. Run `npm test` locally (ensure dev server is running first)
+2. Commit, push, and check how it works on Render using MCP tools
+
+### Running Locally
+1. Start Astro dev server: `npm run dev`
+2. Start Langflow (optional): `cd dynamic/langflow-workspace && docker compose up -d`
+3. Run tests: `npm test` (requires dev server running)
+
+## Production
+
+### Deployment
+- Production is deployed on Render (see `render.yaml`)
+
+### Production Debugging
+- **Use Render MCP tools** to debug production issues
+- Check service logs, metrics, and deployment status via Render MCP
+- Monitor service health and performance through Render MCP
+
+

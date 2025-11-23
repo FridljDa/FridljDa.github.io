@@ -1,7 +1,58 @@
-envs
-**/index.html
-**/index.xml
-**.html
-**.xml
-**.json
-content/home/20240919_Overleaf_report_mutational_signature_hdp_trees.pdf
+# build output
+dist/
+build/
+_site/
+
+# generated types
+.astro/
+*.tsbuildinfo
+
+# dependencies
+node_modules/
+
+# logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# environment variables
+.env
+.env.local
+.env.production
+.env.*.local
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# Editor and IDE settings
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Personal configuration files
+*.local
+
+# Deployment platforms
+.vercel
+.netlify
+
+# Build tool caches
+.turbo/
+.eslintcache
+.pnpm-store
+.DS_Store
+
+# Playwright test results
+test-results/
+playwright-report/
+playwright/.cache/
+.DS_Store

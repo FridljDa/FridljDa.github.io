@@ -1,45 +1,63 @@
-# Download Hugo:
-https://docs.hugoblox.com/getting-started/install-hugo/
-`brew install git golang hugo nodeo`
+# Personal Website
 
-# Important bash commands:
+Astro-based personal website with Langflow integration.
+
+## Prerequisites
+
+- Node.js (v18 or higher)
+- Docker Desktop or Docker Engine
+
+## Astro Setup
+
+1. Install dependencies:
+```bash
+npm install
 ```
-bash update.sh -"
-bash view.sh
+
+2. Start the development server:
+```bash
+npm run dev
 ```
 
-# Important file locations:
-- content/_index.md #main everything
-- content/authors/admin/_index.md # Author Information
+The site will be available at `http://localhost:4321`.
 
-- static/uploads/resume.pdf # Resume
-- assets/media/icons/brands
+## Docker Compose (Langflow)
 
-  Publication:
-- content/publication/journal-article/cite.bib
-- content/publication/journal-article/index.md
+The Langflow workspace is located in `dynamic/langflow-workspace/`.
 
-# Activate in block with id: posts in content/_index.md
-Post:
-- content/post/writing-technical-content/index.md
-- content/post_template_inspiration/writing-technical-content
-#- content/project/external-project/index.md
-#- content/post/blog-with-jupyter/index.md
+1. Navigate to the directory:
+```bash
+cd dynamic/langflow-workspace
+```
 
-- ./assets/media/icon.png
+2. Build and start services:
+```bash
+docker compose build
+docker compose up -d
+```
 
-- config/_default/params.yaml
-  - marketing
-    - description
-    - Short description of Website which displayed sometimes.
---------------
-Old locations?
-- content/home/experience.md # Experiences
-- content/_index.md
+Langflow will be available at `http://localhost:7860`, and Postgres on port `5432`.
 
-- content/publication/preprint/index.md
+To stop services:
+```bash
+docker compose down
+```
 
-- content/publication/conference-paper/cite.bib
-- content/publication/conference-paper/index.md
+## Running Tests
 
-- post/getting-started/index.md
+Tests require the Astro dev server to be running first.
+
+1. Start the dev server (in a separate terminal):
+```bash
+npm run dev
+```
+
+2. Run tests:
+```bash
+npm test
+```
+
+Additional test options:
+- `npm run test:ui` - Run tests with Playwright UI
+- `npm run test:headed` - Run tests in headed mode
+

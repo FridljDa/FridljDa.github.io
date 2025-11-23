@@ -1,0 +1,72 @@
+---
+import { EXPERIENCE } from '../data/experience';
+
+function formatDate(dateString: string): string {
+  const date = new Date(dateString);
+  return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+}
+---
+
+<section id="experience" class="py-16 bg-gray-50 dark:bg-gray-800 scroll-mt-20">
+  <div class="container mx-auto px-4">
+    <div class="max-w-4xl mx-auto">
+      <h2 class="text-3xl font-bold mb-8 text-gray-900 dark:text-white">
+        Experience
+      </h2>
+      <div class="space-y-8">
+        {EXPERIENCE.map((exp) => (
+          <div
+            class="bg-white dark:bg-gray-900 rounded-lg p-6 shadow-sm border border-gray-200 dark:border-gray-700"
+          >
+            <div class="flex flex-col md:flex-row gap-4 items-start">
+              <div class="flex-shrink-0">
+                <img
+                  src={`/images/logos/${exp.companyLogo}`}
+                  alt={exp.company}
+                  class="w-16 h-16 object-contain"
+                  onerror="this.style.display='none'"
+                />
+              </div>
+              <div class="flex-grow">
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-2">
+                  <div>
+                    <h3 class="text-xl font-semibold text-gray-900 dark:text-white">
+                      {exp.title}
+                    </h3>
+                    <a
+                      href={exp.companyUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="text-lg text-primary-600 dark:text-primary-400 hover:underline"
+                    >
+                      {exp.company}
+                    </a>
+                  </div>
+                  <div class="text-sm text-gray-600 dark:text-gray-400 mt-2 md:mt-0">
+                    {formatDate(exp.dateStart)} —{' '}
+                    {exp.dateEnd ? formatDate(exp.dateEnd) : 'Present'}
+                  </div>
+                </div>
+                <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                  {exp.location}
+                </p>
+                <div
+                  class="prose prose-sm dark:prose-invert max-w-none text-gray-700 dark:text-gray-300"
+                  set:html={exp.description
+                    .replace(/\n/g, '<br />')
+                    .replace(/\* /g, '• ')
+                    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-primary-600 dark:text-primary-400 hover:underline">$1</a>')
+                    .replace(/<details>/g, '<details class="my-2">')
+                    .replace(/<summary>/g, '<summary class="cursor-pointer font-medium text-primary-600 dark:text-primary-400 hover:underline">')
+                    .replace(/<ul>/g, '<ul class="list-disc list-inside ml-4 mt-2">')
+                    .replace(/<li>/g, '<li class="mb-1">')}
+                />
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  </div>
+</section>
+

@@ -1,0 +1,67 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Biography from '../components/Biography.astro';
+import Experience from '../components/Experience.astro';
+import BlogPostCard from '../components/BlogPostCard.astro';
+import PublicationCard from '../components/PublicationCard.astro';
+import { getCollection } from 'astro:content';
+import { PUBLICATIONS } from '../data/publications';
+
+const blogPosts = (await getCollection('blog')).sort(
+  (a, b) => b.data.pubDate.getTime() - a.data.pubDate.getTime()
+);
+---
+
+<Layout title="Daniel Fridljand - Software Consultant">
+  <section
+    id="home"
+    class="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#004ba0] to-[#1976d2] text-white scroll-mt-20"
+  >
+    <div class="container mx-auto px-4 text-center">
+      <h1 class="text-5xl md:text-6xl font-bold mb-4">Daniel Fridljand</h1>
+      <p class="text-2xl md:text-3xl mb-8">Software Consultant</p>
+      <p class="text-xl opacity-90">TNG technology</p>
+    </div>
+  </section>
+
+  <Biography />
+
+  <section id="posts" class="py-16 bg-white dark:bg-gray-900 scroll-mt-20">
+    <div class="container mx-auto px-4">
+      <div class="max-w-4xl mx-auto">
+        <h2 class="text-3xl font-bold mb-8 text-gray-900 dark:text-white">
+          Posts
+        </h2>
+        <div class="grid md:grid-cols-2 gap-6">
+          {blogPosts.map((post) => (
+            <BlogPostCard
+              title={post.data.title}
+              description={post.data.description}
+              pubDate={post.data.pubDate}
+              slug={post.id}
+              image={post.data.image}
+              tags={post.data.tags}
+            />
+          ))}
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <Experience />
+
+  <section id="publications" class="py-16 bg-gray-50 dark:bg-gray-800 scroll-mt-20">
+    <div class="container mx-auto px-4">
+      <div class="max-w-4xl mx-auto">
+        <h2 class="text-3xl font-bold mb-8 text-gray-900 dark:text-white">
+          Publications
+        </h2>
+        <div class="space-y-6">
+          {PUBLICATIONS.map((pub) => (
+            <PublicationCard publication={pub} />
+          ))}
+        </div>
+      </div>
+    </div>
+  </section>
+</Layout>
