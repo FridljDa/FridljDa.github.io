@@ -30,6 +30,8 @@ services:
       # Host configuration - explicitly set to 0.0.0.0 for Render port detection
       - key: LANGFLOW_HOST
         value: "0.0.0.0"
+      - key: LANGFLOW_PORT
+        value: "1000"
       # API keys - set these in Render dashboard
       - key: GOOGLE_AI_STUDIO_API_KEY
         sync: false
