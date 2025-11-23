@@ -4,7 +4,7 @@ services:
     container_name: langflow
     user: root
     ports:
-      - "7860:7860"
+      - "1000:1000"
     depends_on:
       - postgres
     environment:
@@ -12,7 +12,7 @@ services:
       # This variable defines where the logs, file storage, monitor data and secret keys are stored.
       - LANGFLOW_CONFIG_DIR=/app/langflow
       # Port configuration - explicitly set for local development (entrypoint.sh will use this or fallback to 7860)
-      - PORT=7860
+      - PORT=1000
       - LANGFLOW_PORT=1000
       # Skip authentication for local development
       - LANGFLOW_SKIP_AUTH_AUTO_LOGIN=true

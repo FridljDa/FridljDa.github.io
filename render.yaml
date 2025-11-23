@@ -16,6 +16,9 @@ services:
       # Configuration directory
       - key: LANGFLOW_CONFIG_DIR
         value: /app/langflow
+      # Ensure Render provides PORT=1000 so Langflow binds to the expected port
+      - key: PORT
+        value: "1000"
       # Authentication - enable for production (set via Render dashboard)
       # Set to "true" for development/testing, "false" for production
       - key: LANGFLOW_SKIP_AUTH_AUTO_LOGIN
