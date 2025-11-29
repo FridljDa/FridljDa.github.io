@@ -12,11 +12,13 @@ interface Props {
 const { title = SITE.title, description = SITE.description } = Astro.props;
 
 // Get Langflow URL from environment variable (defaults to production URL)
-const langflowUrl = import.meta.env.PUBLIC_LANGFLOW_URL || 'http://157.90.172.180:7860';
+//TODO use import.meta.env.PUBLIC_LANGFLOW_URL 
+const langflowUrl = 'http://157.90.172.180:7860';
 // Get flow ID from environment variable (with fallback to production flow ID)
-const flowId = import.meta.env.PUBLIC_LANGFLOW_FLOW_ID || '069db371-f86b-4f11-bb4c-625dfe754cd6';
+const flowId =  '069db371-f86b-4f11-bb4c-625dfe754cd6';
 // Get API key from environment variable
-const apiKey = import.meta.env.PUBLIC_LANGFLOW_API_KEY || '';
+// TODO use import.meta.env.PUBLIC_LANGFLOW_API_KEY ||
+const apiKey =  '';
 ---
 
 <!doctype html>
