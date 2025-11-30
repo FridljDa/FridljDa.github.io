@@ -9,8 +9,6 @@ services:
     plan: free
     # Region selection (optional, defaults to Oregon)
     region: frankfurt
-    # The branch to deploy
-    branch: astro-serverside
       
     # Build Command:
     # 1. Install dependencies (including production deps)
