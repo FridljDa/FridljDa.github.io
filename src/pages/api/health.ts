@@ -32,11 +32,12 @@ export const GET: APIRoute = async () => {
       genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
     } catch (error) {
       // If client initialization fails, the service is unhealthy
+      // Log full error details for diagnostics
+      console.error("Gemini client initialization error:", error);
       return new Response(
         JSON.stringify({
           status: 'unhealthy',
           error: 'Failed to initialize Gemini client',
-          details: error instanceof Error ? error.message : String(error),
         }),
         {
           status: 503,
@@ -60,6 +61,8 @@ export const GET: APIRoute = async () => {
           'Content-Type': 'application/json',
           'Cache-Control': 'no-cache',
         },
+    // Log full error details for diagnostics
+    console.error("Health check error:", error);
       }
     );
   } catch (error) {
@@ -68,7 +71,6 @@ export const GET: APIRoute = async () => {
       JSON.stringify({
         status: 'unhealthy',
         error: 'Health check failed',
-        details: error instanceof Error ? error.message : String(error),
       }),
       {
         status: 503,
