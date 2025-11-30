@@ -1,35 +1,33 @@
 # Repository Instructions for Cursor
 
 ## Project Overview
-This is a personal website built with Astro, featuring a Langflow integration for AI chat functionality.
+This is a personal website built with Astro, featuring an AI chat functionality powered by Google Gemini API with server-side rendering.
 
 ## Tech Stack
-- **Framework**: Astro 5.x
+- **Framework**: Astro 5.x with SSR (Server-Side Rendering)
 - **Styling**: Tailwind CSS
 - **Content**: MDX with math support (KaTeX via remark-math and rehype-katex)
 - **Testing**: Playwright
-- **AI Integration**: Langflow (Docker Compose)
+- **AI Integration**: Google Gemini API (via @google/generative-ai)
+- **Runtime**: Node.js with @astrojs/node adapter
 
 ## Project Structure
-- `src/components/` - Astro components (Biography, Experience, BlogPostCard, etc.)
-- `src/pages/` - Astro pages and routes
-- `src/data/` - TypeScript data files (site config, publications, experience)
+- `src/components/` - Astro and React components (Biography, Experience, BlogPostCard, Chat, etc.)
+- `src/pages/` - Astro pages and API routes
+  - `src/pages/api/chat.ts` - Chat API endpoint for Gemini integration
+- `src/data/` - TypeScript data files (site config, publications, experience, cv.md)
 - `src/content/blog/` - Blog posts as MDX files
 - `src/layouts/` - Layout components
 - `src/styles/` - Global CSS
 - `public/` - Static assets (images, uploads)
 - `content/` - Content collections (authors, publications)
-- `dynamic/langflow-workspace/` - Langflow Docker setup
 - `tests/` - Playwright test files
 
 ## Local Development
 
 ### Setup
 - The dev server runs on `http://localhost:4321`
-- Langflow runs on `http://localhost:7860` (requires Docker Compose)
-  - Port is configured via `PORT=7860` in `docker-compose.yml` for local development
-  - The entrypoint script uses `PORT` environment variable (with fallback to 7860)
-  - For Render deployment, port is automatically configured via Render's `PORT` environment variable
+- Requires `GEMINI_API_KEY` environment variable for chat functionality
 - Tests require the dev server to be running first
 
 ### Development Workflow
@@ -37,6 +35,7 @@ This is a personal website built with Astro, featuring a Langflow integration fo
 - Add blog posts to `src/content/blog/` with proper frontmatter
 - Use Astro's component pattern for reusable UI elements
 - Maintain consistency with existing Tailwind styling patterns
+- Chat component is a React component that uses client-side hydration
 
 ### Testing Changes
 To test changes, you can:
@@ -44,8 +43,8 @@ To test changes, you can:
 2. Commit, push, and check how it works on Render using MCP tools
 
 ### Running Locally
-1. Start Astro dev server: `npm run dev`
-2. Start Langflow (optional): `cd dynamic/langflow-workspace && docker compose up -d`
+1. Set environment variable: `export GEMINI_API_KEY=your_key_here` (or create `.env` file)
+2. Start Astro dev server: `npm run dev`
 3. Run tests: `npm test` (requires dev server running)
 
 ## Production
