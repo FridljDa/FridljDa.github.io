@@ -2,10 +2,10 @@
 import { BIOGRAPHY } from '../data/site';
 ---
 
-<section id="about" class="py-16 bg-white dark:bg-gray-900 scroll-mt-20">
+<section id="about" class="py-16 bg-surface scroll-mt-20">
   <div class="container mx-auto px-4">
     <div class="max-w-4xl mx-auto">
-      <h2 class="text-3xl font-bold mb-8 text-gray-900 dark:text-white">
+      <h2 class="text-3xl font-bold mb-8 text-heading">
         Biography
       </h2>
       <div class="flex flex-col md:flex-row gap-8 items-start">
@@ -13,24 +13,24 @@ import { BIOGRAPHY } from '../data/site';
           <img
             src="/images/avatar.jpg"
             alt={BIOGRAPHY.name}
-            class="w-48 h-48 rounded-full object-cover border-4 border-gray-200 dark:border-gray-700"
+            class="w-48 h-48 rounded-full object-cover border-4 border-surface"
           />
         </div>
         <div class="flex-grow">
-          <h3 class="text-2xl font-semibold mb-2 text-gray-900 dark:text-white">
+          <h3 class="text-2xl font-semibold mb-2 text-heading">
             {BIOGRAPHY.name}
           </h3>
-          <p class="text-lg text-gray-600 dark:text-gray-400 mb-4">
+          <p class="text-lg text-muted mb-4">
             {BIOGRAPHY.role}
           </p>
-          <p class="text-gray-700 dark:text-gray-300 mb-6 leading-relaxed">
+          <p class="text-body mb-6 leading-relaxed">
             {BIOGRAPHY.bio}
           </p>
           <a
             href={BIOGRAPHY.resumeUrl}
             target="_blank"
             rel="noopener noreferrer"
-            class="inline-flex items-center gap-2 text-primary-600 dark:text-primary-400 hover:underline mb-6"
+            class="inline-flex items-center gap-2 text-link-hover mb-6"
           >
             <svg
               class="w-5 h-5"
@@ -48,13 +48,13 @@ import { BIOGRAPHY } from '../data/site';
             Download my resumé
           </a>
           <div class="mb-6">
-            <h4 class="font-semibold mb-2 text-gray-900 dark:text-white">
+            <h4 class="font-semibold mb-2 text-heading">
               Interests
             </h4>
             <ul class="flex flex-wrap gap-2">
               {BIOGRAPHY.interests.map((interest) => (
                 <li
-                  class="px-3 py-1 bg-gray-100 dark:bg-gray-800 rounded-full text-sm text-gray-700 dark:text-gray-300"
+                  class="px-3 py-1 bg-surface-elevated rounded-full text-sm text-body"
                 >
                   {interest}
                 </li>
@@ -62,12 +62,12 @@ import { BIOGRAPHY } from '../data/site';
             </ul>
           </div>
           <div class="mb-6">
-            <h4 class="font-semibold mb-2 text-gray-900 dark:text-white">
+            <h4 class="font-semibold mb-2 text-heading">
               Education
             </h4>
             <ul class="space-y-2">
               {BIOGRAPHY.education.map((edu) => (
-                <li class="text-gray-700 dark:text-gray-300">
+                <li class="text-body">
                   <span class="font-medium">{edu.course}</span>, {edu.year} —{' '}
                   {edu.institution}
                 </li>
@@ -75,7 +75,7 @@ import { BIOGRAPHY } from '../data/site';
             </ul>
           </div>
           <div>
-            <h4 class="font-semibold mb-2 text-gray-900 dark:text-white">
+            <h4 class="font-semibold mb-2 text-heading">
               Social
             </h4>
             <div class="flex gap-4">
@@ -84,7 +84,7 @@ import { BIOGRAPHY } from '../data/site';
                   href={social.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  class="text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
+                  class="text-muted text-link hover:underline transition-colors"
                   aria-label={social.name}
                 >
                   {social.icon === 'envelope' && (

@@ -21,7 +21,7 @@ function formatDate(date: Date): string {
 
 <a
   href={`/post/${slug}`}
-  class="block bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow overflow-hidden group"
+  class="block bg-surface rounded-lg shadow-sm border border-surface hover:shadow-md transition-shadow overflow-hidden group"
 >
   {image && (
     <img
@@ -34,21 +34,21 @@ function formatDate(date: Date): string {
     <div class="flex items-center gap-2 mb-2">
       {tags.map((tag) => (
         <span
-          class="px-2 py-1 text-xs bg-gray-100 dark:bg-gray-800 rounded text-gray-600 dark:text-gray-400"
+          class="px-2 py-1 text-xs bg-surface-elevated rounded text-muted"
         >
           {tag}
         </span>
       ))}
     </div>
-    <h3 class="text-xl font-semibold mb-2 text-gray-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
+    <h3 class="text-xl font-semibold mb-2 text-heading group-hover:text-link transition-colors">
       {title}
     </h3>
     {description && (
-      <p class="text-gray-600 dark:text-gray-400 mb-4 line-clamp-2">
+      <p class="text-muted mb-4 line-clamp-2">
         {description}
       </p>
     )}
-    <time class="text-sm text-gray-500 dark:text-gray-500">
+    <time class="text-sm text-subtle">
       {formatDate(pubDate)}
     </time>
   </div>

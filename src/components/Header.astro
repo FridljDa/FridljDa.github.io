@@ -9,10 +9,10 @@ const navItems = [
 ];
 ---
 
-<header class="sticky top-0 z-50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-b border-gray-200 dark:border-gray-800">
+<header class="sticky top-0 z-50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-b border-surface">
   <nav class="container mx-auto px-4 py-4">
     <div class="flex items-center justify-between">
-      <a href="/" class="text-xl font-bold text-gray-900 dark:text-white">
+      <a href="/" class="text-xl font-bold text-heading">
         {SITE.title}
       </a>
       <div class="flex items-center gap-6">
@@ -21,7 +21,7 @@ const navItems = [
             <li>
               <a
                 href={item.href}
-                class="text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
+                class="text-body text-link hover:underline transition-colors"
               >
                 {item.label}
               </a>
@@ -30,7 +30,7 @@ const navItems = [
         </ul>
         <button
           id="theme-toggle"
-          class="p-2 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+          class="p-2 rounded-lg text-body hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
           aria-label="Toggle dark mode"
         >
           <svg
