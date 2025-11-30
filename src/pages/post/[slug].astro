@@ -19,23 +19,23 @@ const { Content } = await render(post);
 ---
 
 <Layout title={`${post.data.title} | Daniel Fridljand`}>
-  <article class="py-16 bg-white dark:bg-gray-900">
+  <article class="py-16 bg-surface">
     <div class="container mx-auto px-4">
       <div class="max-w-4xl mx-auto">
         <header class="mb-8">
           <div class="flex flex-wrap gap-2 mb-4">
             {post.data.tags.map((tag) => (
               <span
-                class="px-3 py-1 bg-gray-100 dark:bg-gray-800 rounded-full text-sm text-gray-700 dark:text-gray-300"
+                class="px-3 py-1 bg-surface-elevated rounded-full text-sm text-body"
               >
                 {tag}
               </span>
             ))}
           </div>
-          <h1 class="text-4xl font-bold mb-4 text-gray-900 dark:text-white">
+          <h1 class="text-4xl font-bold mb-4 text-heading">
             {post.data.title}
           </h1>
-          <time class="text-gray-600 dark:text-gray-400">
+          <time class="text-muted">
             {post.data.pubDate.toLocaleDateString('en-US', {
               year: 'numeric',
               month: 'long',
