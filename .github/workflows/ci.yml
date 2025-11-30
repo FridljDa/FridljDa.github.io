@@ -66,9 +66,8 @@ jobs:
       - name: Build Astro site
         run: npm run build
         env:
-          # Set dummy values for build (Render will use real values)
-          PUBLIC_LANGFLOW_URL: ${{ secrets.PUBLIC_LANGFLOW_URL || 'https://placeholder.onrender.com' }}
-          PUBLIC_LANGFLOW_FLOW_ID: ${{ secrets.PUBLIC_LANGFLOW_FLOW_ID || 'placeholder-flow-id' }}
+          # Set dummy value for build (Render will use real value)
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY || 'dummy-key-for-build' }}
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
@@ -101,16 +100,16 @@ jobs:
       - name: Build Astro site (for testing)
         run: npm run build
         env:
-          PUBLIC_LANGFLOW_URL: ${{ secrets.PUBLIC_LANGFLOW_URL || 'https://placeholder.onrender.com' }}
-          PUBLIC_LANGFLOW_FLOW_ID: ${{ secrets.PUBLIC_LANGFLOW_FLOW_ID || 'placeholder-flow-id' }}
+          # Set dummy value for build (Render will use real value)
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY || 'dummy-key-for-build' }}
 
       - name: Start preview server
         run: |
           npm run preview &
           echo $! > preview.pid
         env:
-          PUBLIC_LANGFLOW_URL: ${{ secrets.PUBLIC_LANGFLOW_URL || 'https://placeholder.onrender.com' }}
-          PUBLIC_LANGFLOW_FLOW_ID: ${{ secrets.PUBLIC_LANGFLOW_FLOW_ID || 'placeholder-flow-id' }}
+          # Set dummy value for preview server (chat won't work but site will load)
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY || 'dummy-key-for-preview' }}
 
       - name: Wait for server to be ready
         run: |

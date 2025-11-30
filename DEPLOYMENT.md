@@ -6,43 +6,38 @@
 
 1. **Deploy using render.yaml blueprint:**
    - Connect your GitHub repository to Render
-   - Use the `render.yaml` file to deploy all services at once
-   - Or deploy services individually through the Render dashboard
+   - Use the `render.yaml` file to deploy the service
+   - Or deploy the service individually through the Render dashboard
 
 ### Environment Variables
 
 **Important:** For Render deployment, set environment variables in the Render dashboard, NOT in a `.env` file. The `.env` file is only for local development (see README.md).
 
-#### Astro Site Environment Variables
+#### Required Environment Variables
 
-Set these in the Render dashboard for the `astro-site` service:
+Set these in the Render dashboard for your web service:
 
-- `PUBLIC_LANGFLOW_URL` - The public URL of your deployed Langflow service (e.g., `https://langflow-xxxxx.onrender.com`)
-- `PUBLIC_LANGFLOW_FLOW_ID` - The Flow ID from Langflow service logs (see below)
+- `GEMINI_API_KEY` - Your Google Gemini API key (required for chat functionality)
+  - Get your API key from [Google AI Studio](https://makersuite.google.com/app/apikey)
+  - This key is used server-side and should be kept secure
 
-#### Langflow Service Environment Variables
+#### Optional Environment Variables
 
-Set these in the Render dashboard for the `langflow` service:
+- `NODE_VERSION` - Node.js version (defaults to 20.11.0 as specified in render.yaml)
+- `PORT` - Port number (defaults to 10000, automatically set by Render)
 
-- `GOOGLE_AI_STUDIO_API_KEY` - Your Google AI Studio API key
-- `ASTRA_DB_API_KEY` - Your Astra DB API key (if using)
-- `LANGFLOW_SKIP_AUTH_AUTO_LOGIN` - Set to `"false"` for production
+### Post-Deployment
 
-Note: The `LANGFLOW_DATABASE_URL` is automatically set by Render when you link the Postgres database.
+1. **Verify deployment:**
+   - Check that the service is running and accessible
+   - The health check endpoint (`/`) should return 200 OK
 
-### Post-Deployment Steps
+2. **Test chat functionality:**
+   - Navigate to your deployed site
+   - Open the chat interface
+   - Verify that chat requests are working correctly
 
-1. **Get the Langflow service URL:**
-   - After deployment, get the public URL from the Langflow service dashboard
-   - Example: `https://langflow-xxxxx.onrender.com`
-
-2. **Get the Flow ID:**
-   - Check the Langflow service logs for: `"Flow 'Document Q&A' imported successfully with ID: ..."`
-   - Copy the Flow ID from the logs
-   - The flow is automatically imported on container startup (idempotent)
-
-3. **Configure Astro site:**
-   - Set `PUBLIC_LANGFLOW_URL` in the `astro-site` service environment variables to the Langflow service URL
-   - Set `PUBLIC_LANGFLOW_FLOW_ID` in the `astro-site` service environment variables to the Flow ID from step 2
-   - Redeploy the Astro site to pick up the new environment variables
+3. **Monitor logs:**
+   - Check Render service logs for any errors
+   - Ensure `GEMINI_API_KEY` is properly set (you should see "Key found" in logs, not "Key missing")
 

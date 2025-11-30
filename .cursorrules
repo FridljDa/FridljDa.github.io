@@ -16,11 +16,10 @@ This is a personal website built with Astro, featuring an AI chat functionality 
 - `src/pages/` - Astro pages and API routes
   - `src/pages/api/chat.ts` - Chat API endpoint for Gemini integration
 - `src/data/` - TypeScript data files (site config, publications, experience, cv.md)
-- `src/content/blog/` - Blog posts as MDX files
+- `src/content/blog/` - Blog posts as MDX files (content collections)
 - `src/layouts/` - Layout components
 - `src/styles/` - Global CSS
 - `public/` - Static assets (images, uploads)
-- `content/` - Content collections (authors, publications)
 - `tests/` - Playwright test files
 
 ## Local Development
