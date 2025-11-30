@@ -10,7 +10,29 @@ export default function Chat() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isMinimized, setIsMinimized] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Detect mobile on initial load and set minimized by default
+  useEffect(() => {
+    const checkMobile = () => {
+      // Tailwind's md breakpoint is 768px
+      if (window.innerWidth < 768) {
+        setIsMinimized(true);
+      }
+    };
+    
+    checkMobile();
+    
+    // Optional: handle window resize to maintain state
+    const handleResize = () => {
+      // Only auto-minimize on mobile if user hasn't manually expanded
+      // For now, we'll keep it simple and only set on initial load
+    };
+    
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Auto-scroll to bottom when messages change
   const scrollToBottom = () => {
@@ -18,8 +40,14 @@ export default function Chat() {
   };
 
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+    if (!isMinimized) {
+      scrollToBottom();
+    }
+  }, [messages, isMinimized]);
+
+  const toggleMinimize = () => {
+    setIsMinimized(!isMinimized);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -78,8 +106,38 @@ export default function Chat() {
     }
   };
 
+  // Minimized state: Show only floating button
+  if (isMinimized) {
+    return (
+      <button
+        onClick={toggleMinimize}
+        className="fixed bottom-4 right-4 w-14 h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg z-[1000] flex items-center justify-center transition-all hover:scale-110"
+        aria-label="Open chat"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
+          <path d="M4.804 21.644A6.707 6.707 0 006 21.75a6.721 6.721 0 003.583-1.029c.774.182 1.584.279 2.417.279 5.322 0 9.75-3.97 9.75-9 0-5.03-4.428-9-9.75-9s-9.75 3.97-9.75 9c0 2.409 1.025 4.587 2.674 6.192.232.226.277.428.254.543a3.73 3.73 0 01-.814 1.686.75.75 0 00.44 1.223zM8.25 10.875a1.125 1.125 0 100 2.25 1.125 1.125 0 000-2.25zM10.875 12a1.125 1.125 0 112.25 0 1.125 1.125 0 01-2.25 0zm4.875-1.125a1.125 1.125 0 100 2.25 1.125 1.125 0 000-2.25z" />
+        </svg>
+      </button>
+    );
+  }
+
+  // Expanded state: Show full chat interface
   return (
-    <div className="fixed bottom-20 right-4 w-96 h-[500px] border border-gray-200 rounded-xl shadow-lg bg-white overflow-hidden z-[1000] flex flex-col">
+    <div className="fixed bottom-4 right-4 md:bottom-20 md:right-4 w-[calc(100%-2rem)] md:w-96 h-[calc(100vh-8rem)] md:h-[500px] border border-gray-200 rounded-xl shadow-lg bg-white overflow-hidden z-[1000] flex flex-col transition-all">
+      {/* Header with minimize button */}
+      <div className="flex items-center justify-between p-3 bg-blue-600 text-white">
+        <h3 className="font-semibold text-sm">AI Chat</h3>
+        <button
+          onClick={toggleMinimize}
+          className="p-1 hover:bg-blue-700 rounded transition-colors"
+          aria-label="Minimize chat"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+            <path fillRule="evenodd" d="M5.47 5.47a.75.75 0 011.06 0L12 10.94l5.47-5.47a.75.75 0 111.06 1.06L13.06 12l5.47 5.47a.75.75 0 11-1.06 1.06L12 13.06l-5.47 5.47a.75.75 0 01-1.06-1.06L10.94 12 5.47 6.53a.75.75 0 010-1.06z" clipRule="evenodd" />
+          </svg>
+        </button>
+      </div>
+
       {/* Messages Area */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
         {messages.length === 0 ? (
