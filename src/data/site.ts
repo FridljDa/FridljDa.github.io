@@ -31,11 +31,6 @@ export const BIOGRAPHY = {
   ],
   social: [
     {
-      name: 'Email',
-      icon: 'envelope',
-      url: 'mailto:daniel.fridljand@gmail.com',
-    },
-    {
       name: 'Google Scholar',
       icon: 'graduation-cap',
       url: 'https://scholar.google.com/citations?user=SIoMbdMAAAAJ',
