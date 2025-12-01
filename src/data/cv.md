@@ -87,7 +87,6 @@ I am a driven software consultant with a strong academic background in mathemati
 
 ## Contact Information
 
-- **Email:** daniel.fridljand@gmail.com
 - **Google Scholar:** https://scholar.google.com/citations?user=SIoMbdMAAAAJ
 - **GitHub:** https://github.com/FridljDa
 - **LinkedIn:** https://www.linkedin.com/in/daniel-fridljand-8707a2208/
