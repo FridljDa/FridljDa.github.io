@@ -1,4 +1,6 @@
 ---
+import { formatDateWithDay } from '../utils/date';
+
 interface Props {
   title: string;
   description?: string;
@@ -9,14 +11,6 @@ interface Props {
 }
 
 const { title, description, pubDate, slug, image, tags = [] } = Astro.props;
-
-function formatDate(date: Date): string {
-  return date.toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  });
-}
 ---
 
 <a
@@ -49,7 +43,7 @@ function formatDate(date: Date): string {
       </p>
     )}
     <time class="text-sm text-subtle">
-      {formatDate(pubDate)}
+      {formatDateWithDay(pubDate)}
     </time>
   </div>
 </a>

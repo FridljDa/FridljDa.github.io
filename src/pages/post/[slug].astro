@@ -1,6 +1,7 @@
 ---
 import { getCollection, render } from 'astro:content';
 import Layout from '../../layouts/Layout.astro';
+import { formatDateLong } from '../../utils/date';
 
 // In SSR mode, we fetch the post dynamically based on the slug parameter
 const slug = Astro.params.slug;
@@ -36,11 +37,7 @@ const { Content } = await render(post);
             {post.data.title}
           </h1>
           <time class="text-muted">
-            {post.data.pubDate.toLocaleDateString('en-US', {
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric',
-            })}
+            {formatDateLong(post.data.pubDate)}
           </time>
         </header>
         {post.data.image && (
