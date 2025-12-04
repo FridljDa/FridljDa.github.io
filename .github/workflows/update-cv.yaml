@@ -25,11 +25,16 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Install RenderCV
-        run: pip install "rendercv[full]"
+      - name: Install RenderCV and yaml-to-markdown
+        run: |
+          pip install "rendercv[full]"
+          pip install yaml-to-markdown
 
       - name: Generate PDF from CV
         run: rendercv render src/data/cv.yaml
+
+      - name: Generate Markdown from CV
+        run: yaml-to-markdown -o src/data/cv.md -y src/data/cv.yaml
 
       - name: Copy PDF to public/uploads folder
         run: |
@@ -56,11 +61,11 @@ jobs:
 
       - name: Commit and push changes
         run: |
-          git add public/uploads/resume.pdf
+          git add public/uploads/resume.pdf src/data/cv.md
           if git diff --staged --quiet; then
             echo "No changes to commit"
           else
-            git commit -m "Update CV PDF"
+            git commit -m "Update CV PDF and Markdown"
             git push
           fi
 
