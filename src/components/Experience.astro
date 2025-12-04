@@ -1,10 +1,6 @@
 ---
 import { EXPERIENCE } from '../data/experience';
-
-function formatDate(dateString: string): string {
-  const date = new Date(dateString);
-  return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
-}
+import { formatDateShort } from '../utils/date';
 ---
 
 <section id="experience" class="py-16 bg-surface-alt scroll-mt-20">
@@ -43,8 +39,8 @@ function formatDate(dateString: string): string {
                     </a>
                   </div>
                   <div class="text-sm text-muted mt-2 md:mt-0">
-                    {formatDate(exp.dateStart)} —{' '}
-                    {exp.dateEnd ? formatDate(exp.dateEnd) : 'Present'}
+                    {formatDateShort(exp.dateStart)} —{' '}
+                    {exp.dateEnd ? formatDateShort(exp.dateEnd) : 'Present'}
                   </div>
                 </div>
                 <p class="text-sm text-muted mb-3">
