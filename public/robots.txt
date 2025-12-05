@@ -1,0 +1,7 @@
+# AI discoverability: robots.txt file to guide web crawlers and AI agents
+User-agent: *
+Allow: /
+
+# AI discoverability: Reference to sitemap for better discoverability
+Sitemap: https://danielfridljand.de/sitemap.xml
+

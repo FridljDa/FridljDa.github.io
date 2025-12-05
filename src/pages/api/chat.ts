@@ -1,8 +1,9 @@
 // src/pages/api/chat.ts
 import type { APIRoute } from 'astro';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-// Import the CV content as a raw string at build time
-import cvText from '../../data/cv.md?raw';
+import { getCollection } from 'astro:content';
+import { getCvMarkdown } from '../../utils/cv-markdown';
+import { generateHomePageMarkdown, getBlogPostRawMarkdown } from '../../utils/markdown-generator';
 
 export const POST: APIRoute = async ({ request }) => {
   try {
@@ -38,19 +39,49 @@ export const POST: APIRoute = async ({ request }) => {
     const modelName = 'gemini-2.5-flash'; // Fastest model. Alternatives: 'gemini-2.5-pro', 'gemini-3-pro'
     const model = genAI.getGenerativeModel({ model: modelName });
 
-    // 4. Construct System Prompt and History
-    // We define the persona and inject the CV context.
+    // 4. Gather all markdown content for context
+    const cvMarkdown = getCvMarkdown();
+    const blogPosts = await getCollection('blog');
+    const homePageMarkdown = generateHomePageMarkdown(blogPosts);
+    
+    // Get markdown content from all blog posts
+    const blogPostsMarkdown = await Promise.all(
+      blogPosts.map(async (post) => {
+        try {
+          const markdown = await getBlogPostRawMarkdown(post);
+          return `## Blog Post: ${post.data.title}\n\n${markdown}\n\n---\n\n`;
+        } catch (error) {
+          console.error(`Error getting markdown for post ${post.id}:`, error);
+          return `## Blog Post: ${post.data.title}\n\n*Content not available*\n\n---\n\n`;
+        }
+      })
+    );
+    
+    const allBlogPostsMarkdown = blogPostsMarkdown.join('\n');
+
+    // 5. Construct System Prompt and History
+    // We define the persona and inject all available context (CV, home page, blog posts).
     const systemInstruction = `
-      You are a professional AI assistant representing the owner of the following CV. 
-      Your goal is to answer questions about the candidate's experience, skills, and background based *strictly* on the provided text.
+      You are a professional AI assistant representing Daniel Fridljand, a Software Consultant with a strong academic background in mathematics, statistics, and bioinformatics.
+      Your goal is to answer questions about Daniel's experience, skills, background, publications, and blog posts based *strictly* on the provided content.
         
       tone: Professional, concise, yet approachable.
       rules:  
-      - If the answer is not in the CV, explicitly state: "I don't see that information in the CV."
+      - If the answer is not in the provided content, explicitly state: "I don't see that information in the available content."
       - Do not hallucinate or invent experiences.
+      - You have access to:
+        1. CV/Resume information
+        2. Home page content (biography, experience, publications, blog post summaries)
+        3. Full blog post content
         
-      CV DATA:  
-      ${cvText}
+      === CV/RESUME DATA ===
+      ${cvMarkdown}
+      
+      === HOME PAGE CONTENT ===
+      ${homePageMarkdown}
+      
+      === BLOG POSTS (FULL CONTENT) ===
+      ${allBlogPostsMarkdown}
     `;
 
     // Map frontend message format to Gemini's expected format
@@ -69,7 +100,7 @@ export const POST: APIRoute = async ({ request }) => {
         },
         {
           role: 'model',
-          parts: [{ text: "I have reviewed the CV and am ready to answer questions." }]
+          parts: [{ text: "I have reviewed Daniel's CV, home page content, and blog posts. I'm ready to answer questions about his experience, skills, background, publications, and blog content." }]
         },
         ...history
       ],
@@ -77,10 +108,10 @@ export const POST: APIRoute = async ({ request }) => {
 
     const lastUserMessage = messages[messages.length - 1].content;
 
-    // 5. Generate Streaming Response
+    // 6. Generate Streaming Response
     const result = await chat.sendMessageStream(lastUserMessage);
 
-    // 6. Create ReadableStream for HTTP Response
+    // 7. Create ReadableStream for HTTP Response
     // This allows the browser to receive data chunks as they arrive.
     const stream = new ReadableStream({
       async start(controller) {
@@ -100,7 +131,7 @@ export const POST: APIRoute = async ({ request }) => {
       },
     });
 
-    // 7. Return Response with Correct Headers
+    // 8. Return Response with Correct Headers
     return new Response(stream, {
       headers: {
         'Content-Type': 'text/plain; charset=utf-8',
