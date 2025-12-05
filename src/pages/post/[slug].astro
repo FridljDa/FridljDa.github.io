@@ -115,7 +115,7 @@ const articleSchema = {
                 </span>
               ))}
             </div>
-            <ViewAsMarkdown client:load href={`/post/${slug}.md`} />
+            <ViewAsMarkdown client:load markdown={postMarkdown} />
           </div>
           <h1 class="text-4xl font-bold mb-4 text-heading">
             {post.data.title}

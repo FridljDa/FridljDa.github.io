@@ -1,7 +1,7 @@
 // src/pages/api/chat.ts
 import type { APIRoute } from 'astro';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { getCollection, type CollectionEntry } from 'astro:content';
+import { getCollection } from 'astro:content';
 import { getCvMarkdown } from '../../utils/cv-markdown';
 import { generateHomePageMarkdown, getBlogPostRawMarkdown } from '../../utils/markdown-generator';
 
@@ -46,7 +46,7 @@ export const POST: APIRoute = async ({ request }) => {
     
     // Get markdown content from all blog posts
     const blogPostsMarkdown = await Promise.all(
-      blogPosts.map(async (post: CollectionEntry<'blog'>) => {
+      blogPosts.map(async (post) => {
         try {
           const markdown = await getBlogPostRawMarkdown(post);
           return `## Blog Post: ${post.data.title}\n\n${markdown}\n\n---\n\n`;

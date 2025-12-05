@@ -157,7 +157,7 @@ export async function getBlogPostRawMarkdown(post: CollectionEntry<'blog'>): Pro
   }
   if (post.data.tags && post.data.tags.length > 0) {
     markdown += `tags:\n`;
-    post.data.tags.forEach((tag: string) => {
+    post.data.tags.forEach(tag => {
       markdown += `  - ${tag}\n`;
     });
   }
