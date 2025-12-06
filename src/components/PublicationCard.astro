@@ -13,14 +13,14 @@ const { publication } = Astro.props;
   <h3 class="text-xl font-semibold mb-3 text-heading text-mobile-center">
     {publication.title}
   </h3>
-  <p class="text-body mb-3 text-mobile-center">
+  <p class="text-body mb-3">
     {publication.authors.join(', ')}
   </p>
   <p class="text-sm text-muted mb-3 text-mobile-center">
     <span class="font-medium">{publication.publicationShort}</span> ·{' '}
     {formatDateLong(publication.date)}
   </p>
-  <p class="text-muted mb-4 text-sm text-mobile-center">
+  <p class="text-muted mb-4 text-sm">
     {publication.summary}
   </p>
   <div class="flex flex-wrap gap-3 justify-mobile-center">
