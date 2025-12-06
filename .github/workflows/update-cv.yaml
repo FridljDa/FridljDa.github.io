@@ -25,51 +25,12 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Install RenderCV and yaml-to-markdown
+      - name: Install RenderCV
         run: |
           pip install "rendercv[full]"
-          pip install yaml-to-markdown
-          pip install pyyaml
 
       - name: Generate PDF from CV
         run: rendercv render src/data/cv.yaml
-
-      - name: Preprocess YAML for markdown conversion
-        run: |
-          python3 << 'EOF'
-          import yaml
-          
-          # Read the YAML file
-          with open('src/data/cv.yaml', 'r') as f:
-              data = yaml.safe_load(f)
-          
-          # Recursively remove empty lists (yaml-to-markdown fails on empty lists)
-          def remove_empty_lists(obj):
-              if isinstance(obj, dict):
-                  result = {}
-                  for k, v in obj.items():
-                      # Skip empty lists
-                      if isinstance(v, list) and len(v) == 0:
-                          continue
-                      result[k] = remove_empty_lists(v)
-                  return result
-              elif isinstance(obj, list):
-                  return [remove_empty_lists(item) for item in obj]
-              else:
-                  return obj
-          
-          cleaned_data = remove_empty_lists(data)
-          
-          # Write to a temporary file for yaml-to-markdown
-          with open('src/data/cv_temp.yaml', 'w') as f:
-              yaml.dump(cleaned_data, f, default_flow_style=False, sort_keys=False, allow_unicode=True)
-          EOF
-
-      - name: Generate Markdown from CV
-        run: yaml-to-markdown -o src/data/cv.md -y src/data/cv_temp.yaml
-
-      - name: Clean up temporary file
-        run: rm -f src/data/cv_temp.yaml
 
       - name: Copy PDF to public/uploads folder
         run: |
@@ -96,11 +57,11 @@ jobs:
 
       - name: Commit and push changes
         run: |
-          git add public/uploads/resume.pdf src/data/cv.md
+          git add public/uploads/resume.pdf
           if git diff --staged --quiet; then
             echo "No changes to commit"
           else
-            git commit -m "Update CV PDF and Markdown"
+            git commit -m "Update CV PDF"
             git push
           fi
 

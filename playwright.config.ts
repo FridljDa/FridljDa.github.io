@@ -42,6 +42,19 @@ export default defineConfig({
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
     },
+    // Mobile device projects
+    {
+      name: 'iPhone 13',
+      use: { ...devices['iPhone 13'] },
+    },
+    {
+      name: 'iPad Pro',
+      use: { ...devices['iPad Pro'] },
+    },
+    {
+      name: 'Pixel 5',
+      use: { ...devices['Pixel 5'] },
+    },
     // Uncomment to test in other browsers (requires: npx playwright install)
     // {
     //   name: 'firefox',

@@ -10,7 +10,10 @@
     "test": "playwright test",
     "test:ui": "playwright test --ui",
     "test:headed": "playwright test --headed",
-    "test:production": "PLAYWRIGHT_BASE_URL=https://astro-site-z68a.onrender.com playwright test"
+    "test:production": "cross-env PLAYWRIGHT_BASE_URL=https://danielfridljand.de playwright test",
+    "test:mobile": "playwright test --project=\"iPhone 13\" --project=\"iPad Pro\" --project=\"Pixel 5\"",
+    "test:mobile:ui": "playwright test --ui --project=\"iPhone 13\" --project=\"iPad Pro\" --project=\"Pixel 5\"",
+    "test:mobile:headed": "playwright test --headed --project=\"iPhone 13\" --project=\"iPad Pro\" --project=\"Pixel 5\""
   },
   "dependencies": {
     "@astrojs/mdx": "^4.0.1",
@@ -35,6 +38,7 @@
   "devDependencies": {
     "@playwright/test": "^1.57.0",
     "@types/node": "^24.10.1",
-    "@types/turndown": "^5.0.6"
+    "@types/turndown": "^5.0.6",
+    "cross-env": "^7.0.3"
   }
 }

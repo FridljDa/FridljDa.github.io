@@ -2,7 +2,6 @@
 import type { APIRoute } from 'astro';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { getCollection, type CollectionEntry } from 'astro:content';
-import { getCvMarkdown } from '../../utils/cv-markdown';
 import { generateHomePageMarkdown, getBlogPostRawMarkdown } from '../../utils/markdown-generator';
 
 export const POST: APIRoute = async ({ request }) => {
@@ -40,7 +39,6 @@ export const POST: APIRoute = async ({ request }) => {
     const model = genAI.getGenerativeModel({ model: modelName });
 
     // 4. Gather all markdown content for context
-    const cvMarkdown = getCvMarkdown();
     const blogPosts = await getCollection('blog');
     const homePageMarkdown = generateHomePageMarkdown(blogPosts);
     
@@ -60,24 +58,21 @@ export const POST: APIRoute = async ({ request }) => {
     const allBlogPostsMarkdown = blogPostsMarkdown.join('\n');
 
     // 5. Construct System Prompt and History
-    // We define the persona and inject all available context (CV, home page, blog posts).
+    // We define the persona and inject all available context (home page content includes CV/resume info, blog posts).
     const systemInstruction = `
       You are a professional AI assistant representing Daniel Fridljand, a Software Consultant with a strong academic background in mathematics, statistics, and bioinformatics.
       Your goal is to answer questions about Daniel's experience, skills, background, publications, and blog posts based *strictly* on the provided content.
         
       tone: Professional, concise, yet approachable.
       rules:  
+      - Keep answers concise: 2-3 sentences maximum. Do not reproduce large sections of content verbatim.
       - If the answer is not in the provided content, explicitly state: "I don't see that information in the available content."
       - Do not hallucinate or invent experiences.
       - You have access to:
-        1. CV/Resume information
-        2. Home page content (biography, experience, publications, blog post summaries)
-        3. Full blog post content
+        1. Home page content (biography, experience, publications, CV/resume information, blog post summaries)
+        2. Full blog post content
         
-      === CV/RESUME DATA ===
-      ${cvMarkdown}
-      
-      === HOME PAGE CONTENT ===
+      === HOME PAGE CONTENT (includes CV/Resume information) ===
       ${homePageMarkdown}
       
       === BLOG POSTS (FULL CONTENT) ===
@@ -100,7 +95,7 @@ export const POST: APIRoute = async ({ request }) => {
         },
         {
           role: 'model',
-          parts: [{ text: "I have reviewed Daniel's CV, home page content, and blog posts. I'm ready to answer questions about his experience, skills, background, publications, and blog content." }]
+          parts: [{ text: "I have reviewed Daniel's home page content (including CV/resume information) and blog posts. I'm ready to answer questions about his experience, skills, background, publications, and blog content." }]
         },
         ...history
       ],
