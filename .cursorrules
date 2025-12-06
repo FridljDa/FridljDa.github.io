@@ -15,9 +15,8 @@ This is a personal website built with Astro, featuring an AI chat functionality 
 - `src/components/` - Astro and React components (Biography, Experience, BlogPostCard, Chat, etc.)
 - `src/pages/` - Astro pages and API routes
   - `src/pages/api/chat.ts` - Chat API endpoint for Gemini integration
-- `src/data/` - TypeScript data files (site config, publications, experience, cv.yaml, cv.md)
+- `src/data/` - TypeScript data files (site config, publications, experience, cv.yaml)
   - `cv.yaml` - Source CV data (automatically processed by GitHub Actions)
-  - `cv.md` - Generated Markdown version (used by chat API)
 - `src/content/blog/` - Blog posts as MDX files (content collections)
 - `src/layouts/` - Layout components
 - `src/styles/` - Global CSS
@@ -54,11 +53,10 @@ This is a personal website built with Astro, featuring an AI chat functionality 
 - **Source file**: `src/data/cv.yaml` - Edit this file to update CV content
 - **GitHub Actions workflow**: `.github/workflows/update-cv.yaml` automatically processes `cv.yaml` when pushed to `master`:
   - Generates PDF using RenderCV: `rendercv render src/data/cv.yaml`
-  - Generates Markdown: `yaml-to-markdown -o src/data/cv.md -y src/data/cv.yaml`
-  - Updates `public/uploads/resume.pdf` and `src/data/cv.md`
+  - Updates `public/uploads/resume.pdf`
   - Commits changes automatically
-- **Chat API usage**: `src/pages/api/chat.ts` imports `cv.md` (generated from `cv.yaml`) as raw text for AI context
-- **Note**: Do not manually edit `cv.md` or `resume.pdf` - they are auto-generated from `cv.yaml`
+- **Chat API usage**: `src/pages/api/chat.ts` uses `generateHomePageMarkdown()` which includes CV/resume information from the home page content (biography, experience, publications)
+- **Note**: Do not manually edit `resume.pdf` - it is auto-generated from `cv.yaml`
 
 ### Testing Changes
 To test changes, you can:
@@ -74,6 +72,7 @@ To test changes, you can:
 
 ### Deployment
 - Production is deployed on Render (see `render.yaml`)
+- Live site URL: **https://danielfridljand.de/**
 
 ### Production Debugging
 - **Use Render MCP tools** to debug production issues

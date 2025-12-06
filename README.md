@@ -34,6 +34,10 @@ The site will be available at `http://localhost:4321`.
 - **Blog** - MDX-based blog posts with math support (KaTeX)
 - **Responsive Design** - Built with Tailwind CSS
 
+## Production
+
+The live site is available at: **https://danielfridljand.de/**
+
 ## Running Tests
 
 Tests require the Astro dev server to be running first.
@@ -53,6 +57,19 @@ Additional test options:
 - `npm run test:headed` - Run tests in headed mode
 - `npm run test:production` - Run tests against production site
 
+## Mobile Testing
+
+The easiest way to test how the website looks on mobile devices is using browser DevTools. For automated testing, Playwright mobile device emulation is also available.
+
+### Browser DevTools (Easiest Method)
+
+**Chrome/Edge:**
+1. Open the site in Chrome/Edge
+2. Press `F12` (or `Cmd+Option+I` on Mac) to open DevTools
+3. Press `Ctrl+Shift+M` (or `Cmd+Shift+M` on Mac) to toggle device toolbar
+4. Select a device preset from the dropdown (iPhone, iPad, Pixel, etc.)
+5. Refresh the page to see the mobile view
+
 ## CV Management
 
 The CV is managed through `src/data/cv.yaml` and automatically processed via GitHub Actions:
@@ -66,24 +83,17 @@ When `src/data/cv.yaml` is pushed to the `master` branch, a GitHub Actions workf
    rendercv render src/data/cv.yaml
    ```
 
-2. **Generates Markdown**: Converts the YAML to Markdown format for use in the chat API
-   ```bash
-   yaml-to-markdown -o src/data/cv.md -y src/data/cv.yaml
-   ```
-
-3. **Updates Files**: 
+2. **Updates Files**: 
    - Copies the generated PDF to `public/uploads/resume.pdf`
-   - Updates `src/data/cv.md` (used by the chat API at `src/pages/api/chat.ts`)
 
-4. **Commits Changes**: Automatically commits and pushes the updated PDF and Markdown files
+3. **Commits Changes**: Automatically commits and pushes the updated PDF file
 
 ### Manual Workflow
 
 You can also run the CV generation manually:
 ```bash
-pip install "rendercv[full]" yaml-to-markdown
+pip install "rendercv[full]"
 rendercv render src/data/cv.yaml
-yaml-to-markdown -o src/data/cv.md -y src/data/cv.yaml
 ```
 
 The generated PDF will be in `rendercv_output/` directory.
