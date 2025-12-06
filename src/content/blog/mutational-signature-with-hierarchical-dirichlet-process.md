@@ -137,7 +137,7 @@ $$
 \end{aligned}
 $$
 
-This completes our model, which describes how the mutational signatures $\left\\{\tilde{\theta}\_1, \ldots, \tilde{\theta}\_K\right\\}$ generate the observed trinucleotide mutations $\left\\{x\_1, \ldots, x\_M\right\\}$
+This completes our model, which describes how the mutational signatures $\left\{\tilde{\theta}_1, \ldots, \tilde{\theta}_K\right\}$ generate the observed trinucleotide mutations $\left\{x_1, \ldots, x_M\right\}$
 
 ##### Graphical model for known number of components $K$
 
