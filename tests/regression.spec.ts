@@ -1,11 +1,11 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 
 test.describe('Regression Tests', () => {
   /**
    * Helper function to expand chat if it's minimized
    * @param page - Playwright page object
    */
-  async function expandChatIfMinimized(page: any) {
+  async function expandChatIfMinimized(page: Page) {
     // Check if chat is minimized (mobile devices auto-minimize)
     const minimizedButton = page.locator('button[aria-label="Open chat"]');
     const isMinimized = await minimizedButton.isVisible().catch(() => false);
