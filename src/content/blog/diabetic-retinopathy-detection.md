@@ -62,6 +62,8 @@ The best results were obtained using a learning rate of $0.0001$, a batch size o
 
 Interestingly, almost all configurations produced high testing recall, with 10 out of 18 experiments achieving a testing recall above 0.9. The oversampling method achieved the highest testing precision, while the weighted cross-entropy improved testing recall. The SGD optimizer generally outperformed the Adam optimizer for the default hyperparameter configurations. Training converged after 35 epochs, indicating stable learning.
 
+![Fig. 8: Parallel coordinate view of hyper parameter combination and performance on the testing set for the binary classification algorithm](/images/blog/diabetic-retinopathy-detection/parallel-coordinate-hparams.png)
+
 ## Image Segmentation with U-Net
 
 ### Architecture and Motivation
