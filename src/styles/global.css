@@ -15,7 +15,16 @@
 
 @layer components {
   .anchor-link {
-    @apply no-underline opacity-0 group-hover:opacity-100 transition-opacity;
+    @apply no-underline inline-flex items-center ml-2 opacity-0 transition-opacity;
+    @apply text-gray-400 dark:text-gray-500;
+  }
+  
+  .anchor-link:hover {
+    @apply text-gray-600 dark:text-gray-400;
+  }
+  
+  .anchor-link-icon {
+    @apply w-4 h-4;
   }
   
   h1:hover .anchor-link,
@@ -25,6 +34,25 @@
   h5:hover .anchor-link,
   h6:hover .anchor-link {
     @apply opacity-100;
+  }
+  
+  /* Ensure headings themselves don't look like links */
+  .prose h1,
+  .prose h2,
+  .prose h3,
+  .prose h4,
+  .prose h5,
+  .prose h6 {
+    @apply text-heading;
+  }
+  
+  .prose h1 a,
+  .prose h2 a,
+  .prose h3 a,
+  .prose h4 a,
+  .prose h5 a,
+  .prose h6 a {
+    @apply no-underline text-inherit;
   }
   
   .prose {
