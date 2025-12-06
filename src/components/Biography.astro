@@ -12,16 +12,16 @@ const { markdownHref } = Astro.props;
 <section id="about" class="py-16 bg-surface scroll-mt-20">
   <div class="container mx-auto px-4">
     <div class="max-w-4xl mx-auto">
-      <div class="flex items-center justify-between mb-8">
-        <h2 class="text-3xl font-bold text-heading">
+      <div class="flex items-center justify-center md:justify-between mb-8">
+        <h2 class="text-3xl font-bold text-heading text-mobile-center">
           Biography
         </h2>
         {markdownHref && (
           <ViewAsMarkdown client:load href={markdownHref} />
         )}
       </div>
-      <div class="flex flex-col md:flex-row gap-8 items-start">
-        <div class="flex-shrink-0">
+      <div class="flex flex-col md:flex-row gap-8 items-mobile-center">
+        <div class="flex-shrink-0 mx-mobile-auto">
           <img
             src="/images/avatar.jpg"
             alt={BIOGRAPHY.name}
@@ -29,20 +29,20 @@ const { markdownHref } = Astro.props;
           />
         </div>
         <div class="flex-grow">
-          <h3 class="text-2xl font-semibold mb-2 text-heading">
+          <h3 class="text-2xl font-semibold mb-2 text-heading text-mobile-center">
             {BIOGRAPHY.name}
           </h3>
-          <p class="text-lg text-muted mb-4">
+          <p class="text-lg text-muted mb-4 text-mobile-center">
             {BIOGRAPHY.role}
           </p>
-          <p class="text-body mb-6 leading-relaxed">
+          <p class="text-body mb-6 leading-relaxed text-mobile-center">
             {BIOGRAPHY.bio}
           </p>
           <a
             href={BIOGRAPHY.resumeUrl}
             target="_blank"
             rel="noopener noreferrer"
-            class="inline-flex items-center gap-2 text-link-hover mb-6"
+            class="inline-flex items-center gap-2 text-link-hover mb-6 justify-mobile-center"
           >
             <svg
               class="w-5 h-5"
@@ -60,10 +60,10 @@ const { markdownHref } = Astro.props;
             Download my resumé
           </a>
           <div class="mb-6">
-            <h4 class="font-semibold mb-2 text-heading">
+            <h4 class="font-semibold mb-2 text-heading text-mobile-center">
               Interests
             </h4>
-            <ul class="flex flex-wrap gap-2">
+            <ul class="flex flex-wrap gap-2 justify-mobile-center">
               {BIOGRAPHY.interests.map((interest) => (
                 <li
                   class="px-3 py-1 bg-surface-elevated rounded-full text-sm text-body"
@@ -74,10 +74,10 @@ const { markdownHref } = Astro.props;
             </ul>
           </div>
           <div class="mb-6">
-            <h4 class="font-semibold mb-2 text-heading">
+            <h4 class="font-semibold mb-2 text-heading text-mobile-center">
               Education
             </h4>
-            <ul class="space-y-2">
+            <ul class="space-y-2 text-mobile-center">
               {BIOGRAPHY.education.map((edu) => (
                 <li class="text-body">
                   <span class="font-medium">{edu.course}</span>, {edu.year} —{' '}
@@ -87,10 +87,10 @@ const { markdownHref } = Astro.props;
             </ul>
           </div>
           <div>
-            <h4 class="font-semibold mb-2 text-heading">
+            <h4 class="font-semibold mb-2 text-heading text-mobile-center">
               Social
             </h4>
-            <div class="flex gap-4">
+            <div class="flex gap-4 justify-mobile-center">
               {BIOGRAPHY.social.map((social) => (
                 <a
                   href={social.url}

@@ -117,5 +117,22 @@
   .btn-secondary-hover {
     @apply btn-secondary hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors;
   }
+  
+  /* Mobile centering utilities - centered on mobile, left-aligned on desktop */
+  .text-mobile-center {
+    @apply text-center md:text-left;
+  }
+  
+  .justify-mobile-center {
+    @apply justify-center md:justify-start;
+  }
+  
+  .mx-mobile-auto {
+    @apply mx-auto md:mx-0;
+  }
+  
+  .items-mobile-center {
+    @apply items-center md:items-start;
+  }
 }
 
