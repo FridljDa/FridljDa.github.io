@@ -4,7 +4,7 @@
 This is a personal website built with Astro, featuring an AI chat functionality powered by Google Gemini API with server-side rendering.
 
 ## Tech Stack
-- **Framework**: Astro 5.x with SSR (Server-Side Rendering)
+- **Framework**: Astro with SSR (Server-Side Rendering)
 - **Styling**: Tailwind CSS
 - **Content**: MDX with math support (KaTeX via remark-math and rehype-katex)
 - **Testing**: Playwright
@@ -23,6 +23,18 @@ This is a personal website built with Astro, featuring an AI chat functionality 
 - `src/styles/` - Global CSS
 - `public/` - Static assets (images, uploads)
 - `tests/` - Playwright test files
+
+## Branch Management
+
+### Creating New Branches
+- **Before creating new branches**: Always fetch the latest master branch first:
+  ```bash
+  git fetch origin master
+  git checkout master
+  git pull origin master
+  git checkout -b your-new-branch-name
+  ```
+  This ensures new branches are based on the most recent master branch.
 
 ## Local Development
 
