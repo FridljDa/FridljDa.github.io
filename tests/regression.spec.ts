@@ -1,6 +1,23 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Regression Tests', () => {
+  /**
+   * Helper function to expand chat if it's minimized
+   * @param page - Playwright page object
+   */
+  async function expandChatIfMinimized(page: any) {
+    // Check if chat is minimized (mobile devices auto-minimize)
+    const minimizedButton = page.locator('button[aria-label="Open chat"]');
+    const isMinimized = await minimizedButton.isVisible().catch(() => false);
+    
+    if (isMinimized) {
+      // Chat is minimized, click to expand
+      await minimizedButton.click();
+      // Wait for chat to expand
+      await page.waitForTimeout(500);
+    }
+  }
+
   test.beforeEach(async ({ page }) => {
     // Navigate to homepage before each test
     await page.goto('/');
@@ -73,16 +90,8 @@ test.describe('Regression Tests', () => {
     // Wait for the page to load
     await page.waitForLoadState('networkidle');
     
-    // Check if chat is minimized (mobile devices auto-minimize)
-    const minimizedButton = page.locator('button[aria-label="Open chat"]');
-    const isMinimized = await minimizedButton.isVisible().catch(() => false);
-    
-    if (isMinimized) {
-      // Chat is minimized, click to expand
-      await minimizedButton.click();
-      // Wait for chat to expand
-      await page.waitForTimeout(500);
-    }
+    // Expand chat if minimized
+    await expandChatIfMinimized(page);
     
     // Verify chat component exists - look for the chat input field
     const chatInput = page.locator('input[placeholder*="Ask about skills"]');
@@ -99,16 +108,8 @@ test.describe('Regression Tests', () => {
     // Wait for the page and chat widget to load
     await page.waitForLoadState('networkidle');
     
-    // Check if chat is minimized (mobile devices auto-minimize)
-    const minimizedButton = page.locator('button[aria-label="Open chat"]');
-    const isMinimized = await minimizedButton.isVisible().catch(() => false);
-    
-    if (isMinimized) {
-      // Chat is minimized, click to expand
-      await minimizedButton.click();
-      // Wait for chat to expand
-      await page.waitForTimeout(500);
-    }
+    // Expand chat if minimized
+    await expandChatIfMinimized(page);
     
     // Wait for chat input to be visible
     const chatInput = page.locator('input[placeholder*="Ask about skills"]');
