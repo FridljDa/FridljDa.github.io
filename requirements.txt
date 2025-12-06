@@ -1,0 +1,7 @@
+# Python dependencies used in GitHub Actions workflows
+# These are installed in .github/workflows/update-cv.yaml
+
+rendercv[full]
+yaml-to-markdown
+pyyaml
+
