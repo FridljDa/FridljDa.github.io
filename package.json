@@ -33,7 +33,7 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.48.0",
-    "@types/node": "^22.10.2",
+    "@types/node": "^24.10.1",
     "@types/turndown": "^5.0.6"
   }
 }
