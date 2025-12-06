@@ -25,7 +25,7 @@ const { title, description, pubDate, slug, image, tags = [] } = Astro.props;
     />
   )}
   <div class="p-6">
-    <div class="flex items-center gap-2 mb-2">
+    <div class="flex items-center gap-2 mb-2 justify-mobile-center">
       {tags.map((tag) => (
         <span
           class="px-2 py-1 text-xs bg-surface-elevated rounded text-muted"
@@ -34,15 +34,15 @@ const { title, description, pubDate, slug, image, tags = [] } = Astro.props;
         </span>
       ))}
     </div>
-    <h3 class="text-xl font-semibold mb-2 text-heading group-hover:text-link transition-colors">
+    <h3 class="text-xl font-semibold mb-2 text-heading group-hover:text-link transition-colors text-mobile-center">
       {title}
     </h3>
     {description && (
-      <p class="text-muted mb-4 line-clamp-2">
+      <p class="text-muted mb-4 line-clamp-2 text-mobile-center">
         {description}
       </p>
     )}
-    <time class="text-sm text-subtle">
+    <time class="text-sm text-subtle text-mobile-center block">
       {formatDateWithDay(pubDate)}
     </time>
   </div>
