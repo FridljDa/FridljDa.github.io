@@ -19,8 +19,8 @@ export function htmlToMarkdown(htmlContent: string): string {
 
   // Configure Turndown to preserve links and images
   turndownService.addRule('strikethrough', {
-    filter: ['del', 's', 'strike'],
-    replacement: (content) => `~~${content}~~`,
+    filter: ['del', 's'],
+    replacement: (content: string) => `~~${content}~~`,
   });
 
   return turndownService.turndown(htmlContent);

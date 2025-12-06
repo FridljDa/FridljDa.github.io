@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { getCollection } from 'astro:content';
+import { getCollection, type CollectionEntry } from 'astro:content';
 import { getBlogPostRawMarkdown } from '../../utils/markdown-generator';
 
 export const GET: APIRoute = async ({ params }) => {
@@ -9,7 +9,7 @@ export const GET: APIRoute = async ({ params }) => {
   }
 
   const blogPosts = await getCollection('blog');
-  const post = blogPosts.find((p) => p.id === slug);
+  const post = blogPosts.find((p: CollectionEntry<'blog'>) => p.id === slug);
 
   if (!post) {
     return new Response('Not Found', { status: 404 });
