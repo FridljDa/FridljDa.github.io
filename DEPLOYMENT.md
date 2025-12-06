@@ -26,11 +26,27 @@ Set these in the Render dashboard for your web service:
 - `NODE_VERSION` - Node.js version (defaults to 20.11.0 as specified in render.yaml)
 - `PORT` - Port number (defaults to 10000, automatically set by Render)
 
+### Health Check Configuration
+
+The service uses `/api/health` as the health check endpoint (configured in `render.yaml`). 
+
+**If the health check path needs to be updated manually:**
+1. Go to the Render Dashboard: https://dashboard.render.com
+2. Navigate to your web service (`cv-chat-app`)
+3. Click on the "Settings" tab
+4. Scroll to the "Health Check Path" section
+5. Update the path from `/` to `/api/health`
+6. Save the changes
+
+**Verify the health endpoint:**
+- The endpoint should be accessible at: `https://cv-chat-app.onrender.com/api/health`
+- It should return: `{"status":"ok"}` with HTTP 200 status
+
 ### Post-Deployment
 
 1. **Verify deployment:**
    - Check that the service is running and accessible
-   - The health check endpoint (`/`) should return 200 OK
+   - The health check endpoint (`/api/health`) should return 200 OK with `{"status":"ok"}`
 
 2. **Test chat functionality:**
    - Navigate to your deployed site
