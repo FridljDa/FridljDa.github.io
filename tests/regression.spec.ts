@@ -7,6 +7,10 @@ test.describe('Regression Tests', () => {
   });
 
   test('should navigate to posts section when clicking on Posts link', async ({ page }) => {
+    // Skip on mobile devices where navigation links are hidden
+    const projectName = test.info().project.name;
+    test.skip(projectName === 'iPhone 13' || projectName === 'Pixel 5', 'Navigation links hidden on mobile');
+    
     // Wait for page to load
     await page.waitForLoadState('networkidle');
     
@@ -69,6 +73,17 @@ test.describe('Regression Tests', () => {
     // Wait for the page to load
     await page.waitForLoadState('networkidle');
     
+    // Check if chat is minimized (mobile devices auto-minimize)
+    const minimizedButton = page.locator('button[aria-label="Open chat"]');
+    const isMinimized = await minimizedButton.isVisible().catch(() => false);
+    
+    if (isMinimized) {
+      // Chat is minimized, click to expand
+      await minimizedButton.click();
+      // Wait for chat to expand
+      await page.waitForTimeout(500);
+    }
+    
     // Verify chat component exists - look for the chat input field
     const chatInput = page.locator('input[placeholder*="Ask about skills"]');
     await expect(chatInput).toBeVisible({ timeout: 10000 });
@@ -83,6 +98,17 @@ test.describe('Regression Tests', () => {
   test('should interact with chat widget and get response', async ({ page }) => {
     // Wait for the page and chat widget to load
     await page.waitForLoadState('networkidle');
+    
+    // Check if chat is minimized (mobile devices auto-minimize)
+    const minimizedButton = page.locator('button[aria-label="Open chat"]');
+    const isMinimized = await minimizedButton.isVisible().catch(() => false);
+    
+    if (isMinimized) {
+      // Chat is minimized, click to expand
+      await minimizedButton.click();
+      // Wait for chat to expand
+      await page.waitForTimeout(500);
+    }
     
     // Wait for chat input to be visible
     const chatInput = page.locator('input[placeholder*="Ask about skills"]');
