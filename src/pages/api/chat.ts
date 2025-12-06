@@ -21,9 +21,8 @@ export const POST: APIRoute = async ({ request }) => {
     // 2. Retrieve API Key Securely
     // This key is injected by Render at runtime or from .env file in development.
     const apiKey = import.meta.env.GEMINI_API_KEY;
-    console.log('API Key check:', apiKey ? `Key found (length: ${apiKey.length})` : 'Key missing');
     if (!apiKey) {
-      console.error('GEMINI_API_KEY is missing. Available env vars:', Object.keys(import.meta.env).filter(k => !k.startsWith('PUBLIC_')));
+      console.error('GEMINI_API_KEY is missing');
       return new Response(JSON.stringify({ 
         error: 'Server configuration error',
         message: 'GEMINI_API_KEY environment variable is not set. Please check your .env file.'
@@ -120,8 +119,19 @@ export const POST: APIRoute = async ({ request }) => {
           }
           controller.close();
         } catch (err) {
+          // Log full error details on server for debugging
+          const errorMessage = err instanceof Error ? err.message : String(err);
+          const errorStack = err instanceof Error ? err.stack : undefined;
           console.error('Stream Error:', err);
-          controller.error(err);
+          console.error('Stream error details:', { errorMessage, errorStack });
+          
+          // Close stream gracefully without exposing error details to client
+          try {
+            controller.close();
+          } catch (closeErr) {
+            // Ignore errors during close
+            console.error('Error closing stream:', closeErr);
+          }
         }
       },
     });
@@ -136,13 +146,15 @@ export const POST: APIRoute = async ({ request }) => {
     });
 
   } catch (error) {
-    console.error('Chat Endpoint Critical Failure:', error);
+    // Log full error details (including stack trace) on server for debugging
     const errorMessage = error instanceof Error ? error.message : String(error);
     const errorStack = error instanceof Error ? error.stack : undefined;
+    console.error('Chat Endpoint Critical Failure:', error);
     console.error('Error details:', { errorMessage, errorStack });
+    
+    // Return generic error message to client (no error details exposed)
     return new Response(JSON.stringify({ 
-      error: 'Internal Server Error',
-      details: process.env.NODE_ENV === 'development' ? errorMessage : undefined
+      error: 'Internal Server Error'
     }), { status: 500 });
   }
 };
