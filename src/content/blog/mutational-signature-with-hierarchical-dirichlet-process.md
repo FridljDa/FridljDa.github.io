@@ -44,13 +44,13 @@ To estimate mutational signatures and their activities, [Alexandrov et al.](http
 
 A key mathematical tool for our study is the Dirichlet Process (DP). Formally, the Dirichlet process, denoted as $\mathrm{DP}(\alpha, H)$, is a distribution over probability measures. When we sample $G \sim \mathrm{DP}(\alpha, H)$, we obtain a probability measure $G$. The Dirichlet Process has two parameters: the concentration parameter $\alpha>0$, and the base measure $H$. The support of $G$ is a subset of the support of the base measure $H$.
 
-To sample from the Dirichlet process, we begin by drawing an infinite sequence of i.i.d. samples $\tilde{\theta}\_1, \tilde{\theta}\_2, \ldots \sim H$. Then, we draw a vector $\boldsymbol{e} = \\{e\_1, e\_2, \ldots\\} \sim \operatorname{Stick}(\alpha)$, where $\operatorname{Stick}(\alpha)$ refers to the stick-breaking process. Intuitively, the stick-breaking process works by repeatedly breaking off and discarding a random fraction of a "stick" that is initially of length $1$. Each broken off part of the stick has a length $e\_k$. The stick-breaking process generates a sequence $\boldsymbol{e} \in \Delta^\infty$, where the total length of all the broken pieces is 1.
+To sample from the Dirichlet process, we begin by drawing an infinite sequence of i.i.d. samples $\tilde{\theta}_1, \tilde{\theta}_2, \ldots \sim H$. Then, we draw a vector $\boldsymbol{e} = \{e_1, e_2, \ldots\} \sim \operatorname{Stick}(\alpha)$, where $\operatorname{Stick}(\alpha)$ refers to the stick-breaking process. Intuitively, the stick-breaking process works by repeatedly breaking off and discarding a random fraction of a "stick" that is initially of length $1$. Each broken off part of the stick has a length $e_k$. The stick-breaking process generates a sequence $\boldsymbol{e} \in \Delta^\infty$, where the total length of all the broken pieces is 1.
 
 Finally, we construct the random measure $G$ as:
 
 $$G = \sum_{k=1}^{\infty} e_k \delta_{\tilde{\theta}_k}$$
 
-where $\delta\_{\tilde{\theta}\_k}$ is a Dirac delta function centered at $\tilde{\theta}\_k$. The resulting measure $G$ is discrete, with countable support given by $\\{\tilde{\theta}\_1, \tilde{\theta}\_2, \ldots\\}$.
+where $\delta_{\tilde{\theta}_k}$ is a Dirac delta function centered at $\tilde{\theta}_k$. The resulting measure $G$ is discrete, with countable support given by $\{\tilde{\theta}_1, \tilde{\theta}_2, \ldots\}$.
 
 ### Mathematical properties of Dirichlet Process
 
@@ -97,11 +97,11 @@ NoteBook Impelementation of the Dirichlet Process
 
 ## Modelling mutational signature with DP
 
-Dirichlet processes have been utilized in previous studies to model trinucleotide mutations associated with mutational signatures [(cite)](https://doi.org/10.17863/CAM.22674) and [(cite)](https://www.nature.com/articles/s41586-019-1913-9). Although Appendix B (p. 234) and Chapter 4 (p. 132) in [(cite)](https://doi.org/10.17863/CAM.22674) provide a mathematical overview of the model, they lack sufficient detail and are not fully comprehensive. This section aims to address that gap by deriving the Dirichlet Process model for trinucleotide mutations in a thorough and accessible manner. We will begin by introducing a more intuitive approach to modeling trinucleotide mutations using a mixture model. To illustrate, consider the trinucleotide mutations within a single sample, which can be encoded as $x \in \\{1, \ldots, 96\\}$, representing the 96 possible trinucleotide mutation types.
+Dirichlet processes have been utilized in previous studies to model trinucleotide mutations associated with mutational signatures [(cite)](https://doi.org/10.17863/CAM.22674) and [(cite)](https://www.nature.com/articles/s41586-019-1913-9). Although Appendix B (p. 234) and Chapter 4 (p. 132) in [(cite)](https://doi.org/10.17863/CAM.22674) provide a mathematical overview of the model, they lack sufficient detail and are not fully comprehensive. This section aims to address that gap by deriving the Dirichlet Process model for trinucleotide mutations in a thorough and accessible manner. We will begin by introducing a more intuitive approach to modeling trinucleotide mutations using a mixture model. To illustrate, consider the trinucleotide mutations within a single sample, which can be encoded as $x \in \{1, \ldots, 96\}$, representing the 96 possible trinucleotide mutation types.
 
 #### Step 1: Known number of mutational signatures $K$
 
-Let's begin by assuming we know the number of active mutational signatures, denoted as $K$. Each signature is represented by a discrete probability distribution, $\tilde{\theta}\_k \in \Delta^{96}$, where $k=1, \ldots, K$. Since we assume that we have no prior knowledge of the specific mutational signatures, we model these distributions as:
+Let's begin by assuming we know the number of active mutational signatures, denoted as $K$. Each signature is represented by a discrete probability distribution, $\tilde{\theta}_k \in \Delta^{96}$, where $k=1, \ldots, K$. Since we assume that we have no prior knowledge of the specific mutational signatures, we model these distributions as:
 
 $$
 \begin{aligned}
@@ -118,7 +118,7 @@ $$
 \end{aligned}
 $$
 
-where $\alpha$ is a hyperparameter controlling the concentration of the distribution. Next, let $z\_i=k$ represent the event that the $i$-th mutation was generated by the $k$-th mutational signature. If we observe a total of $M$ trinucleotide mutations in our sample, we draw each $z\_i\in \\{{1,\ldots, K}\\}$ according to the mutational signature activity $\boldsymbol{e}$, as follows:
+where $\alpha$ is a hyperparameter controlling the concentration of the distribution. Next, let $z_i=k$ represent the event that the $i$-th mutation was generated by the $k$-th mutational signature. If we observe a total of $M$ trinucleotide mutations in our sample, we draw each $z_i\in \{\{1,\ldots, K\}\}$ according to the mutational signature activity $\boldsymbol{e}$, as follows:
 
 
 $$
@@ -128,7 +128,7 @@ $$
 $$
 
 
-indicating that the probability $\mathrm{P}\left(z\_i=k\right)=e\_k$, where $e\_k$ is the activity level of signature $k$. Finally, the observed trinucleotide mutation $x\_i \in\\{1, \ldots, 96\\}$ is drawn from a categorical distribution based on the corresponding mutational signature $z\_i=k$ and its distribution $\tilde{\theta}\_k$ :
+indicating that the probability $\mathrm{P}\left(z_i=k\right)=e_k$, where $e_k$ is the activity level of signature $k$. Finally, the observed trinucleotide mutation $x_i \in\{1, \ldots, 96\}$ is drawn from a categorical distribution based on the corresponding mutational signature $z_i=k$ and its distribution $\tilde{\theta}_k$ :
 
 
 $$
@@ -149,11 +149,11 @@ We can visualize the process that generates trinucleotide mutations in a sample 
 
 </figure>
 
-Here the grey background color indicates that $x\_i$ is an observed random variable.
+Here the grey background color indicates that $x_i$ is an observed random variable.
 
 #### Step 2: Equivalent model as mixture
 
-In the next step, we aim to integrate out the indicator variable $z\_i=k$ in our model, seeking a different representation of the same model. As before, we draw the mutational signature activities as follows:
+In the next step, we aim to integrate out the indicator variable $z_i=k$ in our model, seeking a different representation of the same model. As before, we draw the mutational signature activities as follows:
 
 $$
 \begin{aligned}
@@ -161,7 +161,7 @@ $$
 \end{aligned}
 $$
 
-Let $H=\operatorname{Dir}\left(\frac{1}{96} \cdot \mathbf{1}\_{96}\right)$. Similar to the last step, we generate the mutational signatures as
+Let $H=\operatorname{Dir}\left(\frac{1}{96} \cdot \mathbf{1}_{96}\right)$. Similar to the last step, we generate the mutational signatures as
 
 $$
 \begin{aligned}
@@ -170,7 +170,7 @@ $$
 $$
 
 
-Now, instead of assuming that each observation $i=1, \ldots, M$ is first assigned a mutational signature $z\_i \in\\{1, \ldots, K\\}$ and then drawn from the corresponding signature $\tilde{\theta}\_{z\_i}$ we directly draw $\theta\_i$ from $\left\\{\tilde{\theta}\_1, \ldots, \tilde{\theta}\_K\right\\}$, with probabilities $\left\\{e\_1, \ldots, e\_K\right\\}$ for each observation:
+Now, instead of assuming that each observation $i=1, \ldots, M$ is first assigned a mutational signature $z_i \in\{1, \ldots, K\}$ and then drawn from the corresponding signature $\tilde{\theta}_{z_i}$ we directly draw $\theta_i$ from $\left\{\tilde{\theta}_1, \ldots, \tilde{\theta}_K\right\}$, with probabilities $\left\{e_1, \ldots, e_K\right\}$ for each observation:
 
 
 $$
@@ -197,7 +197,7 @@ $$
 $$
 
 
-We now extend the model from the previous step to allow for an unknown number of components $K$, with any $K \in \mathbb{N}$ being possible. As in the previous step, we generate the underlying mutational signatures $\tilde{\theta}\_k\in \Delta^{96}$ from $H$ as follows:
+We now extend the model from the previous step to allow for an unknown number of components $K$, with any $K \in \mathbb{N}$ being possible. As in the previous step, we generate the underlying mutational signatures $\tilde{\theta}_k\in \Delta^{96}$ from $H$ as follows:
 
 $$
 \begin{aligned}
@@ -205,7 +205,7 @@ $$
 \end{aligned}
 $$
 
-Previously, we sampled a finite set of $K$ mutational signatures $\tilde{\theta}\_k$, but now we generate an infinite sequence of signatures. Accordingly, the mutational signature activities $\boldsymbol{e}$ now lie in $\Delta^{\infty}$. To model these activities, we use the Stick-breaking process, which defines a distribution over $\Delta^{\infty}$. Thus, we sample the mutational signature activities as:
+Previously, we sampled a finite set of $K$ mutational signatures $\tilde{\theta}_k$, but now we generate an infinite sequence of signatures. Accordingly, the mutational signature activities $\boldsymbol{e}$ now lie in $\Delta^{\infty}$. To model these activities, we use the Stick-breaking process, which defines a distribution over $\Delta^{\infty}$. Thus, we sample the mutational signature activities as:
 
 
 $$
@@ -214,7 +214,7 @@ $$
 \end{aligned}
 $$
 
-Intuitively, the stick-breaking process works by repeatedly breaking off and discarding a random fraction of a "stick" that is initially of length $1$. Each broken off part of the stick has a length $e\_k$. The stick-breaking process generates a sequence $\boldsymbol{e} \in \Delta^\infty$, where the total length of all the broken pieces is $1$. Consequently, the mixture distribution $G$, which previously had finite support, now has countably infinite support $\left\\{\tilde{\theta}\_1, \tilde{\theta}\_2, \ldots\right\\}$ and takes the form:
+Intuitively, the stick-breaking process works by repeatedly breaking off and discarding a random fraction of a "stick" that is initially of length $1$. Each broken off part of the stick has a length $e_k$. The stick-breaking process generates a sequence $\boldsymbol{e} \in \Delta^\infty$, where the total length of all the broken pieces is $1$. Consequently, the mixture distribution $G$, which previously had finite support, now has countably infinite support $\left\{\tilde{\theta}_1, \tilde{\theta}_2, \ldots\right\}$ and takes the form:
 
 $$
 \begin{aligned}
@@ -222,7 +222,7 @@ $$
 \end{aligned}
 $$
 
-where $\mathcal{P}(\Delta^{96})$ denotes the space of probability distributions on $\Delta^{96}$. We draw $\theta\_i$ from the support of $G$, which is $\left\\{\tilde{\theta}\_1, \tilde{\theta}\_2, \ldots\right\\}$, as follows:
+where $\mathcal{P}(\Delta^{96})$ denotes the space of probability distributions on $\Delta^{96}$. We draw $\theta_i$ from the support of $G$, which is $\left\{\tilde{\theta}_1, \tilde{\theta}_2, \ldots\right\}$, as follows:
 
 $$
 \begin{aligned}
@@ -268,7 +268,7 @@ We can visualise the Dirichlet process as a graphical model:
 
 ## Hierarchical Dirichlet Process (HDP)
 
-By taking composition of multiple Dirichlet Processes, we obtain a Hierarchical Dirichlet Process (HDP) [(cite)](https://www.tandfonline.com/doi/abs/10.1198/016214506000000302). Recall that Dirichlet processes excel at modelling mixtures with an unknown number of components. HDPs are tailored for the situation when we have groups of mixture components and/or hierarchies between mixture components. For our model of trinucleotide mutations, we can use HDP to account for multiple samples. We expect from biology that there are general trends of mutational signature activity. However, we expect those trends to be more similar within a sample than between samples. In a mixture modelling approach, this would be captured by separate mixture models for each sample and information sharing between the weights of each sample. In the Dirichlet Process approach, this can be reflected by the HDP model. As before, we start with the prior distribution $H$. We draw a common base distribution $G\_0$ from a Dirichlet Process as
+By taking composition of multiple Dirichlet Processes, we obtain a Hierarchical Dirichlet Process (HDP) [(cite)](https://www.tandfonline.com/doi/abs/10.1198/016214506000000302). Recall that Dirichlet processes excel at modelling mixtures with an unknown number of components. HDPs are tailored for the situation when we have groups of mixture components and/or hierarchies between mixture components. For our model of trinucleotide mutations, we can use HDP to account for multiple samples. We expect from biology that there are general trends of mutational signature activity. However, we expect those trends to be more similar within a sample than between samples. In a mixture modelling approach, this would be captured by separate mixture models for each sample and information sharing between the weights of each sample. In the Dirichlet Process approach, this can be reflected by the HDP model. As before, we start with the prior distribution $H$. We draw a common base distribution $G_0$ from a Dirichlet Process as
 
 $$
 \begin{aligned}
@@ -276,7 +276,7 @@ G_0 &\sim \mathrm{DP}(\alpha_0, H).\\
 \end{aligned}
 $$
 
-Let's assume we have $N$ samples. For each sample, we draw a seperate Dirichlet Process $G\_j$ from the common base distribution $G\_0$ as
+Let's assume we have $N$ samples. For each sample, we draw a seperate Dirichlet Process $G_j$ from the common base distribution $G_0$ as
 
 $$
 \begin{aligned}
@@ -284,7 +284,7 @@ G_j \mid G_0 &\sim \mathrm{DP}(\alpha_j, G_0) \text{ for } j = 1,2,\ldots N.
 \end{aligned}
 $$
 
-In other words, we have a Dirichlet Process $G\_0$ at the top and other Dirichlet Processes $G\_j$ at the lower hierarchies. As described in the section of the mathematical properties of the Dirichlet Process, each $G\_j$ will vary around $G\_0$. This allows the different samples $G\_j$ to share information via $G\_0$. Let's assume we observe $M\_j$ mutations in the $j$-th sample. We draw the mutations as before:
+In other words, we have a Dirichlet Process $G_0$ at the top and other Dirichlet Processes $G_j$ at the lower hierarchies. As described in the section of the mathematical properties of the Dirichlet Process, each $G_j$ will vary around $G_0$. This allows the different samples $G_j$ to share information via $G_0$. Let's assume we observe $M_j$ mutations in the $j$-th sample. We draw the mutations as before:
 
 
 $$
@@ -305,12 +305,12 @@ The corresponding graphical model is:
 
 ### Estimation of mutational signature and mutational signature activity
 
-Let's assume we have the mutational signatures $\left(\theta\_k\right)\_{k\in \mathbb{N}}\subset \Delta^{96}$ acting on the genome. Borrowing notation from the model with a finite number of mutational signatures, let $z\_{ji}\in \mathbb{N}$ denote the mutational signature that generated the mutation $x\_{ji}\in \\{1,\ldots,96\\}$. By fitting a HDP to our data we will obtain an estimate $\hat{z}\_{ji}$ of $z\_{ji}$. Our estimate $\hat{\theta}\_k$ for the associated probability vector $\theta\_k \in \Delta^{96}$ of mutational signature $k$ is
+Let's assume we have the mutational signatures $\left(\theta_k\right)_{k\in \mathbb{N}}\subset \Delta^{96}$ acting on the genome. Borrowing notation from the model with a finite number of mutational signatures, let $z_{ji}\in \mathbb{N}$ denote the mutational signature that generated the mutation $x_{ji}\in \{1,\ldots,96\}$. By fitting a HDP to our data we will obtain an estimate $\hat{z}_{ji}$ of $z_{ji}$. Our estimate $\hat{\theta}_k$ for the associated probability vector $\theta_k \in \Delta^{96}$ of mutational signature $k$ is
 
 
 $$\hat{\theta}_k=\frac{\sum_{l=1}^{96}\sum_{j=1}^N\sum_{i=1}^{M_j} \mathbb{I}(\hat{z}_{ji}=k)\mathbb{I}(x_{ji}=l)\delta_l}{\sum_{j=1}^N\sum_{i=1}^{M_j} \mathbb{I}(\hat{z}_{ji}=k)},$$
 
-where $\delta\_l\in \Delta^{96}$ has mass $1$ at position $l$. Further, we estimate the mutational signature activity $e\_{kj}$ of mutational signature $k$ in sample $j$ by  
+where $\delta_l\in \Delta^{96}$ has mass $1$ at position $l$. Further, we estimate the mutational signature activity $e_{kj}$ of mutational signature $k$ in sample $j$ by  
 
 $$\hat{e}_{kj}=1/M_j\sum_{i=1}^{M_j} \mathbb{I}(\hat{z}_{ji}=k).$$
 
