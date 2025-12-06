@@ -27,22 +27,12 @@
   }
   
   /* Override any prose link styles for heading links */
-  .prose h1 > .heading-link,
-  .prose h2 > .heading-link,
-  .prose h3 > .heading-link,
-  .prose h4 > .heading-link,
-  .prose h5 > .heading-link,
-  .prose h6 > .heading-link {
+  .prose :is(h1, h2, h3, h4, h5, h6) > .heading-link {
     color: inherit !important;
     text-decoration: none !important;
   }
   
-  .prose h1 > .heading-link:hover,
-  .prose h2 > .heading-link:hover,
-  .prose h3 > .heading-link:hover,
-  .prose h4 > .heading-link:hover,
-  .prose h5 > .heading-link:hover,
-  .prose h6 > .heading-link:hover {
+  .prose :is(h1, h2, h3, h4, h5, h6) > .heading-link:hover {
     text-decoration: underline !important;
   }
   
