@@ -1,6 +1,6 @@
 // AI discoverability: Dynamic sitemap generation for better AI agent discoverability
 import type { APIRoute } from 'astro';
-import { getCollection } from 'astro:content';
+import { getCollection, type CollectionEntry } from 'astro:content';
 import { SITE } from '../data/site';
 
 export const GET: APIRoute = async () => {
@@ -18,8 +18,8 @@ export const GET: APIRoute = async () => {
   </url>
   <!-- AI discoverability: Blog posts -->
   ${blogPosts
-    .sort((a, b) => b.data.pubDate.getTime() - a.data.pubDate.getTime())
-    .map((post) => {
+    .sort((a: CollectionEntry<'blog'>, b: CollectionEntry<'blog'>) => b.data.pubDate.getTime() - a.data.pubDate.getTime())
+    .map((post: CollectionEntry<'blog'>) => {
       const lastmod = post.data.updatedDate || post.data.pubDate;
       return `  <url>
     <loc>${SITE.url}/post/${post.id}</loc>
