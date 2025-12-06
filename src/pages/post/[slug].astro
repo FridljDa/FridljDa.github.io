@@ -2,6 +2,9 @@
 import { getCollection, render } from 'astro:content';
 import Layout from '../../layouts/Layout.astro';
 import { formatDateLong } from '../../utils/date';
+import ViewAsMarkdown from '../../components/ViewAsMarkdown';
+import { getBlogPostRawMarkdown } from '../../utils/markdown-generator';
+import { SITE, BIOGRAPHY } from '../../data/site';
 
 // In SSR mode, we fetch the post dynamically based on the slug parameter
 const slug = Astro.params.slug;
@@ -17,26 +20,111 @@ if (!post) {
 }
 
 const { Content } = await render(post);
+const postMarkdown = await getBlogPostRawMarkdown(post);
+
+const postUrl = `${SITE.url}/post/${slug}`;
+const postImage = post.data.image ? `${SITE.url}${post.data.image}` : `${SITE.url}/images/avatar.jpg`;
+
+// AI discoverability: Generate JSON-LD structured data for BlogPosting schema
+const blogPostingSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'BlogPosting',
+  headline: post.data.title,
+  description: post.data.description || '',
+  image: postImage,
+  datePublished: post.data.pubDate.toISOString(),
+  dateModified: post.data.updatedDate?.toISOString() || post.data.pubDate.toISOString(),
+  author: {
+    '@type': 'Person',
+    name: BIOGRAPHY.name,
+    url: SITE.url,
+    sameAs: BIOGRAPHY.social.map(s => s.url)
+  },
+  publisher: {
+    '@type': 'Organization',
+    name: BIOGRAPHY.organization.name,
+    url: BIOGRAPHY.organization.url
+  },
+  mainEntityOfPage: {
+    '@type': 'WebPage',
+    '@id': postUrl
+  },
+  keywords: post.data.tags?.join(', ') || ''
+};
+
+// AI discoverability: Generate JSON-LD structured data for Article schema (alternative)
+const articleSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'Article',
+  headline: post.data.title,
+  description: post.data.description || '',
+  image: postImage,
+  datePublished: post.data.pubDate.toISOString(),
+  dateModified: post.data.updatedDate?.toISOString() || post.data.pubDate.toISOString(),
+  author: {
+    '@type': 'Person',
+    name: BIOGRAPHY.name,
+    url: SITE.url
+  },
+  publisher: {
+    '@type': 'Organization',
+    name: BIOGRAPHY.organization.name,
+    url: BIOGRAPHY.organization.url
+  },
+  mainEntityOfPage: {
+    '@type': 'WebPage',
+    '@id': postUrl
+  }
+};
 ---
 
-<Layout title={`${post.data.title} | Daniel Fridljand`}>
+<Layout 
+  title={`${post.data.title} | Daniel Fridljand`}
+  description={post.data.description || SITE.description}
+  image={postImage}
+  type="article"
+  url={postUrl}
+>
+  {/* AI discoverability: JSON-LD structured data for BlogPosting */}
+  <script type="application/ld+json" set:html={JSON.stringify(blogPostingSchema)} />
+  
+  {/* AI discoverability: JSON-LD structured data for Article (alternative schema) */}
+  <script type="application/ld+json" set:html={JSON.stringify(articleSchema)} />
+  
+  {/* AI discoverability: Article-specific meta tags */}
+  <meta property="article:published_time" content={post.data.pubDate.toISOString()} />
+  {post.data.updatedDate && (
+    <meta property="article:modified_time" content={post.data.updatedDate.toISOString()} />
+  )}
+  <meta property="article:author" content={BIOGRAPHY.name} />
+  {post.data.tags && post.data.tags.map((tag) => (
+    <meta property="article:tag" content={tag} />
+  ))}
+  
   <article class="py-16 bg-surface">
     <div class="container mx-auto px-4">
       <div class="max-w-4xl mx-auto">
         <header class="mb-8">
-          <div class="flex flex-wrap gap-2 mb-4">
-            {post.data.tags.map((tag) => (
-              <span
-                class="px-3 py-1 bg-surface-elevated rounded-full text-sm text-body"
-              >
-                {tag}
-              </span>
-            ))}
+          <div class="flex flex-wrap gap-2 mb-4 items-center justify-between">
+            <div class="flex flex-wrap gap-2">
+              {post.data.tags.map((tag) => (
+                <span
+                  class="px-3 py-1 bg-surface-elevated rounded-full text-sm text-body"
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+            <ViewAsMarkdown client:load href={`/post/${slug}.md`} />
           </div>
           <h1 class="text-4xl font-bold mb-4 text-heading">
             {post.data.title}
           </h1>
-          <time class="text-muted">
+          {/* AI discoverability: Semantic time element with datetime attribute */}
+          <time 
+            class="text-muted"
+            datetime={post.data.pubDate.toISOString()}
+          >
             {formatDateLong(post.data.pubDate)}
           </time>
         </header>

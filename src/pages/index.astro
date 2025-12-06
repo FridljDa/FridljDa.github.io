@@ -4,15 +4,70 @@ import Biography from '../components/Biography.astro';
 import Experience from '../components/Experience.astro';
 import BlogPostCard from '../components/BlogPostCard.astro';
 import PublicationCard from '../components/PublicationCard.astro';
+import ViewAsMarkdown from '../components/ViewAsMarkdown';
 import { getCollection } from 'astro:content';
 import { PUBLICATIONS } from '../data/publications';
+import { SITE, BIOGRAPHY } from '../data/site';
+import { generateHomePageMarkdown } from '../utils/markdown-generator';
 
 const blogPosts = (await getCollection('blog')).sort(
   (a, b) => b.data.pubDate.getTime() - a.data.pubDate.getTime()
 );
+
+const homePageMarkdown = generateHomePageMarkdown(blogPosts);
+
+// AI discoverability: Generate JSON-LD structured data for CollectionPage schema
+const collectionPageSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'CollectionPage',
+  name: SITE.title,
+  url: SITE.url,
+  description: SITE.description,
+  mainEntity: {
+    '@type': 'Person',
+    name: BIOGRAPHY.name,
+    jobTitle: BIOGRAPHY.role,
+    url: SITE.url,
+    sameAs: BIOGRAPHY.social.map(s => s.url),
+    worksFor: {
+      '@type': 'Organization',
+      name: BIOGRAPHY.organization.name,
+      url: BIOGRAPHY.organization.url
+    }
+  }
+};
+
+// AI discoverability: Enhanced Person schema with detailed information
+const detailedPersonSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'Person',
+  name: BIOGRAPHY.name,
+  jobTitle: BIOGRAPHY.role,
+  url: SITE.url,
+  description: BIOGRAPHY.bio,
+  sameAs: BIOGRAPHY.social.map(s => s.url),
+  worksFor: {
+    '@type': 'Organization',
+    name: BIOGRAPHY.organization.name,
+    url: BIOGRAPHY.organization.url
+  },
+  alumniOf: BIOGRAPHY.education.map(edu => ({
+    '@type': 'EducationalOrganization',
+    name: edu.institution
+  }))
+};
 ---
 
-<Layout title="Daniel Fridljand - Software Consultant">
+<Layout 
+  title="Daniel Fridljand - Software Consultant"
+  description={SITE.description}
+  url={SITE.url}
+>
+  {/* AI discoverability: JSON-LD structured data for CollectionPage */}
+  <script type="application/ld+json" set:html={JSON.stringify(collectionPageSchema)} />
+  
+  {/* AI discoverability: JSON-LD structured data for detailed Person information */}
+  <script type="application/ld+json" set:html={JSON.stringify(detailedPersonSchema)} />
   <section
     id="home"
     class="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#004ba0] to-[#1976d2] text-white scroll-mt-20"
@@ -24,7 +79,7 @@ const blogPosts = (await getCollection('blog')).sort(
     </div>
   </section>
 
-  <Biography />
+  <Biography markdownHref="/index.md" />
 
   <section id="posts" class="py-16 bg-surface scroll-mt-20">
     <div class="container mx-auto px-4">

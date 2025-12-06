@@ -11,7 +11,8 @@ import rehypeAutolinkHeadings from 'rehype-autolink-headings';
 
 // https://astro.build/config
 export default defineConfig({
-  site: 'https://fridljda.github.io',
+  // AI discoverability: Site URL configuration for proper canonical URLs and structured data
+  site: 'https://danielfridljand.de',
   base: '/',
   // Enable Server-Side Rendering
   output: 'server',
