@@ -129,7 +129,7 @@ export const POST: APIRoute = async ({ request }) => {
           try {
             controller.close();
           } catch (closeErr) {
-            // Ignore errors during close
+            // Log errors during close
             console.error('Error closing stream:', closeErr);
           }
         }
