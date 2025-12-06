@@ -14,29 +14,54 @@
 }
 
 @layer components {
-  .anchor-link {
-    @apply no-underline inline-flex items-center ml-2 opacity-0 transition-opacity;
-    @apply text-gray-400 dark:text-gray-500;
+  /* GitHub-style heading links: entire heading wrapped in anchor */
+  .heading-link {
+    color: inherit !important;
+    text-decoration: none !important;
+    position: relative;
   }
   
-  .anchor-link:hover {
-    @apply text-gray-600 dark:text-gray-400;
+  /* On hover, underline the heading */
+  .heading-link:hover {
+    text-decoration: underline !important;
   }
   
-  .anchor-link-icon {
-    @apply w-4 h-4;
+  /* Override any prose link styles for heading links */
+  .prose h1 > .heading-link,
+  .prose h2 > .heading-link,
+  .prose h3 > .heading-link,
+  .prose h4 > .heading-link,
+  .prose h5 > .heading-link,
+  .prose h6 > .heading-link {
+    color: inherit !important;
+    text-decoration: none !important;
   }
   
-  h1:hover .anchor-link,
-  h2:hover .anchor-link,
-  h3:hover .anchor-link,
-  h4:hover .anchor-link,
-  h5:hover .anchor-link,
-  h6:hover .anchor-link {
-    @apply opacity-100;
+  .prose h1 > .heading-link:hover,
+  .prose h2 > .heading-link:hover,
+  .prose h3 > .heading-link:hover,
+  .prose h4 > .heading-link:hover,
+  .prose h5 > .heading-link:hover,
+  .prose h6 > .heading-link:hover {
+    text-decoration: underline !important;
   }
   
-  /* Ensure headings themselves don't look like links */
+  /* Icon using ::after pseudo-element with SVG */
+  .heading-link::after {
+    content: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="gray"><path d="M7.775 3.275a.75.75 0 0 0 1.06 1.06l1.25-1.25a2 2 0 1 1 2.83 2.83l-2.5 2.5a2 2 0 0 1-2.83 0 .75.75 0 0 0-1.06 1.06 3.5 3.5 0 0 0 4.95 0l2.5-2.5a3.5 3.5 0 0 0-4.95-4.95l-1.25 1.25zm-4.69 9.64a2 2 0 0 1 0-2.83l2.5-2.5a2 2 0 0 1 2.83 0 .75.75 0 0 0 1.06-1.06 3.5 3.5 0 0 0-4.95 0l-2.5 2.5a3.5 3.5 0 0 0 4.95 4.95l1.25-1.25a.75.75 0 0 0 1.06-1.06l-1.25 1.25a2 2 0 0 1-2.83 0z"/></svg>');
+    display: inline-block;
+    margin-left: 0.5rem;
+    vertical-align: middle;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  
+  /* Icon appears on hover */
+  .heading-link:hover::after {
+    opacity: 1;
+  }
+  
+  /* Ensure headings maintain normal styling */
   .prose h1,
   .prose h2,
   .prose h3,
@@ -46,20 +71,22 @@
     @apply text-heading;
   }
   
-  .prose h1 a,
-  .prose h2 a,
-  .prose h3 a,
-  .prose h4 a,
-  .prose h5 a,
-  .prose h6 a {
-    @apply no-underline text-inherit;
+  /* Headings wrapped in anchor should inherit heading color, not link color */
+  .prose h1 .heading-link,
+  .prose h2 .heading-link,
+  .prose h3 .heading-link,
+  .prose h4 .heading-link,
+  .prose h5 .heading-link,
+  .prose h6 .heading-link {
+    @apply text-inherit;
   }
   
   .prose {
     @apply text-gray-700 dark:text-gray-300;
   }
   
-  .prose a {
+  /* Regular links in prose (not heading links) */
+  .prose a:not(.heading-link) {
     @apply text-primary-600 dark:text-primary-400 hover:underline;
   }
   
