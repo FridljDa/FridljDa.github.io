@@ -40,7 +40,7 @@ services:
           
     # Health Check (Optional)
     # Tells Render the service is ready when this path returns 200 OK
-    healthCheckPath: /
+    healthCheckPath: /api/health
       
     # Scaling settings for the free tier
     # (Free tier is fixed to 1 instance, but good to be explicit)
