@@ -6,7 +6,10 @@ tags:
   - Science
   - Machine Learning
 math: true
+image: /images/blog/diabetic-retinopathy-detection/fundus-image-without-corner.jpg
 ---
+
+*This blog post is based on a group project completed in the "Deep Learning" class at Yale University under the guidance of [Professor Smita Krishnaswamy](https://medicine.yale.edu/profile/smita-krishnaswamy/). The project was a collaborative effort with Alaa Alashi, Taieb Bennani, and Xinyue Qie.*
 
 Diabetic retinopathy (DR) is a prevalent retinal disorder affecting over 103 million individuals with diabetes globally, with numbers predicted to rise to 125 million by 2030. Timely diagnosis is vital as untreated DR can lead to serious consequences, including irreversible retinal detachment, neovascular glaucoma, diabetic macular edema (DME), and potential vision loss. Fundus photographs displaying hemorrhages and exudates are used by medical professionals to diagnose DR, and precise classification algorithms can enhance diagnostic efficiency and accuracy, enabling earlier intervention and management.
 
@@ -15,6 +18,8 @@ The potential benefits of artificial intelligence (AI) in DR diagnosis are parti
 ## Dataset and Clinical Context
 
 Our model was trained on a novel dataset comprising 126 high-resolution, de-identified fundus images obtained from a private clinic in Morocco. The dataset consists of 95 images labeled as DR and 31 labeled as non-DR, reflecting the clinical reality of a specialized ophthalmic surgery clinic where patients with existing DR are more prevalent. To ensure standardization, all images were obtained using the same screening technology.
+
+![Fundus image with diabetic retinopathy (after preprocessing to remove corner artifacts)](/images/blog/diabetic-retinopathy-detection/fundus-image-without-corner.jpg)
 
 The retina plays a crucial role in vision, as it receives light and converts it into neural signals sent to the brain. DR develops when sustained high blood sugar levels cause damage to the small capillaries supplying the retina. These damaged blood vessels may leak blood and fluid, leading to the formation of hemorrhages and exudates. Hemorrhages result from blood leakage and appear as small dark red or maroon spots in fundus images, while exudates appear as yellowish-white deposits resulting from the accumulation of lipids and proteins. These features are clinically meaningful as they provide vital information about disease severity and progression.
 
@@ -78,6 +83,8 @@ We utilized the VGG Image Annotator software to label DR images accurately, crea
 
 After labeling, we exported a CSV file containing positions of each hemorrhage and exudate, including x and y coordinates and height and width of rectangles. We created ground truth masks with two channels—one for hemorrhages and one for exudates—serving as pixel-wise representations for training the U-Net model.
 
+![Fig. 4: Vizualisation of ground truth masks (in green exudates and in red hemorrhages)](/images/blog/diabetic-retinopathy-detection/ground-truth-masks.png)
+
 ### Data Augmentation
 
 Given the limited dataset of 67 fundus images for segmentation, data augmentation was crucial to artificially expand the dataset and improve generalization. We used TensorFlow Keras ImageDataGenerator with the following augmentation parameters:
@@ -127,6 +134,4 @@ Our study highlights the potential of AI, particularly ResNet and U-Net models, 
 However, several limitations should be addressed in future work. The dataset's small size (126 images for classification, 67 for segmentation) and class imbalance may have negatively affected model performance despite mitigation strategies. To improve classification accuracy, it would be beneficial to include more non-DR fundus images and expand the dataset to around a thousand images with better balance.
 
 For segmentation, the rectangular labeling method, while practical, is not ideal for training U-Net models as it includes regions that are not hemorrhages or exudates. Future work should use polygons, ovals, or irregular shapes that better fit the edges of these abnormalities. Additionally, consulting professional ophthalmologists for precise identification and labeling of exudates would provide more accurate training labels.
-
-After achieving desired performance for both tasks, we plan to integrate additional clinical data such as age, gender, and diabetes type when training the model, constructing a more robust and practical predictive model applicable in real-world clinical settings.
 
