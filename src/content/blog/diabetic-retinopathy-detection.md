@@ -19,8 +19,6 @@ The potential benefits of artificial intelligence (AI) in DR diagnosis are parti
 
 Our model was trained on a novel dataset comprising 126 high-resolution, de-identified fundus images obtained from a private clinic in Morocco. The dataset consists of 95 images labeled as DR and 31 labeled as non-DR, reflecting the clinical reality of a specialized ophthalmic surgery clinic where patients with existing DR are more prevalent. To ensure standardization, all images were obtained using the same screening technology.
 
-![Fundus image with diabetic retinopathy (after preprocessing to remove corner artifacts)](/images/blog/diabetic-retinopathy-detection/fundus-image-without-corner.jpg)
-
 *Images are de-identified and used for educational purposes with appropriate permissions.*
 
 The retina plays a crucial role in vision, as it receives light and converts it into neural signals sent to the brain. DR develops when sustained high blood sugar levels cause damage to the small capillaries supplying the retina. These damaged blood vessels may leak blood and fluid, leading to the formation of hemorrhages and exudates. Hemorrhages result from blood leakage and appear as small dark red or maroon spots in fundus images, while exudates appear as yellowish-white deposits resulting from the accumulation of lipids and proteins. These features are clinically meaningful as they provide vital information about disease severity and progression.
