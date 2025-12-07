@@ -1,7 +1,7 @@
 ---
 title: "Building My Personal Website: Technical Highlights"
-pubDate: 2025-01-27
-updatedDate: 2025-01-27
+pubDate: 2025-12-07
+updatedDate: 2025-12-07
 tags:
   - Web Development
   - Astro
