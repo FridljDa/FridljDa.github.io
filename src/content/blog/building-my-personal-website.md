@@ -8,6 +8,7 @@ tags:
   - AI
   - Automation
 description: "A deep dive into the technical implementation of my personal website, covering the AI chat interface, markdown context generation, and automated CV PDF generation workflow."
+image: /images/blog/building-my-personal-website/featured.png
 ---
 
 This website is built with [Astro](https://astro.build/) using server-side rendering (SSR), styled with Tailwind CSS, and features an AI chat interface powered by Google's Gemini API. The source code is available on [GitHub](https://github.com/FridljDa/FridljDa.github.io).
