@@ -33,14 +33,12 @@ The chat system consists of two main parts:
 
 One of the key features is streaming responses, which provides a more responsive user experience. The client uses the `ReadableStream` API to process chunks as they arrive from the server:
 
-```52:107:src/components/Chat.tsx
+```52:84:src/components/Chat.tsx
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
 
     const userMessage = { role: 'user' as const, content: input };
-      
-    // Optimistic UI update: Show user message immediately
     setMessages((prev) => [...prev, userMessage]);
     setInput('');
     setIsLoading(true);
@@ -52,27 +50,23 @@ One of the key features is streaming responses, which provides a more responsive
         body: JSON.stringify({ messages: [...messages, userMessage] }),
       });
 
-      if (!response.ok) throw new Error('Network error');
-      if (!response.body) throw new Error('No readable body');
+      if (!response.ok || !response.body) throw new Error('Network error');
 
       // Initialize Stream Reader
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let aiResponseText = '';
-
-      // Add placeholder for AI response
       setMessages((prev) => [...prev, { role: 'ai', content: '' }]);
 
-      // Read Loop
+      // Read Loop - process chunks as they arrive
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
 
-        // Decode chunk
         const chunk = decoder.decode(value, { stream: true });
         aiResponseText += chunk;
 
-        // Update the last message (AI's message) with accumulated text
+        // Update UI incrementally
         setMessages((prev) => {
           const newHistory = [...prev];
           const lastMsg = newHistory[newHistory.length - 1];
@@ -82,10 +76,8 @@ One of the key features is streaming responses, which provides a more responsive
           return newHistory;
         });
       }
-
     } catch (error) {
-      console.error('Chat Error:', error);
-      setMessages((prev) => [...prev, { role: 'ai', content: 'Sorry, I encountered an error. Please try again.' }]);
+      // ... error handling ...
     } finally {
       setIsLoading(false);
     }
@@ -99,11 +91,10 @@ The client creates a `ReadableStream` reader, decodes each chunk using `TextDeco
 On the server, the API route constructs a comprehensive context from the website content and streams the response from Gemini:
 
 ```105:137:src/pages/api/chat.ts
-    // 6. Generate Streaming Response
+    // Generate streaming response from Gemini
     const result = await chat.sendMessageStream(lastUserMessage);
 
-    // 7. Create ReadableStream for HTTP Response
-    // This allows the browser to receive data chunks as they arrive.
+    // Create ReadableStream for HTTP Response
     const stream = new ReadableStream({
       async start(controller) {
         const encoder = new TextEncoder();
@@ -116,28 +107,16 @@ On the server, the API route constructs a comprehensive context from the website
           }
           controller.close();
         } catch (err) {
-          // Log full error details on server for debugging
-          const errorMessage = err instanceof Error ? err.message : String(err);
-          const errorStack = err instanceof Error ? err.stack : undefined;
-          console.error('Stream Error:', err);
-          console.error('Stream error details:', { errorMessage, errorStack });
-          
-          // Close stream gracefully without exposing error details to client
-          try {
-            controller.close();
-          } catch (closeErr) {
-            // Log errors during close
-            console.error('Error closing stream:', closeErr);
-          }
+          // ... error handling ...
+          controller.close();
         }
       },
     });
 
-    // 8. Return Response with Correct Headers
     return new Response(stream, {
       headers: {
         'Content-Type': 'text/plain; charset=utf-8',
-        'Transfer-Encoding': 'chunked', // Indicates streaming
+        'Transfer-Encoding': 'chunked',
         'X-Content-Type-Options': 'nosniff',
       },
     });
@@ -153,40 +132,25 @@ The chat system is context-aware, meaning it has access to all the content on th
 2. **Full blog post content** - Complete markdown from all blog posts
 
 ```40:79:src/pages/api/chat.ts
-    // 4. Gather all markdown content for context
+    // Gather all markdown content for context
     const blogPosts = await getCollection('blog');
     const homePageMarkdown = generateHomePageMarkdown(blogPosts);
     
     // Get markdown content from all blog posts
     const blogPostsMarkdown = await Promise.all(
       blogPosts.map(async (post: CollectionEntry<'blog'>) => {
-        try {
-          const markdown = await getBlogPostRawMarkdown(post);
-          return `## Blog Post: ${post.data.title}\n\n${markdown}\n\n---\n\n`;
-        } catch (error) {
-          console.error(`Error getting markdown for post ${post.id}:`, error);
-          return `## Blog Post: ${post.data.title}\n\n*Content not available*\n\n---\n\n`;
-        }
+        const markdown = await getBlogPostRawMarkdown(post);
+        return `## Blog Post: ${post.data.title}\n\n${markdown}\n\n---\n\n`;
       })
     );
     
     const allBlogPostsMarkdown = blogPostsMarkdown.join('\n');
 
-    // 5. Construct System Prompt and History
-    // We define the persona and inject all available context (home page content includes CV/resume info, blog posts).
+    // Construct system prompt with all context
     const systemInstruction = `
-      You are a professional AI assistant representing Daniel Fridljand, a Software Consultant with a strong academic background in mathematics, statistics, and bioinformatics.
-      Your goal is to answer questions about Daniel's experience, skills, background, publications, and blog posts based *strictly* on the provided content.
-        
-      tone: Professional, concise, yet approachable.
-      rules:  
-      - Keep answers concise: 2-3 sentences maximum. Do not reproduce large sections of content verbatim.
-      - If the answer is not in the provided content, explicitly state: "I don't see that information in the available content."
-      - Do not hallucinate or invent experiences.
-      - You have access to:
-        1. Home page content (biography, experience, publications, CV/resume information, blog post summaries)
-        2. Full blog post content
-        
+      You are a professional AI assistant representing Daniel Fridljand...
+      // ... persona and rules definition ...
+      
       === HOME PAGE CONTENT (includes CV/Resume information) ===
       ${homePageMarkdown}
       
@@ -201,26 +165,13 @@ This context is injected as a system instruction when starting the chat session,
 
 The chat component automatically minimizes on mobile devices (screens smaller than 768px) and can be toggled between minimized and expanded states:
 
-```16:35:src/components/Chat.tsx
+```16:24:src/components/Chat.tsx
   // Detect mobile on initial load and set minimized by default
   useEffect(() => {
-    const checkMobile = () => {
-      // Tailwind's md breakpoint is 768px
-      if (window.innerWidth < 768) {
-        setIsMinimized(true);
-      }
-    };
-    
-    checkMobile();
-    
-    // Optional: handle window resize to maintain state
-    const handleResize = () => {
-      // Only auto-minimize on mobile if user hasn't manually expanded
-      // For now, we'll keep it simple and only set on initial load
-    };
-    
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    if (window.innerWidth < 768) {
+      setIsMinimized(true);
+    }
+    // ... resize handler setup ...
   }, []);
 ```
 
@@ -275,57 +226,30 @@ For blog posts, `getBlogPostRawMarkdown()` reads the original MDX file and recon
 
 ```149:204:src/utils/markdown-generator.ts
 export async function getBlogPostRawMarkdown(post: CollectionEntry<'blog'>): Promise<string> {
-  // In Astro content collections, the body property contains the raw markdown
-  // after frontmatter is parsed. We need to reconstruct with frontmatter.
+  // Reconstruct frontmatter from post data
   let markdown = `---\n`;
   markdown += `title: "${post.data.title}"\n`;
   markdown += `pubDate: ${post.data.pubDate.toISOString()}\n`;
-  if (post.data.updatedDate) {
-    markdown += `updatedDate: ${post.data.updatedDate.toISOString()}\n`;
-  }
-  if (post.data.tags && post.data.tags.length > 0) {
-    markdown += `tags:\n`;
-    post.data.tags.forEach((tag: string) => {
-      markdown += `  - ${tag}\n`;
-    });
-  }
-  if (post.data.math) {
-    markdown += `math: ${post.data.math}\n`;
-  }
-  if (post.data.image) {
-    markdown += `image: ${post.data.image}\n`;
-  }
+  // ... other frontmatter fields (updatedDate, tags, math, image) ...
   markdown += `---\n\n`;
   
-  // Access the raw body content
-  // In Astro 5.x with glob loader, we need to read from file system
-  // The post.id is the relative path from the base directory
+  // Read original MDX file from filesystem
   const fs = await import('fs/promises');
   const path = await import('path');
   try {
-    // post.id is the relative path from src/content/blog (e.g., "mapping-mutational-signatures-to-trees")
-    // We need to construct the full file path
     const filePath = path.join(process.cwd(), 'src/content/blog', `${post.id}.md`);
     const fileContent = await fs.readFile(filePath, 'utf-8');
-    // Extract content after frontmatter (skip the first --- and find the second ---)
+    
+    // Extract content after frontmatter
     const frontmatterEnd = fileContent.indexOf('---', 3);
     if (frontmatterEnd !== -1) {
-      // Get content after the second ---, skip the newline
-      const contentStart = frontmatterEnd + 3;
-      const content = fileContent.substring(contentStart).trimStart();
+      const content = fileContent.substring(frontmatterEnd + 3).trimStart();
       markdown += content;
     } else {
-      // No frontmatter found, use entire file
       markdown += fileContent;
     }
   } catch (error) {
-    console.error('Error reading blog post file:', error);
-    // Fallback: try to construct markdown from available data
-    markdown += `# ${post.data.title}\n\n`;
-    if (post.data.description) {
-      markdown += `${post.data.description}\n\n`;
-    }
-    markdown += `*Full content not available. Please view the rendered version.*\n`;
+    // ... fallback error handling ...
   }
   
   return markdown;
@@ -393,7 +317,7 @@ export const GET: APIRoute = async ({ params }) => {
 
 The "View as Markdown" buttons are implemented as a simple React component that links to these API routes:
 
-```9:35:src/components/ViewAsMarkdown.tsx
+```9:23:src/components/ViewAsMarkdown.tsx
 export default function ViewAsMarkdown({ href, label = 'View as Markdown' }: ViewAsMarkdownProps) {
   return (
     <a
@@ -401,22 +325,7 @@ export default function ViewAsMarkdown({ href, label = 'View as Markdown' }: Vie
       className="inline-flex items-center gap-2 px-4 py-2 bg-surface-elevated hover:bg-surface border border-surface rounded-lg text-sm text-heading transition-colors"
       aria-label={label}
     >
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        className="w-4 h-4"
-      >
-        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-        <polyline points="14 2 14 8 20 8" />
-        <line x1="16" y1="13" x2="8" y2="13" />
-        <line x1="16" y1="17" x2="8" y2="17" />
-        <polyline points="10 9 9 9 8 9" />
-      </svg>
+      {/* SVG icon */}
       {label}
     </a>
   );
@@ -494,9 +403,7 @@ permissions:
 
 jobs:
   update_cv:
-    name: Generate and update CV PDF
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -507,8 +414,7 @@ jobs:
           python-version: '3.12'
 
       - name: Install RenderCV
-        run: |
-          pip install "rendercv[full]"
+        run: pip install "rendercv[full]"
 
       - name: Generate PDF from CV
         run: rendercv render src/data/cv.yaml
@@ -516,35 +422,15 @@ jobs:
       - name: Copy PDF to public/uploads folder
         run: |
           mkdir -p public/uploads
-          if [ -f "rendercv_output/cv.pdf" ]; then
-            cp rendercv_output/cv.pdf public/uploads/resume.pdf
-          elif [ -f "rendercv_output/$(basename src/data/cv.yaml .yaml).pdf" ]; then
-            cp "rendercv_output/$(basename src/data/cv.yaml .yaml).pdf" public/uploads/resume.pdf
-          else
-            # Find the generated PDF file
-            PDF_FILE=$(find rendercv_output -name "*.pdf" -type f | head -n 1)
-            if [ -n "$PDF_FILE" ]; then
-              cp "$PDF_FILE" public/uploads/resume.pdf
-            else
-              echo "Error: No PDF file found in rendercv_output"
-              exit 1
-            fi
-          fi
-
-      - name: Set Git credentials
-        run: |
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "GitHub Actions [Bot]"
+          # ... find and copy generated PDF ...
+          cp rendercv_output/cv.pdf public/uploads/resume.pdf
 
       - name: Commit and push changes
         run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "GitHub Actions [Bot]"
           git add public/uploads/resume.pdf
-          if git diff --staged --quiet; then
-            echo "No changes to commit"
-          else
-            git commit -m "Update CV PDF"
-            git push
-          fi
+          git commit -m "Update CV PDF" && git push || echo "No changes to commit"
 ```
 
 The workflow:
