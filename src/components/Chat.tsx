@@ -1,37 +1,20 @@
 import React, { useState, useRef, useEffect } from 'react';
-import ReactMarkdown from 'react-markdown';
-
-interface Message {
-  role: 'user' | 'ai';
-  content: string;
-}
+import type { Message } from '../types/chat';
+import ChatMessage from './ChatMessage';
+import { ErrorBoundary } from './ErrorBoundary';
 
 export default function Chat() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Detect mobile on initial load and set minimized by default
   useEffect(() => {
-    const checkMobile = () => {
-      // Tailwind's md breakpoint is 768px
-      if (window.innerWidth < 768) {
-        setIsMinimized(true);
-      }
-    };
-    
-    checkMobile();
-    
-    // Optional: handle window resize to maintain state
-    const handleResize = () => {
-      // Only auto-minimize on mobile if user hasn't manually expanded
-      // For now, we'll keep it simple and only set on initial load
-    };
-    
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    if (window.innerWidth < 768) {
+      setIsMinimized(true);
+    }
   }, []);
 
   // Auto-scroll to bottom when messages change
@@ -53,12 +36,11 @@ export default function Chat() {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
 
-    const userMessage = { role: 'user' as const, content: input };
-      
-    // Optimistic UI update: Show user message immediately
+    const userMessage: Message = { role: 'user', content: input };
     setMessages((prev) => [...prev, userMessage]);
     setInput('');
     setIsLoading(true);
+    setError(null);
 
     try {
       const response = await fetch('/api/chat', {
@@ -67,40 +49,46 @@ export default function Chat() {
         body: JSON.stringify({ messages: [...messages, userMessage] }),
       });
 
-      if (!response.ok) throw new Error('Network error');
-      if (!response.body) throw new Error('No readable body');
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      if (!response.body) {
+        throw new Error('No readable body');
+      }
 
-      // Initialize Stream Reader
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let aiResponseText = '';
 
-      // Add placeholder for AI response
       setMessages((prev) => [...prev, { role: 'ai', content: '' }]);
 
-      // Read Loop
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
 
-        // Decode chunk
         const chunk = decoder.decode(value, { stream: true });
         aiResponseText += chunk;
 
-        // Update the last message (AI's message) with accumulated text
         setMessages((prev) => {
           const newHistory = [...prev];
           const lastMsg = newHistory[newHistory.length - 1];
-          if (lastMsg.role === 'ai') {
+          if (lastMsg && lastMsg.role === 'ai') {
             lastMsg.content = aiResponseText;
           }
           return newHistory;
         });
       }
-
     } catch (error) {
-      console.error('Chat Error:', error);
-      setMessages((prev) => [...prev, { role: 'ai', content: 'Sorry, I encountered an error. Please try again.' }]);
+      const errorMessage =
+        error instanceof Error ? error.message : 'An unknown error occurred';
+      setError(errorMessage);
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: 'ai',
+          content: 'Sorry, I encountered an error. Please try again.',
+        },
+      ]);
     } finally {
       setIsLoading(false);
     }
@@ -146,19 +134,18 @@ export default function Chat() {
           </div>
         ) : (
           messages.map((m, idx) => (
-            <div key={idx} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-              <div
-                className={`max-w-[85%] rounded-2xl p-3 px-4 text-sm leading-relaxed ${
-                  m.role === 'user'
-                   ? 'bg-blue-600 text-white rounded-br-none'
-                    : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-bl-none'
-                }`}
-              >
-                {/* Use ReactMarkdown to render lists, bolding, etc. properly */}
-                <ReactMarkdown>{m.content}</ReactMarkdown>
-              </div>
+            <div
+              key={idx}
+              className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}
+            >
+              <ChatMessage message={m} />
             </div>
           ))
+        )}
+        {error && (
+          <div className="text-xs text-red-600 dark:text-red-400 mt-2">
+            {error}
+          </div>
         )}
         <div ref={messagesEndRef} />
       </div>

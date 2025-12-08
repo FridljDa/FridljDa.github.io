@@ -5,8 +5,11 @@ import { formatDateLong } from '../../utils/date';
 import ViewAsMarkdown from '../../components/ViewAsMarkdown';
 import { getBlogPostRawMarkdown } from '../../utils/markdown-generator';
 import { SITE, BIOGRAPHY } from '../../data/site';
+import {
+  generateBlogPostingSchema,
+  generateArticleSchema,
+} from '../../utils/schema';
 
-// In SSR mode, we fetch the post dynamically based on the slug parameter
 const slug = Astro.params.slug;
 if (!slug) {
   return Astro.redirect('/404', 404);
@@ -23,59 +26,12 @@ const { Content } = await render(post);
 const postMarkdown = await getBlogPostRawMarkdown(post);
 
 const postUrl = `${SITE.url}/post/${slug}`;
-const postImage = post.data.image ? `${SITE.url}${post.data.image}` : `${SITE.url}/images/avatar.jpg`;
+const postImage = post.data.image
+  ? `${SITE.url}${post.data.image}`
+  : `${SITE.url}/images/avatar.jpg`;
 
-// AI discoverability: Generate JSON-LD structured data for BlogPosting schema
-const blogPostingSchema = {
-  '@context': 'https://schema.org',
-  '@type': 'BlogPosting',
-  headline: post.data.title,
-  description: post.data.description || '',
-  image: postImage,
-  datePublished: post.data.pubDate.toISOString(),
-  dateModified: post.data.updatedDate?.toISOString() || post.data.pubDate.toISOString(),
-  author: {
-    '@type': 'Person',
-    name: BIOGRAPHY.name,
-    url: SITE.url,
-    sameAs: BIOGRAPHY.social.map(s => s.url)
-  },
-  publisher: {
-    '@type': 'Organization',
-    name: BIOGRAPHY.organization.name,
-    url: BIOGRAPHY.organization.url
-  },
-  mainEntityOfPage: {
-    '@type': 'WebPage',
-    '@id': postUrl
-  },
-  keywords: post.data.tags?.join(', ') || ''
-};
-
-// AI discoverability: Generate JSON-LD structured data for Article schema (alternative)
-const articleSchema = {
-  '@context': 'https://schema.org',
-  '@type': 'Article',
-  headline: post.data.title,
-  description: post.data.description || '',
-  image: postImage,
-  datePublished: post.data.pubDate.toISOString(),
-  dateModified: post.data.updatedDate?.toISOString() || post.data.pubDate.toISOString(),
-  author: {
-    '@type': 'Person',
-    name: BIOGRAPHY.name,
-    url: SITE.url
-  },
-  publisher: {
-    '@type': 'Organization',
-    name: BIOGRAPHY.organization.name,
-    url: BIOGRAPHY.organization.url
-  },
-  mainEntityOfPage: {
-    '@type': 'WebPage',
-    '@id': postUrl
-  }
-};
+const blogPostingSchema = generateBlogPostingSchema(post, postUrl, postImage);
+const articleSchema = generateArticleSchema(post, postUrl, postImage);
 ---
 
 <Layout 
