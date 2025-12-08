@@ -3,7 +3,7 @@ import type { Message } from '../types/chat';
 import ChatMessage from './ChatMessage';
 import { ErrorBoundary } from './ErrorBoundary';
 
-export default function Chat() {
+function ChatContent() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -174,6 +174,14 @@ export default function Chat() {
         </div>
       </form>
     </div>
+  );
+}
+
+export default function Chat() {
+  return (
+    <ErrorBoundary>
+      <ChatContent />
+    </ErrorBoundary>
   );
 }
 
