@@ -19,6 +19,8 @@ In this post, I'll walk through three interesting technical features I implement
 2. **Context Generation & "View as Markdown"** - A unified system that generates markdown representations of pages for both AI context and user viewing
 3. **Automated CV PDF Generation** - A GitHub Actions workflow that automatically generates a PDF resume from a YAML source file
 
+![Technical Highlights: Building a Personal Website](/images/blog/building-my-personal-website/infographic.png)
+
 ## 1. AI Chat Interface Implementation
 
 The chat interface is one of the most interactive features of the site. It allows visitors to ask questions about my experience, skills, publications, and blog posts, with responses powered by Google's Gemini API.
