@@ -1,63 +1,49 @@
-// src/pages/api/chat.ts
 import type { APIRoute } from 'astro';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { getCollection, type CollectionEntry } from 'astro:content';
 import { generateHomePageMarkdown, getBlogPostRawMarkdown } from '../../utils/markdown-generator';
+import { logger } from '../../utils/logger';
+import { getEnvVar } from '../../utils/env';
+import {
+  validateContentType,
+  validateChatRequest,
+  createErrorResponse,
+} from '../../utils/validation';
+import type { ChatMessage, GeminiHistoryMessage } from '../../types/api';
 
 export const POST: APIRoute = async ({ request }) => {
   try {
-    // 1. Validate and Parse Request Body
-    if (request.headers.get('Content-Type') !== 'application/json') {
-      return new Response(JSON.stringify({ error: 'Invalid Content-Type' }), { status: 400 });
+    if (!validateContentType(request)) {
+      return createErrorResponse('Invalid Content-Type');
     }
+
     const body = await request.json();
-    const { messages } = body;
-    // Expecting structure: [{ role: 'user'|'ai', content: string }]
-
-    if (!messages || !Array.isArray(messages)) {
-      return new Response(JSON.stringify({ error: 'Invalid message format' }), { status: 400 });
+    if (!validateChatRequest(body)) {
+      return createErrorResponse('Invalid message format');
     }
 
-    // 2. Retrieve API Key Securely
-    // This key is injected by Render at runtime or from .env file in development.
-    const apiKey = import.meta.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      console.error('GEMINI_API_KEY is missing');
-      return new Response(JSON.stringify({ 
-        error: 'Server configuration error',
-        message: 'GEMINI_API_KEY environment variable is not set. Please check your .env file.'
-      }), { status: 500 });
-    }
+    const apiKey = getEnvVar('GEMINI_API_KEY');
 
-    // 3. Initialize Gemini Client
     const genAI = new GoogleGenerativeAI(apiKey);
-    // Model names as of November 2025: gemini-2.5-flash, gemini-2.5-pro, gemini-3-pro
-    // Using gemini-2.5-flash for low latency and efficiency on free tiers
-    // Note: gemini-1.5-flash and gemini-1.5-pro are deprecated
-    const modelName = 'gemini-2.5-flash'; // Fastest model. Alternatives: 'gemini-2.5-pro', 'gemini-3-pro'
-    const model = genAI.getGenerativeModel({ model: modelName });
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
-    // 4. Gather all markdown content for context
     const blogPosts = await getCollection('blog');
     const homePageMarkdown = generateHomePageMarkdown(blogPosts);
-    
-    // Get markdown content from all blog posts
+
     const blogPostsMarkdown = await Promise.all(
       blogPosts.map(async (post: CollectionEntry<'blog'>) => {
         try {
           const markdown = await getBlogPostRawMarkdown(post);
           return `## Blog Post: ${post.data.title}\n\n${markdown}\n\n---\n\n`;
         } catch (error) {
-          console.error(`Error getting markdown for post ${post.id}:`, error);
+          logger.error(`Error getting markdown for post ${post.id}:`, error);
           return `## Blog Post: ${post.data.title}\n\n*Content not available*\n\n---\n\n`;
         }
       })
     );
-    
+
     const allBlogPostsMarkdown = blogPostsMarkdown.join('\n');
 
-    // 5. Construct System Prompt and History
-    // We define the persona and inject all available context (home page content includes CV/resume info, blog posts).
     const systemInstruction = `
       You are a professional AI assistant representing Daniel Fridljand, a Software Consultant with a strong academic background in mathematics, statistics, and bioinformatics.
       Your goal is to answer questions about Daniel's experience, skills, background, publications, and blog posts based *strictly* on the provided content.
@@ -78,35 +64,32 @@ export const POST: APIRoute = async ({ request }) => {
       ${allBlogPostsMarkdown}
     `;
 
-    // Map frontend message format to Gemini's expected format
-    // Gemini uses 'user' and 'model' roles.
-    const history = messages.slice(0, -1).map((msg: any) => ({
+    const history: GeminiHistoryMessage[] = body.messages.slice(0, -1).map((msg: ChatMessage) => ({
       role: msg.role === 'ai' ? 'model' : 'user',
       parts: [{ text: msg.content }],
     }));
 
-    // Start the chat session
     const chat = model.startChat({
       history: [
         {
           role: 'user',
-          parts: [{ text: systemInstruction }] // Seed the context as the first user message
+          parts: [{ text: systemInstruction }],
         },
         {
           role: 'model',
-          parts: [{ text: "I have reviewed Daniel's home page content (including CV/resume information) and blog posts. I'm ready to answer questions about his experience, skills, background, publications, and blog content." }]
+          parts: [
+            {
+              text: "I have reviewed Daniel's home page content (including CV/resume information) and blog posts. I'm ready to answer questions about his experience, skills, background, publications, and blog content.",
+            },
+          ],
         },
-        ...history
+        ...history,
       ],
     });
 
-    const lastUserMessage = messages[messages.length - 1].content;
-
-    // 6. Generate Streaming Response
+    const lastUserMessage = body.messages[body.messages.length - 1].content;
     const result = await chat.sendMessageStream(lastUserMessage);
 
-    // 7. Create ReadableStream for HTTP Response
-    // This allows the browser to receive data chunks as they arrive.
     const stream = new ReadableStream({
       async start(controller) {
         const encoder = new TextEncoder();
@@ -119,43 +102,29 @@ export const POST: APIRoute = async ({ request }) => {
           }
           controller.close();
         } catch (err) {
-          // Log full error details on server for debugging
-          const errorMessage = err instanceof Error ? err.message : String(err);
-          const errorStack = err instanceof Error ? err.stack : undefined;
-          console.error('Stream Error:', err);
-          console.error('Stream error details:', { errorMessage, errorStack });
-          
-          // Close stream gracefully without exposing error details to client
+          logger.error('Stream error:', err instanceof Error ? err.message : String(err));
           try {
             controller.close();
           } catch (closeErr) {
-            // Log errors during close
-            console.error('Error closing stream:', closeErr);
+            logger.error('Error closing stream:', closeErr);
           }
         }
       },
     });
 
-    // 8. Return Response with Correct Headers
     return new Response(stream, {
       headers: {
         'Content-Type': 'text/plain; charset=utf-8',
-        'Transfer-Encoding': 'chunked', // Indicates streaming
+        'Transfer-Encoding': 'chunked',
         'X-Content-Type-Options': 'nosniff',
       },
     });
-
   } catch (error) {
-    // Log full error details (including stack trace) on server for debugging
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    const errorStack = error instanceof Error ? error.stack : undefined;
-    console.error('Chat Endpoint Critical Failure:', error);
-    console.error('Error details:', { errorMessage, errorStack });
-    
-    // Return generic error message to client (no error details exposed)
-    return new Response(JSON.stringify({ 
-      error: 'Internal Server Error'
-    }), { status: 500 });
+    logger.error(
+      'Chat endpoint error:',
+      error instanceof Error ? error.message : String(error)
+    );
+    return createErrorResponse('Internal Server Error', undefined, 500);
   }
 };
 

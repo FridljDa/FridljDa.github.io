@@ -3,7 +3,6 @@ import React from 'react';
 interface ViewAsMarkdownProps {
   href: string;
   label?: string;
-  markdown?: string; // Kept for backward compatibility but not used
 }
 
 export default function ViewAsMarkdown({ href, label = 'View as Markdown' }: ViewAsMarkdownProps) {

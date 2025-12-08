@@ -7,55 +7,20 @@ import PublicationCard from '../components/PublicationCard.astro';
 import ViewAsMarkdown from '../components/ViewAsMarkdown';
 import { getCollection } from 'astro:content';
 import { PUBLICATIONS } from '../data/publications';
-import { SITE, BIOGRAPHY } from '../data/site';
+import { SITE } from '../data/site';
 import { generateHomePageMarkdown } from '../utils/markdown-generator';
+import {
+  generateCollectionPageSchema,
+  generateDetailedPersonSchema,
+} from '../utils/schema';
 
 const blogPosts = (await getCollection('blog')).sort(
   (a, b) => b.data.pubDate.getTime() - a.data.pubDate.getTime()
 );
 
 const homePageMarkdown = generateHomePageMarkdown(blogPosts);
-
-// AI discoverability: Generate JSON-LD structured data for CollectionPage schema
-const collectionPageSchema = {
-  '@context': 'https://schema.org',
-  '@type': 'CollectionPage',
-  name: SITE.title,
-  url: SITE.url,
-  description: SITE.description,
-  mainEntity: {
-    '@type': 'Person',
-    name: BIOGRAPHY.name,
-    jobTitle: BIOGRAPHY.role,
-    url: SITE.url,
-    sameAs: BIOGRAPHY.social.map(s => s.url),
-    worksFor: {
-      '@type': 'Organization',
-      name: BIOGRAPHY.organization.name,
-      url: BIOGRAPHY.organization.url
-    }
-  }
-};
-
-// AI discoverability: Enhanced Person schema with detailed information
-const detailedPersonSchema = {
-  '@context': 'https://schema.org',
-  '@type': 'Person',
-  name: BIOGRAPHY.name,
-  jobTitle: BIOGRAPHY.role,
-  url: SITE.url,
-  description: BIOGRAPHY.bio,
-  sameAs: BIOGRAPHY.social.map(s => s.url),
-  worksFor: {
-    '@type': 'Organization',
-    name: BIOGRAPHY.organization.name,
-    url: BIOGRAPHY.organization.url
-  },
-  alumniOf: BIOGRAPHY.education.map(edu => ({
-    '@type': 'EducationalOrganization',
-    name: edu.institution
-  }))
-};
+const collectionPageSchema = generateCollectionPageSchema();
+const detailedPersonSchema = generateDetailedPersonSchema();
 ---
 
 <Layout 

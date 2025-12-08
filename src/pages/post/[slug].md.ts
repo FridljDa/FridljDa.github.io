@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { getCollection, type CollectionEntry } from 'astro:content';
 import { getBlogPostRawMarkdown } from '../../utils/markdown-generator';
+import { logger } from '../../utils/logger';
 
 export const GET: APIRoute = async ({ params }) => {
   const slug = params.slug;
@@ -23,7 +24,10 @@ export const GET: APIRoute = async ({ params }) => {
       },
     });
   } catch (error) {
-    console.error('Error generating markdown for post:', error);
+    logger.error(
+      'Error generating markdown for post:',
+      error instanceof Error ? error.message : String(error)
+    );
     return new Response('Internal Server Error', { status: 500 });
   }
 };
