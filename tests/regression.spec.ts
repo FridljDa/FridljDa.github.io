@@ -1,4 +1,5 @@
-import { test, expect, Locator } from '@playwright/test';
+import { test, expect } from '@playwright/test';
+import type { Locator } from '@playwright/test';
 
 /**
  * Helper function to get the "View as Markdown" button from an article element.
