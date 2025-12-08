@@ -240,7 +240,8 @@ test.describe('Regression Tests', () => {
     const article = page.locator('article');
     await expect(article).toBeVisible();
     
-    const viewMarkdownButton = article.getByRole('link', { name: /View as Markdown/i });
+    // Use specific selector to avoid matching heading links that contain "View as Markdown" text
+    const viewMarkdownButton = article.locator('a[aria-label="View as Markdown"][href$=".md"]');
     await expect(viewMarkdownButton).toBeVisible();
     
     // Verify the button is a link
@@ -275,7 +276,8 @@ test.describe('Regression Tests', () => {
     
     // Find the "View as Markdown" button and get its href
     const article = page.locator('article');
-    const viewMarkdownButton = article.getByRole('link', { name: /View as Markdown/i });
+    // Use specific selector to avoid matching heading links that contain "View as Markdown" text
+    const viewMarkdownButton = article.locator('a[aria-label="View as Markdown"][href$=".md"]');
     await expect(viewMarkdownButton).toBeVisible();
     
     // Get the href and navigate directly (more reliable than clicking through overlays)
