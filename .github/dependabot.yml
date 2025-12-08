@@ -11,8 +11,6 @@ updates:
     commit-message:
       prefix: "chore"
       include: "scope"
-    labels:
-      - "dependencies"
 
   # GitHub Actions
   - package-ecosystem: "github-actions"
@@ -25,8 +23,6 @@ updates:
     commit-message:
       prefix: "chore"
       include: "scope"
-    labels:
-      - "dependencies"
 
   # Python dependencies (pip)
   - package-ecosystem: "pip"
@@ -39,6 +35,3 @@ updates:
     commit-message:
       prefix: "chore"
       include: "scope"
-    labels:
-      - "dependencies"
-
