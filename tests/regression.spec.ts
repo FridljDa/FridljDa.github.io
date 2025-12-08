@@ -1,4 +1,15 @@
 import { test, expect } from '@playwright/test';
+import type { Locator } from '@playwright/test';
+
+/**
+ * Helper function to get the "View as Markdown" button from an article element.
+ * Uses a specific selector to avoid matching heading links that contain "View as Markdown" text.
+ * @param article - The article locator to search within
+ * @returns Locator for the "View as Markdown" button
+ */
+function getViewMarkdownButton(article: Locator): Locator {
+  return article.locator('a[aria-label="View as Markdown"][href$=".md"]');
+}
 
 test.describe('Regression Tests', () => {
   test.beforeEach(async ({ page }) => {
@@ -240,7 +251,7 @@ test.describe('Regression Tests', () => {
     const article = page.locator('article');
     await expect(article).toBeVisible();
     
-    const viewMarkdownButton = article.getByRole('link', { name: /View as Markdown/i });
+    const viewMarkdownButton = getViewMarkdownButton(article);
     await expect(viewMarkdownButton).toBeVisible();
     
     // Verify the button is a link
@@ -275,7 +286,7 @@ test.describe('Regression Tests', () => {
     
     // Find the "View as Markdown" button and get its href
     const article = page.locator('article');
-    const viewMarkdownButton = article.getByRole('link', { name: /View as Markdown/i });
+    const viewMarkdownButton = getViewMarkdownButton(article);
     await expect(viewMarkdownButton).toBeVisible();
     
     // Get the href and navigate directly (more reliable than clicking through overlays)
