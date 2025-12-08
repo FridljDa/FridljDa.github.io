@@ -59,7 +59,7 @@
   .prose h4,
   .prose h5,
   .prose h6 {
-    @apply text-heading;
+    @apply text-gray-900 dark:text-white;
   }
   
   /* Headings wrapped in anchor should inherit heading color, not link color */
