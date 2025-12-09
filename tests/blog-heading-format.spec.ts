@@ -1,12 +1,15 @@
 import { test, expect } from '@playwright/test';
 
+const BLOG_POST_URL = '/post/mutational-signature-with-hierarchical-dirichlet-process';
+
 test.describe('Blog Post Heading Formatting', () => {
-  test('should display section headings with proper heading font weight', async ({ page }) => {
-    // Navigate to a blog post
-    await page.goto('/post/mutational-signature-with-hierarchical-dirichlet-process');
-    
-    // Wait for page to load
+  test.beforeEach(async ({ page }) => {
+    // Navigate to the blog post and wait for it to load
+    await page.goto(BLOG_POST_URL);
     await page.waitForLoadState('networkidle');
+  });
+
+  test('should display section headings with proper heading font weight', async ({ page }) => {
     
     // Check that h2 headings have proper font weight
     const h2Headings = page.locator('article h2');
@@ -28,11 +31,6 @@ test.describe('Blog Post Heading Formatting', () => {
   });
 
   test('should display h3 headings with proper font weight', async ({ page }) => {
-    // Navigate to a blog post
-    await page.goto('/post/mutational-signature-with-hierarchical-dirichlet-process');
-    
-    // Wait for page to load
-    await page.waitForLoadState('networkidle');
     
     // Check that h3 headings have proper font weight
     const h3Headings = page.locator('article h3');
@@ -53,11 +51,6 @@ test.describe('Blog Post Heading Formatting', () => {
   });
 
   test('should display h4 headings with proper font weight', async ({ page }) => {
-    // Navigate to a blog post
-    await page.goto('/post/mutational-signature-with-hierarchical-dirichlet-process');
-    
-    // Wait for page to load
-    await page.waitForLoadState('networkidle');
     
     // Check that h4 headings have proper font weight
     const h4Headings = page.locator('article h4');
@@ -78,11 +71,6 @@ test.describe('Blog Post Heading Formatting', () => {
   });
 
   test('should have heading links inherit font properties from parent heading', async ({ page }) => {
-    // Navigate to a blog post
-    await page.goto('/post/mutational-signature-with-hierarchical-dirichlet-process');
-    
-    // Wait for page to load
-    await page.waitForLoadState('networkidle');
     
     // Get an h2 heading link
     const h2Link = page.locator('article h2 a.heading-link').first();
@@ -118,11 +106,6 @@ test.describe('Blog Post Heading Formatting', () => {
   });
 
   test('should not style heading links as regular links', async ({ page }) => {
-    // Navigate to a blog post
-    await page.goto('/post/mutational-signature-with-hierarchical-dirichlet-process');
-    
-    // Wait for page to load
-    await page.waitForLoadState('networkidle');
     
     // Get an h2 heading link
     const h2Link = page.locator('article h2 a.heading-link').first();
