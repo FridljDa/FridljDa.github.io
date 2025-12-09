@@ -99,15 +99,18 @@ const articleSchema = generateArticleSchema(post, postUrl, postImage);
         
         {/* Two-column layout: content + TOC sidebar */}
         <div class="flex flex-col lg:flex-row gap-8 items-start">
-          {/* Main content */}
-          <div class="flex-1 w-full max-w-4xl">
+          {/* Spacer to center content on desktop */}
+          <div class="hidden lg:block w-64 flex-shrink-0"></div>
+          
+          {/* Main content - centered with max-width */}
+          <div class="flex-1 max-w-4xl mx-auto lg:mx-0">
             <div class="prose prose-lg dark:prose-invert max-w-none">
               <Content />
             </div>
           </div>
           
           {/* Table of Contents sidebar */}
-          <aside class="w-full lg:w-64 flex-shrink-0">
+          <aside class="hidden lg:block w-64 flex-shrink-0">
             <TableOfContents client:load />
           </aside>
         </div>
