@@ -74,15 +74,12 @@
   .prose h4,
   .prose h5,
   .prose h6 {
-    @apply text-gray-900 dark:text-white;
+    @apply text-gray-900 dark:text-white font-bold;
   }
   
   /* Headings wrapped in anchor should inherit heading color, not link color */
   .prose :is(h1, h2, h3, h4, h5, h6) .heading-link {
-    @apply text-inherit;
-    font-weight: inherit;
-    font-size: inherit;
-    line-height: inherit;
+    @apply text-inherit font-bold;
   }
   
   .prose {
