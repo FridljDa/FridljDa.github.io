@@ -163,7 +163,7 @@ export async function getBlogPostRawMarkdown(
 
   if (post.data.tags && post.data.tags.length > 0) {
     frontmatterParts.push(
-      `tags:\n${post.data.tags.map((tag) => `  - ${tag}`).join('\n')}`
+      `tags:\n${post.data.tags.map((tag: string) => `  - ${tag}`).join('\n')}`
     );
   }
 
