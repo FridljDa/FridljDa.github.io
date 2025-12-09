@@ -9,6 +9,7 @@ import {
   generateBlogPostingSchema,
   generateArticleSchema,
 } from '../../utils/schema';
+import TableOfContents from '../../components/TableOfContents';
 
 const slug = Astro.params.slug;
 if (!slug) {
@@ -59,8 +60,9 @@ const articleSchema = generateArticleSchema(post, postUrl, postImage);
   
   <article class="py-16 bg-surface">
     <div class="container mx-auto px-4">
-      <div class="max-w-4xl mx-auto">
-        <header class="mb-8">
+      <div class="max-w-7xl mx-auto">
+        {/* Header - full width */}
+        <header class="mb-8 max-w-4xl mx-auto">
           <div class="flex flex-wrap gap-2 mb-4 items-center justify-between">
             <div class="flex flex-wrap gap-2">
               {post.data.tags.map((tag) => (
@@ -84,15 +86,30 @@ const articleSchema = generateArticleSchema(post, postUrl, postImage);
             {formatDateLong(post.data.pubDate)}
           </time>
         </header>
+        
         {post.data.image && (
-          <img
-            src={post.data.image}
-            alt={post.data.title}
-            class="w-full rounded-lg mb-8"
-          />
+          <div class="max-w-4xl mx-auto mb-8">
+            <img
+              src={post.data.image}
+              alt={post.data.title}
+              class="w-full rounded-lg"
+            />
+          </div>
         )}
-        <div class="prose prose-lg dark:prose-invert max-w-none">
-          <Content />
+        
+        {/* Two-column layout: content + TOC sidebar */}
+        <div class="flex flex-col lg:flex-row gap-8 items-start">
+          {/* Main content */}
+          <div class="flex-1 w-full max-w-4xl">
+            <div class="prose prose-lg dark:prose-invert max-w-none">
+              <Content />
+            </div>
+          </div>
+          
+          {/* Table of Contents sidebar */}
+          <aside class="w-full lg:w-64 flex-shrink-0">
+            <TableOfContents client:load />
+          </aside>
         </div>
       </div>
     </div>
