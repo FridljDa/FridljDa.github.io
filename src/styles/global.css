@@ -132,7 +132,7 @@
   }
   
   .toc-item {
-    @apply block py-1.5 px-3 rounded transition-colors text-body hover:text-heading;
+    @apply block py-1.5 px-3 rounded transition-colors text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white;
     text-decoration: none;
   }
   

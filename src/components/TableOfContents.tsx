@@ -33,20 +33,55 @@ export default function TableOfContents({ className = '' }: TableOfContentsProps
     setHeadings(extractedHeadings);
 
     // Set up IntersectionObserver to track which heading is in view
+    // rootMargin accounts for sticky header (80px) plus some buffer
     const observerOptions = {
-      rootMargin: '-20% 0% -35% 0%',
+      rootMargin: '-100px 0% -66% 0%', // 100px from top (header + buffer), 66% from bottom
       threshold: 0,
     };
 
+    // Track all observed entries to determine the best active heading
+    const entryMap = new Map<string, IntersectionObserverEntry>();
+
     const observerCallback = (entries: IntersectionObserverEntry[]) => {
-      // Find the most recently intersected heading
-      const intersectingEntries = entries.filter((entry) => entry.isIntersecting);
+      // Update the entry map with latest intersection data
+      entries.forEach((entry) => {
+        entryMap.set(entry.target.id, entry);
+      });
+
+      // Find the best active heading:
+      // 1. Prefer headings currently intersecting
+      // 2. Among intersecting, pick the one closest to the top of the viewport
+      // 3. If none intersecting, use the last heading that passed the threshold
+      const intersectingEntries = Array.from(entryMap.values()).filter(
+        (entry) => entry.isIntersecting
+      );
+
+      let activeEntry: IntersectionObserverEntry | null = null;
+
       if (intersectingEntries.length > 0) {
-        // Sort by position in document and take the first one
-        const sorted = intersectingEntries.sort(
+        // Sort by position in viewport (closest to top wins)
+        intersectingEntries.sort(
           (a, b) => a.boundingClientRect.top - b.boundingClientRect.top
         );
-        setActiveId(sorted[0].target.id);
+        activeEntry = intersectingEntries[0];
+      } else {
+        // No headings intersecting - find the last one that passed the threshold
+        // (i.e., the one that's above the viewport but closest to it)
+        const allEntries = Array.from(entryMap.values());
+        const aboveViewport = allEntries.filter(
+          (entry) => entry.boundingClientRect.top < 100
+        );
+        if (aboveViewport.length > 0) {
+          // Sort by distance from top (closest to threshold wins)
+          aboveViewport.sort(
+            (a, b) => b.boundingClientRect.top - a.boundingClientRect.top
+          );
+          activeEntry = aboveViewport[0];
+        }
+      }
+
+      if (activeEntry) {
+        setActiveId(activeEntry.target.id);
       }
     };
 
@@ -54,10 +89,22 @@ export default function TableOfContents({ className = '' }: TableOfContentsProps
 
     headingElements.forEach((heading) => {
       observer.observe(heading);
+      // Initialize entry map with all headings
+      const initialEntry = {
+        target: heading,
+        boundingClientRect: heading.getBoundingClientRect(),
+        intersectionRatio: 0,
+        intersectionRect: {} as DOMRectReadOnly,
+        isIntersecting: false,
+        rootBounds: null,
+        time: 0,
+      } as IntersectionObserverEntry;
+      entryMap.set(heading.id, initialEntry);
     });
 
-    // Set initial active heading based on scroll position
-    const updateActiveHeading = () => {
+    // Set initial active heading based on current scroll position
+    // This ensures correct state on mount without conflicting with observer
+    const setInitialActiveHeading = () => {
       for (let i = headingElements.length - 1; i >= 0; i--) {
         const heading = headingElements[i];
         const rect = heading.getBoundingClientRect();
@@ -68,15 +115,12 @@ export default function TableOfContents({ className = '' }: TableOfContentsProps
       }
     };
 
-    // Set initial state
-    updateActiveHeading();
-
-    // Update on scroll
-    window.addEventListener('scroll', updateActiveHeading, { passive: true });
+    // Set initial state (will be refined by IntersectionObserver on first scroll)
+    setInitialActiveHeading();
 
     return () => {
       observer.disconnect();
-      window.removeEventListener('scroll', updateActiveHeading);
+      entryMap.clear();
     };
   }, []);
 
