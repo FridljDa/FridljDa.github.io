@@ -68,13 +68,25 @@
   }
   
   /* Ensure headings maintain normal styling */
-  .prose h1,
-  .prose h2,
-  .prose h3,
-  .prose h4,
+  .prose h1 {
+    @apply text-gray-900 dark:text-white font-bold text-4xl;
+  }
+  
+  .prose h2 {
+    @apply text-gray-900 dark:text-white font-bold text-3xl;
+  }
+  
+  .prose h3 {
+    @apply text-gray-900 dark:text-white font-bold text-2xl;
+  }
+  
+  .prose h4 {
+    @apply text-gray-900 dark:text-white font-bold text-xl;
+  }
+  
   .prose h5,
   .prose h6 {
-    @apply text-gray-900 dark:text-white font-bold;
+    @apply text-gray-900 dark:text-white font-bold text-lg;
   }
   
   /* Headings wrapped in anchor should inherit heading color, not link color */
