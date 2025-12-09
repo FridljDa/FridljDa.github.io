@@ -67,12 +67,38 @@
     opacity: 1;
   }
   
+  /* Ensure headings maintain normal styling with proper spacing */
+  .prose h1 {
+    @apply text-gray-900 dark:text-white font-bold text-4xl mt-0;
+  }
+  
+  .prose h2 {
+    @apply text-gray-900 dark:text-white font-bold text-3xl mt-12;
+  }
+  
+  .prose h3 {
+    @apply text-gray-900 dark:text-white font-bold text-2xl mt-10;
+  }
+  
+  .prose h4 {
+    @apply text-gray-900 dark:text-white font-bold text-xl mt-8;
+  }
+  
+  .prose h5,
+  .prose h6 {
+    @apply text-gray-900 dark:text-white font-bold text-lg mt-8;
+  }
+  
   /* Headings wrapped in anchor should inherit heading color, not link color */
   .prose :is(h1, h2, h3, h4, h5, h6) .heading-link {
     @apply text-inherit font-bold;
   }
   
-  /* Regular links in prose (not heading links) - override Typography defaults */
+  .prose {
+    @apply text-gray-700 dark:text-gray-300;
+  }
+  
+  /* Regular links in prose (not heading links) */
   .prose a:not(.heading-link) {
     @apply text-primary-600 dark:text-primary-400 hover:underline;
   }
