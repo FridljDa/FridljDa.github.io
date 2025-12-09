@@ -75,17 +75,17 @@ test.describe('Dark Mode Toggle', () => {
     await page.waitForTimeout(100);
     
     // Verify dark mode is enabled
-    let darkModeState = await page.evaluate(() => {
+    let isDarkMode = await page.evaluate(() => {
       return document.documentElement.classList.contains('dark');
     });
-    expect(darkModeState).toBe(true);
+    expect(isDarkMode).toBe(true);
     
     // Reload the page
     await page.reload();
     await page.waitForLoadState('networkidle');
     
     // Dark mode should still be enabled after reload
-    darkModeState = await page.evaluate(() => {
+    const darkModeState = await page.evaluate(() => {
       return {
         hasDarkClass: document.documentElement.classList.contains('dark'),
         localStorage: localStorage.getItem('color-theme')
