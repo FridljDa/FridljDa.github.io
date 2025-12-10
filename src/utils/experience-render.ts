@@ -1,5 +1,8 @@
+import DOMPurify from 'isomorphic-dompurify';
+
 export function renderExperienceDescription(description: string): string {
-  return description
+  // First, convert markdown-like syntax to HTML
+  let html = description
     .replace(/\n/g, '<br />')
     .replace(/\* /g, '• ')
     .replace(
@@ -13,5 +16,13 @@ export function renderExperienceDescription(description: string): string {
     )
     .replace(/<ul>/g, '<ul class="list-disc list-inside ml-4 mt-2">')
     .replace(/<li>/g, '<li class="mb-1">');
+
+  // Sanitize the HTML to prevent XSS attacks
+  // Allow common HTML tags and attributes used in experience descriptions
+  return DOMPurify.sanitize(html, {
+    ALLOWED_TAGS: ['br', 'a', 'details', 'summary', 'ul', 'li', 'strong', 'em', 'p'],
+    ALLOWED_ATTR: ['href', 'target', 'rel', 'class'],
+    ALLOW_DATA_ATTR: false,
+  });
 }
 

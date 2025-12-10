@@ -1,3 +1,5 @@
+import matter from 'gray-matter';
+
 export async function readBlogPostFile(postId: string): Promise<string> {
   const fs = await import('fs/promises');
   const path = await import('path');
@@ -6,11 +8,7 @@ export async function readBlogPostFile(postId: string): Promise<string> {
 }
 
 export function extractMarkdownContent(fileContent: string): string {
-  const frontmatterEnd = fileContent.indexOf('---', 3);
-  if (frontmatterEnd !== -1) {
-    const contentStart = frontmatterEnd + 3;
-    return fileContent.substring(contentStart).trimStart();
-  }
-  return fileContent;
+  const parsed = matter(fileContent);
+  return parsed.content.trimStart();
 }
 
