@@ -36,7 +36,6 @@ export default function TableOfContents({ className = '' }: TableOfContentsProps
     setHeadings(extractedHeadings);
 
     // Set up IntersectionObserver to track which heading is in view
-    // rootMargin accounts for sticky header (80px) plus some buffer
     const observerOptions = {
       rootMargin: `-${ACTIVE_HEADING_THRESHOLD}px 0% -66% 0%`,
       threshold: 0,
