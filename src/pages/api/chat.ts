@@ -6,7 +6,7 @@ import { logger } from '../../utils/logger';
 import { getEnvVar } from '../../utils/env';
 import {
   validateContentType,
-  validateChatRequest,
+  parseChatRequest,
   createErrorResponse,
 } from '../../utils/validation';
 import type { ChatMessage, GeminiHistoryMessage } from '../../types/api';
@@ -18,9 +18,14 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     const body = await request.json();
-    if (!validateChatRequest(body)) {
-      return createErrorResponse('Invalid message format');
+    const parseResult = parseChatRequest(body);
+    if (!parseResult.success) {
+      return createErrorResponse(
+        'Invalid message format',
+        parseResult.error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(', ')
+      );
     }
+    const validatedBody = parseResult.data;
 
     const apiKey = getEnvVar('GEMINI_API_KEY');
 
@@ -64,7 +69,7 @@ export const POST: APIRoute = async ({ request }) => {
       ${allBlogPostsMarkdown}
     `;
 
-    const history: GeminiHistoryMessage[] = body.messages.slice(0, -1).map((msg: ChatMessage) => ({
+    const history: GeminiHistoryMessage[] = validatedBody.messages.slice(0, -1).map((msg) => ({
       role: msg.role === 'ai' ? 'model' : 'user',
       parts: [{ text: msg.content }],
     }));
@@ -87,7 +92,7 @@ export const POST: APIRoute = async ({ request }) => {
       ],
     });
 
-    const lastUserMessage = body.messages[body.messages.length - 1].content;
+    const lastUserMessage = validatedBody.messages[validatedBody.messages.length - 1].content;
     const result = await chat.sendMessageStream(lastUserMessage);
 
     const stream = new ReadableStream({

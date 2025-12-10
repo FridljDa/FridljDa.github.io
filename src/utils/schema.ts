@@ -1,7 +1,8 @@
 import { SITE, BIOGRAPHY } from '../data/site';
 import type { CollectionEntry } from 'astro:content';
+import type { WithContext, Person, Organization, WebSite, CollectionPage, BlogPosting, Article } from 'schema-dts';
 
-export function generatePersonSchema() {
+export function generatePersonSchema(): WithContext<Person> {
   return {
     '@context': 'https://schema.org',
     '@type': 'Person',
@@ -17,7 +18,7 @@ export function generatePersonSchema() {
   };
 }
 
-export function generateDetailedPersonSchema() {
+export function generateDetailedPersonSchema(): WithContext<Person> {
   return {
     '@context': 'https://schema.org',
     '@type': 'Person',
@@ -38,7 +39,7 @@ export function generateDetailedPersonSchema() {
   };
 }
 
-export function generateOrganizationSchema() {
+export function generateOrganizationSchema(): WithContext<Organization> {
   return {
     '@context': 'https://schema.org',
     '@type': 'Organization',
@@ -47,7 +48,7 @@ export function generateOrganizationSchema() {
   };
 }
 
-export function generateWebsiteSchema() {
+export function generateWebsiteSchema(): WithContext<WebSite> {
   return {
     '@context': 'https://schema.org',
     '@type': 'WebSite',
@@ -57,7 +58,7 @@ export function generateWebsiteSchema() {
   };
 }
 
-export function generateCollectionPageSchema() {
+export function generateCollectionPageSchema(): WithContext<CollectionPage> {
   return {
     '@context': 'https://schema.org',
     '@type': 'CollectionPage',
@@ -83,7 +84,7 @@ export function generateBlogPostingSchema(
   post: CollectionEntry<'blog'>,
   postUrl: string,
   postImage: string
-) {
+): WithContext<BlogPosting> {
   return {
     '@context': 'https://schema.org',
     '@type': 'BlogPosting',
@@ -117,7 +118,7 @@ export function generateArticleSchema(
   post: CollectionEntry<'blog'>,
   postUrl: string,
   postImage: string
-) {
+): WithContext<Article> {
   return {
     '@context': 'https://schema.org',
     '@type': 'Article',
