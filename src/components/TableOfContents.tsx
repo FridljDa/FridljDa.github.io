@@ -10,6 +10,9 @@ interface TableOfContentsProps {
   className?: string;
 }
 
+// Threshold for determining active heading (header height + buffer)
+const ACTIVE_HEADING_THRESHOLD = 100;
+
 export default function TableOfContents({ className = '' }: TableOfContentsProps) {
   const [headings, setHeadings] = useState<Heading[]>([]);
   const [activeId, setActiveId] = useState<string>('');
@@ -35,7 +38,7 @@ export default function TableOfContents({ className = '' }: TableOfContentsProps
     // Set up IntersectionObserver to track which heading is in view
     // rootMargin accounts for sticky header (80px) plus some buffer
     const observerOptions = {
-      rootMargin: '-100px 0% -66% 0%', // 100px from top (header + buffer), 66% from bottom
+      rootMargin: `-${ACTIVE_HEADING_THRESHOLD}px 0% -66% 0%`,
       threshold: 0,
     };
 
@@ -69,7 +72,7 @@ export default function TableOfContents({ className = '' }: TableOfContentsProps
         // (i.e., the one that's above the viewport but closest to it)
         const allEntries = Array.from(entryMap.values());
         const aboveViewport = allEntries.filter(
-          (entry) => entry.boundingClientRect.top < 100
+          (entry) => entry.boundingClientRect.top < ACTIVE_HEADING_THRESHOLD
         );
         if (aboveViewport.length > 0) {
           // Sort by distance from top (closest to threshold wins)
@@ -108,7 +111,7 @@ export default function TableOfContents({ className = '' }: TableOfContentsProps
       for (let i = headingElements.length - 1; i >= 0; i--) {
         const heading = headingElements[i];
         const rect = heading.getBoundingClientRect();
-        if (rect.top <= 100) {
+        if (rect.top <= ACTIVE_HEADING_THRESHOLD) {
           setActiveId(heading.id);
           break;
         }
