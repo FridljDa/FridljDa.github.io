@@ -23,7 +23,7 @@ test.describe('Regression Tests', () => {
     test.skip(projectName === 'iPhone 13' || projectName === 'Pixel 5', 'Navigation links hidden on mobile');
     
     // Wait for page to load
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     
     // Find the "Posts" navigation link
     const postsLink = page.getByRole('link', { name: /Posts/i });
@@ -82,7 +82,7 @@ test.describe('Regression Tests', () => {
 
   test('should have chat widget present on the page', async ({ page }) => {
     // Wait for the page to load
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     
     // Check if chat is minimized (mobile devices auto-minimize)
     const minimizedButton = page.locator('button[aria-label="Open chat"]');
@@ -108,7 +108,7 @@ test.describe('Regression Tests', () => {
 
   test('should interact with chat widget and get response', async ({ page }) => {
     // Wait for the page and chat widget to load
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     
     // Check if chat is minimized (mobile devices auto-minimize)
     const minimizedButton = page.locator('button[aria-label="Open chat"]');
@@ -180,7 +180,7 @@ test.describe('Regression Tests', () => {
 
   test('should have View as Markdown button in Biography section', async ({ page }) => {
     // Wait for page to load
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     
     // Scroll to Biography section
     const biographySection = page.locator('#about');
@@ -202,7 +202,7 @@ test.describe('Regression Tests', () => {
 
   test('should navigate to index.md when clicking View as Markdown on homepage', async ({ page }) => {
     // Wait for page to load
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     
     // Scroll to Biography section
     const biographySection = page.locator('#about');
@@ -315,6 +315,10 @@ test.describe('Regression Tests', () => {
   });
 
   test('should serve markdown with correct content type headers', async ({ page }) => {
+    // Skip on mobile devices - this is server-side functionality that doesn't vary by device
+    const projectName = test.info().project.name;
+    test.skip(projectName === 'iPhone 13' || projectName === 'iPad Pro' || projectName === 'Pixel 5', 'Server-side functionality, only needs desktop testing');
+    
     // Test index.md
     const indexResponse = await page.goto('/index.md');
     expect(indexResponse?.status()).toBe(200);
@@ -343,6 +347,10 @@ test.describe('Regression Tests', () => {
   });
 
   test('should return 404 for non-existent blog post markdown', async ({ page }) => {
+    // Skip on mobile devices - this is server-side functionality that doesn't vary by device
+    const projectName = test.info().project.name;
+    test.skip(projectName === 'iPhone 13' || projectName === 'iPad Pro' || projectName === 'Pixel 5', 'Server-side functionality, only needs desktop testing');
+    
     // Try to access a non-existent blog post markdown
     const response = await page.goto('/post/non-existent-post.md');
     expect(response?.status()).toBe(404);
