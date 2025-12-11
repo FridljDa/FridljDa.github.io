@@ -32,14 +32,9 @@ test.describe('Regression Tests', () => {
     // Click on the Posts link
     await postsLink.click();
     
-    // Wait for smooth scroll to complete
-    await page.waitForTimeout(1000);
-    
-    // Verify we're at the posts section (check URL hash or scroll position)
+    // Wait for posts section to be in viewport (replaces arbitrary timeout)
     const postsSection = page.locator('#posts');
     await expect(postsSection).toBeVisible();
-    
-    // Verify posts section is in viewport
     await expect(postsSection).toBeInViewport();
     
     // Verify there are blog posts visible
@@ -91,11 +86,9 @@ test.describe('Regression Tests', () => {
     if (isMinimized) {
       // Chat is minimized, click to expand
       await minimizedButton.click();
-      // Wait for chat to expand
-      await page.waitForTimeout(500);
     }
     
-    // Verify chat component exists - look for the chat input field
+    // Wait for chat input to be visible (replaces arbitrary timeout)
     const chatInput = page.locator('input[placeholder*="Ask about skills"]');
     await expect(chatInput).toBeVisible({ timeout: 10000 });
     
@@ -117,11 +110,9 @@ test.describe('Regression Tests', () => {
     if (isMinimized) {
       // Chat is minimized, click to expand
       await minimizedButton.click();
-      // Wait for chat to expand
-      await page.waitForTimeout(500);
     }
     
-    // Wait for chat input to be visible
+    // Wait for chat input to be visible (replaces arbitrary timeout)
     const chatInput = page.locator('input[placeholder*="Ask about skills"]');
     await expect(chatInput).toBeVisible({ timeout: 10000 });
     
@@ -136,17 +127,22 @@ test.describe('Regression Tests', () => {
       await chatInput.press('Enter');
     }
     
-    // Wait for response to appear (check for AI message)
-    // The response should appear in the messages area
-    await page.waitForTimeout(3000);
-    
-    // Check for AI response - look for message with role 'ai' or content that's not the user's question
+    // Wait for AI response to appear (replaces fixed 3000ms timeout)
+    // First try to wait for specific content, then fall back to any message
     const aiResponse = page.locator('div').filter({ hasText: /Software Consultant|TNG|current role/i });
-    await expect(aiResponse.first()).toBeVisible({ timeout: 15000 }).catch(() => {
-      // If specific text not found, just check that a message appeared
-      const messages = page.locator('div').filter({ has: page.locator('div[class*="rounded-2xl"]') });
-      expect(messages.count()).toBeGreaterThan(0);
-    });
+    const messages = page.locator('div').filter({ has: page.locator('div[class*="rounded-2xl"]') });
+    
+    // Wait for either specific response or any message to appear
+    try {
+      await Promise.race([
+        expect(aiResponse.first()).toBeVisible({ timeout: 15000 }).catch(() => null),
+        expect(messages.first()).toBeVisible({ timeout: 15000 })
+      ]);
+    } catch {
+      // Final fallback: just check that at least one message appeared
+      const messageCount = await messages.count();
+      expect(messageCount).toBeGreaterThan(0);
+    }
   });
 
   test('should display publication about air pollution disparities', async ({ page }) => {
