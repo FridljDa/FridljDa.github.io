@@ -30,8 +30,8 @@ test.describe('Dark Mode Toggle', () => {
     await expect(toggleButton).toBeVisible();
     await toggleButton.click();
     
-    // Wait a moment for the toggle to complete
-    await page.waitForTimeout(100);
+    // Wait for dark class to be applied (replaces arbitrary timeout)
+    await page.waitForFunction(() => document.documentElement.classList.contains('dark'));
     
     // Verify dark mode is now enabled
     const darkModeState = await page.evaluate(() => {
@@ -49,7 +49,9 @@ test.describe('Dark Mode Toggle', () => {
     
     // Toggle back to light mode
     await toggleButton.click();
-    await page.waitForTimeout(100);
+    
+    // Wait for dark class to be removed (replaces arbitrary timeout)
+    await page.waitForFunction(() => !document.documentElement.classList.contains('dark'));
     
     // Verify light mode is restored
     const lightModeState = await page.evaluate(() => {
@@ -72,7 +74,9 @@ test.describe('Dark Mode Toggle', () => {
     // Enable dark mode
     const toggleButton = page.getByRole('button', { name: /Toggle dark mode/i });
     await toggleButton.click();
-    await page.waitForTimeout(100);
+    
+    // Wait for dark class to be applied (replaces arbitrary timeout)
+    await page.waitForFunction(() => document.documentElement.classList.contains('dark'));
     
     // Verify dark mode is enabled
     let isDarkMode = await page.evaluate(() => {
@@ -82,7 +86,7 @@ test.describe('Dark Mode Toggle', () => {
     
     // Reload the page
     await page.reload();
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     
     // Dark mode should still be enabled after reload
     const darkModeState = await page.evaluate(() => {
@@ -110,7 +114,9 @@ test.describe('Dark Mode Toggle', () => {
     
     // Click to switch to dark mode
     await toggleButton.click();
-    await page.waitForTimeout(100);
+    
+    // Wait for dark class to be applied and icon to change (replaces arbitrary timeout)
+    await page.waitForFunction(() => document.documentElement.classList.contains('dark'));
     
     // In dark mode, sun icon should be visible (to switch to light)
     await expect(moonIcon).not.toBeVisible();
