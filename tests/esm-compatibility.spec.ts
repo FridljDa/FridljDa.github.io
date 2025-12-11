@@ -103,7 +103,7 @@ test.describe('ESM Compatibility', () => {
     const links = firstItem.locator('a[href]');
     const linkCount = await links.count();
     // At least some experience items should have links
-    expect(linkCount).toBeGreaterThanOrEqual(0);
+    expect(linkCount).toBeGreaterThan(0);
     
     // Check for ESM-related errors
     const esmErrors = [
