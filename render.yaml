@@ -29,9 +29,8 @@ services:
       - key: GEMINI_API_KEY
         sync: false
           
-      # Ensure Node version is compatible with Astro (v18+)
       - key: NODE_VERSION
-        value: 20.11.0
+        value: 20.19.5
           
       # Port configuration. Astro adapter listens on process.env.PORT
       # Render provides this variable automatically (usually 10000).
