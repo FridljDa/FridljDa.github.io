@@ -36,7 +36,7 @@ The chat system consists of two main parts:
 
 One of the key features is streaming responses, which provides a more responsive user experience. The client uses the `ReadableStream` API to process chunks as they arrive from the server:
 
-```52:84:src/components/Chat.tsx
+```tsx
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
@@ -93,7 +93,7 @@ The client creates a `ReadableStream` reader, decodes each chunk using `TextDeco
 
 On the server, the API route constructs a comprehensive context from the website content and streams the response from Gemini:
 
-```105:137:src/pages/api/chat.ts
+```typescript
     // Generate streaming response from Gemini
     const result = await chat.sendMessageStream(lastUserMessage);
 
@@ -134,7 +134,7 @@ The chat system is context-aware, meaning it has access to all the content on th
 1. **Home page content** - Biography, experience, publications, and blog post summaries
 2. **Full blog post content** - Complete markdown from all blog posts
 
-```40:79:src/pages/api/chat.ts
+```typescript
     // Gather all markdown content for context
     const blogPosts = await getCollection('blog');
     const homePageMarkdown = generateHomePageMarkdown(blogPosts);
@@ -168,7 +168,7 @@ This context is injected as a system instruction when starting the chat session,
 
 The chat component automatically minimizes on mobile devices (screens smaller than 768px) and can be toggled between minimized and expanded states:
 
-```16:24:src/components/Chat.tsx
+```tsx
   // Detect mobile on initial load and set minimized by default
   useEffect(() => {
     if (window.innerWidth < 768) {
@@ -200,7 +200,7 @@ The core markdown generation logic lives in `src/utils/markdown-generator.ts`. T
 
 The `generateHomePageMarkdown()` function combines all home page content:
 
-```121:142:src/utils/markdown-generator.ts
+```typescript
 export function generateHomePageMarkdown(blogPosts: CollectionEntry<'blog'>[]): string {
   let markdown = `# Daniel Fridljand - Personal Website\n\n`;
   markdown += `This page contains my professional biography, experience, and blog posts.\n\n`;
@@ -227,7 +227,7 @@ export function generateHomePageMarkdown(blogPosts: CollectionEntry<'blog'>[]): 
 
 For blog posts, `getBlogPostRawMarkdown()` reads the original MDX file and reconstructs it with frontmatter:
 
-```149:204:src/utils/markdown-generator.ts
+```typescript
 export async function getBlogPostRawMarkdown(post: CollectionEntry<'blog'>): Promise<string> {
   // Reconstruct frontmatter from post data
   let markdown = `---\n`;
@@ -270,7 +270,7 @@ Two API routes serve markdown to users:
 
 Both routes use the same utility functions used by the chat system:
 
-```5:19:src/pages/index.md.ts
+```typescript
 export const GET: APIRoute = async () => {
   try {
     const blogPosts = await getCollection('blog');
@@ -288,7 +288,7 @@ export const GET: APIRoute = async () => {
 };
 ```
 
-```5:29:src/pages/post/[slug].md.ts
+```typescript
 export const GET: APIRoute = async ({ params }) => {
   const slug = params.slug;
   if (!slug) {
@@ -320,7 +320,7 @@ export const GET: APIRoute = async ({ params }) => {
 
 The "View as Markdown" buttons are implemented as a simple React component that links to these API routes:
 
-```9:23:src/components/ViewAsMarkdown.tsx
+```tsx
 export default function ViewAsMarkdown({ href, label = 'View as Markdown' }: ViewAsMarkdownProps) {
   return (
     <a
@@ -363,7 +363,7 @@ The CV is stored as `src/data/cv.yaml` using the [RenderCV](https://github.com/s
 
 Here's a snippet of the structure:
 
-```1:15:src/data/cv.yaml
+```yaml
 cv:
   name: Daniel Fridljand
   location: Munich, Germany
@@ -390,7 +390,7 @@ The YAML format makes it easy to:
 
 The automation happens via a GitHub Actions workflow (`.github/workflows/update-cv.yaml`) that triggers whenever `cv.yaml` is pushed to the `master` branch:
 
-```1:67:.github/workflows/update-cv.yaml
+```yaml
 name: Update CV
 
 on:
