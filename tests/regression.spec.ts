@@ -121,10 +121,10 @@ test.describe('Regression Tests', () => {
     await expect(chatInput).toBeVisible({ timeout: 10000 });
     await expect(chatInput).toBeEnabled({ timeout: 5000 });
     
-    // Type a question - use type() to trigger React onChange events properly
+    // Type a question - use pressSequentially() to trigger React onChange events properly
     // This ensures React state updates and the submit button becomes enabled
     const question = 'What is Daniel\'s current role?';
-    await chatInput.type(question, { delay: 30 });
+    await chatInput.pressSequentially(question, { delay: 30 });
     
     // Wait for input value to be set (ensures React state has updated)
     await expect(chatInput).toHaveValue(question, { timeout: 5000 });
