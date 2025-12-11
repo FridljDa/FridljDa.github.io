@@ -4,7 +4,7 @@ Astro-based personal website with AI chat functionality powered by Google Gemini
 
 ## Prerequisites
 
-- Node.js (v18 or higher)
+- Node.js (see `.nvmrc` or `package.json` engines for required version)
 
 ## Setup
 
