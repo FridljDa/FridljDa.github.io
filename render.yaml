@@ -30,7 +30,7 @@ services:
         sync: false
           
       - key: NODE_VERSION
-        value: 20.19.5
+        value: 24
           
       # Port configuration. Astro adapter listens on process.env.PORT
       # Render provides this variable automatically (usually 10000).
