@@ -187,7 +187,7 @@ test.describe('ESM Compatibility', () => {
     await page.goto('/');
     await page.waitForLoadState('networkidle');
     
-    await page.waitForTimeout(1000);
+    await page.waitForSelector('text=Daniel Fridljand');
     
     // Filter for ESM-related errors
     const esmErrors = pageErrors.filter((error) => 
