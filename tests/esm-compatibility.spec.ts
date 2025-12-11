@@ -178,14 +178,13 @@ test.describe('ESM Compatibility', () => {
     expect(body).toContain('Daniel Fridljand');
     
     // Navigate to the page to trigger any client-side errors
-    await page.goto('/');
-    await page.waitForLoadState('networkidle');
-    
-    // Check for any runtime errors
+    // Collect page errors before navigation to catch errors during page load
     const pageErrors: string[] = [];
     page.on('pageerror', (error) => {
       pageErrors.push(error.message);
     });
+    await page.goto('/');
+    await page.waitForLoadState('networkidle');
     
     // Wait a bit to catch any delayed errors
     await page.waitForTimeout(1000);
