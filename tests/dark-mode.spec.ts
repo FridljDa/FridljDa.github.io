@@ -11,7 +11,7 @@ test.describe('Dark Mode Toggle', () => {
 
   test('should toggle dark mode on and off', async ({ page }) => {
     // Wait for page to load
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     
     // Initially should be in light mode (no dark class)
     const initialTheme = await page.evaluate(() => {
@@ -67,7 +67,7 @@ test.describe('Dark Mode Toggle', () => {
 
   test('should persist dark mode preference across page reloads', async ({ page }) => {
     // Wait for page to load
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     
     // Enable dark mode
     const toggleButton = page.getByRole('button', { name: /Toggle dark mode/i });
@@ -97,7 +97,7 @@ test.describe('Dark Mode Toggle', () => {
   });
 
   test('should show correct icon for current mode', async ({ page }) => {
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     
     const toggleButton = page.getByRole('button', { name: /Toggle dark mode/i });
     

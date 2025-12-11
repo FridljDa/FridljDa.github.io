@@ -6,68 +6,31 @@ test.describe('Blog Post Heading Formatting', () => {
   test.beforeEach(async ({ page }) => {
     // Navigate to the blog post and wait for it to load
     await page.goto(BLOG_POST_URL);
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
   });
 
-  test('should display section headings with proper heading font weight', async ({ page }) => {
+  test('should display section headings (h2, h3, h4) with proper heading font weight', async ({ page }) => {
+    // Test all heading levels in a single parameterized test
+    const headingLevels = ['h2', 'h3', 'h4'] as const;
     
-    // Check that h2 headings have proper font weight
-    const h2Headings = page.locator('article h2');
-    const h2Count = await h2Headings.count();
-    expect(h2Count).toBeGreaterThan(0);
-    
-    // Check the first h2 heading ("Introduction")
-    const firstH2 = h2Headings.first();
-    await expect(firstH2).toBeVisible();
-    
-    // Get the computed font-weight of the heading
-    const fontWeight = await firstH2.evaluate((el) => {
-      return window.getComputedStyle(el).fontWeight;
-    });
-    
-    // Font weight should be bold (700 or greater)
-    // In Tailwind Typography, h2 typically has font-weight: 700
-    expect(parseInt(fontWeight)).toBeGreaterThanOrEqual(600);
-  });
-
-  test('should display h3 headings with proper font weight', async ({ page }) => {
-    
-    // Check that h3 headings have proper font weight
-    const h3Headings = page.locator('article h3');
-    const h3Count = await h3Headings.count();
-    expect(h3Count).toBeGreaterThan(0);
-    
-    // Check the first h3 heading
-    const firstH3 = h3Headings.first();
-    await expect(firstH3).toBeVisible();
-    
-    // Get the computed font-weight of the heading
-    const fontWeight = await firstH3.evaluate((el) => {
-      return window.getComputedStyle(el).fontWeight;
-    });
-    
-    // Font weight should be bold (600 or greater)
-    expect(parseInt(fontWeight)).toBeGreaterThanOrEqual(600);
-  });
-
-  test('should display h4 headings with proper font weight', async ({ page }) => {
-    
-    // Check that h4 headings have proper font weight
-    const h4Headings = page.locator('article h4');
-    const h4Count = await h4Headings.count();
-    expect(h4Count).toBeGreaterThan(0);
-    
-    // Check the first h4 heading
-    const firstH4 = h4Headings.first();
-    await expect(firstH4).toBeVisible();
-    
-    // Get the computed font-weight of the heading
-    const fontWeight = await firstH4.evaluate((el) => {
-      return window.getComputedStyle(el).fontWeight;
-    });
-    
-    // Font weight should be bold (600 or greater)
-    expect(parseInt(fontWeight)).toBeGreaterThanOrEqual(600);
+    for (const level of headingLevels) {
+      // Check that headings of this level have proper font weight
+      const headings = page.locator(`article ${level}`);
+      const count = await headings.count();
+      expect(count).toBeGreaterThan(0);
+      
+      // Check the first heading of this level
+      const firstHeading = headings.first();
+      await expect(firstHeading).toBeVisible();
+      
+      // Get the computed font-weight of the heading
+      const fontWeight = await firstHeading.evaluate((el) => {
+        return window.getComputedStyle(el).fontWeight;
+      });
+      
+      // Font weight should be bold (600 or greater)
+      expect(parseInt(fontWeight)).toBeGreaterThanOrEqual(600);
+    }
   });
 
   test('should have heading links inherit font properties from parent heading', async ({ page }) => {
