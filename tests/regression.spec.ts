@@ -102,6 +102,7 @@ test.describe('Regression Tests', () => {
   test('should interact with chat widget and get response', async ({ page }) => {
     // Wait for the page and chat widget to load
     await page.waitForLoadState('domcontentloaded');
+    await page.waitForLoadState('networkidle');
     
     // Check if chat is minimized (mobile devices auto-minimize)
     const minimizedButton = page.locator('button[aria-label="Open chat"]');
@@ -110,20 +111,36 @@ test.describe('Regression Tests', () => {
     if (isMinimized) {
       // Chat is minimized, click to expand
       await minimizedButton.click();
+      // Wait for chat widget to expand - wait for the form to appear
+      const chatForm = page.locator('form').filter({ has: page.locator('input[placeholder*="Ask about skills"]') });
+      await expect(chatForm).toBeVisible({ timeout: 5000 });
     }
     
-    // Wait for chat input to be visible (replaces arbitrary timeout)
+    // Wait for chat input to be visible and enabled (replaces arbitrary timeout)
     const chatInput = page.locator('input[placeholder*="Ask about skills"]');
     await expect(chatInput).toBeVisible({ timeout: 10000 });
+    await expect(chatInput).toBeEnabled({ timeout: 5000 });
     
-    // Type a question
-    await chatInput.fill('What is Daniel\'s current role?');
+    // Type a question - use type() to trigger React onChange events properly
+    // This ensures React state updates and the submit button becomes enabled
+    const question = 'What is Daniel\'s current role?';
+    await chatInput.type(question, { delay: 30 });
     
-    // Submit the form (click send button or press Enter)
+    // Wait for input value to be set (ensures React state has updated)
+    await expect(chatInput).toHaveValue(question, { timeout: 5000 });
+    
+    // Wait for React to update the button state - check that button becomes enabled
     const sendButton = page.locator('button[type="submit"]').filter({ has: page.locator('svg') });
-    if (await sendButton.isVisible().catch(() => false)) {
+    
+    // Wait for button to be enabled (React state update after input change)
+    // Use a longer timeout and check if button exists first
+    const buttonVisible = await sendButton.isVisible().catch(() => false);
+    if (buttonVisible) {
+      // Wait for button to become enabled (may take a moment for React state to update)
+      await expect(sendButton).toBeEnabled({ timeout: 10000 });
       await sendButton.click();
     } else {
+      // Fallback: press Enter if button not found
       await chatInput.press('Enter');
     }
     
