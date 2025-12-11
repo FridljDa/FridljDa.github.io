@@ -10,6 +10,7 @@ import {
   createErrorResponse,
 } from '../../utils/validation';
 import type { ChatMessage, GeminiHistoryMessage } from '../../types/api';
+import type { ZodIssue } from 'zod';
 
 export const POST: APIRoute = async ({ request }) => {
   try {
@@ -22,7 +23,7 @@ export const POST: APIRoute = async ({ request }) => {
     if (!parseResult.success) {
       return createErrorResponse(
         'Invalid message format',
-        parseResult.error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(', ')
+        parseResult.error.issues.map((e: ZodIssue) => `${e.path.join('.')}: ${e.message}`).join(', ')
       );
     }
     const validatedBody = parseResult.data;
