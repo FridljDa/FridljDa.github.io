@@ -21,7 +21,7 @@ export function validateChatRequest(body: unknown): body is ChatRequest {
   return result.success;
 }
 
-export function parseChatRequest(body: unknown): { success: true; data: ChatRequest } | { success: false; error: z.ZodError } {
+export function parseChatRequest(body: unknown): z.SafeParseReturnType<unknown, ChatRequest> {
   const result = ChatRequestSchema.safeParse(body);
   if (result.success) {
     return { success: true, data: result.data };
