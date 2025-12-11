@@ -22,7 +22,7 @@ export const POST: APIRoute = async ({ request }) => {
     if (!parseResult.success) {
       return createErrorResponse(
         'Invalid message format',
-        parseResult.error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(', ')
+        parseResult.error.errors.map((e) => `${e.path.join('.')}: ${e.message}`).join(', ')
       );
     }
     const validatedBody = parseResult.data;
