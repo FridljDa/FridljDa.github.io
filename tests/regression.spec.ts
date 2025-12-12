@@ -88,7 +88,7 @@ test.describe('Regression Tests', () => {
       // Chat is minimized, click to expand
       await minimizedButton.click();
       // Wait for chat widget to expand - wait for the form to appear
-      const chatForm = page.locator('form').filter({ has: page.locator('input[placeholder*="Ask about skills"]') });
+      const chatForm = page.locator('[data-testid="chat-form"]');
       await expect(chatForm).toBeVisible({ timeout: 5000 });
     }
     
