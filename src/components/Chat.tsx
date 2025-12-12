@@ -151,7 +151,7 @@ function ChatContent() {
       </div>
 
       {/* Input Area */}
-      <form onSubmit={handleSubmit} className="p-3 bg-surface border-t border-surface">
+      <form onSubmit={handleSubmit} className="p-3 bg-surface border-t border-surface" data-testid="chat-form">
         <div className="flex gap-2">
           <input
             type="text"
