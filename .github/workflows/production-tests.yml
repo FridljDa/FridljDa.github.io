@@ -1,0 +1,75 @@
+name: Production Tests
+
+on:
+  schedule:
+    # Run every Monday at 9:00 AM UTC
+    - cron: '0 9 * * 1'
+  push:
+    branches:
+      - master
+  workflow_dispatch: # Allow manual triggering
+
+# Set default permissions for all jobs
+permissions:
+  contents: read
+
+# Cancel in-progress runs for the same workflow
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+jobs:
+  test-production:
+    name: Test Production Site
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Wait 5 minutes after merge to master
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+        run: |
+          echo "Waiting 5 minutes for production deployment to stabilize..."
+          sleep 300
+          echo "Wait complete, proceeding with tests"
+
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium webkit
+
+      - name: Wait for production site to be ready
+        run: |
+          echo "Waiting for production site to be accessible..."
+          timeout 120 bash -c 'until curl -f https://danielfridljand.de/ > /dev/null 2>&1; do sleep 5; done'
+          echo "Production site is ready"
+
+      - name: Run Playwright tests against production
+        run: npm run test:production
+        env:
+          CI: true
+        continue-on-error: false
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: playwright-report-production
+          path: playwright-report
+          retention-days: 30
+
+      - name: Upload test videos
+        if: failure()
+        uses: actions/upload-artifact@v5
+        with:
+          name: test-videos-production
+          path: test-results
+          retention-days: 30
