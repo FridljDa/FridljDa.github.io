@@ -27,7 +27,12 @@ export default function TableOfContents({ className = '' }: TableOfContentsProps
       return;
     }
 
-    const extractedHeadings: Heading[] = headingElements.map((el) => ({
+    // Filter out headings with empty or whitespace-only text
+    const headingsWithText = headingElements.filter(
+      (el) => (el.textContent || '').trim().length > 0
+    );
+
+    const extractedHeadings: Heading[] = headingsWithText.map((el) => ({
       id: el.id,
       text: el.textContent || '',
       level: parseInt(el.tagName.charAt(1), 10),
@@ -89,7 +94,7 @@ export default function TableOfContents({ className = '' }: TableOfContentsProps
 
     const observer = new IntersectionObserver(observerCallback, observerOptions);
 
-    headingElements.forEach((heading) => {
+    headingsWithText.forEach((heading) => {
       observer.observe(heading);
       // Initialize entry map with all headings
       const initialEntry = {
@@ -107,8 +112,8 @@ export default function TableOfContents({ className = '' }: TableOfContentsProps
     // Set initial active heading based on current scroll position
     // This ensures correct state on mount without conflicting with observer
     const setInitialActiveHeading = () => {
-      for (let i = headingElements.length - 1; i >= 0; i--) {
-        const heading = headingElements[i];
+      for (let i = headingsWithText.length - 1; i >= 0; i--) {
+        const heading = headingsWithText[i];
         const rect = heading.getBoundingClientRect();
         if (rect.top <= ACTIVE_HEADING_THRESHOLD) {
           setActiveId(heading.id);
