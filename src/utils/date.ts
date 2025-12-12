@@ -2,6 +2,8 @@
  * Date formatting utilities for consistent date display across the website
  */
 
+import { format } from 'date-fns';
+
 /**
  * Formats a date to short format: "Jan 2024"
  * @param date - Date object or date string
@@ -9,10 +11,7 @@
  */
 export function formatDateShort(date: Date | string): string {
   const dateObj = typeof date === 'string' ? new Date(date) : date;
-  return dateObj.toLocaleDateString('en-US', {
-    month: 'short',
-    year: 'numeric',
-  });
+  return format(dateObj, 'MMM yyyy');
 }
 
 /**
@@ -22,11 +21,7 @@ export function formatDateShort(date: Date | string): string {
  */
 export function formatDateLong(date: Date | string): string {
   const dateObj = typeof date === 'string' ? new Date(date) : date;
-  return dateObj.toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
+  return format(dateObj, 'MMMM d, yyyy');
 }
 
 /**
@@ -36,10 +31,6 @@ export function formatDateLong(date: Date | string): string {
  */
 export function formatDateWithDay(date: Date | string): string {
   const dateObj = typeof date === 'string' ? new Date(date) : date;
-  return dateObj.toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  });
+  return format(dateObj, 'MMM d, yyyy');
 }
 
