@@ -76,8 +76,9 @@ test.describe('Regression Tests', () => {
   });
 
   test('should have chat widget present on the page', async ({ page }) => {
-    // Wait for the page to load
+    // Wait for the page and chat widget to load
     await page.waitForLoadState('domcontentloaded');
+    await page.waitForLoadState('networkidle');
     
     // Check if chat is minimized (mobile devices auto-minimize)
     const minimizedButton = page.locator('button[aria-label="Open chat"]');
@@ -86,6 +87,9 @@ test.describe('Regression Tests', () => {
     if (isMinimized) {
       // Chat is minimized, click to expand
       await minimizedButton.click();
+      // Wait for chat widget to expand - wait for the form to appear
+      const chatForm = page.locator('form').filter({ has: page.locator('input[placeholder*="Ask about skills"]') });
+      await expect(chatForm).toBeVisible({ timeout: 5000 });
     }
     
     // Wait for chat input to be visible (replaces arbitrary timeout)
