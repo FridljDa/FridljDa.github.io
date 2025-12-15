@@ -33,7 +33,7 @@
     "isomorphic-dompurify": "^2.34.0",
     "marked": "^17.0.1",
     "react": "^19.2.1",
-    "react-dom": "^19.2.1",
+    "react-dom": "^19.2.3",
     "react-markdown": "^10.1.0",
     "rehype-autolink-headings": "^7.1.0",
     "rehype-katex": "^7.0.1",
