@@ -13,9 +13,26 @@ import {
   generateCollectionPageSchema,
   generateDetailedPersonSchema,
 } from '../utils/schema';
+import { calculateReadingTime } from '../utils/reading-time';
+import { readBlogPostFile, extractMarkdownContent } from '../utils/content-reader';
 
 const blogPosts = (await getCollection('blog')).sort(
   (a, b) => b.data.pubDate.getTime() - a.data.pubDate.getTime()
+);
+
+// Calculate reading time for each blog post
+const blogPostsWithReadingTime = await Promise.all(
+  blogPosts.map(async (post) => {
+    try {
+      const fileContent = await readBlogPostFile(post.id);
+      const markdownContent = extractMarkdownContent(fileContent);
+      const readingTime = calculateReadingTime(markdownContent);
+      return { post, readingTime };
+    } catch (error) {
+      // If we can't read the file, skip reading time
+      return { post, readingTime: undefined };
+    }
+  })
 );
 
 const homePageMarkdown = generateHomePageMarkdown(blogPosts);
@@ -53,7 +70,7 @@ const detailedPersonSchema = generateDetailedPersonSchema();
           Posts
         </h2>
         <div class="grid md:grid-cols-2 gap-6">
-          {blogPosts.map((post) => (
+          {blogPostsWithReadingTime.map(({ post, readingTime }) => (
             <BlogPostCard
               title={post.data.title}
               description={post.data.description}
@@ -61,6 +78,7 @@ const detailedPersonSchema = generateDetailedPersonSchema();
               slug={post.id}
               image={post.data.image}
               tags={post.data.tags}
+              readingTime={readingTime}
             />
           ))}
         </div>

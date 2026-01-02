@@ -1,5 +1,6 @@
 ---
 import { formatDateWithDay } from '../utils/date';
+import { formatReadingTime } from '../utils/reading-time';
 
 interface Props {
   title: string;
@@ -8,9 +9,10 @@ interface Props {
   slug: string;
   image?: string;
   tags?: string[];
+  readingTime?: number;
 }
 
-const { title, description, pubDate, slug, image, tags = [] } = Astro.props;
+const { title, description, pubDate, slug, image, tags = [], readingTime } = Astro.props;
 ---
 
 <a
@@ -43,9 +45,15 @@ const { title, description, pubDate, slug, image, tags = [] } = Astro.props;
         {description}
       </p>
     )}
-    <time class="text-sm text-subtle text-mobile-center block">
-      {formatDateWithDay(pubDate)}
-    </time>
+    <div class="text-sm text-subtle text-mobile-center block">
+      <time>{formatDateWithDay(pubDate)}</time>
+      {readingTime && (
+        <>
+          <span class="mx-2">·</span>
+          <span>{formatReadingTime(readingTime)}</span>
+        </>
+      )}
+    </div>
   </div>
 </a>
 
