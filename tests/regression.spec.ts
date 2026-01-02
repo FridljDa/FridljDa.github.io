@@ -422,9 +422,9 @@ test.describe('Regression Tests', () => {
     expect(slugMatch).toBeTruthy();
     const slug = slugMatch![1];
     
-    // Find the "Suggest changes on GitHub" link
+    // Find the "Suggest changes" link
     const article = page.locator('article');
-    const editLink = article.getByRole('link', { name: /Suggest changes on GitHub/i });
+    const editLink = article.getByRole('link', { name: /Suggest changes/i });
     await expect(editLink).toBeVisible();
     
     // Verify the GitHub edit URL format
@@ -448,9 +448,9 @@ test.describe('Regression Tests', () => {
     await firstBlogPost.click();
     await page.waitForURL(new RegExp('/post/.*'), { timeout: 10000 });
     
-    // Find the "Suggest changes on GitHub" link
+    // Find the "Suggest changes" link
     const article = page.locator('article');
-    const editLink = article.getByRole('link', { name: /Suggest changes on GitHub/i });
+    const editLink = article.getByRole('link', { name: /Suggest changes/i });
     await expect(editLink).toBeVisible();
     
     // Verify the link opens in a new tab
@@ -473,17 +473,17 @@ test.describe('Regression Tests', () => {
     await firstBlogPost.click();
     await page.waitForURL(new RegExp('/post/.*'), { timeout: 10000 });
     
-    // Find the "Suggest changes on GitHub" link
+    // Find the "Suggest changes" link
     const article = page.locator('article');
-    const editLink = article.getByRole('link', { name: /Suggest changes on GitHub/i });
+    const editLink = article.getByRole('link', { name: /Suggest changes/i });
     await expect(editLink).toBeVisible();
     
     // Verify accessibility attributes
     const ariaLabel = await editLink.getAttribute('aria-label');
-    expect(ariaLabel).toBe('Suggest changes on GitHub');
+    expect(ariaLabel).toBe('Suggest changes');
     
     const title = await editLink.getAttribute('title');
-    expect(title).toBe('Suggest changes on GitHub');
+    expect(title).toBe('Suggest changes');
   });
 
   test('should have correct GitHub edit URL for all blog posts', async ({ page }) => {
@@ -520,7 +520,7 @@ test.describe('Regression Tests', () => {
       
       // Find the edit link
       const article = page.locator('article');
-      const editLink = article.getByRole('link', { name: /Suggest changes on GitHub/i });
+      const editLink = article.getByRole('link', { name: /Suggest changes/i });
       await expect(editLink).toBeVisible();
       
       // Verify the GitHub edit URL matches the slug
