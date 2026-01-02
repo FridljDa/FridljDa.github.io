@@ -23,10 +23,6 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-# Centralized Node.js version - update here to change across all jobs
-env:
-  NODE_VERSION: '20'
-
 jobs:
   # Lint and type check
   lint-and-typecheck:
@@ -37,10 +33,16 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
 
+      - name: Extract Node.js version from package.json
+        id: node_version
+        run: |
+          NODE_VERSION=$(jq -r '.engines.node' package.json | grep -oE '[0-9]+' | head -1)
+          echo "version=$NODE_VERSION" >> $GITHUB_OUTPUT
+
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          node-version: ${{ steps.node_version.outputs.version }}
           cache: 'npm'
 
       - name: Install dependencies
@@ -58,10 +60,16 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
 
+      - name: Extract Node.js version from package.json
+        id: node_version
+        run: |
+          NODE_VERSION=$(jq -r '.engines.node' package.json | grep -oE '[0-9]+' | head -1)
+          echo "version=$NODE_VERSION" >> $GITHUB_OUTPUT
+
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          node-version: ${{ steps.node_version.outputs.version }}
           cache: 'npm'
 
       - name: Install dependencies
@@ -89,10 +97,16 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
 
+      - name: Extract Node.js version from package.json
+        id: node_version
+        run: |
+          NODE_VERSION=$(jq -r '.engines.node' package.json | grep -oE '[0-9]+' | head -1)
+          echo "version=$NODE_VERSION" >> $GITHUB_OUTPUT
+
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          node-version: ${{ steps.node_version.outputs.version }}
           cache: 'npm'
 
       - name: Install dependencies
@@ -158,10 +172,16 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
 
+      - name: Extract Node.js version from package.json
+        id: node_version
+        run: |
+          NODE_VERSION=$(jq -r '.engines.node' package.json | grep -oE '[0-9]+' | head -1)
+          echo "version=$NODE_VERSION" >> $GITHUB_OUTPUT
+
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          node-version: ${{ steps.node_version.outputs.version }}
           cache: 'npm'
 
       - name: Install dependencies
