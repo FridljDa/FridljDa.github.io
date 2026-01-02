@@ -8,7 +8,7 @@ image: /images/blog/stop-prompting-start-programming-dspy/infographic.png
 math: false
 ---
 
-After reading about [DSPy](https://dspy.ai/) in [Pedram Navids excellent blog post](https://pedramnavid.com/blog/dspy-part-one/), I decided to write a more minimalistic blog post about to demonstrate the capabilities. I went with a simple example use case for Sentiment Analysis with Reasoning.
+After reading about [DSPy](https://dspy.ai/) in [Pedram Navid's excellent blog post](https://pedramnavid.com/blog/dspy-part-one/), I decided to write a more minimalistic blog post to demonstrate the capabilities. I went with a simple example use case for Sentiment Analysis with Reasoning.
 
 The Goal: Take a movie review, determine if it is `Positive` or `Negative`, and extract a short reason why.
 
