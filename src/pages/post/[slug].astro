@@ -13,6 +13,7 @@ import {
 import TableOfContents from '../../components/TableOfContents';
 import { calculateReadingTime, formatReadingTime } from '../../utils/reading-time';
 import { readBlogPostFile, extractMarkdownContent } from '../../utils/content-reader';
+import { METADATA_SEPARATOR } from '../../utils/constants';
 
 const slug = Astro.params.slug;
 if (!slug) {
@@ -105,7 +106,7 @@ const githubEditUrl = `https://github.com/${SITE.github.owner}/${SITE.github.rep
             </time>
             {readingTime && (
               <>
-                <span class="mx-2">·</span>
+                <span class="mx-2">{METADATA_SEPARATOR}</span>
                 <span class="inline-flex items-center gap-1">
                   <svg
                     class="w-3.5 h-3.5"

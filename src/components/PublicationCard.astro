@@ -1,6 +1,7 @@
 ---
 import type { Publication } from '../data/publications';
 import { formatDateLong } from '../utils/date';
+import { METADATA_SEPARATOR } from '../utils/constants';
 
 interface Props {
   publication: Publication;
@@ -17,7 +18,7 @@ const { publication } = Astro.props;
     {publication.authors.join(', ')}
   </p>
   <p class="text-sm text-muted mb-3 text-mobile-center">
-    <span class="font-medium">{publication.publicationShort}</span> ·{' '}
+    <span class="font-medium">{publication.publicationShort}</span> {METADATA_SEPARATOR}{' '}
     {formatDateLong(publication.date)}
   </p>
   <p class="text-muted mb-4 text-sm">
