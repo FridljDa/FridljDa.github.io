@@ -373,7 +373,7 @@ test.describe('Regression Tests', () => {
     expect(response?.status()).toBe(404);
   });
 
-  test('should have Suggest changes on GitHub link on blog post page', async ({ page }) => {
+  test('should have Suggest changes link on blog post page', async ({ page }) => {
     // Navigate to a blog post
     const blogPostLinks = page.locator('a[href^="/post/"]');
     const count = await blogPostLinks.count();
@@ -386,11 +386,14 @@ test.describe('Regression Tests', () => {
     // Wait for navigation
     await page.waitForURL(new RegExp('/post/.*'), { timeout: 10000 });
     
-    // Find the "Suggest changes on GitHub" link
+    // Find the "Suggest changes" button in the header
     const article = page.locator('article');
     await expect(article).toBeVisible();
     
-    const editLink = article.getByRole('link', { name: /Suggest changes on GitHub/i });
+    const header = article.locator('header');
+    await expect(header).toBeVisible();
+    
+    const editLink = header.getByRole('link', { name: /Suggest changes/i });
     await expect(editLink).toBeVisible();
     
     // Verify the link is an anchor tag
