@@ -372,5 +372,160 @@ test.describe('Regression Tests', () => {
     const response = await page.goto('/post/non-existent-post.md');
     expect(response?.status()).toBe(404);
   });
+
+  test('should have Suggest changes on GitHub link on blog post page', async ({ page }) => {
+    // Navigate to a blog post
+    const blogPostLinks = page.locator('a[href^="/post/"]');
+    const count = await blogPostLinks.count();
+    expect(count).toBeGreaterThan(0);
+    
+    // Get the first blog post link
+    const firstBlogPost = blogPostLinks.first();
+    await firstBlogPost.click();
+    
+    // Wait for navigation
+    await page.waitForURL(new RegExp('/post/.*'), { timeout: 10000 });
+    
+    // Find the "Suggest changes on GitHub" link
+    const article = page.locator('article');
+    await expect(article).toBeVisible();
+    
+    const editLink = article.getByRole('link', { name: /Suggest changes on GitHub/i });
+    await expect(editLink).toBeVisible();
+    
+    // Verify the link is an anchor tag
+    const tagName = await editLink.evaluate((el) => el.tagName.toLowerCase());
+    expect(tagName).toBe('a');
+  });
+
+  test('should have correct GitHub edit URL format for blog post', async ({ page }) => {
+    // Navigate to a blog post
+    const blogPostLinks = page.locator('a[href^="/post/"]');
+    const count = await blogPostLinks.count();
+    expect(count).toBeGreaterThan(0);
+    
+    // Get the first blog post link and extract the slug
+    const firstBlogPost = blogPostLinks.first();
+    const postHref = await firstBlogPost.getAttribute('href');
+    expect(postHref).toBeTruthy();
+    
+    // Navigate to the blog post
+    await firstBlogPost.click();
+    await page.waitForURL(new RegExp('/post/.*'), { timeout: 10000 });
+    
+    // Extract the slug from the current URL
+    const currentUrl = page.url();
+    const slugMatch = currentUrl.match(/\/post\/([^/]+)/);
+    expect(slugMatch).toBeTruthy();
+    const slug = slugMatch![1];
+    
+    // Find the "Suggest changes on GitHub" link
+    const article = page.locator('article');
+    const editLink = article.getByRole('link', { name: /Suggest changes on GitHub/i });
+    await expect(editLink).toBeVisible();
+    
+    // Verify the GitHub edit URL format
+    const editUrl = await editLink.getAttribute('href');
+    expect(editUrl).toBeTruthy();
+    
+    // Expected format: https://github.com/FridljDa/FridljDa.github.io/edit/master/src/content/blog/{slug}.md
+    const expectedUrlPattern = new RegExp(
+      `^https://github\\.com/FridljDa/FridljDa\\.github\\.io/edit/master/src/content/blog/${slug}\\.md$`
+    );
+    expect(editUrl).toMatch(expectedUrlPattern);
+  });
+
+  test('should open GitHub edit link in new tab', async ({ page }) => {
+    // Navigate to a blog post
+    const blogPostLinks = page.locator('a[href^="/post/"]');
+    const count = await blogPostLinks.count();
+    expect(count).toBeGreaterThan(0);
+    
+    const firstBlogPost = blogPostLinks.first();
+    await firstBlogPost.click();
+    await page.waitForURL(new RegExp('/post/.*'), { timeout: 10000 });
+    
+    // Find the "Suggest changes on GitHub" link
+    const article = page.locator('article');
+    const editLink = article.getByRole('link', { name: /Suggest changes on GitHub/i });
+    await expect(editLink).toBeVisible();
+    
+    // Verify the link opens in a new tab
+    const target = await editLink.getAttribute('target');
+    expect(target).toBe('_blank');
+    
+    // Verify security attributes
+    const rel = await editLink.getAttribute('rel');
+    expect(rel).toContain('noopener');
+    expect(rel).toContain('noreferrer');
+  });
+
+  test('should have accessible label for Suggest changes link', async ({ page }) => {
+    // Navigate to a blog post
+    const blogPostLinks = page.locator('a[href^="/post/"]');
+    const count = await blogPostLinks.count();
+    expect(count).toBeGreaterThan(0);
+    
+    const firstBlogPost = blogPostLinks.first();
+    await firstBlogPost.click();
+    await page.waitForURL(new RegExp('/post/.*'), { timeout: 10000 });
+    
+    // Find the "Suggest changes on GitHub" link
+    const article = page.locator('article');
+    const editLink = article.getByRole('link', { name: /Suggest changes on GitHub/i });
+    await expect(editLink).toBeVisible();
+    
+    // Verify accessibility attributes
+    const ariaLabel = await editLink.getAttribute('aria-label');
+    expect(ariaLabel).toBe('Suggest changes on GitHub');
+    
+    const title = await editLink.getAttribute('title');
+    expect(title).toBe('Suggest changes on GitHub');
+  });
+
+  test('should have correct GitHub edit URL for all blog posts', async ({ page }) => {
+    // Navigate to homepage
+    await page.goto('/');
+    await page.waitForLoadState('domcontentloaded');
+    
+    // Get all blog post links
+    const blogPostLinks = page.locator('a[href^="/post/"]');
+    const count = await blogPostLinks.count();
+    expect(count).toBeGreaterThan(0);
+    
+    // Test up to 3 blog posts to verify URL generation works for different slugs
+    const postsToTest = Math.min(3, count);
+    
+    for (let i = 0; i < postsToTest; i++) {
+      // Navigate to homepage to get fresh links
+      await page.goto('/');
+      await page.waitForLoadState('domcontentloaded');
+      
+      const blogPostLinks = page.locator('a[href^="/post/"]');
+      const blogPost = blogPostLinks.nth(i);
+      const postHref = await blogPost.getAttribute('href');
+      expect(postHref).toBeTruthy();
+      
+      // Extract slug from href
+      const slugMatch = postHref!.match(/\/post\/([^/]+)/);
+      expect(slugMatch).toBeTruthy();
+      const slug = slugMatch![1];
+      
+      // Navigate to the blog post
+      await blogPost.click();
+      await page.waitForURL(new RegExp('/post/.*'), { timeout: 10000 });
+      
+      // Find the edit link
+      const article = page.locator('article');
+      const editLink = article.getByRole('link', { name: /Suggest changes on GitHub/i });
+      await expect(editLink).toBeVisible();
+      
+      // Verify the GitHub edit URL matches the slug
+      const editUrl = await editLink.getAttribute('href');
+      expect(editUrl).toBeTruthy();
+      expect(editUrl).toContain(`/src/content/blog/${slug}.md`);
+      expect(editUrl).toMatch(/^https:\/\/github\.com\/FridljDa\/FridljDa\.github\.io\/edit\/master\//);
+    }
+  });
 });
 
