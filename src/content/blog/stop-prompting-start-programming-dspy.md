@@ -178,7 +178,9 @@ optimizer = BootstrapFewShotWithRandomSearch(
 # 3. Compile!
 # DSPy now acts as an automated prompt engineer
 compiled_analyzer = optimizer.compile(analyzer, trainset=my_dataset)
-What happens during compile()?
+```
+
+**What happens during compile()?**
 
 The optimizer runs an automated experiment. For BootstrapRS, specifically:
 
