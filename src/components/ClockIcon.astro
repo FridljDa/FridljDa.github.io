@@ -2,7 +2,7 @@
 interface Props {
   className?: string;
   ariaLabel?: string;
-  /** When true, hides the icon from screen readers. When false or undefined, the icon is visible with aria-label and role. */
+  /** When true, hides the icon from screen readers by setting aria-hidden="true". When false or undefined, aria-hidden is omitted and the icon is accessible with aria-label and role. */
   ariaHidden?: boolean;
 }
 
