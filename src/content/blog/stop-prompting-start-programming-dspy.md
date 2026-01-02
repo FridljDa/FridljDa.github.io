@@ -1,0 +1,132 @@
+---
+title: "Stop Prompting, Start Programming with DSPy"
+pubDate: 2026-01-02
+tags:
+  - AI
+  - Machine Learning
+  - Software Engineering
+  - LLMs
+  - DSPy
+description: "DSPy is a framework that separates the 'what' from the 'how' in LLM development, moving from brittle prompt engineering to robust software engineering. Learn how declarative programming with DSPy can transform your AI applications."
+image: /images/blog/stop-prompting-start-programming-dspy/infographic.png
+math: false
+---
+
+After reading about [DSPy](https://dspy.ai/) in [Pedram Navids excellent blog post](https://pedramnavid.com/blog/dspy-part-one/), I decided to write a more minimalstic blog post about to demonstrate the capabilities. I went with a simple example use case for Sentiment Analysis with Reasoning.
+
+The Goal: Take a movie review, determine if it is `Positive` or `Negative`, and extract a short reason why.
+
+## The "Without DSPy" Approach (The Old Way)
+
+In this approach, your application logic is tightly coupled with a specific, brittle prompt string. You have to manually manage the API, handle formatting instructions, and parse the raw text output.
+```python
+# --- THE OLD WAY ---
+import openai
+import json
+
+# 1. The Brittle Prompt String
+# If you change a word here, you might break the JSON parser later.
+PROMPT_TEMPLATE = """
+Analyze the sentiment of the following movie review.
+Return ONLY a JSON object with keys: "sentiment" and "reason".
+The sentiment must be exactly "Positive" or "Negative".
+Do not include markdown formatting like ```json at the start or end.
+
+Review: "{review_text}"
+"""
+
+def analyze_review_manual(review_text):
+    # 2. Manually construct the prompt
+    prompt = PROMPT_TEMPLATE.format(review_text=review_text)
+
+    # 3. Call the API
+    client = openai.Client()
+    response = client.chat.completions.create(
+        model="gpt-4o",
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0
+    )
+
+    raw_content = response.choices[0].message.content
+    
+    # 4. The "Hope and Pray" Parsing Step
+    try:
+        # We often need hacky cleanup code here just in case
+        cleaned_content = raw_content.strip().replace("```json", "").replace("```", "")
+        data = json.loads(cleaned_content)
+        return data["sentiment"], data["reason"]
+    except (json.JSONDecodeError, KeyError):
+        # This happens way too often
+        return "Error", "LLM failed to follow JSON instructions"
+
+# Usage
+s, r = analyze_review_manual("The visuals were stunning, but the story put me to sleep.")
+print(f"Sentiment: {s}\nReason: {r}")
+```
+
+**Pain Points:**
+
+* **Brittle Prompts:** You have to write "Return ONLY JSON" and "The sentiment must be..."
+* **Parsing Logic:** You need extra code (`json.loads`, string replacement) to handle the output.
+* **Hard to Tune:** If you want to improve accuracy, you have to rewrite the English sentences in the `prompt` variable.
+
+
+## The "With DSPy" Approach
+
+In DSPy, you define the *structure* (Input/Output) and let the framework handle the prompt creation and parsing.
+
+```python
+import dspy
+
+# Configure the LM once
+lm = dspy.LM("openai/gpt-4o")
+dspy.configure(lm=lm)
+
+# 1. Define the "Signature" (The Interface)
+class MovieSentiment(dspy.Signature):
+    """Classify the sentiment of a movie review and explain why."""
+    review_text = dspy.InputField()
+    sentiment = dspy.OutputField(desc="Positive or Negative")
+    reason = dspy.OutputField(desc="A short explanation")
+
+# 2. Define the Module (The Strategy)
+# ChainOfThought automatically adds "Let's think step by step" logic
+analyzer = dspy.ChainOfThought(MovieSentiment)
+
+# 3. Run it
+result = analyzer(review_text="The visuals were stunning, but the story put me to sleep.")
+
+# Access attributes directly (No parsing needed)
+print(f"Sentiment: {result.sentiment}")
+print(f"Reason: {result.reason}")
+
+```
+
+### Why this is a game changer
+
+If you look at the DSPy example, you'll notice what's missing: **The prompt.**
+
+DSPy automatically generated the prompt in the background based on the MovieSentiment class structure. But the benefits go way beyond just cleaner code.
+
+### 1. Modularity
+
+Want to change your strategy from a simple prediction to a complex "Reason-Act" loop that can search Wikipedia first? In the old way, you rewrite your entire prompt. In DSPy, you just change one line:
+
+```python
+analyzer = dspy.ReAct(MovieSentiment, tools=[...])
+```
+
+### 2. Model Agnosticism
+
+Moving from GPT-4 to a locally hosted Llama-3 model often requires completely rewriting prompts to match different chat templates. DSPy handles this translation layer dynamically at runtime. You rarely touch your application code.
+
+### 3. The Killer Feature: Compilation (Automated Prompt Optimization)
+
+Let's say your sentiment analyzer isn't accurate enough. In the old world, you spend hours manually rewriting the prompt, trying different few-shot examples based on intuition.
+
+In DSPy, you use an **Optimizer**.
+
+You give DSPy a small dataset of correct examples and a metric (a function that defines what "correct" means). You then "compile" your program.
+
+DSPy acts as an automated prompt engineer. It will run experiments, find the best few-shot examples from your data, and even rewrite the instructions within the prompt for you using a teacher LLM. It systematically tunes your prompt to maximize your metric.
+
