@@ -13,6 +13,7 @@ import {
 import TableOfContents from '../../components/TableOfContents';
 import { calculateReadingTime, formatReadingTime } from '../../utils/reading-time';
 import { readBlogPostFile, extractMarkdownContent } from '../../utils/content-reader';
+import ClockIcon from '../../components/ClockIcon.astro';
 
 const slug = Astro.params.slug;
 if (!slug) {
@@ -104,20 +105,7 @@ const githubEditUrl = `https://github.com/${SITE.github.owner}/${SITE.github.rep
               <>
                 <span class="mx-2">·</span>
                 <span class="inline-flex items-center gap-1">
-                  <svg
-                    class="w-3.5 h-3.5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                    aria-hidden="true"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
-                  </svg>
+                  <ClockIcon />
                   {formatReadingTime(readingTime)}
                 </span>
               </>
