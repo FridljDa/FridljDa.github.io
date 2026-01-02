@@ -6,7 +6,10 @@ interface Props {
 }
 
 const { class: className = 'w-3.5 h-3.5', ariaLabel, ariaHidden = !ariaLabel } = Astro.props;
-const role = ariaLabel ? 'img' : undefined;
+// When an aria-label is provided, the icon should be exposed to screen readers with role='img'
+// When aria-hidden is true, we hide the icon from screen readers (no label or role needed)
+const role = ariaLabel && !ariaHidden ? 'img' : undefined;
+const shouldShowLabel = ariaLabel && !ariaHidden;
 ---
 
 <svg
@@ -14,7 +17,7 @@ const role = ariaLabel ? 'img' : undefined;
   fill="none"
   stroke="currentColor"
   viewBox="0 0 24 24"
-  aria-label={ariaLabel}
+  aria-label={shouldShowLabel ? ariaLabel : undefined}
   aria-hidden={ariaHidden}
   role={role}
 >
