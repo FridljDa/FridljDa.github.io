@@ -96,14 +96,29 @@ const githubEditUrl = `https://github.com/${SITE.github.owner}/${SITE.github.rep
             {post.data.title}
           </h1>
           {/* AI discoverability: Semantic time element with datetime attribute */}
-          <div class="text-muted">
+          <div class="text-muted flex items-center gap-1.5 flex-wrap">
             <time datetime={post.data.pubDate.toISOString()}>
               {formatDateLong(post.data.pubDate)}
             </time>
             {readingTime && (
               <>
                 <span class="mx-2">·</span>
-                <span>{formatReadingTime(readingTime)}</span>
+                <span class="inline-flex items-center gap-1">
+                  <svg
+                    class="w-3.5 h-3.5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                  {formatReadingTime(readingTime)}
+                </span>
               </>
             )}
           </div>
