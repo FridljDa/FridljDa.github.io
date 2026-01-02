@@ -77,7 +77,10 @@ const githubEditUrl = `https://github.com/${SITE.github.owner}/${SITE.github.rep
                 </span>
               ))}
             </div>
-            <ViewAsMarkdown client:load href={`/post/${slug}.md`} />
+            <div class="flex flex-col gap-2">
+              <ViewAsMarkdown client:load href={`/post/${slug}.md`} />
+              <EditLink editUrl={githubEditUrl} />
+            </div>
           </div>
           <h1 class="text-4xl font-bold mb-4 text-heading">
             {post.data.title}
@@ -110,10 +113,6 @@ const githubEditUrl = `https://github.com/${SITE.github.owner}/${SITE.github.rep
           <div class="flex-1 max-w-4xl mx-auto lg:mx-0">
             <div class="prose prose-lg dark:prose-invert max-w-none">
               <Content />
-            </div>
-            {/* Edit link at bottom of content */}
-            <div class="mt-8 pt-8 border-t border-surface-elevated">
-              <EditLink editUrl={githubEditUrl} />
             </div>
           </div>
           

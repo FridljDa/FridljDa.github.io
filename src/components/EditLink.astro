@@ -4,19 +4,30 @@ interface Props {
   label?: string;
 }
 
-const { editUrl, label = 'Suggest changes on GitHub' } = Astro.props;
+const { editUrl, label = 'Suggest changes' } = Astro.props;
 ---
 
 {editUrl && (
   <a
     href={editUrl}
     title={label}
-    class="inline-flex items-center gap-2 text-sm text-muted hover:text-link transition-colors"
+    class="inline-flex items-center gap-2 px-4 py-2 bg-surface-elevated hover:bg-surface border border-surface rounded-lg text-sm text-heading transition-colors"
     aria-label={label}
     target="_blank"
     rel="noopener noreferrer"
   >
-    <span class="inline-block" aria-hidden="true">✏️</span>
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      class="w-4 h-4"
+    >
+      <path d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Zm0 0L19.5 7.125" />
+    </svg>
     {label}
   </a>
 )}
