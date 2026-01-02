@@ -11,6 +11,8 @@ import {
   generateArticleSchema,
 } from '../../utils/schema';
 import TableOfContents from '../../components/TableOfContents';
+import { calculateReadingTime, formatReadingTime } from '../../utils/reading-time';
+import { readBlogPostFile, extractMarkdownContent } from '../../utils/content-reader';
 
 const slug = Astro.params.slug;
 if (!slug) {
@@ -26,6 +28,17 @@ if (!post) {
 
 const { Content } = await render(post);
 const postMarkdown = await getBlogPostRawMarkdown(post);
+
+// Calculate reading time
+let readingTime: number | undefined;
+try {
+  const fileContent = await readBlogPostFile(post.id);
+  const markdownContent = extractMarkdownContent(fileContent);
+  readingTime = calculateReadingTime(markdownContent);
+} catch (error) {
+  // If we can't read the file, skip reading time
+  readingTime = undefined;
+}
 
 const postUrl = `${SITE.url}/post/${slug}`;
 const postImage = post.data.image
@@ -86,12 +99,17 @@ const githubEditUrl = `https://github.com/${SITE.github.owner}/${SITE.github.rep
             {post.data.title}
           </h1>
           {/* AI discoverability: Semantic time element with datetime attribute */}
-          <time 
-            class="text-muted"
-            datetime={post.data.pubDate.toISOString()}
-          >
-            {formatDateLong(post.data.pubDate)}
-          </time>
+          <div class="text-muted">
+            <time datetime={post.data.pubDate.toISOString()}>
+              {formatDateLong(post.data.pubDate)}
+            </time>
+            {readingTime && (
+              <>
+                <span class="mx-2">·</span>
+                <span>{formatReadingTime(readingTime)}</span>
+              </>
+            )}
+          </div>
         </header>
         
         {post.data.image && (
