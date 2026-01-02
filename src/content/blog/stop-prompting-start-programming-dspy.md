@@ -3,11 +3,7 @@ title: "Stop Prompting, Start Programming with DSPy"
 pubDate: 2026-01-02
 tags:
   - AI
-  - Machine Learning
-  - Software Engineering
-  - LLMs
-  - DSPy
-description: "DSPy is a framework that separates the 'what' from the 'how' in LLM development, moving from brittle prompt engineering to robust software engineering. Learn how declarative programming with DSPy can transform your AI applications."
+description: "DSPy is a framework that separates the 'what' from the 'how' in LLM development, moving from brittle prompt engineering to robust software engineering."
 image: /images/blog/stop-prompting-start-programming-dspy/infographic.png
 math: false
 ---

@@ -4,7 +4,8 @@ pubDate: 2024-05-01
 updatedDate: 2024-05-01
 tags:
   - Science
-  - Machine Learning
+  - AI
+description: "A deep learning approach for diabetic retinopathy detection using fundus images, combining binary classification and image segmentation to identify disease presence and quantify key indicators."
 math: true
 image: /images/blog/diabetic-retinopathy-detection/fundus-image-without-corner.jpg
 ---
