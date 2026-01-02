@@ -47,8 +47,11 @@ export function calculateReadingTime(markdown: string): number {
   // Remove strikethrough (~~text~~)
   text = text.replace(/~~([^~]+)~~/g, '$1');
 
-  // Remove HTML tags if any
-  text = text.replace(/<[^>]+>/g, '');
+  // Remove HTML tag delimiters to avoid counting them as words
+  text = text.replace(/[<>]/g, ' ');
+
+  // Extra safety: strip any residual "<script" sequences
+  text = text.replace(/<\s*script/gi, ' script');
 
   // Remove extra whitespace and normalize
   text = text.replace(/\s+/g, ' ').trim();
