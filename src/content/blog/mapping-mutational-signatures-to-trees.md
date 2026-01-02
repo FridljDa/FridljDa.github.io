@@ -4,7 +4,7 @@ pubDate: 2024-09-20
 updatedDate: 2024-09-20
 tags:
   - Science
-  - Follow-up
+description: "An extension of the Hierarchical Dirichlet Process model that incorporates phylogenetic tree structures to capture evolutionary relationships in mutational signature activities."
 math: true
 image: /images/blog/mapping-mutational-signatures-to-trees/featured.png
 ---

@@ -4,6 +4,7 @@ pubDate: 2024-09-15
 updatedDate: 2024-09-15
 tags:
   - Science
+description: "A mathematically rigorous introduction to mutational signature estimation using Hierarchical Dirichlet Processes, bridging the gap between biological applications and statistical methodology."
 math: true
 image: /images/blog/mutational-signature-with-hierarchical-dirichlet-process/featured.png
 ---

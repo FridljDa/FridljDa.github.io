@@ -3,6 +3,7 @@ import { getCollection, render } from 'astro:content';
 import Layout from '../../layouts/Layout.astro';
 import { formatDateLong } from '../../utils/date';
 import ViewAsMarkdown from '../../components/ViewAsMarkdown';
+import EditLink from '../../components/EditLink.astro';
 import { getBlogPostRawMarkdown } from '../../utils/markdown-generator';
 import { SITE, BIOGRAPHY } from '../../data/site';
 import {
@@ -33,6 +34,9 @@ const postImage = post.data.image
 
 const blogPostingSchema = generateBlogPostingSchema(post, postUrl, postImage);
 const articleSchema = generateArticleSchema(post, postUrl, postImage);
+
+// Generate GitHub edit URL
+const githubEditUrl = `https://github.com/${SITE.github.owner}/${SITE.github.repo}/edit/${SITE.github.branch}/src/content/blog/${slug}.md`;
 ---
 
 <Layout 
@@ -106,6 +110,10 @@ const articleSchema = generateArticleSchema(post, postUrl, postImage);
           <div class="flex-1 max-w-4xl mx-auto lg:mx-0">
             <div class="prose prose-lg dark:prose-invert max-w-none">
               <Content />
+            </div>
+            {/* Edit link at bottom of content */}
+            <div class="mt-8 pt-8 border-t border-surface-elevated">
+              <EditLink editUrl={githubEditUrl} />
             </div>
           </div>
           

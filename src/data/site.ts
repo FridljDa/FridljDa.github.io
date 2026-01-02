@@ -2,6 +2,11 @@ export const SITE = {
   title: 'Daniel Fridljand',
   description: 'Software Consultant with a strong academic background in mathematics, statistics, and bioinformatics',
   url: 'https://danielfridljand.de',
+  github: {
+    owner: 'FridljDa',
+    repo: 'FridljDa.github.io',
+    branch: 'master',
+  },
 } as const;
 
 export const BIOGRAPHY = {
