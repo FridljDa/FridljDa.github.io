@@ -146,48 +146,60 @@ analyzer = dspy.ReAct(MovieSentiment, tools=[...])
 Moving from GPT-4 to a locally hosted Llama-3 model often requires completely rewriting prompts to match different chat templates. DSPy handles this translation layer dynamically at runtime. You rarely touch your application code.
 
 ### 3. The Killer Feature: Automated Prompt Optimization via Compilation
+
+Here is the updated "Killer Feature" section of the blog post, rewritten to feature **GEPA** instead of the standard random search.
+
+---
+
+### 3. The Killer Feature: Automated Prompt Optimization via Compilation
+
 Let's say your sentiment analyzer isn't accurate enough. In the "old world," you would spend hours manually rewriting the prompt, relying on intuition to try different few-shot examples.
 
 DSPy provides several Optimizers to tune the prompt systematically. This is analogous to hyperparameter tuning in deep learning. While tuning used to be driven by trial-and-error and "gut feeling," optimizers have since turned it into a data science problem that can be solved systematically.
 
 To use a DSPy optimizer, you need three things:
 
-- A Dataset: A list of inputs and expected outputs (e.g., 20 examples of movie reviews and their correct labels).
-
-- A Metric: A function that defines success (e.g., correct_sentiment which returns True if the prediction matches the label).
-
-- An Optimizer: A strategy module like BootstrapFewShotWithRandomSearch (or BootstrapRS).
+* **A Dataset:** A list of inputs and expected outputs (e.g., 20 examples of movie reviews and their correct labels).
+* **A Metric:** A function that defines success (e.g., `correct_sentiment` which returns `True` if the prediction matches the label).
+* **An Optimizer:** A strategy module. While standard optimizers like `BootstrapFewShot` just pick good examples, state-of-the-art optimizers like **GEPA** use evolutionary algorithms to rewrite your prompt instructions for you.
 
 Here is how you "compile" your AI program:
 
 ```python
-from dspy.teleprompt import BootstrapFewShotWithRandomSearch
+from dspy.teleprompt import GEPA
 
 # 1. Define the Metric
+# This tells the optimizer what "success" looks like
 def validate_sentiment(example, prediction, trace=None):
+    # We check if the sentiment matches exactly
     return example.sentiment == prediction.sentiment
 
-# 2. Initialize the Optimizer
-# This is like defining a training loop in PyTorch
-optimizer = BootstrapFewShotWithRandomSearch(
+# 2. Initialize the GEPA Optimizer
+# GEPA (Genetic Evolutionary Prompt Optimization) is an advanced strategy 
+# that evolves both the instructions and the few-shot examples.
+optimizer = GEPA(
     metric=validate_sentiment,
-    max_bootstrapped_demos=4,
-    num_candidate_programs=10
+    num_generations=5,       # How many "evolutionary steps" to run
+    population_size=10,      # How many prompt variations to keep in the pool
+    mutation_rate=0.5,       # How aggressively to rewrite the instructions
+    verbose=True
 )
 
 # 3. Compile!
-# DSPy now acts as an automated prompt engineer
-compiled_analyzer = optimizer.compile(analyzer, trainset=my_dataset)
+# DSPy now acts as an automated prompt engineer, evolving your program
+compiled_analyzer = optimizer.compile(student=analyzer, trainset=my_dataset)
+
 ```
 
-**What happens during compile()?**
+**What happens during `compile()`?**
 
-The optimizer runs an automated experiment. For BootstrapRS, specifically:
+The optimizer runs an automated evolutionary experiment. Unlike simpler optimizers that just search for examples, GEPA performs a cycle of **reflection and mutation**:
 
-- Teacher Generation: It uses a "teacher" model (which can be the same as your student model) to generate reasoning traces for your training examples.
+1. **Evaluation:** It runs the current prompts against your dataset and identifies where they fail (e.g., "The model failed to produce JSON" or "The model confused sarcasm with negativity").
+2. **Reflection:** It uses a meta-model (an LLM) to look at the error traces and diagnose *why* the prompt failed.
+3. **Mutation (Evolution):** It genetically "mutates" the prompt instructions to fix those specific errors. For example, it might rewrite `"Explain why"` to `"Extract a concise substring proving the sentiment"` if the descriptions were too vague.
+4. **Selection:** It keeps the best performing prompts (the "fittest") and discards the rest, repeating this over several generations.
 
-- Filtering: It keeps only the traces that lead to the correct answer according to your metric.
-
-- Optimization: It performs a random search over these generated demonstrations to find the optimal combination that maximizes accuracy on your validation set.
+The result is a `compiled_analyzer` that looks just like your original object, but contains highly optimized instructions and examples—all discovered without you writing a single word of instruction.
 
 The result is a compiled_analyzer that looks just like your original object, but contains a highly optimized prompt with the best possible few-shot examples and reasoning steps—all discovered without you writing a single word of instruction.
