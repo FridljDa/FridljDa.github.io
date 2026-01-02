@@ -145,7 +145,7 @@ analyzer = dspy.ReAct(MovieSentiment, tools=[...])
 
 Moving from GPT-4 to a locally hosted Llama-3 model often requires completely rewriting prompts to match different chat templates. DSPy handles this translation layer dynamically at runtime. You rarely touch your application code.
 
-### 3. Prompt Optimization
+### 3. The Killer Feature: Automated Prompt Optimization via Compilation
 Let's say your sentiment analyzer isn't accurate enough. In the "old world," you would spend hours manually rewriting the prompt, relying on intuition to try different few-shot examples.
 
 DSPy provides several Optimizers to tune the prompt systematically. This is analogous to hyperparameter tuning in deep learning. While tuning used to be driven by trial-and-error and "gut feeling," optimizers have since turned it into a data science problem that can be solved systematically.
