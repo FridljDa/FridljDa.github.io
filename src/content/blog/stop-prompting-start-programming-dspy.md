@@ -163,7 +163,7 @@ Here is how you "compile" your AI program:
 ```python
 from dspy.teleprompt import BootstrapFewShotWithRandomSearch
 
-#### 1. Define the Metric
+# 1. Define the Metric
 def validate_sentiment(example, prediction, trace=None):
     return example.sentiment == prediction.sentiment
 
