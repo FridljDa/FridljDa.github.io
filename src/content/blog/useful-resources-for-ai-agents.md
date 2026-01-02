@@ -20,3 +20,7 @@ The [Anthropic Engineering Blog](https://www.anthropic.com/engineering) provides
 
 [DSPy](https://dspy.ai/) is a declarative framework that shifts AI development from brittle prompt strings to structured, modular programs (see my [blog post on DSPy](/post/stop-prompting-start-programming-dspy) for a deeper dive). Instead of manually engineering prompts, DSPy enables you to define what you want (signatures) and automatically optimizes how to achieve it through its built-in optimizers. The framework includes powerful agent modules like ReAct and ChainOfThought, making it easy to build and optimize agent systems that are portable across different models.
 
+## MLflow GenAI
+
+[MLflow GenAI](https://mlflow.org/genai) provides an end-to-end platform for tracking, evaluating, and optimizing GenAI applications and agent workflows. It offers comprehensive observability through OpenTelemetry-compatible tracing that captures your app's entire execution, including prompts, retrievals, and tool calls. The platform includes LLM-as-a-judge metrics for assessing GenAI quality, a Prompt Registry for versioning and managing prompt templates, and agent versioning capabilities that complement Git for full lifecycle management. MLflow's framework-agnostic design and open-source nature make it a flexible choice for production GenAI systems without vendor lock-in.
+
