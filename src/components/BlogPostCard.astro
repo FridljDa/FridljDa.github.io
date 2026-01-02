@@ -45,7 +45,7 @@ const { title, description, pubDate, slug, image, tags = [], readingTime } = Ast
         {description}
       </p>
     )}
-    <div class="text-sm text-subtle text-mobile-center block flex items-center gap-1.5 flex-wrap justify-mobile-center">
+    <div class="text-sm text-subtle text-mobile-center flex items-center gap-1.5 flex-wrap justify-mobile-center">
       <time>{formatDateWithDay(pubDate)}</time>
       {readingTime && (
         <>
