@@ -10,7 +10,9 @@ image: /images/blog/useful-resources-for-ai-agents/featured.png
 math: false
 ---
 
-Building effective AI agents requires understanding frameworks, best practices, and engineering principles. Here are two essential resources for anyone working with AI agents.
+Building effective AI agents requires understanding frameworks, best practices, and engineering principles. Here are essential resources for anyone working with AI agents.
+
+> **Note:** The sources listed here can be used as context when planning an AI agent architecture, for example from NotebookLM or other AI-powered planning tools. These resources provide comprehensive information that can help guide architectural decisions and implementation strategies.
 
 ## Anthropic Engineering Blog
 
@@ -23,4 +25,12 @@ The [Anthropic Engineering Blog](https://www.anthropic.com/engineering) provides
 ## MLflow GenAI
 
 [MLflow GenAI](https://mlflow.org/genai) provides an end-to-end platform for tracking, evaluating, and optimizing GenAI applications and agent workflows. It offers comprehensive observability through OpenTelemetry-compatible tracing that captures your app's entire execution, including prompts, retrievals, and tool calls. The platform includes LLM-as-a-judge metrics for assessing GenAI quality, a Prompt Registry for versioning and managing prompt templates, and agent versioning capabilities that complement Git for full lifecycle management. MLflow's framework-agnostic design and open-source nature make it a flexible choice for production GenAI systems without vendor lock-in.
+
+## Measuring Agents in Production
+
+The paper ["Measuring Agents in Production"](https://arxiv.org/abs/2512.04123) presents the first large-scale systematic study of AI agents in production, surveying 306 practitioners and conducting 20 in-depth case studies across 26 domains. The study investigates why organizations build agents, how they build them, how they evaluate them, and what the top development challenges are. Key findings include that production agents are typically built using simple, controllable approaches: 68% execute at most 10 steps before requiring human intervention, 70% rely on prompting off-the-shelf models instead of weight tuning, and 74% depend primarily on human evaluation. The paper bridges the gap between research and deployment by providing researchers visibility into production challenges while offering practitioners proven patterns from successful deployments.
+
+## The 2025 AI Engineer Reading List
+
+[The 2025 AI Engineer Reading List](https://www.latent.space/p/2025-papers) from Latent.Space curates approximately 50 essential papers across 10 fields in AI Engineering: LLMs, Benchmarks, Prompting, RAG, Agents, CodeGen, Vision, Voice, Diffusion, and Finetuning. This practical reading list is designed specifically for AI engineers, providing context on why each paper matters and focusing on practical applications rather than theoretical foundations. The list includes frontier LLMs, evaluation benchmarks, prompting techniques, RAG systems, agent architectures, and more, making it an excellent starting point for those building production AI systems.
 
