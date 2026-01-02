@@ -6,6 +6,7 @@ interface Props {
 }
 
 const { class: className = 'w-3.5 h-3.5', ariaLabel, ariaHidden = !ariaLabel } = Astro.props;
+const role = ariaLabel ? 'img' : undefined;
 ---
 
 <svg
@@ -15,6 +16,7 @@ const { class: className = 'w-3.5 h-3.5', ariaLabel, ariaHidden = !ariaLabel } =
   viewBox="0 0 24 24"
   aria-label={ariaLabel}
   aria-hidden={ariaHidden}
+  role={role}
 >
   <path
     stroke-linecap="round"
