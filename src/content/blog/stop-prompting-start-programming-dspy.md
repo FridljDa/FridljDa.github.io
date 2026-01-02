@@ -98,11 +98,40 @@ print(f"Reason: {result.reason}")
 
 ```
 
-### Why this is a game changer
+### What the Compiled Prompt Looks Like
 
 If you look at the DSPy example, you'll notice what's missing: **The prompt.**
 
-DSPy automatically generated the prompt in the background based on the MovieSentiment class structure. But the benefits go way beyond just cleaner code.
+DSPy automatically generated the prompt in the background based on the MovieSentiment class structure. 
+
+For our `MovieSentiment` example with `ChainOfThought`, DSPy generates a prompt that looks something like this:
+
+```
+Classify the sentiment of a movie review and explain why.
+
+Review: {review_text}
+
+Let's think step by step.
+
+Sentiment: Positive or Negative
+Reason: A short explanation
+```
+
+**How DSPy constructs this:**
+
+1. **Task description**: Taken from the signature's docstring (`"""Classify the sentiment of a movie review and explain why."""`)
+
+2. **Input fields**: Each `InputField` becomes a labeled section in the prompt. The field name (`review_text`) is used as the label.
+
+3. **ChainOfThought injection**: The `ChainOfThought` module automatically adds "Let's think step by step." to encourage reasoning.
+
+4. **Output fields**: Each `OutputField` becomes a labeled section with its description. The `desc` parameter (`"Positive or Negative"` and `"A short explanation"`) guides the model on what to produce.
+
+5. **Model-specific formatting**: DSPy adapts this structure to match the chat template of your chosen LM (GPT-4, Claude, Llama, etc.) automatically.
+
+The actual prompt sent to the API is more structured and includes system messages, but this shows the core content. The key insight is that DSPy derives all of this from your declarative signature—you never write these instructions manually.
+
+### Why this is a game changer
 
 ### 1. Modularity
 
