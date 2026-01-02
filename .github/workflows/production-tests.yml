@@ -18,6 +18,10 @@ concurrency:
   group: ${{ github.workflow }}
   cancel-in-progress: false
 
+# Centralized Node.js version - update here to change across all jobs
+env:
+  NODE_VERSION: '20'
+
 jobs:
   test-production:
     name: Test Production Site
@@ -37,7 +41,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: '20'
+          node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
       - name: Install dependencies
