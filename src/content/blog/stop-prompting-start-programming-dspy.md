@@ -145,13 +145,48 @@ analyzer = dspy.ReAct(MovieSentiment, tools=[...])
 
 Moving from GPT-4 to a locally hosted Llama-3 model often requires completely rewriting prompts to match different chat templates. DSPy handles this translation layer dynamically at runtime. You rarely touch your application code.
 
-### 3. The Killer Feature: Compilation (Automated Prompt Optimization)
+### 3. Prompt Optimization
+Let's say your sentiment analyzer isn't accurate enough. In the "old world," you would spend hours manually rewriting the prompt, relying on intuition to try different few-shot examples.
 
-Let's say your sentiment analyzer isn't accurate enough. In the old world, you spend hours manually rewriting the prompt, trying different few-shot examples based on intuition.
+DSPy provides several Optimizers to tune the prompt systematically. This is analogous to hyperparameters in deep learning. While tuning used to be driven by trial-and-error and "gut feeling," optimizers have since turned it into a data science problem that can be solved systematically.
 
-In DSPy, you use an **Optimizer**.
+To use a DSPy optimizer, you need three things:
 
-You give DSPy a small dataset of correct examples and a metric (a function that defines what "correct" means). You then "compile" your program.
+- A Dataset: A list of inputs and expected outputs (e.g., 20 examples of movie reviews and their correct labels).
 
-DSPy acts as an automated prompt engineer. It will run experiments, find the best few-shot examples from your data, and even rewrite the instructions within the prompt for you using a teacher LLM. It systematically tunes your prompt to maximize your metric.
+- A Metric: A function that defines success (e.g., correct_sentiment which returns True if the prediction matches the label).
 
+- An Optimizer: A strategy module like BootstrapFewShotWithRandomSearch (or BootstrapRS).
+
+Here is how you "compile" your AI program:
+
+```python
+from dspy.teleprompt import BootstrapFewShotWithRandomSearch
+
+#### 1. Define the Metric
+def validate_sentiment(example, prediction, trace=None):
+    return example.sentiment == prediction.sentiment
+
+# 2. Initialize the Optimizer
+# This is like defining a training loop in PyTorch
+optimizer = BootstrapFewShotWithRandomSearch(
+    metric=validate_sentiment,
+    max_bootstrapped_demos=4,
+    num_candidate_programs=10
+)
+
+# 3. Compile!
+# DSPy now acts as an automated prompt engineer
+compiled_analyzer = optimizer.compile(analyzer, trainset=my_dataset)
+```
+What happens during compile()?
+
+The optimizer runs an automated experiment. For BootstrapRS, specifically:
+
+- Teacher Generation: It uses a "teacher" model (which can be the same as your student model) to generate reasoning traces for your training examples.
+
+- Filtering: It keeps only the traces that lead to the correct answer according to your metric.
+
+- Optimization: It performs a random search over these generated demonstrations to find the optimal combination that maximizes accuracy on your validation set.
+
+The result is a compiled_analyzer that looks just like your original object, but contains a highly optimized prompt with the best possible few-shot examples and reasoning steps—all discovered without you writing a single word of instruction.
