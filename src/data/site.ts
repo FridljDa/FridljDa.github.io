@@ -13,7 +13,7 @@ export const BIOGRAPHY = {
   name: 'Daniel Fridljand',
   role: 'Software Consultant',
   organization: {
-    name: 'TNG technology',
+    name: 'TNG Technology Consulting',
     url: 'https://www.tngtech.com/en/',
   },
   bio: 'I am a driven software consultant with a strong academic background in mathematics, statistics, and bioinformatics. My passion for machine learning, software development, and statistics has led me to work on projects across diverse domains, including public health, genetics, and oncology. With three years of scientific software development experience and a first-author publication in a high-impact journal, I\'m committed to leveraging computational skills to solve real-world challenges.',

@@ -12,7 +12,7 @@ export interface ExperienceItem {
 export const EXPERIENCE: ExperienceItem[] = [
   {
     title: 'Software Consultant',
-    company: 'TNG Technology',
+    company: 'TNG Technology Consulting',
     companyUrl: 'https://www.tngtech.com/en/',
     companyLogo: 'tng_logo.svg',
     location: 'Munich, Germany',
