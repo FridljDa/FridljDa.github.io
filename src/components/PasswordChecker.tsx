@@ -122,7 +122,7 @@ export default function PasswordChecker() {
               : 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 border-2 border-blue-500'
           }`}
         >
-          <p className="text-center font-medium">{status === 'checking' ? 'Checking...' : message}</p>
+          <p className="text-center font-medium">{message}</p>
         </div>
       )}
 
