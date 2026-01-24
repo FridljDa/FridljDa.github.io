@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import type { Message } from '../types/chat';
 import ChatMessage from './ChatMessage';
 import { ErrorBoundary } from './ErrorBoundary';
+import { isRateLimitError } from '../utils/validation';
 
 function ChatContent() {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -100,7 +101,7 @@ function ChatContent() {
       
       // Provide user-friendly error messages based on error type
       let userMessage = 'Sorry, I encountered an error. Please try again.';
-      if (errorMessage.includes('Rate limit') || errorMessage.includes('429')) {
+      if (isRateLimitError(error)) {
         userMessage = 'The service is currently experiencing high demand. Please try again in a few moments.';
       }
       
