@@ -36,7 +36,7 @@ test.describe('Prompt Injection Blog Post', () => {
     const article = page.locator('article');
     
     // Verify hackathon challenge section
-    const hackathonSection = article.getByText(/The Hackathon Challenge/i);
+    const hackathonSection = article.locator('h2', { hasText: 'The Hackathon Challenge' });
     await expect(hackathonSection).toBeVisible();
     
     // Verify challenge description - match actual blog post text with link
@@ -44,7 +44,7 @@ test.describe('Prompt Injection Blog Post', () => {
     await expect(challengeText).toBeVisible();
     
     // Verify "Your Challenge" section
-    const yourChallengeSection = article.getByText(/Your Challenge/i);
+    const yourChallengeSection = article.locator('h2', { hasText: 'Your Challenge' });
     await expect(yourChallengeSection).toBeVisible();
     
     // Verify hint text
