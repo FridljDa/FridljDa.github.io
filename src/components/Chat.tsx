@@ -100,8 +100,8 @@ function ChatContent() {
       
       // Provide user-friendly error messages based on error type
       let userMessage = 'Sorry, I encountered an error. Please try again.';
-      if (errorMessage.includes('Rate limit') || errorMessage.includes('429')) {
-        userMessage = 'The service is currently experiencing high demand. Please try again in a few moments.';
+      if (errorMessage.includes('Rate limit') || errorMessage.includes('429') || errorMessage.includes('quota')) {
+        userMessage = 'The daily usage limit has been reached. The quota resets at 9:00 AM CET. Please try again later.';
       }
       
       setMessages((prev) => [
