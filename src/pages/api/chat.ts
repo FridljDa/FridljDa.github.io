@@ -9,13 +9,13 @@ import {
   parseChatRequest,
   createErrorResponse,
 } from '../../utils/validation';
-import { isRateLimitError } from '../../utils/error';
+import { isRateLimitError, isRecoverableModelError } from '../../utils/error';
 import type { ChatMessage, GeminiHistoryMessage } from '../../types/api';
 import type { ZodIssue } from 'zod';
 
 const GEMINI_MODELS = [
   'gemini-2.5-flash',
-  'gemini-3-flash',
+  'gemini-3-flash-preview',
   'gemini-2.5-flash-lite',
   'gemma-3-27b',
 ] as const;
@@ -134,21 +134,22 @@ export const POST: APIRoute = async ({ request }) => {
         break;
       } catch (error) {
         lastError = error;
+        const isRecoverable = isRecoverableModelError(error);
         const isRateLimit = isRateLimitError(error);
         logger.warn(
           `Model ${modelName} failed:`,
           error instanceof Error ? error.message : String(error),
-          isRateLimit ? '(Rate limit detected, trying next model)' : '(Non-rate-limit error)'
+          isRecoverable ? '(Recoverable error, trying next model)' : '(Non-recoverable error)'
         );
 
-        // If it's a rate limit error and we have more models to try, continue
-        if (isRateLimit && i < GEMINI_MODELS.length - 1) {
-          logger.info(`Rotating to next model due to rate limit`);
+        // If it's a recoverable error (rate limit or model not found) and we have more models to try, continue
+        if (isRecoverable && i < GEMINI_MODELS.length - 1) {
+          logger.info(`Rotating to next model due to ${isRateLimit ? 'rate limit' : 'model unavailability'}`);
           continue;
         }
 
-        // If it's not a rate limit error, or it's the last model, throw immediately
-        if (!isRateLimit) {
+        // If it's not a recoverable error, or it's the last model, throw immediately
+        if (!isRecoverable) {
           throw error;
         }
       }
@@ -157,9 +158,12 @@ export const POST: APIRoute = async ({ request }) => {
     // If we exhausted all models, return an error
     if (!result) {
       logger.error('All models exhausted. Last error:', lastError instanceof Error ? lastError.message : String(lastError));
+      const isRateLimit = lastError && isRateLimitError(lastError);
       return createErrorResponse(
         'All models exhausted',
-        'All available Gemini models have reached their rate limits. Please try again later.',
+        isRateLimit
+          ? 'All available Gemini models have reached their rate limits. Please try again later.'
+          : 'All available Gemini models are currently unavailable. Please try again later.',
         503
       );
     }
