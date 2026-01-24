@@ -237,7 +237,7 @@ export const POST: APIRoute = async ({ request }) => {
     if (isRateLimitError(error)) {
       return createErrorResponse(
         'Rate limit exceeded',
-        'The service is currently experiencing high demand. Please try again in a few moments.',
+        'The daily usage limit has been reached. The quota resets at 9:00 AM CET. Please try again later.',
         429
       );
     }
