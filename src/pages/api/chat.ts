@@ -9,6 +9,7 @@ import {
   parseChatRequest,
   createErrorResponse,
 } from '../../utils/validation';
+import { isRateLimitError } from '../../utils/error';
 import type { ChatMessage, GeminiHistoryMessage } from '../../types/api';
 import type { ZodIssue } from 'zod';
 
@@ -18,41 +19,6 @@ const GEMINI_MODELS = [
   'gemini-2.5-flash-lite',
   'gemma-3-27b',
 ] as const;
-
-/**
- * Checks if an error is a rate limit or quota exhaustion error
- */
-function isRateLimitError(error: unknown): boolean {
-  if (!error) return false;
-
-  const errorMessage = error instanceof Error ? error.message : String(error);
-  const errorString = errorMessage.toLowerCase();
-
-  // Check for common rate limit indicators
-  const rateLimitIndicators = [
-    'quota',
-    'rate limit',
-    'exhausted',
-    'resource_exhausted',
-    '429',
-  ];
-
-  // Check error message
-  if (rateLimitIndicators.some((indicator) => errorString.includes(indicator))) {
-    return true;
-  }
-
-  // Check for HTTP status codes in error objects
-  if (typeof error === 'object') {
-    const errorObj = error as Record<string, unknown>;
-    const status = errorObj.status || errorObj.statusCode || errorObj.code;
-    if (status === 429 || status === '429') {
-      return true;
-    }
-  }
-
-  return false;
-}
 
 /**
  * Attempts to get a chat stream using the specified model

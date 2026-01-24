@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import type { Message } from '../types/chat';
 import ChatMessage from './ChatMessage';
 import { ErrorBoundary } from './ErrorBoundary';
+import { isRateLimitErrorMessage } from '../utils/error';
 
 function ChatContent() {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -100,7 +101,7 @@ function ChatContent() {
       
       // Provide user-friendly error messages based on error type
       let userMessage = 'Sorry, I encountered an error. Please try again.';
-      if (errorMessage.includes('Rate limit') || errorMessage.includes('429') || errorMessage.includes('quota')) {
+      if (isRateLimitErrorMessage(errorMessage)) {
         userMessage = 'The daily usage limit has been reached. The quota resets at 9:00 AM CET. Please try again later.';
       }
       
