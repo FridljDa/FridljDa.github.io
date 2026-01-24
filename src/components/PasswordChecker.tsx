@@ -67,7 +67,7 @@ export default function PasswordChecker() {
   const getButtonColor = () => {
     switch (status) {
       case 'checking':
-        return 'bg-blue-500 hover:bg-blue-600';
+        return 'bg-blue-500'; // No hover state needed since button is disabled
       case 'success':
         return 'bg-green-500 hover:bg-green-600';
       case 'error':
