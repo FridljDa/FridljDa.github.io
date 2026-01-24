@@ -159,14 +159,12 @@ export const POST: APIRoute = async ({ request }) => {
     // Try each model in sequence until one succeeds
     let result;
     let lastError: unknown;
-    let modelUsed: string | null = null;
 
     for (let i = 0; i < GEMINI_MODELS.length; i++) {
       const modelName = GEMINI_MODELS[i];
       try {
         logger.info(`Attempting to use model: ${modelName}`);
         result = await tryModelChat(genAI, modelName, history, systemInstruction, lastUserMessage);
-        modelUsed = modelName;
         logger.info(`Successfully using model: ${modelName}`);
         break;
       } catch (error) {
