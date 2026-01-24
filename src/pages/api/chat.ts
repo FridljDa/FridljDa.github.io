@@ -35,7 +35,6 @@ function isRateLimitError(error: unknown): boolean {
     'exhausted',
     'resource_exhausted',
     '429',
-    '500',
   ];
 
   // Check error message
@@ -47,7 +46,7 @@ function isRateLimitError(error: unknown): boolean {
   if (typeof error === 'object') {
     const errorObj = error as Record<string, unknown>;
     const status = errorObj.status || errorObj.statusCode || errorObj.code;
-    if (status === 429 || status === 500 || status === '429' || status === '500') {
+    if (status === 429 || status === '429') {
       return true;
     }
   }
