@@ -50,8 +50,9 @@ const postImage = post.data.image
 const blogPostingSchema = generateBlogPostingSchema(post, postUrl, postImage);
 const articleSchema = generateArticleSchema(post, postUrl, postImage);
 
-// Generate GitHub edit URL
-const githubEditUrl = `https://github.com/${SITE.github.owner}/${SITE.github.repo}/edit/${SITE.github.branch}/src/content/blog/${slug}.md`;
+// Generate GitHub edit URL - check if file is .mdx or .md
+const fileExtension = post.id.includes('.mdx') ? 'mdx' : 'md';
+const githubEditUrl = `https://github.com/${SITE.github.owner}/${SITE.github.repo}/edit/${SITE.github.branch}/src/content/blog/${slug}.${fileExtension}`;
 ---
 
 <Layout 

@@ -6,7 +6,7 @@ export default function PasswordChecker() {
   const [message, setMessage] = useState('');
 
   // The secret password from environment variable
-  const SECRET_PASSWORD = import.meta.env.secret_password || 'default_secret_123';
+  const SECRET_PASSWORD = import.meta.env.PUBLIC_secret_password || 'default_secret_123';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
