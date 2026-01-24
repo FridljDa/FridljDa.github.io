@@ -15,10 +15,13 @@ npm install
 
 2. Set up environment variables:
    - Create a `.env` file in the root directory
-   - Add your Google Gemini API key:
+   - Copy `.env.sample` to `.env` and fill in the values:
+   ```bash
+   cp .env.sample .env
    ```
-   GEMINI_API_KEY=your_api_key_here
-   ```
+   - Required variables:
+     - `GEMINI_API_KEY` - Your Google Gemini API key (get from https://aistudio.google.com/app/apikey)
+     - `PUBLIC_SECRET_PASSWORD` - Secret password for the prompt injection hackathon challenge (used in the blog post)
 
 3. Start the development server:
 ```bash

@@ -29,7 +29,7 @@ export const POST: APIRoute = async ({ request }) => {
     const validatedBody = parseResult.data;
 
     const apiKey = getEnvVar('GEMINI_API_KEY');
-    const secretPassword = import.meta.env.PUBLIC_secret_password || 'HackathonWinner2026!';
+    const secretPassword = import.meta.env.PUBLIC_SECRET_PASSWORD || 'HackathonWinner2026!';
 
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });

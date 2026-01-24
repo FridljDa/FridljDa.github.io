@@ -8,7 +8,7 @@ export default function PasswordChecker() {
   // The secret password from environment variable
   // Note: In a real application, never expose secrets to client-side code
   // This is intentionally insecure for educational purposes
-  const SECRET_PASSWORD = import.meta.env.PUBLIC_secret_password || 'HackathonWinner2026!';
+  const SECRET_PASSWORD = import.meta.env.PUBLIC_SECRET_PASSWORD || 'HackathonWinner2026!';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

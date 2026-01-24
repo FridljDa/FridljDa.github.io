@@ -33,7 +33,7 @@ services:
       # sync: false means Render will NOT overwrite the value in the dashboard
       # with what is here (which is nothing). It forces the user to input
       # the secret in the Render Dashboard safely.
-      - key: PUBLIC_secret_password
+      - key: PUBLIC_SECRET_PASSWORD
         sync: false
           
       # Port configuration. Astro adapter listens on process.env.PORT
