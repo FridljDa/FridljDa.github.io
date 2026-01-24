@@ -16,7 +16,7 @@ export default function PasswordChecker() {
 
     // Set checking state immediately - this should trigger re-render
     setStatus('checking');
-    setMessage('Checking...');
+    setMessage('Validating password...');
 
     // Simulate a delay for visual feedback (mimics API call)
     await new Promise(resolve => setTimeout(resolve, 1500));
