@@ -50,7 +50,22 @@ function ChatContent() {
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        // Try to get error message from response body
+        let errorMessage = `HTTP error! status: ${response.status}`;
+        try {
+          const errorData = await response.json();
+          if (errorData.message) {
+            errorMessage = errorData.message;
+          } else if (errorData.error) {
+            errorMessage = errorData.error;
+          }
+        } catch {
+          // If response is not JSON, use status-based message
+          if (response.status === 429) {
+            errorMessage = 'Rate limit exceeded';
+          }
+        }
+        throw new Error(errorMessage);
       }
       if (!response.body) {
         throw new Error('No readable body');
@@ -82,11 +97,18 @@ function ChatContent() {
       const errorMessage =
         error instanceof Error ? error.message : 'An unknown error occurred';
       setError(errorMessage);
+      
+      // Provide user-friendly error messages based on error type
+      let userMessage = 'Sorry, I encountered an error. Please try again.';
+      if (errorMessage.includes('Rate limit') || errorMessage.includes('429')) {
+        userMessage = 'The service is currently experiencing high demand. Please try again in a few moments.';
+      }
+      
       setMessages((prev) => [
         ...prev,
         {
           role: 'ai',
-          content: 'Sorry, I encountered an error. Please try again.',
+          content: userMessage,
         },
       ]);
     } finally {

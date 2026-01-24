@@ -232,6 +232,16 @@ export const POST: APIRoute = async ({ request }) => {
       'Chat endpoint error:',
       error instanceof Error ? error.message : String(error)
     );
+    
+    // Check if this is a rate limit error
+    if (isRateLimitError(error)) {
+      return createErrorResponse(
+        'Rate limit exceeded',
+        'The service is currently experiencing high demand. Please try again in a few moments.',
+        429
+      );
+    }
+    
     return createErrorResponse('Internal Server Error', undefined, 500);
   }
 };
