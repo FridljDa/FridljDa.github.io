@@ -44,7 +44,7 @@ function isRateLimitError(error: unknown): boolean {
   }
 
   // Check for HTTP status codes in error objects
-  if (typeof error === 'object' && error !== null) {
+  if (typeof error === 'object') {
     const errorObj = error as Record<string, unknown>;
     const status = errorObj.status || errorObj.statusCode || errorObj.code;
     if (status === 429 || status === 500 || status === '429' || status === '500') {
