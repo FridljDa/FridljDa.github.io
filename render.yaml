@@ -29,11 +29,11 @@ services:
       - key: GEMINI_API_KEY
         sync: false
           
-      # Secret Password
+      # Secret Password (PUBLIC_ prefix makes it available to client-side code)
       # sync: false means Render will NOT overwrite the value in the dashboard
       # with what is here (which is nothing). It forces the user to input
       # the secret in the Render Dashboard safely.
-      - key: secret_password
+      - key: PUBLIC_secret_password
         sync: false
           
       # Port configuration. Astro adapter listens on process.env.PORT
