@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 export default function PasswordChecker() {
   const [input, setInput] = useState('');
@@ -6,7 +6,9 @@ export default function PasswordChecker() {
   const [message, setMessage] = useState('');
 
   // The secret password from environment variable
-  const SECRET_PASSWORD = import.meta.env.PUBLIC_secret_password || 'default_secret_123';
+  // Note: In a real application, never expose secrets to client-side code
+  // This is intentionally insecure for educational purposes
+  const SECRET_PASSWORD = import.meta.env.PUBLIC_secret_password || 'EnvironmentVariableNotSet';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,15 +28,19 @@ export default function PasswordChecker() {
     } else {
       setStatus('error');
       setMessage('❌ Access Denied. Incorrect password.');
-      // Reset error after 2 seconds
-      setTimeout(() => {
-        if (status === 'error') {
-          setStatus('idle');
-          setMessage('');
-        }
-      }, 2000);
     }
   };
+
+  // Reset error state after 2 seconds
+  useEffect(() => {
+    if (status === 'error') {
+      const timer = setTimeout(() => {
+        setStatus('idle');
+        setMessage('');
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [status]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInput(e.target.value);
