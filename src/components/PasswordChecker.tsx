@@ -18,8 +18,8 @@ export default function PasswordChecker() {
     setStatus('checking');
     setMessage('Checking...');
 
-    // Simulate a brief delay for visual feedback
-    await new Promise(resolve => setTimeout(resolve, 500));
+    // Simulate a delay for visual feedback (mimics API call)
+    await new Promise(resolve => setTimeout(resolve, 1500));
 
     // Check if the password matches
     if (input === SECRET_PASSWORD) {
@@ -106,7 +106,7 @@ export default function PasswordChecker() {
         <button
           type="submit"
           disabled={!input.trim() || status === 'checking'}
-          className={`w-full px-6 py-3 rounded-lg text-white font-semibold transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 ${getButtonColor()}`}
+          className={`w-full px-6 py-3 rounded-lg text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed ${getButtonColor()}`}
         >
           {status === 'checking' ? 'Checking...' : 'Check Password'}
         </button>
