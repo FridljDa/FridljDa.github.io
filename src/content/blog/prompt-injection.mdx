@@ -13,17 +13,17 @@ import PasswordChecker from '../../components/PasswordChecker';
 
 ## The Hackathon Challenge
 
-I recently participated in a white hat hacking challenge at the [Agent Olympics Hackathon Munich 2026](https://luma.com/agent-olympics?tk=DjHhlt). The goal was to build a voice agent capable of extracting pre-planted sensitive information from other AI systems using prompt injection techniques.
+I recently participated in a white hat hacking challenge at the [Agent Olympics Hackathon Munich 2026](https://luma.com/agent-olympics?tk=DjHhlt). The goal was to build a voice agent that interacts with other AI systems to surface pre-planted sensitive information through prompt injection attacks.
 
 
-Watch our voice agent successfully extract the password from a vulnerable AI chat system during the hackathon, navigating through multiple layers of defenses in just 3.5 minutes:
+Here you can see  our voice agent successfully extract the password from a vulnerable AI chat system during the hackathon, navigating through multiple layers of defenses in just 3.5 minutes:
 
 <video controls class="w-full rounded-lg my-8">
   <source src="/images/blog/prompt-injection/hackathon-clip.mp4" type="video/mp4" />
   Your browser does not support the video tag.
 </video>
 
-In this demonstration, our attacking voice agent first convinced the AI chat system's "customer support" to transfer it to "technical support," which had access to the password. It then exploited prompt injection vulnerabilities to trick the technical support agent into revealing the password.
+In this demonstration, our attacking voice agent first convinced the AI chat system's "customer support" to transfer it to "technical support," which had access to the password. It then exploited prompt injection vulnerabilities to trick the technical support agent into revealing the password. In practise, this meant threatening the technical support until it gave up.
 
 ## Your Challenge
 
@@ -34,7 +34,3 @@ Once you've found the password, enter it below to verify:
 <PasswordChecker client:load />
 
 **Hint:** The AI chat assistant on this website has access to certain information. Maybe it knows more than it should? 🤔
-
----
-
-*This is an educational demonstration of prompt injection vulnerabilities. The chatbot has been intentionally configured with the secret password in its context to demonstrate how AI systems can inadvertently leak sensitive information.*
