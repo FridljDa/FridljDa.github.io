@@ -114,7 +114,7 @@ export default function PasswordChecker() {
 
       {(message || status === 'checking') && (
         <div
-          className={`mt-4 p-4 rounded-lg transition-all duration-300 ${
+          className={`mt-4 p-4 rounded-lg ${
             status === 'success'
               ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200 border-2 border-green-500'
               : status === 'error'

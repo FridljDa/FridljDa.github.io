@@ -16,8 +16,9 @@
 }
 
 @layer base {
+  /* Disable smooth scrolling to prevent test instability with Playwright */
   html {
-    scroll-behavior: smooth;
+    scroll-behavior: auto;
   }
   
   body {
