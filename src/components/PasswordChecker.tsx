@@ -14,7 +14,7 @@ export default function PasswordChecker() {
     e.preventDefault();
     if (!input.trim()) return;
 
-    // Set checking state with animation
+    // Set checking state immediately - this should trigger re-render
     setStatus('checking');
     setMessage('Checking...');
 
@@ -112,7 +112,7 @@ export default function PasswordChecker() {
         </button>
       </form>
 
-      {message && (
+      {(message || status === 'checking') && (
         <div
           className={`mt-4 p-4 rounded-lg transition-all duration-300 ${
             status === 'success'
@@ -122,7 +122,7 @@ export default function PasswordChecker() {
               : 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 border-2 border-blue-500'
           }`}
         >
-          <p className="text-center font-medium">{message}</p>
+          <p className="text-center font-medium">{status === 'checking' ? 'Checking...' : message}</p>
         </div>
       )}
 
