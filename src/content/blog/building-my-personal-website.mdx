@@ -240,7 +240,7 @@ export async function getBlogPostRawMarkdown(post: CollectionEntry<'blog'>): Pro
   const fs = await import('fs/promises');
   const path = await import('path');
   try {
-    const filePath = path.join(process.cwd(), 'src/content/blog', `${post.id}.md`);
+    const filePath = path.join(process.cwd(), 'src/content/blog', `${post.id}.mdx`);
     const fileContent = await fs.readFile(filePath, 'utf-8');
     
     // Extract content after frontmatter
