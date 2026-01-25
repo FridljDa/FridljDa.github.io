@@ -431,9 +431,9 @@ test.describe('Regression Tests', () => {
     const editUrl = await editLink.getAttribute('href');
     expect(editUrl).toBeTruthy();
     
-    // Expected format: https://github.com/FridljDa/FridljDa.github.io/edit/master/src/content/blog/{slug}.md
+    // Expected format: https://github.com/FridljDa/FridljDa.github.io/edit/master/src/content/blog/{slug}.mdx
     const expectedUrlPattern = new RegExp(
-      `^https://github\\.com/FridljDa/FridljDa\\.github\\.io/edit/master/src/content/blog/${slug}\\.md$`
+      `^https://github\\.com/FridljDa/FridljDa\\.github\\.io/edit/master/src/content/blog/${slug}\\.mdx$`
     );
     expect(editUrl).toMatch(expectedUrlPattern);
   });
@@ -526,7 +526,7 @@ test.describe('Regression Tests', () => {
       // Verify the GitHub edit URL matches the slug
       const editUrl = await editLink.getAttribute('href');
       expect(editUrl).toBeTruthy();
-      expect(editUrl).toContain(`/src/content/blog/${slug}.md`);
+      expect(editUrl).toContain(`/src/content/blog/${slug}.mdx`);
       expect(editUrl).toMatch(/^https:\/\/github\.com\/FridljDa\/FridljDa\.github\.io\/edit\/master\//);
     }
   });
