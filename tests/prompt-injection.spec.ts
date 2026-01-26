@@ -8,13 +8,17 @@ test.describe('Prompt Injection Blog Post', () => {
     await page.goto(PROMPT_INJECTION_POST_URL);
     await page.waitForLoadState('domcontentloaded');
     
+    // Wait for React components to hydrate
+    await page.waitForLoadState('networkidle');
+    
     // Minimize chat widget if it's expanded to avoid interference with tests
     const minimizeButton = page.locator('button[aria-label="Minimize chat"]');
     const isExpanded = await minimizeButton.isVisible().catch(() => false);
     if (isExpanded) {
+      const openChatButton = page.locator('button[aria-label="Open chat"]');
       await minimizeButton.click();
-      // Wait a bit for the chat to minimize
-      await page.waitForTimeout(200);
+      // Wait for the chat to minimize - the "Open chat" button should appear
+      await expect(openChatButton).toBeVisible({ timeout: 2000 });
     }
   });
 
@@ -133,11 +137,8 @@ test.describe('Prompt Injection Blog Post', () => {
     const errorMessage = page.getByText(/Access Denied/i);
     await expect(errorMessage).toBeVisible({ timeout: 5000 });
     
-    // Wait for error to reset (2 seconds + buffer)
-    await page.waitForTimeout(2500);
-    
-    // Error message should be gone
-    await expect(errorMessage).not.toBeVisible();
+    // Wait for error to reset (error resets after 2 seconds)
+    await expect(errorMessage).toBeHidden({ timeout: 3000 });
   });
 
   test('should reset status when user starts typing again', async ({ page }) => {
