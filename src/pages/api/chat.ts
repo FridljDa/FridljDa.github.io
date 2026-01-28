@@ -70,6 +70,15 @@ export const POST: APIRoute = async ({ request }) => {
 
     const apiKey = getEnvVar('GEMINI_API_KEY');
     const secretPassword = import.meta.env.PUBLIC_SECRET_PASSWORD;
+    
+    if (!secretPassword) {
+      logger.error('PUBLIC_SECRET_PASSWORD environment variable is not set');
+      return createErrorResponse(
+        'Configuration error',
+        'The prompt injection challenge is not properly configured. Please contact the site administrator.',
+        500
+      );
+    }
 
     const genAI = new GoogleGenerativeAI(apiKey);
 

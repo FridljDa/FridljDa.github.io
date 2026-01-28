@@ -10,6 +10,10 @@ export default function PasswordChecker() {
   // This is intentionally insecure for educational purposes
   const SECRET_PASSWORD = import.meta.env.PUBLIC_SECRET_PASSWORD;
 
+  if (!SECRET_PASSWORD) {
+    console.error('PUBLIC_SECRET_PASSWORD environment variable is not set. Please set it in your .env file.');
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim()) return;
