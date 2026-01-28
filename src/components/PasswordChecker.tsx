@@ -8,8 +8,7 @@ export default function PasswordChecker() {
   // The secret password from environment variable
   // Note: In a real application, never expose secrets to client-side code
   // This is intentionally insecure for educational purposes
-  // Fallback password is for local development and testing only
-  const SECRET_PASSWORD = import.meta.env.PUBLIC_SECRET_PASSWORD || 'HackathonWinner2026!';
+  const SECRET_PASSWORD = import.meta.env.PUBLIC_SECRET_PASSWORD;
 
   if (!SECRET_PASSWORD) {
     console.error('PUBLIC_SECRET_PASSWORD environment variable is not set. Please set it in your .env file.');

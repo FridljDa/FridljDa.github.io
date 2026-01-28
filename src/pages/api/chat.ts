@@ -69,12 +69,15 @@ export const POST: APIRoute = async ({ request }) => {
     const validatedBody = parseResult.data;
 
     const apiKey = getEnvVar('GEMINI_API_KEY');
-    // Fallback password is for local development and testing only
-    // In production (Render), this should be set via environment variable
-    const secretPassword = import.meta.env.PUBLIC_SECRET_PASSWORD || 'HackathonWinner2026!';
+    const secretPassword = import.meta.env.PUBLIC_SECRET_PASSWORD;
     
-    if (!import.meta.env.PUBLIC_SECRET_PASSWORD) {
-      logger.warn('PUBLIC_SECRET_PASSWORD environment variable is not set, using fallback for development/testing');
+    if (!secretPassword) {
+      logger.error('PUBLIC_SECRET_PASSWORD environment variable is not set');
+      return createErrorResponse(
+        'Configuration error',
+        'The prompt injection challenge is not properly configured. Please contact the site administrator.',
+        500
+      );
     }
 
     const genAI = new GoogleGenerativeAI(apiKey);
