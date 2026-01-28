@@ -21,6 +21,10 @@ Set these in the Render dashboard for your web service:
   - Get your API key from [Google AI Studio](https://makersuite.google.com/app/apikey)
   - This key is used server-side and should be kept secure
 
+- `PUBLIC_SECRET_PASSWORD` - Secret password for the prompt injection hackathon challenge
+  - This is used in the blog post and should be kept secure
+  - Must match the password set in your local `.env` file for development
+
 #### Optional Environment Variables
 
 - `NODE_VERSION` - Node.js version (defaults to 20.11.0 as specified in render.yaml)

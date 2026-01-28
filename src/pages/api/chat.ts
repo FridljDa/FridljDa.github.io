@@ -69,7 +69,7 @@ export const POST: APIRoute = async ({ request }) => {
     const validatedBody = parseResult.data;
 
     const apiKey = getEnvVar('GEMINI_API_KEY');
-    const secretPassword = import.meta.env.PUBLIC_SECRET_PASSWORD || 'HackathonWinner2026!';
+    const secretPassword = import.meta.env.PUBLIC_SECRET_PASSWORD;
 
     const genAI = new GoogleGenerativeAI(apiKey);
 
