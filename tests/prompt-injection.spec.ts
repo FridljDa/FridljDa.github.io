@@ -1,12 +1,9 @@
 import { test, expect } from '@playwright/test';
 
 const PROMPT_INJECTION_POST_URL = '/post/prompt-injection';
-const SECRET_PASSWORD = process.env.PUBLIC_SECRET_PASSWORD;
-
-// Ensure the required environment variable is set
-if (!SECRET_PASSWORD) {
-  throw new Error('PUBLIC_SECRET_PASSWORD environment variable must be set. Please create a .env file with this variable or set it in your environment.');
-}
+// Test password - this is intentionally tracked in git as it's only used for testing
+// Production uses PUBLIC_SECRET_PASSWORD from environment variables
+const SECRET_PASSWORD = process.env.PUBLIC_SECRET_PASSWORD || 'HackathonWinner2026!';
 
 test.describe('Prompt Injection Blog Post', () => {
   test.beforeEach(async ({ page }) => {

@@ -23,7 +23,8 @@ Set these in the Render dashboard for your web service:
 
 - `PUBLIC_SECRET_PASSWORD` - Secret password for the prompt injection hackathon challenge
   - This is used in the blog post and should be kept secure
-  - Must match the password set in your local `.env` file for development
+  - For production, set this to a different password than the development fallback
+  - If not set, the code will use a fallback password (HackathonWinner2026!) for development/testing
 
 #### Optional Environment Variables
 
