@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 const PROMPT_INJECTION_POST_URL = '/post/prompt-injection';
 // Test password - this is intentionally tracked in git as it's only used for testing
 // Production uses PUBLIC_SECRET_PASSWORD from environment variables
-const SECRET_PASSWORD = process.env.PUBLIC_SECRET_PASSWORD || 'HackathonWinner2026!';
+const SECRET_PASSWORD = 'HackathonWinner2026!';
 
 test.describe('Prompt Injection Blog Post', () => {
   test.beforeEach(async ({ page }) => {
