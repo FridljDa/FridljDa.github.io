@@ -117,6 +117,9 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium webkit
 
+      - name: Set test password for build
+        run: echo "PUBLIC_SECRET_PASSWORD=$(cat tests/fixtures/test-secret-password.txt | tr -d '\n')" >> $GITHUB_ENV
+
       - name: Build Astro site (for testing)
         run: npm run build
         env:
