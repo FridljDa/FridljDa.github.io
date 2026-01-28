@@ -4,11 +4,14 @@ import * as path from 'path';
 
 const PROMPT_INJECTION_POST_URL = '/post/prompt-injection';
 // Single source of truth: tests/fixtures/test-secret-password.txt (CI reads the same file)
-const SECRET_PASSWORD = fs
-  .readFileSync(path.join(process.cwd(), 'tests', 'fixtures', 'test-secret-password.txt'), 'utf8')
-  .trim();
+const SECRET_PASSWORD_PATH = path.join(process.cwd(), 'tests', 'fixtures', 'test-secret-password.txt');
+let SECRET_PASSWORD: string;
 
 test.describe('Prompt Injection Blog Post', () => {
+  test.beforeAll(async () => {
+    const fileContents = await fs.promises.readFile(SECRET_PASSWORD_PATH, 'utf8');
+    SECRET_PASSWORD = fileContents.trim();
+  });
   test.beforeEach(async ({ page }) => {
     await page.goto(PROMPT_INJECTION_POST_URL);
     await page.waitForLoadState('domcontentloaded');
