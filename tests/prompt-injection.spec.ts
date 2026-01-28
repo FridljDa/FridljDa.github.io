@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 
 const PROMPT_INJECTION_POST_URL = '/post/prompt-injection';
-const SECRET_PASSWORD = 'HackathonWinner2026!';
+const SECRET_PASSWORD = process.env.PUBLIC_SECRET_PASSWORD || '';
 
 test.describe('Prompt Injection Blog Post', () => {
   test.beforeEach(async ({ page }) => {
