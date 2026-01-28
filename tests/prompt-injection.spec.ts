@@ -1,12 +1,17 @@
 import { test, expect } from '@playwright/test';
+import * as fs from 'fs';
+import * as path from 'path';
 
 const PROMPT_INJECTION_POST_URL = '/post/prompt-injection';
-// Test password - this is intentionally tracked in git and hardcoded for testing
-// This should NEVER use process.env to avoid exposing secrets in public test logs
-// Production uses PUBLIC_SECRET_PASSWORD from environment variables
-const SECRET_PASSWORD = 'HackathonWinner2026!';
+// Single source of truth: tests/fixtures/test-secret-password.txt (CI reads the same file)
+const SECRET_PASSWORD_PATH = path.join(process.cwd(), 'tests', 'fixtures', 'test-secret-password.txt');
+let SECRET_PASSWORD: string;
 
 test.describe('Prompt Injection Blog Post', () => {
+  test.beforeAll(async () => {
+    const fileContents = await fs.promises.readFile(SECRET_PASSWORD_PATH, 'utf8');
+    SECRET_PASSWORD = fileContents.trim();
+  });
   test.beforeEach(async ({ page }) => {
     await page.goto(PROMPT_INJECTION_POST_URL);
     await page.waitForLoadState('domcontentloaded');
