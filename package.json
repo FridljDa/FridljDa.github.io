@@ -24,7 +24,7 @@
     "@astrojs/react": "^4.4.2",
     "@google/generative-ai": "^0.24.1",
     "@tailwindcss/typography": "^0.5.19",
-    "astro": "^5.16.15",
+    "astro": "^5.17.1",
     "consola": "^3.4.2",
     "date-fns": "^4.1.0",
     "dompurify": "^3.3.1",
