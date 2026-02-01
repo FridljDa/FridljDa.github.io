@@ -80,6 +80,8 @@ jobs:
         env:
           # Set dummy value for build (Render will use real value)
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY || 'dummy-key-for-build' }}
+          # Set test password for password checker component
+          PUBLIC_SECRET_PASSWORD: ${{ secrets.PUBLIC_SECRET_PASSWORD || 'HackathonWinner2026!' }}
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v6
@@ -120,6 +122,8 @@ jobs:
         env:
           # Set dummy value for build (Render will use real value)
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY || 'dummy-key-for-build' }}
+          # Set test password for password checker component
+          PUBLIC_SECRET_PASSWORD: 'HackathonWinner2026!'
 
       - name: Start preview server
         run: |
@@ -128,6 +132,8 @@ jobs:
         env:
           # Set dummy value for preview server (chat won't work but site will load)
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY || 'dummy-key-for-preview' }}
+          # Set test password for password checker component
+          PUBLIC_SECRET_PASSWORD: 'HackathonWinner2026!'
 
       - name: Wait for server to be ready
         run: |
