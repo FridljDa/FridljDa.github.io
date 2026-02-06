@@ -74,7 +74,7 @@ export default function ModelPerformanceChart() {
 
   useEffect(() => {
     if (!mounted) return;
-    fetch("/data/model-performance.json")
+    fetch(`${import.meta.env.BASE_URL}data/model-performance.json`)
       .then((r) => {
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         return r.json();
