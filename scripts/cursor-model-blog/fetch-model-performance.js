@@ -198,9 +198,11 @@ function findBenchmarkScores(cursorName, bigCodeRows, arenaRows) {
   const cursorNorm = normalizeForMatch(cursorName);
 
   const matchIn = (rows, getNorm) => {
-    // If explicit keys exist, prefer them over substring matching
+    // When explicit keys exist, use ONLY those keys for matching.
+    // This prevents incorrect matches like "GPT-5" matching "gpt-5.2-high"
+    // via substring matching with cursorNorm.
     if (keys.length > 0) {
-      // First pass: exact match
+      // First pass: exact match (preferred for precision)
       for (const row of rows) {
         const n = getNorm(row);
         for (const k of keys) {
