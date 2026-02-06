@@ -3,6 +3,12 @@
  */
 
 import { readFileSync } from "fs";
+import { fileURLToPath } from "url";
+import { dirname, join } from "path";
+import { normalizeForMatch } from "./utils/normalize.js";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const CURSOR_TO_BENCHMARK_KEYS = {
   "Claude 4.6 Opus": [
@@ -67,18 +73,8 @@ const CURSOR_TO_BENCHMARK_KEYS = {
   ],
 };
 
-function normalizeForMatch(s) {
-  return s
-    .toLowerCase()
-    .replace(/\s+/g, "-")
-    .replace(/[._]/g, "-")
-    .replace(/-+/g, "-")
-    .replace(/^\d{4}-\d{2}-\d{2}$/, "")
-    .trim();
-}
-
-const bigCode = JSON.parse(readFileSync("bigcode-all.json", "utf8"));
-const arena = JSON.parse(readFileSync("arena-all.json", "utf8"));
+const bigCode = JSON.parse(readFileSync(join(__dirname, "bigcode-all.json"), "utf8"));
+const arena = JSON.parse(readFileSync(join(__dirname, "arena-all.json"), "utf8"));
 
 console.log("=== ANALYSIS OF CURSOR_TO_BENCHMARK_KEYS ===\n");
 
