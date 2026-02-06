@@ -183,7 +183,7 @@ export default function ModelPerformanceChart() {
               strokeDasharray="4 4"
             />
             <Scatter name="Models" data={points} fill="var(--scatter-fill, #64748b)">
-              {points.map((entry, i) => (
+              {points.map((entry) => (
                 <Cell
                   key={entry.name}
                   fill={
