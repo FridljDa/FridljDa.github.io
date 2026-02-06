@@ -6,18 +6,9 @@
 
 import { fileURLToPath } from "url";
 import { chromium } from "playwright";
+import { normalizeForMatch } from "./utils/normalize.js";
 
 const __filename = fileURLToPath(import.meta.url);
-
-function normalizeForMatch(s) {
-  return s
-    .toLowerCase()
-    .replace(/\s+/g, "-")
-    .replace(/[._]/g, "-")
-    .replace(/-+/g, "-")
-    .replace(/^\d{4}-\d{2}-\d{2}$/, "")
-    .trim();
-}
 
 /**
  * @returns {Promise<Array<{ model: string, modelNorm: string, score: number, benchmark: string }>>}

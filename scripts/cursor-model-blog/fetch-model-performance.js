@@ -9,6 +9,7 @@ import { fileURLToPath } from "url";
 import { dirname, join } from "path";
 import { fetchArenaCode } from "./fetch-arena-code.js";
 import { fetchCursorPricing } from "./fetch-cursor-pricing.js";
+import { normalizeForMatch } from "./utils/normalize.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, "..", "..");
@@ -155,16 +156,6 @@ const LMSYS_ARENA_FALLBACK = {
   "grok-code-fast-1": { score: 1141, benchmark: "LMSYS-Arena" },
 };
 
-function normalizeForMatch(s) {
-  return s
-    .toLowerCase()
-    .replace(/\s+/g, "-")
-    .replace(/[._]/g, "-")
-    .replace(/-+/g, "-")
-    .replace(/^\d{4}-\d{2}-\d{2}$/, "")
-    .trim();
-}
-
 async function fetchBigCodeBench() {
   const out = [];
   let offset = 0;
@@ -268,9 +259,8 @@ function main() {
     }
     const finalPricing = Array.from(pricingLookup.values()).map(({ _source, ...p }) => p);
     const liveCount = scrapedPricing.length;
-    const fallbackOnly = finalPricing.filter(
-      (p) => !scrapedPricing.some((s) => s.name === p.name)
-    ).length;
+    const scrapedNames = new Set(scrapedPricing.map((p) => p.name));
+    const fallbackOnly = finalPricing.filter((p) => !scrapedNames.has(p.name)).length;
     console.log(
       `Pricing: ${liveCount} from cursor.com/docs/models, ${fallbackOnly} fallback-only (hardcoded)`
     );
