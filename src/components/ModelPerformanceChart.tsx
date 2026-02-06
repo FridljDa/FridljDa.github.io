@@ -52,19 +52,19 @@ function CustomTooltip({
         <span>${m.outputCost}</span>
         <span>Weighted cost:</span>
         <span>${m.weightedCost}</span>
-        {m.bigCodeBenchScore !== null && (
+        {typeof m.bigCodeBenchScore === "number" && (
           <>
             <span>BigCodeBench:</span>
             <span>{m.bigCodeBenchScore}</span>
           </>
         )}
-        {m.arenaCodeElo !== null && (
+        {typeof m.arenaCodeElo === "number" && (
           <>
             <span>Arena-Code Elo:</span>
             <span>{m.arenaCodeElo}</span>
           </>
         )}
-        {m.lmsysArenaElo !== null && (
+        {typeof m.lmsysArenaElo === "number" && (
           <>
             <span>LMSYS Arena Elo:</span>
             <span>{m.lmsysArenaElo}</span>
@@ -127,7 +127,7 @@ export default function ModelPerformanceChart() {
   // Filter to only models with BigCodeBench scores for valid comparison
   // Since different benchmarks use different scales, we can't mix them on the same chart
   const pointsWithBigCode = data.models
-    .filter((m) => m.bigCodeBenchScore !== null)
+    .filter((m) => typeof m.bigCodeBenchScore === "number")
     .map((m) => ({
       ...m,
       x: m.bigCodeBenchScore!,
