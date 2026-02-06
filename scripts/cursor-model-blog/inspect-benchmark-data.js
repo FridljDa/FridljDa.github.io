@@ -2,7 +2,13 @@
  * Temporary script to inspect actual benchmark data
  */
 
-import { writeFileSync } from "fs";
+import { writeFileSync, mkdirSync } from "fs";
+import { join, dirname } from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const OUTPUT_DIR = join(__dirname, ".tmp");
 
 function normalizeForMatch(s) {
   return s
@@ -143,10 +149,11 @@ async function fetchArenaHard() {
   });
   
   // Save to files for inspection
-  writeFileSync("bigcode-all.json", JSON.stringify(bigCode, null, 2));
-  writeFileSync("arena-all.json", JSON.stringify(arena, null, 2));
-  writeFileSync("bigcode-relevant.json", JSON.stringify(relevantBigCode, null, 2));
-  writeFileSync("arena-relevant.json", JSON.stringify(relevantArena, null, 2));
+  mkdirSync(OUTPUT_DIR, { recursive: true });
+  writeFileSync(join(OUTPUT_DIR, "bigcode-all.json"), JSON.stringify(bigCode, null, 2));
+  writeFileSync(join(OUTPUT_DIR, "arena-all.json"), JSON.stringify(arena, null, 2));
+  writeFileSync(join(OUTPUT_DIR, "bigcode-relevant.json"), JSON.stringify(relevantBigCode, null, 2));
+  writeFileSync(join(OUTPUT_DIR, "arena-relevant.json"), JSON.stringify(relevantArena, null, 2));
   
-  console.log("\n✓ Saved data to bigcode-*.json and arena-*.json files");
+  console.log(`\n✓ Saved data to ${OUTPUT_DIR}`);
 })();
