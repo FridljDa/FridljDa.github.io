@@ -39,6 +39,9 @@ temp/
 *.tmp
 .tmp/
 
+# Script output
+scripts/cursor-model-blog/output/
+
 # Personal configuration files
 *.local
 
