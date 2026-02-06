@@ -50,10 +50,14 @@ export async function fetchCursorPricing() {
         await pricingSection.scrollIntoViewIfNeeded();
         await new Promise((r) => setTimeout(r, 500));
         let showMore = page.getByRole("button", { name: /show more models/i });
-        while ((await showMore.count()) > 0) {
+        const MAX_SHOW_MORE_CLICKS = 20;
+        for (let i = 0; i < MAX_SHOW_MORE_CLICKS; i++) {
+          const count = await showMore.count();
+          if (count === 0) {
+            break;
+          }
           await showMore.first().click();
           await new Promise((r) => setTimeout(r, 800));
-          showMore = page.getByRole("button", { name: /show more models/i });
         }
       }
 
