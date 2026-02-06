@@ -30,22 +30,74 @@ const CURSOR_PRICING = [
   { name: "Grok Code", provider: "xAI", input: 0.2, output: 1.5 },
 ];
 
-// Map Cursor display name -> possible benchmark identifiers (lowercase, no spaces).
-// Arena uses names like gpt-4o-2024-05-13, claude-3-5-sonnet-20240620; we match by prefix.
+// Map Cursor display name -> possible benchmark identifiers (LMSYS Arena / BigCodeBench).
+// Most specific / newest keys first to avoid matching older model data by mistake.
 const CURSOR_TO_BENCHMARK_KEYS = {
-  "Claude 4.5 Opus": ["claude-4-5-opus", "claude-3-5-opus", "claude-3-opus", "claude-4-opus", "claude-4.5-opus"],
-  "Claude 4.5 Sonnet": ["claude-4-5-sonnet", "claude-3-5-sonnet", "claude-4-sonnet", "claude-4.5-sonnet"],
-  "Claude 4.5 Haiku": ["claude-4-5-haiku", "claude-4-haiku", "claude-4.5-haiku"],
-  "Claude 4.6 Opus": ["claude-4-6-opus", "claude-4-5-opus"],
-  "Composer 1": ["composer-1", "composer"],
-  "Gemini 2.5 Flash": ["gemini-2-5-flash", "gemini-2.5-flash", "gemini-1.5-flash", "gemini-2-flash"],
-  "Gemini 3 Flash": ["gemini-3-flash", "gemini-2.5-flash", "gemini-1.5-flash"],
-  "Gemini 3 Pro": ["gemini-3-pro", "gemini-2.5-pro", "gemini-1.5-pro", "gemini-2-pro"],
-  "GPT-5": ["gpt-5", "gpt-4o", "gpt-4-turbo", "gpt-4-0125"],
-  "GPT-5.2": ["gpt-5-2", "gpt-5.2", "gpt-4o", "gpt-4-turbo"],
-  "GPT-5.2 Codex": ["gpt-5-2-codex", "gpt-5.2-codex", "gpt-4o"],
-  "GPT-5 Mini": ["gpt-5-mini", "gpt-4o-mini", "gpt-4-mini"],
-  "Grok Code": ["grok-code", "grok"],
+  "Claude 4.6 Opus": [
+    "claude-opus-4-6",
+    "claude-4.6-opus",
+  ],
+  "Claude 4.5 Opus": [
+    "claude-opus-4-5-20251101",
+    "claude-opus-4-5",
+    "claude-4.5-opus",
+  ],
+  "Claude 4.5 Sonnet": [
+    "claude-sonnet-4-5-20250929",
+    "claude-sonnet-4-5",
+    "claude-4-5-sonnet",
+    "claude-4.5-sonnet",
+  ],
+  "Claude 4.5 Haiku": [
+    "claude-haiku-4-5",
+    "claude-3-5-haiku",
+    "claude-3.5-haiku",
+  ],
+  "Claude 4.6 Opus": [
+    "claude-opus-4-6",
+    "claude-4-6-opus",
+    "claude-4-5-opus",
+  ],
+  "Composer 1": [],
+  "Gemini 3 Pro": [
+    "gemini-3-pro",
+    "gemini-3-pro-preview",
+  ],
+  "Gemini 3 Flash": [
+    "gemini-3-flash",
+    "gemini-3-flash-thinking",
+    "gemini-3-flash-grounding",
+  ],
+  "Gemini 2.5 Flash": [
+    "gemini-2-5-flash",
+    "gemini-2.5-flash",
+    "gemini-2-flash",
+  ],
+  "GPT-5.2": [
+    "gpt-5.2-high",
+    "gpt-5.2",
+    "gpt-5-2",
+  ],
+  "GPT-5": [
+    "gpt-5.1-high",
+    "gpt-5.1",
+    "gpt-5",
+    "gpt-5-preview",
+  ],
+  "GPT-5.2 Codex": [
+    "gpt-5.2-codex",
+    "gpt-5-2-codex",
+  ],
+  "GPT-5 Mini": [
+    "gpt-5-mini",
+    "gpt-4.1-mini",
+    "gpt-4o-mini",
+  ],
+  "Grok Code": [
+    "grok-code-fast-1",
+    "grok-code-fast",
+    "grok-code",
+  ],
 };
 
 function normalizeForMatch(s) {
