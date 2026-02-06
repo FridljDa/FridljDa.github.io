@@ -1,55 +1,15 @@
 {
-  "lastUpdated": "2026-02-06T12:59:33.066Z",
+  "lastUpdated": "2026-02-06T15:26:17.035Z",
   "models": [
     {
-      "name": "Claude 4.5 Opus",
+      "name": "Claude 4.5 Haiku",
       "provider": "Anthropic",
-      "inputCost": 5,
-      "outputCost": 25,
-      "weightedCost": 11,
-      "benchmarkScore": 45.5,
-      "benchmarkName": "BigCodeBench",
-      "recommended": "planning"
-    },
-    {
-      "name": "Claude 4.5 Sonnet",
-      "provider": "Anthropic",
-      "inputCost": 3,
-      "outputCost": 15,
-      "weightedCost": 6.6,
-      "benchmarkScore": 46.8,
-      "benchmarkName": "BigCodeBench",
-      "recommended": "planning"
-    },
-    {
-      "name": "GPT-5",
-      "provider": "OpenAI",
-      "inputCost": 1.25,
-      "outputCost": 10,
-      "weightedCost": 3.88,
-      "benchmarkScore": 51.1,
+      "inputCost": 1,
+      "outputCost": 5,
+      "weightedCost": 2.2,
+      "benchmarkScore": 46.1,
       "benchmarkName": "BigCodeBench",
       "recommended": null
-    },
-    {
-      "name": "GPT-5.2",
-      "provider": "OpenAI",
-      "inputCost": 1.75,
-      "outputCost": 14,
-      "weightedCost": 5.43,
-      "benchmarkScore": 51.1,
-      "benchmarkName": "BigCodeBench",
-      "recommended": "planning"
-    },
-    {
-      "name": "GPT-5.2 Codex",
-      "provider": "OpenAI",
-      "inputCost": 1.75,
-      "outputCost": 14,
-      "weightedCost": 5.43,
-      "benchmarkScore": 51.1,
-      "benchmarkName": "BigCodeBench",
-      "recommended": "planning"
     },
     {
       "name": "GPT-5 Mini",
