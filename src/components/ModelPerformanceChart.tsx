@@ -134,6 +134,15 @@ export default function ModelPerformanceChart() {
       y: m.weightedCost,
     }));
 
+  // Handle empty state when no models have BigCodeBench scores
+  if (pointsWithBigCode.length === 0) {
+    return (
+      <div className="flex h-64 items-center justify-center rounded-lg border border-neutral-200 dark:border-neutral-700">
+        <p className="text-neutral-500">No models with BigCodeBench scores available</p>
+      </div>
+    );
+  }
+
   const scoreRange = pointsWithBigCode.reduce(
     (acc, p) => ({
       min: Math.min(acc.min, p.x),
