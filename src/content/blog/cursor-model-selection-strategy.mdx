@@ -12,66 +12,51 @@ math: false
 
 import ModelPerformanceChart from '../../components/ModelPerformanceChart';
 
-If you use Cursor regularly, you've probably done this: open the [pricing page](https://cursor.com/docs/models#model-pricing) to check model costs, then switch to a [leaderboard](https://arena.ai/leaderboard/code) to compare performance—and jump back and forth until you decide which model to use. And if you've ever picked "the best" model for everything, you may have received a surprisingly high bill. There's a simpler approach: use one stronger model for planning and one cheaper but capable model for execution.
+Checking Cursor’s [pricing](https://cursor.com/docs/models#model-pricing) and a [leaderboard](https://arena.ai/leaderboard/code) back and forth is tedious; using “the best” model for everything can lead to surprisingly high bills. A simpler approach: **one stronger model for planning, one cheaper model for execution.**
 
 ## The two-model strategy
 
-**Planning** (understanding the task, designing steps, making decisions) benefits from strong reasoning. Models like Claude Sonnet or Claude Opus tend to do better here, and the cost is often worth it because you're not generating huge amounts of code in this phase.
+**Planning** (understanding the task, designing steps) benefits from strong reasoning—e.g. Claude Sonnet/Opus. You send context and get back a plan and a few key decisions; token volume is modest, so the extra cost is often worth it.
 
-**Execution** (implementing the plan, writing and editing code) can be done well by cheaper models—for example Gemini Flash or GPT-5 Mini—as long as the plan is clear. You use more tokens in this phase, so keeping cost per token low matters.
-
-So the strategy is:
+**Execution** (implementing the plan, writing code) can be done well by cheaper models like Gemini Flash or GPT-5 Mini when the plan is clear. This phase uses many more tokens, so keeping cost per token low matters.
 
 1. Use a **premium model for planning**: start the task, get a clear plan, maybe one or two critical edits.
-2. **Switch to a cheaper model for execution**: implement the rest of the plan, iterate on code, run tests.
+2. **Switch to a cheaper model for execution**: implement the rest, iterate, run tests.
 
-You avoid both the "everything on the best model" bill and the "everything on the cheapest model" quality hit.
+You avoid both the “everything on the best model” bill and the “everything on the cheapest” quality hit.
 
 ## Why it works
 
-Planning is mostly **input-heavy**: you send context (files, instructions, specs) and get back a structured plan and a few key decisions. You need strong reasoning and reliability more than raw token volume. A smaller number of high-quality planning steps can prevent many wasteful execution steps.
-
-Execution is **output-heavy**: the model generates a lot of code and edits. If you do this on an expensive model, cost scales quickly. A capable but cheaper model, guided by a good plan, is usually enough to produce and refine code. Benchmarks like [BigCodeBench](https://huggingface.co/datasets/bigcode/bigcodebench-results) and [Arena-Hard](https://arena.ai/leaderboard) show that several mid-tier models are close to the top tier on code tasks, at a fraction of the cost.
-
-So you get better decisions where they matter (planning) and lower cost where most of the tokens are spent (execution).
+Planning is **input-heavy** (lots of context in, compact plan out); execution is **output-heavy** (lots of code generated). Benchmarks like [BigCodeBench](https://huggingface.co/datasets/bigcode/bigcodebench-results) and [Arena-Hard](https://arena.ai/leaderboard) show mid-tier models close to the top on code tasks at a fraction of the cost. So: strong reasoning where it matters, lower cost where most tokens are spent.
 
 ## Cost vs performance at a glance
 
-The chart below plots Cursor model **cost** (weighted $/1M tokens: 70% input, 30% output) against **benchmark performance**. Data is merged from Cursor’s pricing and from public benchmarks (BigCodeBench and Arena-Hard-Auto), and the data file is updated once per day by a [scheduled workflow](https://github.com/FridljDa/FridljDa.github.io/blob/master/.github/workflows/update-model-data.yaml). So you can see at a glance which models sit in the "expensive + strong" vs "cheap + capable" regions without switching tabs.
+The chart below plots **cost** (weighted $/1M tokens: 70% input, 30% output) vs **benchmark performance**. Data comes from Cursor’s pricing and public benchmarks; the [workflow](https://github.com/FridljDa/FridljDa.github.io/blob/master/.github/workflows/update-model-data.yaml) updates it daily.
 
 <ModelPerformanceChart client:load />
 
-**How to read it:** Lower left = cheaper and weaker. Upper right = more expensive and stronger. **Planning** recommendations (e.g. Claude 4.5 Sonnet, GPT-5.2) are in the upper-right area. **Execution** recommendations (e.g. Gemini 3 Flash, GPT-5 Mini) are in the lower half—good score, lower cost.
+**How to read it:** Lower left = cheaper/weaker, upper right = pricier/stronger. Pick a **planning** model from the upper-right (e.g. Claude 4.5 Sonnet, GPT-5.2) and an **execution** model from the lower half (e.g. Gemini 3 Flash, GPT-5 Mini).
 
 ## Recommended pairings
 
-Based on the current data and typical use:
+- **Planning:** Claude 4.5 Sonnet/Opus or GPT-5.2 / GPT-5.2 Codex.
+- **Execution:** Gemini 3 Flash, Gemini 2.5 Flash, or GPT-5 Mini.
 
-- **Planning:** Claude 4.5 Sonnet or Claude 4.5 Opus, or GPT-5.2 / GPT-5.2 Codex if you prefer OpenAI. Use these when you start a task, clarify requirements, and outline the approach.
-- **Execution:** Gemini 3 Flash, Gemini 2.5 Flash, or GPT-5 Mini. Use these for the bulk of coding, refactoring, and tests once the plan is set.
-
-You can adjust to taste: for example, use a slightly stronger execution model for very tricky files, or a slightly cheaper planner if the task is simple.
+Use a slightly stronger execution model for tricky files, or a cheaper planner for simple tasks.
 
 ## Example workflow
 
-1. **Start with the planning model** (e.g. Claude 4.5 Sonnet). Describe the goal, attach relevant files, and ask for a step-by-step plan and where to start.
-2. **Lock in the plan.** Review the plan, maybe ask one short follow-up, then switch model.
-3. **Switch to the execution model** (e.g. Gemini 3 Flash). Paste or refer to the plan and ask it to implement step by step. Do the main coding and iterations on this model.
-4. **Use the planning model only when needed.** If you hit a design decision or a subtle bug, switch back to the premium model for that sub-task, then return to the cheaper one.
-
-This keeps most tokens on the cheaper model while keeping quality high where it matters.
+1. **Start with the planning model.** Describe the goal, attach files, ask for a step-by-step plan.
+2. **Lock in the plan.** Review, maybe one short follow-up, then switch model.
+3. **Switch to the execution model.** Refer to the plan and implement step by step; do most coding here.
+4. **Use the planning model only when needed.** For design decisions or subtle bugs, switch back briefly, then return to the cheaper model.
 
 ## Rough cost intuition
 
-Suppose in a session you use about 100k input tokens and 50k output tokens for planning, then 200k input and 150k output for execution.
-
-- **All on a premium model** (e.g. Claude 4.5 Sonnet at $3 / $15 per 1M): planning + execution together can be on the order of a few dollars per session, and scales quickly with usage.
-- **Planning on premium, execution on a cheap model** (e.g. Gemini 3 Flash at $0.5 / $3 per 1M): the execution phase costs much less. The same session might be around a dollar or less, with similar quality for the implementation phase.
-
-Exact numbers depend on your usage, but the ratio is what matters: moving the high-token phase (execution) to a cheaper model cuts cost a lot.
+With ~100k input + 50k output for planning and 200k input + 150k output for execution: **all on a premium model** (e.g. Claude 4.5 Sonnet) can be several dollars per session; **planning on premium, execution on Gemini 3 Flash** can be around a dollar or less. Moving the high-token phase to a cheaper model cuts cost a lot.
 
 ## Takeaways
 
 - Use **one stronger model for planning** and **one cheaper model for execution** instead of one model for everything.
-- The chart above is updated daily from Cursor pricing and public benchmarks so you can check cost vs performance without tab-hopping.
-- Pick a planning model from the upper-right (high score, higher cost) and an execution model from the lower half (good score, lower cost), and switch between them as you move from planning to coding.
+- The chart is updated daily—use it to check cost vs performance without tab-hopping.
+- Pick planning from the upper-right of the chart, execution from the lower half, and switch as you move from planning to coding.
