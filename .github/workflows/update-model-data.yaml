@@ -30,7 +30,7 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: Fetch model performance data
-        run: node scripts/fetch-model-performance.js
+        run: node scripts/cursor-model-blog/fetch-model-performance.js
 
       - name: Set Git credentials
         run: |

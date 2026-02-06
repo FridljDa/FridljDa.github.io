@@ -1,7 +1,7 @@
 /**
  * Fetches Arena Code leaderboard data from arena.ai/leaderboard/code via Playwright.
  * Returns rows compatible with fetch-model-performance.js: { model, modelNorm, score, benchmark }.
- * Run standalone: node scripts/fetch-arena-code.js
+ * Run standalone: node scripts/cursor-model-blog/fetch-arena-code.js
  */
 
 import { fileURLToPath } from "url";
