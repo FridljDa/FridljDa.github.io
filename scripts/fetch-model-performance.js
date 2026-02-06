@@ -15,27 +15,44 @@ const OUT_PATH = join(ROOT, "public", "data", "model-performance.json");
 // Cursor model pricing ($ per 1M tokens): input, output. Source: cursor.com/docs/models
 // Weighted cost = input * 0.7 + output * 0.3 (planning-heavy mix).
 const CURSOR_PRICING = [
+  { name: "Claude 4 Sonnet", provider: "Anthropic", input: 3, output: 15 },
+  { name: "Claude 4 Sonnet 1M", provider: "Anthropic", input: 6, output: 22.5 },
+  { name: "Claude 4.5 Haiku", provider: "Anthropic", input: 1, output: 5 },
   { name: "Claude 4.5 Opus", provider: "Anthropic", input: 5, output: 25 },
   { name: "Claude 4.5 Sonnet", provider: "Anthropic", input: 3, output: 15 },
-  { name: "Claude 4.5 Haiku", provider: "Anthropic", input: 1, output: 5 },
   { name: "Claude 4.6 Opus", provider: "Anthropic", input: 5, output: 25 },
   { name: "Composer 1", provider: "Cursor", input: 1.25, output: 10 },
   { name: "Gemini 2.5 Flash", provider: "Google", input: 0.3, output: 2.5 },
   { name: "Gemini 3 Flash", provider: "Google", input: 0.5, output: 3 },
   { name: "Gemini 3 Pro", provider: "Google", input: 2, output: 12 },
+  { name: "Gemini 3 Pro Image Preview", provider: "Google", input: 2, output: 12 },
   { name: "GPT-5", provider: "OpenAI", input: 1.25, output: 10 },
+  { name: "GPT-5 Fast", provider: "OpenAI", input: 2.5, output: 20 },
+  { name: "GPT-5 Mini", provider: "OpenAI", input: 0.25, output: 2 },
+  { name: "GPT-5-Codex", provider: "OpenAI", input: 1.25, output: 10 },
+  { name: "GPT-5.1 Codex", provider: "OpenAI", input: 1.25, output: 10 },
+  { name: "GPT-5.1 Codex Max", provider: "OpenAI", input: 1.25, output: 10 },
+  { name: "GPT-5.1 Codex Mini", provider: "OpenAI", input: 0.25, output: 2 },
   { name: "GPT-5.2", provider: "OpenAI", input: 1.75, output: 14 },
   { name: "GPT-5.2 Codex", provider: "OpenAI", input: 1.75, output: 14 },
-  { name: "GPT-5 Mini", provider: "OpenAI", input: 0.25, output: 2 },
   { name: "Grok Code", provider: "xAI", input: 0.2, output: 1.5 },
 ];
 
 // Map Cursor display name -> possible benchmark identifiers (LMSYS Arena / BigCodeBench).
 // Most specific / newest keys first to avoid matching older model data by mistake.
 const CURSOR_TO_BENCHMARK_KEYS = {
-  "Claude 4.6 Opus": [
-    "claude-opus-4-6",
-    "claude-4.6-opus",
+  "Claude 4 Sonnet": [
+    "claude-sonnet-4",
+    "claude-4-sonnet",
+  ],
+  "Claude 4 Sonnet 1M": [
+    "claude-sonnet-4-1m",
+    "claude-4-sonnet-1m",
+  ],
+  "Claude 4.5 Haiku": [
+    "claude-haiku-4-5",
+    "claude-3-5-haiku",
+    "claude-3.5-haiku",
   ],
   "Claude 4.5 Opus": [
     "claude-opus-4-5-20251101",
@@ -48,35 +65,29 @@ const CURSOR_TO_BENCHMARK_KEYS = {
     "claude-4-5-sonnet",
     "claude-4.5-sonnet",
   ],
-  "Claude 4.5 Haiku": [
-    "claude-haiku-4-5",
-    "claude-3-5-haiku",
-    "claude-3.5-haiku",
-  ],
   "Claude 4.6 Opus": [
     "claude-opus-4-6",
-    "claude-4-6-opus",
+    "claude-4.6-opus",
     "claude-4-5-opus",
   ],
   "Composer 1": [],
-  "Gemini 3 Pro": [
-    "gemini-3-pro",
-    "gemini-3-pro-preview",
+  "Gemini 2.5 Flash": [
+    "gemini-2-5-flash",
+    "gemini-2.5-flash",
+    "gemini-2-flash",
   ],
   "Gemini 3 Flash": [
     "gemini-3-flash",
     "gemini-3-flash-thinking",
     "gemini-3-flash-grounding",
   ],
-  "Gemini 2.5 Flash": [
-    "gemini-2-5-flash",
-    "gemini-2.5-flash",
-    "gemini-2-flash",
+  "Gemini 3 Pro": [
+    "gemini-3-pro",
+    "gemini-3-pro-preview",
   ],
-  "GPT-5.2": [
-    "gpt-5.2-high",
-    "gpt-5.2",
-    "gpt-5-2",
+  "Gemini 3 Pro Image Preview": [
+    "gemini-3-pro-image-preview",
+    "gemini-3-pro-image",
   ],
   "GPT-5": [
     "gpt-5.1-high",
@@ -84,14 +95,38 @@ const CURSOR_TO_BENCHMARK_KEYS = {
     "gpt-5",
     "gpt-5-preview",
   ],
-  "GPT-5.2 Codex": [
-    "gpt-5.2-codex",
-    "gpt-5-2-codex",
+  "GPT-5 Fast": [
+    "gpt-5-fast",
+    "gpt-5-high",
   ],
   "GPT-5 Mini": [
     "gpt-5-mini",
     "gpt-4.1-mini",
     "gpt-4o-mini",
+  ],
+  "GPT-5-Codex": [
+    "gpt-5-codex",
+  ],
+  "GPT-5.1 Codex": [
+    "gpt-5.1-codex",
+    "gpt-5-1-codex",
+  ],
+  "GPT-5.1 Codex Max": [
+    "gpt-5.1-codex-max",
+    "gpt-5-1-codex-max",
+  ],
+  "GPT-5.1 Codex Mini": [
+    "gpt-5.1-codex-mini",
+    "gpt-5-1-codex-mini",
+  ],
+  "GPT-5.2": [
+    "gpt-5.2-high",
+    "gpt-5.2",
+    "gpt-5-2",
+  ],
+  "GPT-5.2 Codex": [
+    "gpt-5.2-codex",
+    "gpt-5-2-codex",
   ],
   "Grok Code": [
     "grok-code-fast-1",
