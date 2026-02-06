@@ -5,10 +5,11 @@
 import { writeFileSync, mkdirSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
+import { tmpdir } from "os";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-const OUTPUT_DIR = join(__dirname, ".tmp");
+const OUTPUT_DIR = join(tmpdir(), "cursor-model-blog-inspect-benchmark-data");
 
 function normalizeForMatch(s) {
   return s
