@@ -4,8 +4,10 @@
  * Run standalone: node scripts/cursor-model-blog/fetch-cursor-pricing.js
  */
 
+import { fileURLToPath } from "url";
 import { chromium } from "playwright";
 
+const __filename = fileURLToPath(import.meta.url);
 const CURSOR_MODELS_URL = "https://cursor.com/docs/models#model-pricing";
 
 /**
@@ -146,7 +148,7 @@ function inferProvider(modelName) {
   return "";
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] === __filename) {
   fetchCursorPricing().then((rows) => {
     console.log(`Fetched ${rows.length} Cursor pricing rows`);
     console.log(JSON.stringify(rows.slice(0, 5), null, 2));
