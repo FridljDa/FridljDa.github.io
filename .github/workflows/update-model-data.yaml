@@ -1,0 +1,42 @@
+name: Update model performance data
+
+on:
+  schedule:
+    # Daily at 2 AM UTC
+    - cron: "0 2 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update_model_data:
+    name: Fetch and update model-performance.json
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Fetch model performance data
+        run: node scripts/fetch-model-performance.js
+
+      - name: Set Git credentials
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "GitHub Actions [Bot]"
+
+      - name: Commit and push changes
+        run: |
+          git add public/data/model-performance.json
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Update model performance data"
+            git push
+          fi
