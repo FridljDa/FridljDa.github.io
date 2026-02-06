@@ -140,10 +140,12 @@ async function fetchArenaHard() {
       .replace(/-?\d{8}$/, "")
       .replace(/-+/g, "-")
       .replace(/-$/, "");
+    const parsedScore = Number(r.score);
+    const safeScore = Number.isFinite(parsedScore) ? parsedScore : 0;
     return {
       model: raw,
       modelNorm: norm,
-      score: Number(r.score) ?? 0,
+      score: safeScore,
       benchmark: "Arena-Hard-Auto",
     };
   });
