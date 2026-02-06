@@ -225,7 +225,7 @@ function findBenchmarkScores(cursorName, bigCodeRows, arenaRows) {
   }
 
   // Check fallback for LMSYS Arena
-  if (!result.bigCodeBenchScore && !result.arenaCodeElo) {
+  if (result.bigCodeBenchScore === null && result.arenaCodeElo === null) {
     for (const k of keys) {
       const fallback = LMSYS_ARENA_FALLBACK[k];
       if (fallback) {
