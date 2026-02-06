@@ -198,11 +198,27 @@ function findBenchmarkScores(cursorName, bigCodeRows, arenaRows) {
   const cursorNorm = normalizeForMatch(cursorName);
 
   const matchIn = (rows, getNorm) => {
-    for (const row of rows) {
-      const n = getNorm(row);
-      if (cursorNorm.includes(n) || n.includes(cursorNorm)) return row;
-      for (const k of keys) {
-        if (n.includes(k) || k.includes(n)) return row;
+    // If explicit keys exist, prefer them over substring matching
+    if (keys.length > 0) {
+      // First pass: exact match
+      for (const row of rows) {
+        const n = getNorm(row);
+        for (const k of keys) {
+          if (n === k) return row;
+        }
+      }
+      // Second pass: substring match with keys only
+      for (const row of rows) {
+        const n = getNorm(row);
+        for (const k of keys) {
+          if (n.includes(k) || k.includes(n)) return row;
+        }
+      }
+    } else {
+      // Fallback: substring matching only if no explicit keys exist
+      for (const row of rows) {
+        const n = getNorm(row);
+        if (cursorNorm.includes(n) || n.includes(cursorNorm)) return row;
       }
     }
     return null;
