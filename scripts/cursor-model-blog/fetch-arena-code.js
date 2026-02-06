@@ -46,7 +46,10 @@ export async function fetchArenaCode() {
         let modelIndex = headerTexts.findIndex((text) => /model/.test(text));
         let scoreIndex = headerTexts.findIndex((text) => /(score|elo)/.test(text));
 
-        // Fallback to previous hard-coded indices if headers are not found
+        // Fallback to previous hard-coded indices if headers are not found.
+        // Historically, the Arena Code table has the "Model" column at index 2 and the "Score/Elo"
+        // column at index 3 (0-based), so we use these as backward-compatible defaults if the
+        // header-based lookup fails.
         if (modelIndex === -1) modelIndex = 2;
         if (scoreIndex === -1) scoreIndex = 3;
 
