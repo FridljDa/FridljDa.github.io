@@ -23,6 +23,12 @@ jobs:
         with:
           node-version: "24"
 
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
       - name: Fetch model performance data
         run: node scripts/fetch-model-performance.js
 
