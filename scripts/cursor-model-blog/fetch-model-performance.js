@@ -193,7 +193,7 @@ async function fetchBigCodeBench() {
   return out;
 }
 
-function findBenchmarkScore(cursorName, bigCodeRows, arenaRows) {
+function findBenchmarkScores(cursorName, bigCodeRows, arenaRows) {
   const keys = CURSOR_TO_BENCHMARK_KEYS[cursorName] ?? [];
   const cursorNorm = normalizeForMatch(cursorName);
 
@@ -208,17 +208,34 @@ function findBenchmarkScore(cursorName, bigCodeRows, arenaRows) {
     return null;
   };
 
+  const result = {
+    bigCodeBenchScore: null,
+    arenaCodeElo: null,
+    lmsysArenaElo: null,
+  };
+
   const inBigCode = matchIn(bigCodeRows, (r) => r.modelNorm);
-  if (inBigCode) return { score: inBigCode.score, benchmark: "BigCodeBench" };
+  if (inBigCode) {
+    result.bigCodeBenchScore = inBigCode.score;
+  }
 
   const inArena = matchIn(arenaRows, (r) => r.modelNorm);
-  if (inArena) return { score: inArena.score, benchmark: "Arena-Code" };
-
-  for (const k of keys) {
-    const fallback = LMSYS_ARENA_FALLBACK[k];
-    if (fallback) return { score: fallback.score, benchmark: fallback.benchmark };
+  if (inArena) {
+    result.arenaCodeElo = inArena.score;
   }
-  return null;
+
+  // Check fallback for LMSYS Arena
+  if (!result.bigCodeBenchScore && !result.arenaCodeElo) {
+    for (const k of keys) {
+      const fallback = LMSYS_ARENA_FALLBACK[k];
+      if (fallback) {
+        result.lmsysArenaElo = fallback.score;
+        break;
+      }
+    }
+  }
+
+  return result;
 }
 
 function main() {
@@ -248,15 +265,16 @@ function main() {
 
     for (const p of finalPricing) {
       const weightedCost = p.input * 0.7 + p.output * 0.3;
-      const bench = findBenchmarkScore(p.name, bigCodeRows, arenaRows);
+      const benchScores = findBenchmarkScores(p.name, bigCodeRows, arenaRows);
       models.push({
         name: p.name,
         provider: p.provider,
         inputCost: p.input,
         outputCost: p.output,
         weightedCost: Math.round(weightedCost * 100) / 100,
-        benchmarkScore: bench ? bench.score : null,
-        benchmarkName: bench ? bench.benchmark : null,
+        bigCodeBenchScore: benchScores.bigCodeBenchScore,
+        arenaCodeElo: benchScores.arenaCodeElo,
+        lmsysArenaElo: benchScores.lmsysArenaElo,
         recommended: recommendedPlanning.includes(p.name)
           ? "planning"
           : recommendedExecution.includes(p.name)
@@ -267,7 +285,7 @@ function main() {
 
     const payload = {
       lastUpdated: new Date().toISOString(),
-      models: models.filter((m) => m.benchmarkScore != null),
+      models: models.filter((m) => m.bigCodeBenchScore != null || m.arenaCodeElo != null || m.lmsysArenaElo != null),
     };
 
     mkdirSync(join(ROOT, "public", "data"), { recursive: true });

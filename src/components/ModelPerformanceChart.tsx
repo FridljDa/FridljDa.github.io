@@ -17,8 +17,9 @@ export interface ModelDatum {
   inputCost: number;
   outputCost: number;
   weightedCost: number;
-  benchmarkScore: number;
-  benchmarkName: string;
+  bigCodeBenchScore: number | null;
+  arenaCodeElo: number | null;
+  lmsysArenaElo: number | null;
   recommended: "planning" | "execution" | null;
 }
 
@@ -40,6 +41,7 @@ function CustomTooltip({
 }) {
   if (!active || !payload?.length) return null;
   const m = payload[0].payload;
+  
   return (
     <div className="rounded-lg border border-neutral-200 bg-white p-3 shadow-lg dark:border-neutral-700 dark:bg-neutral-800">
       <div className="font-semibold">{m.name}</div>
@@ -51,8 +53,24 @@ function CustomTooltip({
         <span>${m.outputCost}</span>
         <span>Weighted cost:</span>
         <span>${m.weightedCost}</span>
-        <span>Score ({m.benchmarkName}):</span>
-        <span>{m.benchmarkScore}</span>
+        {m.bigCodeBenchScore !== null && (
+          <>
+            <span>BigCodeBench:</span>
+            <span>{m.bigCodeBenchScore}</span>
+          </>
+        )}
+        {m.arenaCodeElo !== null && (
+          <>
+            <span>Arena-Code Elo:</span>
+            <span>{m.arenaCodeElo}</span>
+          </>
+        )}
+        {m.lmsysArenaElo !== null && (
+          <>
+            <span>LMSYS Arena Elo:</span>
+            <span>{m.lmsysArenaElo}</span>
+          </>
+        )}
       </div>
       {m.recommended && (
         <div className="mt-2 text-xs font-medium text-neutral-600 dark:text-neutral-300">
@@ -107,20 +125,24 @@ export default function ModelPerformanceChart() {
     );
   }
 
-  const points = data.models.map((m) => ({
-    ...m,
-    x: m.benchmarkScore,
-    y: m.weightedCost,
-  }));
+  // Filter to only models with BigCodeBench scores for valid comparison
+  // Since different benchmarks use different scales, we can't mix them on the same chart
+  const pointsWithBigCode = data.models
+    .filter((m) => m.bigCodeBenchScore !== null)
+    .map((m) => ({
+      ...m,
+      x: m.bigCodeBenchScore!,
+      y: m.weightedCost,
+    }));
 
-  const scoreRange = points.reduce(
+  const scoreRange = pointsWithBigCode.reduce(
     (acc, p) => ({
       min: Math.min(acc.min, p.x),
       max: Math.max(acc.max, p.x),
     }),
     { min: Infinity, max: -Infinity }
   );
-  const costRange = points.reduce(
+  const costRange = pointsWithBigCode.reduce(
     (acc, p) => ({
       min: Math.min(acc.min, p.y),
       max: Math.max(acc.max, p.y),
@@ -153,7 +175,7 @@ export default function ModelPerformanceChart() {
               unit=""
               domain={[scoreRange.min - scorePadding, scoreRange.max + scorePadding]}
               tickFormatter={(v) => String(Math.round(v))}
-              label={{ value: "Benchmark score (higher = better)", position: "bottom", offset: 0 }}
+              label={{ value: "BigCodeBench score (higher = better)", position: "bottom", offset: 0 }}
             />
             <YAxis
               type="number"
@@ -182,8 +204,8 @@ export default function ModelPerformanceChart() {
               strokeOpacity={0.2}
               strokeDasharray="4 4"
             />
-            <Scatter name="Models" data={points} fill="var(--scatter-fill, #64748b)">
-              {points.map((entry) => (
+            <Scatter name="Models" data={pointsWithBigCode} fill="var(--scatter-fill, #64748b)">
+              {pointsWithBigCode.map((entry) => (
                 <Cell
                   key={entry.name}
                   fill={
