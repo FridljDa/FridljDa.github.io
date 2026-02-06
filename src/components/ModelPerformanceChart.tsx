@@ -41,6 +41,8 @@ function CustomTooltip({
 }) {
   if (!active || !payload?.length) return null;
   const m = payload[0].payload;
+  const xAxisScore =
+    typeof m.arenaCodeElo === "number" ? m.arenaCodeElo : m.lmsysArenaElo ?? null;
   return (
     <div className="rounded-lg border border-neutral-200 bg-white p-3 shadow-lg dark:border-neutral-700 dark:bg-neutral-800">
       <div className="font-semibold">{m.name}</div>
@@ -52,22 +54,19 @@ function CustomTooltip({
         <span>${m.outputCost}</span>
         <span>Weighted cost:</span>
         <span>${m.weightedCost}</span>
+        {xAxisScore !== null && (
+          <>
+            <span>Score on chart (x-axis):</span>
+            <span>
+              {typeof m.arenaCodeElo === "number" ? "Arena-Code " : "LMSYS "}
+              {xAxisScore}
+            </span>
+          </>
+        )}
         {typeof m.bigCodeBenchScore === "number" && (
           <>
             <span>BigCodeBench:</span>
             <span>{m.bigCodeBenchScore}</span>
-          </>
-        )}
-        {typeof m.arenaCodeElo === "number" && (
-          <>
-            <span>Arena-Code Elo:</span>
-            <span>{m.arenaCodeElo}</span>
-          </>
-        )}
-        {typeof m.lmsysArenaElo === "number" && (
-          <>
-            <span>LMSYS Arena Elo:</span>
-            <span>{m.lmsysArenaElo}</span>
           </>
         )}
       </div>
@@ -124,33 +123,33 @@ export default function ModelPerformanceChart() {
     );
   }
 
-  // Filter to only models with BigCodeBench scores for valid comparison
-  // Since different benchmarks use different scales, we can't mix them on the same chart
-  const pointsWithBigCode = data.models
-    .filter((m) => typeof m.bigCodeBenchScore === "number")
+  // Use Arena-Code Elo or LMSYS Arena Elo for x-axis (same scale). BigCodeBench kept in tooltip only.
+  const performanceScore = (m: ModelDatum) =>
+    typeof m.arenaCodeElo === "number" ? m.arenaCodeElo : m.lmsysArenaElo ?? null;
+  const chartPoints = data.models
+    .filter((m) => performanceScore(m) !== null)
     .map((m) => ({
       ...m,
-      x: m.bigCodeBenchScore!,
+      x: performanceScore(m)!,
       y: m.weightedCost,
     }));
 
-  // Handle empty state when no models have BigCodeBench scores
-  if (pointsWithBigCode.length === 0) {
+  if (chartPoints.length === 0) {
     return (
       <div className="flex h-64 items-center justify-center rounded-lg border border-neutral-200 dark:border-neutral-700">
-        <p className="text-neutral-500">No models with BigCodeBench scores available</p>
+        <p className="text-neutral-500">No models with Arena-Code or LMSYS Elo scores available</p>
       </div>
     );
   }
 
-  const scoreRange = pointsWithBigCode.reduce(
+  const scoreRange = chartPoints.reduce(
     (acc, p) => ({
       min: Math.min(acc.min, p.x),
       max: Math.max(acc.max, p.x),
     }),
     { min: Infinity, max: -Infinity }
   );
-  const costRange = pointsWithBigCode.reduce(
+  const costRange = chartPoints.reduce(
     (acc, p) => ({
       min: Math.min(acc.min, p.y),
       max: Math.max(acc.max, p.y),
@@ -163,12 +162,12 @@ export default function ModelPerformanceChart() {
   return (
     <figure className="my-6 w-full">
       <p id="model-performance-chart-description" className="sr-only">
-        Scatter plot comparing model benchmark score (x-axis, higher is better) against weighted cost per 1M tokens (y-axis, lower is better). Dashed lines show the average score and average cost, dividing the chart into four quadrants.
+        Scatter plot comparing code performance (x-axis: Arena-Code or LMSYS Arena Elo, higher is better) against weighted cost per 1M tokens (y-axis, lower is better). Dashed lines show the average score and average cost, dividing the chart into four quadrants.
       </p>
       <div
         className="h-[400px] w-full"
         role="img"
-        aria-label="Model performance versus cost scatter plot"
+        aria-label="Model performance versus cost scatter plot (Arena-Code / LMSYS Elo)"
         aria-describedby="model-performance-chart-description"
       >
         <ResponsiveContainer width="100%" height="100%">
@@ -183,7 +182,11 @@ export default function ModelPerformanceChart() {
               unit=""
               domain={[scoreRange.min - scorePadding, scoreRange.max + scorePadding]}
               tickFormatter={(v) => String(Math.round(v))}
-              label={{ value: "BigCodeBench score (higher = better)", position: "bottom", offset: 0 }}
+              label={{
+                value: "Code performance (Arena-Code / LMSYS Elo, higher = better)",
+                position: "bottom",
+                offset: 0,
+              }}
             />
             <YAxis
               type="number"
@@ -212,8 +215,8 @@ export default function ModelPerformanceChart() {
               strokeOpacity={0.2}
               strokeDasharray="4 4"
             />
-            <Scatter name="Models" data={pointsWithBigCode} fill="var(--scatter-fill, #64748b)">
-              {pointsWithBigCode.map((entry) => (
+            <Scatter name="Models" data={chartPoints} fill="var(--scatter-fill, #64748b)">
+              {chartPoints.map((entry) => (
                 <Cell
                   key={entry.name}
                   fill={
