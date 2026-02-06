@@ -132,7 +132,15 @@ export default function ModelPerformanceChart() {
 
   return (
     <figure className="my-6 w-full">
-      <div className="h-[400px] w-full">
+      <p id="model-performance-chart-description" className="sr-only">
+        Scatter plot comparing model benchmark score (x-axis, higher is better) against weighted cost per 1M tokens (y-axis, lower is better). Dashed lines show the average score and average cost, dividing the chart into four quadrants.
+      </p>
+      <div
+        className="h-[400px] w-full"
+        role="img"
+        aria-label="Model performance versus cost scatter plot"
+        aria-describedby="model-performance-chart-description"
+      >
         <ResponsiveContainer width="100%" height="100%">
           <ScatterChart
             margin={{ top: 20, right: 20, bottom: 20, left: 20 }}
