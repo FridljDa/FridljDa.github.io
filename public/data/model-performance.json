@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2026-02-06T16:22:39.296Z",
+  "lastUpdated": "2026-02-06T17:09:40.029Z",
   "models": [
     {
       "name": "Claude 4 Sonnet",
@@ -7,8 +7,9 @@
       "inputCost": 3,
       "outputCost": 15,
       "weightedCost": 6.6,
-      "benchmarkScore": 1387,
-      "benchmarkName": "Arena-Code",
+      "bigCodeBenchScore": null,
+      "arenaCodeElo": 1387,
+      "lmsysArenaElo": null,
       "recommended": null
     },
     {
@@ -17,8 +18,9 @@
       "inputCost": 1,
       "outputCost": 5,
       "weightedCost": 2.2,
-      "benchmarkScore": 46.1,
-      "benchmarkName": "BigCodeBench",
+      "bigCodeBenchScore": 46.1,
+      "arenaCodeElo": null,
+      "lmsysArenaElo": null,
       "recommended": null
     },
     {
@@ -27,8 +29,9 @@
       "inputCost": 5,
       "outputCost": 25,
       "weightedCost": 11,
-      "benchmarkScore": 1500,
-      "benchmarkName": "Arena-Code",
+      "bigCodeBenchScore": null,
+      "arenaCodeElo": 1500,
+      "lmsysArenaElo": null,
       "recommended": "planning"
     },
     {
@@ -37,8 +40,9 @@
       "inputCost": 3,
       "outputCost": 15,
       "weightedCost": 6.6,
-      "benchmarkScore": 1387,
-      "benchmarkName": "Arena-Code",
+      "bigCodeBenchScore": null,
+      "arenaCodeElo": 1387,
+      "lmsysArenaElo": null,
       "recommended": "planning"
     },
     {
@@ -47,8 +51,9 @@
       "inputCost": 0.3,
       "outputCost": 2.5,
       "weightedCost": 0.96,
-      "benchmarkScore": 1206,
-      "benchmarkName": "LMSYS-Arena",
+      "bigCodeBenchScore": null,
+      "arenaCodeElo": null,
+      "lmsysArenaElo": 1206,
       "recommended": "execution"
     },
     {
@@ -57,8 +62,9 @@
       "inputCost": 0.5,
       "outputCost": 3,
       "weightedCost": 1.25,
-      "benchmarkScore": 1443,
-      "benchmarkName": "Arena-Code",
+      "bigCodeBenchScore": null,
+      "arenaCodeElo": 1443,
+      "lmsysArenaElo": null,
       "recommended": "execution"
     },
     {
@@ -67,8 +73,9 @@
       "inputCost": 2,
       "outputCost": 12,
       "weightedCost": 5,
-      "benchmarkScore": 1453,
-      "benchmarkName": "Arena-Code",
+      "bigCodeBenchScore": null,
+      "arenaCodeElo": 1453,
+      "lmsysArenaElo": null,
       "recommended": null
     },
     {
@@ -77,8 +84,9 @@
       "inputCost": 2,
       "outputCost": 12,
       "weightedCost": 5,
-      "benchmarkScore": 1453,
-      "benchmarkName": "Arena-Code",
+      "bigCodeBenchScore": null,
+      "arenaCodeElo": 1453,
+      "lmsysArenaElo": null,
       "recommended": null
     },
     {
@@ -87,8 +95,9 @@
       "inputCost": 1.25,
       "outputCost": 10,
       "weightedCost": 3.88,
-      "benchmarkScore": 1472,
-      "benchmarkName": "Arena-Code",
+      "bigCodeBenchScore": null,
+      "arenaCodeElo": 1472,
+      "lmsysArenaElo": null,
       "recommended": null
     },
     {
@@ -97,8 +106,9 @@
       "inputCost": 0.25,
       "outputCost": 2,
       "weightedCost": 0.77,
-      "benchmarkScore": 46.1,
-      "benchmarkName": "BigCodeBench",
+      "bigCodeBenchScore": 46.1,
+      "arenaCodeElo": null,
+      "lmsysArenaElo": null,
       "recommended": "execution"
     },
     {
@@ -107,8 +117,9 @@
       "inputCost": 1.25,
       "outputCost": 10,
       "weightedCost": 3.88,
-      "benchmarkScore": 1350,
-      "benchmarkName": "Arena-Code",
+      "bigCodeBenchScore": null,
+      "arenaCodeElo": 1350,
+      "lmsysArenaElo": null,
       "recommended": null
     },
     {
@@ -117,8 +128,9 @@
       "inputCost": 1.25,
       "outputCost": 10,
       "weightedCost": 3.88,
-      "benchmarkScore": 1350,
-      "benchmarkName": "Arena-Code",
+      "bigCodeBenchScore": null,
+      "arenaCodeElo": 1350,
+      "lmsysArenaElo": null,
       "recommended": null
     },
     {
@@ -127,8 +139,9 @@
       "inputCost": 0.25,
       "outputCost": 2,
       "weightedCost": 0.77,
-      "benchmarkScore": 1350,
-      "benchmarkName": "Arena-Code",
+      "bigCodeBenchScore": null,
+      "arenaCodeElo": 1350,
+      "lmsysArenaElo": null,
       "recommended": null
     },
     {
@@ -137,8 +150,9 @@
       "inputCost": 1.75,
       "outputCost": 14,
       "weightedCost": 5.43,
-      "benchmarkScore": 1472,
-      "benchmarkName": "Arena-Code",
+      "bigCodeBenchScore": null,
+      "arenaCodeElo": 1472,
+      "lmsysArenaElo": null,
       "recommended": "planning"
     },
     {
@@ -147,8 +161,9 @@
       "inputCost": 1.75,
       "outputCost": 14,
       "weightedCost": 5.43,
-      "benchmarkScore": 1397,
-      "benchmarkName": "Arena-Code",
+      "bigCodeBenchScore": null,
+      "arenaCodeElo": 1397,
+      "lmsysArenaElo": null,
       "recommended": "planning"
     },
     {
@@ -157,8 +172,9 @@
       "inputCost": 0.2,
       "outputCost": 1.5,
       "weightedCost": 0.59,
-      "benchmarkScore": 1141,
-      "benchmarkName": "Arena-Code",
+      "bigCodeBenchScore": null,
+      "arenaCodeElo": 1141,
+      "lmsysArenaElo": null,
       "recommended": "execution"
     }
   ]
