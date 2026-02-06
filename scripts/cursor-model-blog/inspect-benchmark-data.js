@@ -6,20 +6,11 @@ import { writeFileSync, mkdirSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 import { tmpdir } from "os";
+import { normalizeForMatch } from "./utils/normalize.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const OUTPUT_DIR = join(tmpdir(), "cursor-model-blog-inspect-benchmark-data");
-
-function normalizeForMatch(s) {
-  return s
-    .toLowerCase()
-    .replace(/\s+/g, "-")
-    .replace(/[._]/g, "-")
-    .replace(/-+/g, "-")
-    .replace(/^\d{4}-\d{2}-\d{2}$/, "")
-    .trim();
-}
 
 function parseCsv(text) {
   const lines = text.trim().split("\n");
