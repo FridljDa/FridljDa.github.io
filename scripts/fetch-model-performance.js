@@ -68,7 +68,6 @@ const CURSOR_TO_BENCHMARK_KEYS = {
   "Claude 4.6 Opus": [
     "claude-opus-4-6",
     "claude-4.6-opus",
-    "claude-4-5-opus",
   ],
   "Composer 1": [],
   "Gemini 2.5 Flash": [
@@ -133,6 +132,25 @@ const CURSOR_TO_BENCHMARK_KEYS = {
     "grok-code-fast",
     "grok-code",
   ],
+};
+
+// Hardcoded LMSYS Chatbot Arena ELO scores (fallback when not in live benchmarks).
+const LMSYS_ARENA_FALLBACK = {
+  "claude-opus-4-5-20251101": { score: 1470, benchmark: "LMSYS-Arena" },
+  "claude-sonnet-4-5-20250929": { score: 1386, benchmark: "LMSYS-Arena" },
+  "claude-haiku-4-5-20251001": { score: 1297, benchmark: "LMSYS-Arena" },
+  "gpt-5.2-high": { score: 1472, benchmark: "LMSYS-Arena" },
+  "gpt-5.2": { score: 1397, benchmark: "LMSYS-Arena" },
+  "gpt-5-2": { score: 1397, benchmark: "LMSYS-Arena" },
+  "gpt-5.1": { score: 1350, benchmark: "LMSYS-Arena" },
+  "gpt-5.2-codex": { score: 1333, benchmark: "LMSYS-Arena" },
+  "gpt-5-2-codex": { score: 1333, benchmark: "LMSYS-Arena" },
+  "gemini-3-pro": { score: 1453, benchmark: "LMSYS-Arena" },
+  "gemini-3-flash": { score: 1443, benchmark: "LMSYS-Arena" },
+  "gemini-2.5-pro": { score: 1206, benchmark: "LMSYS-Arena" },
+  "gemini-2-5-flash": { score: 1206, benchmark: "LMSYS-Arena" },
+  "gemini-2.5-flash": { score: 1206, benchmark: "LMSYS-Arena" },
+  "grok-code-fast-1": { score: 1141, benchmark: "LMSYS-Arena" },
 };
 
 function normalizeForMatch(s) {
@@ -259,6 +277,10 @@ function findBenchmarkScore(cursorName, bigCodeRows, arenaRows) {
   const inArena = matchIn(arenaRows, (r) => r.modelNorm);
   if (inArena) return { score: inArena.score, benchmark: "Arena-Hard-Auto" };
 
+  for (const k of keys) {
+    const fallback = LMSYS_ARENA_FALLBACK[k];
+    if (fallback) return { score: fallback.score, benchmark: fallback.benchmark };
+  }
   return null;
 }
 
