@@ -30,6 +30,8 @@ The Snakemake pipeline has 19+ stages. At a high level it:
 6. **Produces two outputs**: a censored dataset for training, and an uncensored (in-memory/view-only) path for inspection in a Streamlit app.
 7. **Prepares training data**: filter to labeled tickets, drop non-actionable intents, balanced subsample per intent, truncate agent resolution, and transform into the final training format.
 
+The pipeline maintains two parallel paths: a censored dataset for training (ensuring PII never reaches the LLM or training data) and an uncensored view for internal debugging in a Streamlit app.
+
 The rule graph below gives a bird’s-eye view of the workflow and its dependencies.
 
 ![Snakemake rule graph for the ticket analysis pipeline](/images/blog/snakemake-ticket-analysis-pipeline/rulegraph.png)
@@ -47,7 +49,7 @@ The pipeline first reduced each ticket to a fixed set of fields (IDs, channel, s
 
 ### 1. Scatter–Gather for Expensive Steps
 
-The heaviest steps were: PII censoring, LLM-based author classification, and LLM-based intent labelling. Running them over 2000+ tickets in one go would have been slow and brittle. So we used a **scatter–gather** pattern:
+The heaviest steps were: PII censoring, LLM-based author classification, and LLM-based intent labelling. Running them over 2000+ tickets in one go would have been slow and brittle. So we used a **scatter–gather** pattern. The censoring step uses Microsoft Presidio with multilingual NLP models (English and German) to detect PII, then replaces it with realistic synthetic data via Faker, maintaining consistency within each ticket.
 
 1. **Scatter**: A checkpoint rule splits the extracted tickets into chunks (e.g. 500 tickets per chunk) and writes a manifest of chunk filenames.
 2. **Process in parallel**: Each chunk is processed by its own rule (e.g. `censor_chunk`, `classify_authors_chunk`, `label_llm_chunk`). Snakemake can run these in parallel with `--cores N`.
@@ -105,8 +107,10 @@ With 19+ steps, two output paths (censored for training, uncensored for viewing)
 - **Maintainability**: Adding or changing a step (e.g. a new filter or transformation) is a matter of adding or editing a rule and wiring inputs/outputs.
 - **Transparency**: The rule graph (as in the figure above) makes the whole pipeline visible at a glance, which helps both debugging and onboarding.
 
+The pipeline is also model-agnostic: labels are stored per-model (e.g. `data/tickets/13_labeled/Qwen_Qwen3-Coder-480B/`), allowing easy experimentation with different LLMs without reprocessing tickets.
+
 ## Outcome
 
-The pipeline successfully processed and classified the full ticket set, supported iterative refinement of the customer intent taxonomy, and produced the datasets needed to train a first-level customer support AI agent (in a separate repo). Snakemake’s scatter–gather pattern, checkpoints, and DAG-based orchestration were central to keeping the workflow efficient and maintainable—exactly the kind of structure that scales to larger datasets and more complex MLOps pipelines.
+The pipeline successfully processed and classified the full ticket set into 20+ distinct customer intent categories (e.g. ReceiveTickets, CancelReservation, RefundRequest), supported iterative refinement of the customer intent taxonomy, and produced the datasets needed to train a first-level customer support AI agent (in a separate repo). Snakemake’s scatter–gather pattern, checkpoints, and DAG-based orchestration were central to keeping the workflow efficient and maintainable—exactly the kind of structure that scales to larger datasets and more complex MLOps pipelines.
 
 If you’re designing data or ML pipelines with expensive steps and iterative development, Snakemake is a strong candidate: you get parallelisation, incremental runs, and a clear, declarative specification of the whole workflow in one place.
