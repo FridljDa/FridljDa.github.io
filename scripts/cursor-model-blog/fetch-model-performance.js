@@ -285,7 +285,7 @@ function main() {
 
     const payload = {
       lastUpdated: new Date().toISOString(),
-      models: models.filter((m) => m.bigCodeBenchScore != null || m.arenaCodeElo != null || m.lmsysArenaElo != null),
+      models: models.filter((m) => m.bigCodeBenchScore !== null || m.arenaCodeElo !== null || m.lmsysArenaElo !== null),
     };
 
     mkdirSync(join(ROOT, "public", "data"), { recursive: true });
