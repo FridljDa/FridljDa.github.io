@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2026-02-06T15:34:22.245Z",
+  "lastUpdated": "2026-02-06T15:50:31.259Z",
   "models": [
     {
       "name": "Claude 4.5 Haiku",
@@ -12,6 +12,66 @@
       "recommended": null
     },
     {
+      "name": "Claude 4.5 Opus",
+      "provider": "Anthropic",
+      "inputCost": 5,
+      "outputCost": 25,
+      "weightedCost": 11,
+      "benchmarkScore": 1470,
+      "benchmarkName": "LMSYS-Arena",
+      "recommended": "planning"
+    },
+    {
+      "name": "Claude 4.5 Sonnet",
+      "provider": "Anthropic",
+      "inputCost": 3,
+      "outputCost": 15,
+      "weightedCost": 6.6,
+      "benchmarkScore": 1386,
+      "benchmarkName": "LMSYS-Arena",
+      "recommended": "planning"
+    },
+    {
+      "name": "Gemini 2.5 Flash",
+      "provider": "Google",
+      "inputCost": 0.3,
+      "outputCost": 2.5,
+      "weightedCost": 0.96,
+      "benchmarkScore": 1206,
+      "benchmarkName": "LMSYS-Arena",
+      "recommended": "execution"
+    },
+    {
+      "name": "Gemini 3 Flash",
+      "provider": "Google",
+      "inputCost": 0.5,
+      "outputCost": 3,
+      "weightedCost": 1.25,
+      "benchmarkScore": 1443,
+      "benchmarkName": "LMSYS-Arena",
+      "recommended": "execution"
+    },
+    {
+      "name": "Gemini 3 Pro",
+      "provider": "Google",
+      "inputCost": 2,
+      "outputCost": 12,
+      "weightedCost": 5,
+      "benchmarkScore": 1453,
+      "benchmarkName": "LMSYS-Arena",
+      "recommended": null
+    },
+    {
+      "name": "GPT-5",
+      "provider": "OpenAI",
+      "inputCost": 1.25,
+      "outputCost": 10,
+      "weightedCost": 3.88,
+      "benchmarkScore": 1350,
+      "benchmarkName": "LMSYS-Arena",
+      "recommended": null
+    },
+    {
       "name": "GPT-5 Mini",
       "provider": "OpenAI",
       "inputCost": 0.25,
@@ -19,6 +79,36 @@
       "weightedCost": 0.77,
       "benchmarkScore": 46.1,
       "benchmarkName": "BigCodeBench",
+      "recommended": "execution"
+    },
+    {
+      "name": "GPT-5.2",
+      "provider": "OpenAI",
+      "inputCost": 1.75,
+      "outputCost": 14,
+      "weightedCost": 5.43,
+      "benchmarkScore": 1472,
+      "benchmarkName": "LMSYS-Arena",
+      "recommended": "planning"
+    },
+    {
+      "name": "GPT-5.2 Codex",
+      "provider": "OpenAI",
+      "inputCost": 1.75,
+      "outputCost": 14,
+      "weightedCost": 5.43,
+      "benchmarkScore": 1333,
+      "benchmarkName": "LMSYS-Arena",
+      "recommended": "planning"
+    },
+    {
+      "name": "Grok Code",
+      "provider": "xAI",
+      "inputCost": 0.2,
+      "outputCost": 1.5,
+      "weightedCost": 0.59,
+      "benchmarkScore": 1141,
+      "benchmarkName": "LMSYS-Arena",
       "recommended": "execution"
     }
   ]
