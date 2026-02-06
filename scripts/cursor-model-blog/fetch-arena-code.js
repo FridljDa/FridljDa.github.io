@@ -35,14 +35,34 @@ export async function fetchArenaCode() {
       await page.waitForSelector("table tbody tr", { timeout: 15000 });
 
       const rows = await page.evaluate(() => {
-        const tableRows = Array.from(document.querySelectorAll("table tbody tr"));
+        const table = document.querySelector("table");
+        if (!table) {
+          return [];
+        }
+
+        const headerCells = Array.from(table.querySelectorAll("thead th"));
+        const headerTexts = headerCells.map((th) => th.textContent?.trim().toLowerCase() || "");
+
+        let modelIndex = headerTexts.findIndex((text) => /model/.test(text));
+        let scoreIndex = headerTexts.findIndex((text) => /(score|elo)/.test(text));
+
+        // Fallback to previous hard-coded indices if headers are not found
+        if (modelIndex === -1) modelIndex = 2;
+        if (scoreIndex === -1) scoreIndex = 3;
+
+        const tableRows = Array.from(table.querySelectorAll("tbody tr"));
         return tableRows.map((row) => {
           const cells = row.querySelectorAll("td");
-          const modelCell = cells[2];
-          const scoreCell = cells[3];
-          const link = modelCell?.querySelector("a");
-          const modelRaw = (link?.textContent?.trim() || modelCell?.textContent?.trim() || "").trim();
-          const scoreRaw = scoreCell?.textContent?.trim() || "";
+          const modelCell = cells[modelIndex];
+          const scoreCell = cells[scoreIndex];
+
+          if (!modelCell || !scoreCell) {
+            return { model: "", score: "" };
+          }
+
+          const link = modelCell.querySelector("a");
+          const modelRaw = (link?.textContent?.trim() || modelCell.textContent?.trim() || "").trim();
+          const scoreRaw = scoreCell.textContent?.trim() || "";
           return { model: modelRaw, score: scoreRaw };
         });
       });
