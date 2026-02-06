@@ -1,5 +1,5 @@
 /**
- * Fetches model performance (BigCodeBench, Arena-Hard-Auto) and merges with
+ * Fetches model performance (BigCodeBench, Arena-Code) and merges with
  * Cursor pricing to produce public/data/model-performance.json.
  * Run: node scripts/fetch-model-performance.js
  */
@@ -7,6 +7,7 @@
 import { writeFileSync, mkdirSync } from "fs";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
+import { fetchArenaCode } from "./fetch-arena-code.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, "..");
@@ -163,46 +164,6 @@ function normalizeForMatch(s) {
     .trim();
 }
 
-function parseCsv(text) {
-  const lines = text.trim().split("\n");
-  if (lines.length < 2) return [];
-  const parseLine = (line) => {
-    const values = [];
-    let i = 0;
-    while (i < line.length) {
-      if (line[i] === '"') {
-        i += 1;
-        let v = "";
-        while (i < line.length && line[i] !== '"') {
-          v += line[i++];
-        }
-        if (line[i] === '"') i += 1;
-        values.push(v);
-        if (line[i] === ",") i += 1;
-      } else {
-        let v = "";
-        while (i < line.length && line[i] !== ",") {
-          v += line[i++];
-        }
-        values.push(v.trim());
-        if (line[i] === ",") i += 1;
-      }
-    }
-    return values;
-  };
-  const header = parseLine(lines[0]).map((h) => h.trim());
-  const rows = [];
-  for (let i = 1; i < lines.length; i++) {
-    const values = parseLine(lines[i]);
-    const row = {};
-    header.forEach((h, idx) => {
-      row[h] = (values[idx] ?? "").trim();
-    });
-    rows.push(row);
-  }
-  return rows;
-}
-
 async function fetchBigCodeBench() {
   const out = [];
   let offset = 0;
@@ -231,31 +192,6 @@ async function fetchBigCodeBench() {
   return out;
 }
 
-async function fetchArenaHard() {
-  const url =
-    "https://huggingface.co/spaces/lmarena-ai/lmarena-leaderboard/raw/main/arena_hard_auto_leaderboard_v0.1.csv";
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`Arena-Hard fetch failed: ${res.status}`);
-  const text = await res.text();
-  const rows = parseCsv(text);
-  return rows.map((r) => {
-    const raw = String(r.model ?? "").trim();
-    const norm = normalizeForMatch(raw)
-      .replace(/-?\d{4}-\d{2}-\d{2}$/, "")
-      .replace(/-?\d{8}$/, "")
-      .replace(/-+/g, "-")
-      .replace(/-$/, "");
-    const parsedScore = Number(r.score);
-    const safeScore = Number.isFinite(parsedScore) ? parsedScore : 0;
-    return {
-      model: raw,
-      modelNorm: norm,
-      score: safeScore,
-      benchmark: "Arena-Hard-Auto",
-    };
-  });
-}
-
 function findBenchmarkScore(cursorName, bigCodeRows, arenaRows) {
   const keys = CURSOR_TO_BENCHMARK_KEYS[cursorName] ?? [];
   const cursorNorm = normalizeForMatch(cursorName);
@@ -275,7 +211,7 @@ function findBenchmarkScore(cursorName, bigCodeRows, arenaRows) {
   if (inBigCode) return { score: inBigCode.score, benchmark: "BigCodeBench" };
 
   const inArena = matchIn(arenaRows, (r) => r.modelNorm);
-  if (inArena) return { score: inArena.score, benchmark: "Arena-Hard-Auto" };
+  if (inArena) return { score: inArena.score, benchmark: "Arena-Code" };
 
   for (const k of keys) {
     const fallback = LMSYS_ARENA_FALLBACK[k];
@@ -286,7 +222,7 @@ function findBenchmarkScore(cursorName, bigCodeRows, arenaRows) {
 
 function main() {
   return (async () => {
-    const [bigCodeRows, arenaRows] = await Promise.all([fetchBigCodeBench(), fetchArenaHard()]);
+    const [bigCodeRows, arenaRows] = await Promise.all([fetchBigCodeBench(), fetchArenaCode()]);
 
     const models = [];
     const recommendedPlanning = ["Claude 4.5 Sonnet", "Claude 4.5 Opus", "GPT-5.2", "GPT-5.2 Codex"];
