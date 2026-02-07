@@ -346,7 +346,7 @@ This unified approach has several benefits:
 
 ## 3. Resume PDF Sync
 
-This website does not own CV source or rendering. The resume PDF at `public/uploads/resume.pdf` is an artifact only. A separate [CV_management](https://github.com/FridljDa/CV_management) repository holds the CV source (YAML), uses RenderCV to generate the PDF, and syncs the result here via a GitHub Actions workflow that opens a PR with the updated `public/uploads/resume.pdf`. This keeps rendering and tooling in one place and leaves the website repo with just the file to serve.
+This website does not own CV source or rendering. The resume PDF is built into `public/uploads/resume.pdf` and served at `/uploads/resume.pdf`, and is an artifact only. A separate [CV_management](https://github.com/FridljDa/CV_management) repository holds the CV source (YAML), uses RenderCV to generate the PDF, and syncs the result here via a GitHub Actions workflow that opens a PR with the updated `public/uploads/resume.pdf`. This keeps rendering and tooling in one place and leaves the website repo with just the file to serve.
 
 ## Conclusion
 
