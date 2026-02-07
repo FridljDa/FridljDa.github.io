@@ -73,31 +73,7 @@ The easiest way to test how the website looks on mobile devices is using browser
 4. Select a device preset from the dropdown (iPhone, iPad, Pixel, etc.)
 5. Refresh the page to see the mobile view
 
-## CV Management
+## Resume PDF
 
-The CV is managed through `src/data/cv.yaml` and automatically processed via GitHub Actions:
-
-### Automated Workflow
-
-When `src/data/cv.yaml` is pushed to the `master` branch, a GitHub Actions workflow (`.github/workflows/update-cv.yaml`) automatically:
-
-1. **Generates PDF**: Uses RenderCV to generate a PDF from the YAML file
-   ```bash
-   rendercv render src/data/cv.yaml
-   ```
-
-2. **Updates Files**: 
-   - Copies the generated PDF to `public/uploads/resume.pdf`
-
-3. **Commits Changes**: Automatically commits and pushes the updated PDF file
-
-### Manual Workflow
-
-You can also run the CV generation manually:
-```bash
-pip install "rendercv[full]"
-rendercv render src/data/cv.yaml
-```
-
-The generated PDF will be in `rendercv_output/` directory.
+The resume PDF at `public/uploads/resume.pdf` is synced from the [CV_management](https://github.com/FridljDa/CV_management) repository. That repo owns CV source and rendering; it pushes the rendered PDF to this site via PR.
 

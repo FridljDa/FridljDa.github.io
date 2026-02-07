@@ -15,8 +15,7 @@ This is a personal website built with Astro, featuring an AI chat functionality 
 - `src/components/` - Astro and React components (Biography, Experience, BlogPostCard, Chat, etc.)
 - `src/pages/` - Astro pages and API routes
   - `src/pages/api/chat.ts` - Chat API endpoint for Gemini integration
-- `src/data/` - TypeScript data files (site config, publications, experience, cv.yaml)
-  - `cv.yaml` - Source CV data (automatically processed by GitHub Actions)
+- `src/data/` - TypeScript data files (site config, publications, experience)
 - `src/content/blog/` - Blog posts as MDX files (content collections)
 - `src/layouts/` - Layout components
 - `src/styles/` - Global CSS
@@ -49,14 +48,9 @@ This is a personal website built with Astro, featuring an AI chat functionality 
 - Maintain consistency with existing Tailwind styling patterns
 - Chat component is a React component that uses client-side hydration
 
-### CV Management
-- **Source file**: `src/data/cv.yaml` - Edit this file to update CV content
-- **GitHub Actions workflow**: `.github/workflows/update-cv.yaml` automatically processes `cv.yaml` when pushed to `master`:
-  - Generates PDF using RenderCV: `rendercv render src/data/cv.yaml`
-  - Updates `public/uploads/resume.pdf`
-  - Commits changes automatically
-- **Chat API usage**: `src/pages/api/chat.ts` uses `generateHomePageMarkdown()` which includes CV/resume information from the home page content (biography, experience, publications)
-- **Note**: Do not manually edit `resume.pdf` - it is auto-generated from `cv.yaml`
+### Resume PDF
+- **Artifact**: `public/uploads/resume.pdf` - Synced from the [CV_management](https://github.com/FridljDa/CV_management) repository (that repo renders the PDF from YAML and pushes it here via PR).
+- **Chat API usage**: `src/pages/api/chat.ts` uses `generateHomePageMarkdown()` which includes CV/resume information from the home page content (biography, experience, publications).
 
 ### Testing Changes
 To test changes, you can:

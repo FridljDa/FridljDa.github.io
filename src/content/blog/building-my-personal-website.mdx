@@ -5,7 +5,7 @@ updatedDate: 2025-12-07
 tags:
   - Web Development
   - AI
-description: "A deep dive into the technical implementation of my personal website, covering the AI chat interface, markdown context generation, and automated CV PDF generation workflow."
+description: "A deep dive into the technical implementation of my personal website, covering the AI chat interface, markdown context generation, and resume PDF sync from a dedicated CV repo."
 image: /images/blog/building-my-personal-website/featured.png
 ---
 
@@ -15,7 +15,7 @@ In this post, I'll walk through three interesting technical features I implement
 
 1. **AI Chat Interface** - A streaming chat interface that provides context-aware responses about my background and blog posts
 2. **Context Generation & "View as Markdown"** - A unified system that generates markdown representations of pages for both AI context and user viewing
-3. **Automated CV PDF Generation** - A GitHub Actions workflow that automatically generates a PDF resume from a YAML source file
+3. **Resume PDF Sync** - The resume PDF is synced from a dedicated CV_management repo that owns rendering; this site only hosts the artifact
 
 ![Technical Highlights: Building a Personal Website](/images/blog/building-my-personal-website/infographic.png)
 
@@ -344,118 +344,9 @@ This unified approach has several benefits:
 3. **Maintainability** - Changes to markdown generation only need to be made in one place
 4. **Transparency** - Users can see exactly what content the AI has access to
 
-## 3. Automated CV PDF Generation Workflow
+## 3. Resume PDF Sync
 
-Managing a resume as a PDF file in version control is problematic: PDFs are binary files that don't diff well, making it hard to track changes and collaborate. Instead, I store my CV as a YAML file and use a GitHub Actions workflow to automatically generate a PDF whenever the YAML changes.
-
-### YAML-Based CV Storage
-
-The CV is stored as `src/data/cv.yaml` using the [RenderCV](https://github.com/sinaatalay/rendercv) format. RenderCV is a Python package that generates beautiful, LaTeX-based CVs from YAML files. The YAML structure includes:
-
-- Personal information (name, location, contact details)
-- Professional experience
-- Education
-- Publications
-- Skills
-- Design and formatting preferences
-
-Here's a snippet of the structure:
-
-```yaml
-cv:
-  name: Daniel Fridljand
-  location: Munich, Germany
-  email:
-  phone:
-  website: https://danielfridljand.de/
-  social_networks:
-    - network: LinkedIn
-      username: daniel-fridljand
-    - network: GitHub
-      username: FridljDa
-  sections:
-    summary:
-      - "I am a driven data scientist with a strong academic background in mathematics, statistics, and bioinformatics. My passion for machine learning, software development, and coding has led me to work on projects across diverse domains, including public health, genetics, and oncology. With three years of scientific software development experience and a first-author publication in a high-impact journal, I'm committed to leveraging computational skills to solve real-world challenges."
-```
-
-The YAML format makes it easy to:
-- Track changes in Git (text-based diffs)
-- Update content programmatically
-- Maintain consistency across different CV versions
-- Collaborate with others (if needed)
-
-### GitHub Actions Workflow
-
-The automation happens via a GitHub Actions workflow (`.github/workflows/update-cv.yaml`) that triggers whenever `cv.yaml` is pushed to the `master` branch:
-
-```yaml
-name: Update CV
-
-on:
-  push:
-    branches:
-      - master
-    paths:
-      - 'src/data/cv.yaml'
-  workflow_dispatch:
-
-permissions:
-  contents: write
-
-jobs:
-  update_cv:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
-
-      - name: Set up Python
-        uses: actions/setup-python@v6
-        with:
-          python-version: '3.12'
-
-      - name: Install RenderCV
-        run: pip install "rendercv[full]"
-
-      - name: Generate PDF from CV
-        run: rendercv render src/data/cv.yaml
-
-      - name: Copy PDF to public/uploads folder
-        run: |
-          mkdir -p public/uploads
-          # ... find and copy generated PDF ...
-          cp rendercv_output/cv.pdf public/uploads/resume.pdf
-
-      - name: Commit and push changes
-        run: |
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "GitHub Actions [Bot]"
-          git add public/uploads/resume.pdf
-          git commit -m "Update CV PDF" && git push || echo "No changes to commit"
-```
-
-The workflow:
-
-1. **Checks out the repository** - Gets access to the YAML file
-2. **Sets up Python** - RenderCV requires Python 3.12
-3. **Installs RenderCV** - Installs the package with all dependencies
-4. **Generates PDF** - Runs `rendercv render` to create the PDF
-5. **Copies PDF** - Moves the generated PDF to `public/uploads/resume.pdf`
-6. **Commits changes** - Automatically commits and pushes the updated PDF
-
-The workflow also supports manual triggering via `workflow_dispatch`, allowing on-demand PDF regeneration.
-
-### Benefits of This Approach
-
-This automated workflow provides several advantages:
-
-1. **Version Control** - CV changes are tracked as text diffs in Git, making it easy to see what changed and when
-2. **Automation** - No manual PDF generation steps required
-3. **Consistency** - The PDF is always generated from the same source, ensuring consistency
-4. **Reproducibility** - Anyone can regenerate the PDF by running the same RenderCV command
-5. **Design Flexibility** - RenderCV supports multiple themes and customization options via YAML
-
-The generated PDF is automatically available on the website at `/uploads/resume.pdf`, and the workflow ensures it stays in sync with the YAML source.
+This website does not own CV source or rendering. The resume PDF at `public/uploads/resume.pdf` is an artifact only. A separate [CV_management](https://github.com/FridljDa/CV_management) repository holds the CV source (YAML), uses RenderCV to generate the PDF, and syncs the result here via a GitHub Actions workflow that opens a PR with the updated `public/uploads/resume.pdf`. This keeps rendering and tooling in one place and leaves the website repo with just the file to serve.
 
 ## Conclusion
 
@@ -463,7 +354,7 @@ These three features demonstrate different aspects of modern web development:
 
 - **The chat interface** showcases real-time streaming, AI integration, and context-aware systems
 - **The markdown generation system** illustrates the DRY principle and unified data transformation
-- **The CV workflow** demonstrates automation, version control best practices, and infrastructure-as-code concepts
+- **The resume PDF sync** keeps the website repo simple while a dedicated CV repo owns source and rendering
 
 Together, they create a website that is both functional and maintainable, with clear separation of concerns and automated processes that reduce manual work. The codebase is open source and available on [GitHub](https://github.com/FridljDa/FridljDa.github.io) for anyone interested in exploring the implementation details further.
 
