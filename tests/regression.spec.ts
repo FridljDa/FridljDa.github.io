@@ -25,8 +25,8 @@ test.describe('Regression Tests', () => {
     // Wait for page to load
     await page.waitForLoadState('domcontentloaded');
     
-    // Find the "Posts" navigation link
-    const postsLink = page.getByRole('link', { name: /Posts/i });
+    // Find the "Posts" navigation link in the header (not the section heading)
+    const postsLink = page.getByRole('navigation').getByRole('link', { name: /Posts/i });
     await expect(postsLink).toBeVisible();
     
     // Click on the Posts link
