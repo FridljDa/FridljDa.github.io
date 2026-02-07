@@ -8,6 +8,7 @@ on:
 
 permissions:
   contents: write
+  pull-requests: write
 
 jobs:
   update_model_data:
@@ -17,6 +18,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
+        with:
+          ref: master
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -37,12 +40,29 @@ jobs:
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "GitHub Actions [Bot]"
 
-      - name: Commit and push changes
+      - name: Create branch, commit and push
+        id: commit
         run: |
+          BRANCH_NAME="bot/update-model-data-$(date +%Y%m%d-%H%M%S)"
+          git checkout -b "$BRANCH_NAME"
           git add public/data/model-performance.json
           if git diff --staged --quiet; then
+            echo "has_changes=false" >> "$GITHUB_OUTPUT"
             echo "No changes to commit"
           else
             git commit -m "Update model performance data"
-            git push
+            git push -u origin "$BRANCH_NAME"
+            echo "has_changes=true" >> "$GITHUB_OUTPUT"
+            echo "branch_name=$BRANCH_NAME" >> "$GITHUB_OUTPUT"
           fi
+
+      - name: Create Pull Request
+        if: steps.commit.outputs.has_changes == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr create \
+            --base master \
+            --head "${{ steps.commit.outputs.branch_name }}" \
+            --title "Update model performance data" \
+            --body "Automated update of model performance data."
