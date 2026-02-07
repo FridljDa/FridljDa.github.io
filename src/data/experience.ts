@@ -11,12 +11,25 @@ export interface ExperienceItem {
 
 export const EXPERIENCE: ExperienceItem[] = [
   {
-    title: 'Software Consultant',
+    title: 'Software Consultant - Applied AI',
+    company: 'TNG Technology Consulting',
+    companyUrl: 'https://www.tngtech.com/en/',
+    companyLogo: 'tng_logo.svg',
+    location: 'Munich, Germany',
+    dateStart: '2025-12-01',
+    description: `* Architected a production-grade LLM-powered document validation system, integrating a three-stage cleaning pipeline and semantic text splitting for parallelized processing.
+* Designed an AI-powered customer support automation system (PoC) handling 2000+ tickets with 20 distinct intent categories, bridging natural language understanding with deterministic business logic.
+* Deployed solutions on Kubernetes with CI/CD pipelines, ensuring high availability and scalability for enterprise clients.
+* Tech Stack: Python, Streamlit, Docker, Kubernetes, PydanticAI, DSPy, Snakemake.`,
+  },
+  {
+    title: 'Software Consultant - Enterprise Modernization',
     company: 'TNG Technology Consulting',
     companyUrl: 'https://www.tngtech.com/en/',
     companyLogo: 'tng_logo.svg',
     location: 'Munich, Germany',
     dateStart: '2024-12-01',
+    dateEnd: '2025-12-01',
     description: `* Modernizing and developing a supply chain management application within an international development team
 * Selected by the team to participate in Program Increment (PI) planning sessions, contributing to strategic planning and cross-team coordination
 * Maintaining up CI pipelines based on Jenkins, particularly the OWASP scan
