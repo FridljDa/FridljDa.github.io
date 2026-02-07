@@ -43,7 +43,30 @@ Tickets were Zendesk-style exports. Each ticket had:
 - **Identifiers and metadata**: ticket ID, channel (e.g. email, chat), satisfaction score when available.
 - **Comments**: a time-ordered list of entries, each with timestamp, body text, and an author role (customer, agent, or sometimes unknown when the export didn’t carry that information).
 
-The pipeline first reduced each ticket to a fixed set of fields (IDs, channel, satisfaction, comment list with normalised author and body). Sensitive content in comment bodies was then censored (e.g. names, emails) so that all downstream steps—including LLM labelling—operated on safe, anonymised text. No actual ticket content appears in this post; the important point is that the **structure** (one record per ticket, list of comments with roles and text) drove how we split work into chunks and merged it back.
+The pipeline first reduced each ticket to a fixed set of fields (IDs, channel, satisfaction, comment list with normalised author and body). Sensitive content in comment bodies was then censored (e.g. names, emails) so that all downstream steps—including LLM labelling—operated on safe, anonymised text. Below is one example ticket with intent **ReceiveTickets**, with all identifying details replaced by dummy data and uninteresting fields omitted, to illustrate the structure:
+
+```json
+{
+  "id": 10001,
+  "subject": "Tickets wurde nicht geschickt",
+  "channel": "email",
+  "comments": [
+    {
+      "body": "Sehr geehrte Damen und Herren,\n\nich habe online 2 Tickets gekauft\nSent from my iPhone",
+      "created_at": "2025-11-05T10:01:57Z",
+      "author_role": "customer"
+    },
+    {
+      "body": "Guten Tag,\n\nich habe Ihnen die Kaufbestätigung nochmals zugesandt.\nZur Sicherheit hänge ich die Tickets an diese Mail mit an.\n\nMit freundlichen Grüßen\nSupport-Team",
+      "created_at": "2025-11-05T10:14:46Z",
+      "author_role": "agent"
+    }
+  ],
+  "customer_intent": "ReceiveTickets"
+}
+```
+
+The important point is that this **structure** (one record per ticket, list of comments with roles and text) drove how we split work into chunks and merged it back.
 
 ## Three Ways Snakemake Helped
 
