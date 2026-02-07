@@ -88,7 +88,7 @@ export default function BlogPostsSection({ posts }: BlogPostsSectionProps) {
       <div className="mb-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-3xl font-bold text-heading text-mobile-center">
-            <a href="#posts" className="heading-link">Posts</a>
+            <a href="#posts" className="heading-link" aria-label="Link to Posts section">Posts</a>
           </h2>
           {selectedTags.size > 0 && (
             <button
