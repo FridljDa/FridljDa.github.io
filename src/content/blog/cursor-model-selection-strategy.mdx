@@ -16,9 +16,9 @@ Checking Cursor’s [pricing](https://cursor.com/docs/models#model-pricing) and 
 
 ## The two-model strategy
 
-**Planning** (understanding the task, designing steps) benefits from strong reasoning—e.g. Claude Sonnet/Opus. You send context and get back a plan and a few key decisions; token volume is modest, so the extra cost is often worth it.
+**Planning** (understanding the task, designing steps) benefits from strong reasoning. You send context and get back a plan and a few key decisions; token volume is modest, so the extra cost is often worth it.
 
-**Execution** (implementing the plan, writing code) can be done well by cheaper models like Gemini Flash or GPT-5 Mini when the plan is clear. This phase uses many more tokens, so keeping cost per token low matters.
+**Execution** (implementing the plan, writing code) can be done well by cheaper models when the plan is clear. This phase uses many more tokens, so keeping cost per token low matters.
 
 1. Use a **premium model for planning**: start the task, get a clear plan, maybe one or two critical edits.
 2. **Switch to a cheaper model for execution**: implement the rest, iterate, run tests.
@@ -94,18 +94,12 @@ Select top 3 models by efficiency (or fewer if frontier is smaller).
 
 This approach guarantees recommended models represent the best cost-performance trade-offs available. The formula runs daily via [GitHub Actions](.github/workflows/update-model-data.yaml).
 
-Use a slightly stronger execution model for tricky files, or a cheaper planner for simple tasks.
-
 ## Example workflow
 
 1. **Start with the planning model.** Describe the goal, attach files, ask for a step-by-step plan.
 2. **Lock in the plan.** Review, maybe one short follow-up, then switch model.
 3. **Switch to the execution model.** Refer to the plan and implement step by step; do most coding here.
 4. **Use the planning model only when needed.** For design decisions or subtle bugs, switch back briefly, then return to the cheaper model.
-
-## Rough cost intuition
-
-With ~100k input + 50k output for planning and 200k input + 150k output for execution: **all on a premium model** (e.g. Claude 4.5 Sonnet) can be several dollars per session; **planning on premium, execution on Gemini 3 Flash** can be around a dollar or less. Moving the high-token phase to a cheaper model cuts cost a lot.
 
 ## Takeaways
 
