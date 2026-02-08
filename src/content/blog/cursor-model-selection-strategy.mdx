@@ -43,33 +43,57 @@ The chart below plots **cost** (weighted $/1M tokens: 70% input, 30% output) vs 
 
 ### How recommendations are selected
 
-Models are automatically classified based on performance and cost:
+Recommendations follow six principles for optimal cost-performance trade-offs:
 
-**Planning models** (max 3) are selected when:
+1. **Minimum performance**: Both planning and execution models need Elo ≥ 1200
+2. **Cost ceiling**: Execution models must have Cost ≤ $2.5
+3. **No dominated models**: If model B has same-or-better performance AND same-or-lower cost than model A, don't recommend A
+4. **No dominated models**: If model B has same-or-lower cost AND same-or-better performance than model A, don't recommend A
+5. **Efficiency ranking**: Models are ranked by Elo per dollar
+6. **Top picks**: Maximum 3 models per category
+
+Principles 3 and 4 define the **Pareto frontier**: a model qualifies only if no other model is both better-performing and cheaper. This ensures you're never choosing a strictly dominated option.
+
+The chart shows Pareto frontiers as dashed lines (purple for planning, green for execution).
+
+**Mathematical formulation:**
+
+**Step 1: Minimum performance threshold**
 
 $$
-\text{Elo} > 1450 \quad \text{OR} \quad (\text{Elo} \geq 1380 \land \text{Cost} \geq \$10)
+\text{Elo} \geq 1200
 $$
 
-This captures the highest performers regardless of cost, plus expensive premium models ideal for complex reasoning.
+Only models with Arena-Code or LMSYS Arena Elo scores qualify (no BigCodeBench-only models).
 
-**Execution models** (max 3) use a unified scoring system:
-
-$$
-\text{Cost} < \$2.5 \quad \text{AND} \quad (\text{Elo} > 1200 \lor \text{BigCodeBench} > 44)
-$$
+**Step 2: Split by cost**
 
 $$
-\text{UnifiedScore} = 
+\text{Planning}: \text{Cost} > \$2.5 \quad|\quad \text{Execution}: \text{Cost} \leq \$2.5
+$$
+
+**Step 3: Pareto optimality**
+
+Within each category, keep only Pareto-optimal models (not dominated):
+
+$$
+\text{Pareto-optimal} \iff \nexists \text{ model } B: 
 \begin{cases}
-\text{Elo} & \text{if Elo available} \\
-\text{BigCodeBench} \times 28 & \text{otherwise}
+\text{Elo}_B \geq \text{Elo}_A \\
+\text{Cost}_B \leq \text{Cost}_A \\
+\text{at least one } >
 \end{cases}
 $$
 
-This ensures cost-effective models with proven coding ability make the cut, whether benchmarked on Arena-Code Elo or BigCodeBench.
+**Step 4: Rank by efficiency**
 
-The formulas run daily via [GitHub Actions](.github/workflows/update-model-data.yaml), so recommendations stay current as new models arrive and benchmarks update.
+$$
+\text{Efficiency} = \frac{\text{Elo}}{\text{Cost per 1M tokens}}
+$$
+
+Select top 3 models by efficiency (or fewer if frontier is smaller).
+
+This approach guarantees recommended models represent the best cost-performance trade-offs available. The formula runs daily via [GitHub Actions](.github/workflows/update-model-data.yaml).
 
 Use a slightly stronger execution model for tricky files, or a cheaper planner for simple tasks.
 
