@@ -1,0 +1,395 @@
+cv:
+  name: Daniel Fridljand
+  photo: ../images/fridjland_daniel.jpg
+  location: Munich, Germany
+  website: https://danielfridljand.de
+  social_networks:
+    - network: LinkedIn
+      username: daniel-fridljand
+    - network: GitHub
+      username: FridljDa
+  sections:
+    summary:
+      - "I am a driven data scientist with a strong academic background in mathematics, statistics, and bioinformatics. My passion for machine learning, software development, and coding has led me to work on projects across diverse domains, including public health, genetics, and oncology. With three years of scientific software development experience and a first-author publication in a high-impact journal, I'm committed to leveraging computational skills to solve real-world challenges."
+    software_development_experience:
+      - company: TNG Technology Consulting
+        position: Software Consultant - Applied AI
+        location: Munich, Germany
+        start_date: 2025-12
+        end_date: present
+        highlights:
+          - "**Project: AI-Powered Customer Support Automation (PoC)**"
+          - "**Sole Developer**: Architected and implemented end-to-end automation system for cinema ticketing SaaS platform using 2000+ real customer tickets, taking full ownership from data engineering to intent classification to resolution execution"
+          - "**Data Engineering & Pipeline Architecture (Bridging Raw Data to Clean Datasets)**"
+          - "Architected reproducible 22-stage Snakemake data pipeline processing 2000+ tickets through automated stages (filtering, PII censoring, LLM labeling, balanced sampling), with scatter-gather parallelism for efficiency (500-ticket chunks), checkpoint-based incremental execution, and declarative YAML configuration—demonstrating infrastructure-as-code and scientific computing best practices"
+          - "Implemented scatter-gather parallelism in Snakemake for PII censoring (500-ticket chunks), author classification, and LLM labeling stages—enabling horizontal scalability and fault isolation with automatic chunk-level caching via Snakemake checkpoints"
+          - "Designed dual-path data architecture maintaining separate censored and uncensored pipelines from extraction through final outputs, enabling privacy-compliant LLM processing while preserving full context for internal debugging and visualization tools"
+          - "Implemented multilingual PII detection system using Microsoft Presidio with dual spaCy models (English en_core_web_lg, German de_core_news_lg) and Faker for realistic synthetic data replacement, ensuring GDPR compliance while maintaining data utility for model training with configurable entity detection (emails, phone numbers, IBAN, credit cards) and custom deny-lists for false-positive suppression"
+          - "Engineered balanced dataset sampling strategy with configurable samples-per-intent parameter (default 10), filtering non-actionable intents (AccidentalContact, ConversationCutoff), and automated truncation of agent resolutions to create training data where models learn to generate responses—preventing class imbalance and improving model fairness"
+          - "Built custom DSPy-compatible batch LM adapter for TNG API with asynchronous batch processing, automatic request chunking, exponential backoff polling, and comprehensive error handling—reducing API costs and enabling efficient classification of large ticket datasets"
+          - "Implemented sophisticated author role classification using LLM-powered analysis to disambiguate unknown comment authors (customer vs agent) in conversation threads, with batch processing and context-aware prompting—improving conversation understanding and intent classification accuracy"
+          - "Developed multi-view Streamlit data labeling application with ticket browsing, CSV-backed manual labeling persistence with timestamp tracking, real-time filtering across 2000+ comments, automatic label merging (manual overrides LLM), JavaScript-based deep linking (?ticket=ID) for reproducible data reviews, summary statistics with intent distribution visualization, and raw JSON inspection—accelerating dataset annotation and quality assurance workflows"
+          - "Created comprehensive data exploration workflow with 4 Jupyter notebooks for initial EDA (ticket ID patterns, author comment analysis, label distribution, channel analysis) and 1 Python script for endpoint priority analysis, informing feature engineering decisions and automation strategy"
+          - "Designed 21 distinct customer intent categories with clear problem descriptions, solution approaches, examples, and automation feasibility flags (Automatable vs. non-automatable), bridging unstructured support tickets to structured business logic with comprehensive markdown documentation (md_3/ folder) containing Mermaid flowcharts and API endpoint mappings for each intent"
+          - "Generated automated confusion matrices and distribution histograms (label, channel, satisfaction) from labeled datasets with intent-specific color mapping and visualization, enabling longitudinal model performance tracking and data quality monitoring"
+          - "Documented open architectural questions in structured markdown (OPEN_QUESTIONS.md) with problem descriptions, multiple solution options with pros/cons, API endpoint requirements, and stakeholder decision points—demonstrating requirements gathering, trade-off analysis, and technical communication skills"
+          - "Established Git as single source of truth for evaluation datasets (JSONL format) with automated Langfuse synchronization via registration scripts, enabling reproducible evaluation runs and dataset versioning"
+          - "**REST API & Hexagonal Architecture**"
+          - "Independently designed and built 20+ REST endpoints following OpenAPI 3.1 specification with clear separation of concerns (`/extract/*` for queries, `/tool/*` for actions, `/workflow/*` for orchestration), demonstrating API design best practices"
+          - "Implemented Hexagonal Architecture (Ports & Adapters pattern) ensuring complete separation between business logic and infrastructure, with explicit input/output ports and pluggable secondary adapters for external systems (LLM, monitoring, Client API)"
+          - "**AI/LLM Solution Architecture**"
+          - "Implemented sophisticated classification for 21 distinct customer intent categories with disambiguation logic and edge case handling, bridging natural language understanding with business logic"
+          - "Engineered hybrid solution method architecture supporting both deterministic (hardcoded) and agentic (LLM-powered) resolution strategies, with abstract base class and specialized subclasses enabling flexible per-intent automation approaches"
+          - "Designed two-phase agentic workflow: LLM-powered data fetching with dynamic API endpoint selection, followed by multi-step plan generation with conditional branching—solving multi-transaction disambiguation and enabling multilingual support"
+          - "Created 77 `.prompty` template files following Microsoft Prompty specification for modular, version-controlled prompt management across intent classification, information extraction, and 20+ intent-specific resolution workflows"
+          - "Applied DSPy with Genetic-Pareto algorithm (GEPA) for automated LLM prompt optimization, demonstrating knowledge of advanced prompt engineering and metaheuristic optimization techniques"
+          - "Implemented scatter-gather pattern for tool execution: resolution plans contain ordered tool calls (up to 9 steps) executed sequentially with error handling, enabling complex multi-step automations (e.g., fetch transaction → resend ticket → send confirmation → close ticket)"
+          - "Designed intent categorization system distinguishing automated intents (cancellation, reservation, refund) from manual escalation cases, with deterministic routing based on classification confidence and information completeness"
+          - "**Observability, Evaluation & Testing**"
+          - "**Integrated Langfuse observability platform** for comprehensive AI monitoring: automatic trace generation for every request with hierarchical spans, real-time latency tracking, token usage analytics, and production debugging capabilities with full input/output capture"
+          - "Built production-grade evaluation framework with **5 evaluation types** (intent classification, information extraction, end-to-end, fetch_data, plan_generation) using Langfuse dataset runs for longitudinal performance tracking and regression detection"
+          - "Implemented multi-dimensional scoring system with **8 score types** including critical scores (`correct_tools_selected`, `fetch_tools_correct`), LLM-as-judge semantic evaluation, and automated run-level metrics (accuracy, precision, recall, F1) posted to Langfuse for cross-run comparison"
+          - "Designed evaluation isolation strategy: separate evaluations for fetch logic vs plan generation using direct method calls with controlled inputs, enabling precise failure diagnosis and faster iteration cycles"
+          - "Built comprehensive test suite with **97 test files** across 4 test types: unit (business logic), integration (service contracts), end-to-end (full workflow with mock servers), and evaluation (AI performance metrics tracked in Langfuse)"
+          - "Implemented mock server infrastructure for Client API and Zendesk APIs with stateful test fixtures, enabling deterministic integration testing and controlled failure scenario simulation"
+          - "**Workflow Orchestration & Automation**"
+          - "Implemented durable workflow orchestration using **Temporal** with 5-stage pipeline (intent classification, information extraction, resolution dispatch, human approval via signals, tool execution), ensuring reliable execution with automatic retries and deterministic replay"
+          - "Designed human-in-the-loop approval mechanism using Temporal Signals for staff review before automated resolution execution, with workflow state queries for real-time progress monitoring via Temporal Web UI"
+          - "**Developer Experience & AI-Assisted Development**"
+          - "Created interactive **Chainlit web interface** for real-time conversation testing and resolution plan inspection, accelerating development feedback loops"
+          - "**Developed custom Cursor Agent Skills** for automated system improvement: Langfuse API skill enables programmatic trace analysis, failure triage (eval data vs mock server vs prompts), and iterative prompt refinement based on production observability data"
+          - "Built **3 custom Cursor Agent Skills**: Langfuse API integration for trace analysis, OpenAPI specification comparison for API evolution tracking, and uv package manager workflows"
+          - "Pioneered AI-assisted spec-driven development workflow using Cursor IDE with custom constitution and templates: 20+ feature specs (001-021) following standardized template structure (user stories with priorities, acceptance scenarios, functional requirements, success criteria), version-controlled project constitution (v1.17.0) with 19 principles governing architecture and development practices, bash automation scripts for feature lifecycle management (create-new-feature.sh, setup-plan.sh, update-agent-context.sh), and systematic feature progression from technology-agnostic specifications through implementation planning to task breakdown—enabling consistent architecture decisions, rapid iteration, and seamless collaboration between human developer and AI coding assistant while maintaining Hexagonal Architecture compliance and evaluation-driven quality standards"
+          - "**Tech Stack**: FastAPI (REST API), Streamlit (data labeling), Chainlit (chat interface), Python 3.13+, PydanticAI (agent framework), Temporal (workflow orchestration), Langfuse (observability), Snakemake (data pipeline), Microsoft Presidio (PII detection), Docker, pytest (testing), DSPy (prompt optimization), Microsoft Prompty (prompt templates)"
+
+          - "**Project: LLM-Powered Document Validation System**"
+          - "Core developer in a 3-person team for production-grade automated proposal review service, co-developing complex .docx document processing with automated comment insertion"
+          - "Architected evaluation framework with automated correction classification system (TP/FP/FN/unknown positives) using Pydantic models, regex/token-based pattern matching, whitespace normalization, and precision/recall/F1 metrics"
+          - "Integrated Langfuse observability platform with conditional tracing (@observe decorators, profile-based toggling), auto-dataset registration, batch evaluation orchestration, and Grafana dashboards for metric visualization"
+          - "Developed two Cursor agent skills (800+ lines docs, 3 Python scripts) enabling AI-assisted iterative improvement of evaluation data by analyzing Langfuse traces and generating CorrectionPattern suggestions"
+          - "Migrated evaluation data to structured JSONL format, prompts to .prompty files, implemented DOCX comment extractor, and established GitOps workflow for Docker Compose stack with Grafana/Langfuse/ClickHouse"
+      - company: TNG Technology Consulting
+        position: Software Consultant - Enterprise Modernization
+        location: Munich, Germany
+        start_date: 2024-12
+        end_date: 2025-12
+        highlights:
+          - "**DevOps & Pipeline Optimization**: Engineered a critical pipeline overhaul, replacing a legacy custom dependency solution with an Artifactory proxy. This reduced pipeline runtime from 8 hours to 30 seconds, eliminating development bottlenecks and accelerating feature delivery."
+          - "**DevSecOps & Security Governance**: Established a proactive security culture by integrating OWASP scans into the build pipeline and deploying Grafana dashboards for CVE monitoring. This provided management with visibility into modernization impacts and significantly reduced the application's risk profile."
+          - "**Mission-Critical Modernization**: As part of the platform team, drove the modernization (Java 8 to 17, JBoss to WildFly) of a global supply chain management application. Stabilized core bidding and ordering services to ensure 24/7 availability and data consistency for international logistics partners."
+          - "**Containerization Strategy**: Architected fully containerized development and build environments using Docker and Podman, utilizing daemonless, rootless execution to enhance security within shared CI environments."
+          - "**Technical Debt & Quality**: Systematically reduced legacy debt through aggressive quality governance, implementing static analysis and automated testing to establish a foundation for cloud-native migration."
+          - "**Agile Leadership & Strategy**: Selected to participate in Program Increment (PI) planning sessions, contributing to strategic planning and cross-team coordination. Enforced agile discipline with a two-week sprint cycle, achieving continuous integration and reliable production releases within every sprint."
+          - "**Cross-Team Synergies**: Created synergies between feature teams working on different applications, improving collaboration and knowledge sharing."
+          - "**Internal Knowledge Sharing**: Co-authored the internal 'AI Tool of the Week' blog series, providing weekly summaries of AI advancements including agentic workflows, AI-assisted coding, and multi-modal processing."
+          - "**Tech Stack**: React, TypeScript, Java 8/17, Spring Framework, JBoss/WildFly, Oracle DB, Gradle (build automation), JUnit (testing), Docker/Podman, Jenkins (CI/CD), SonarQube (quality analysis), Jfrog Artifactory."
+    data_science_experience:
+      - company: ETH Zürich - Department of Biosystems Science and Engineering
+        position: Research Data Analyst - Computational Oncology
+        location: Basel, Switzerland
+        start_date: 2024-02
+        end_date: 2024-09
+        highlights:
+          - "Developed novel statistical methods for estimating mutational signatures in cancer genomes and analyzed single-cell DNA sequencing data from the Tumor Profiler Study"
+          - "**Advanced Bayesian Modeling for Cancer Evolution**: Developed novel statistical methods for estimating mutational signatures in cancer genomes under guidance of Prof. Niko Beerenwinkel"
+          - "**Hierarchical Dirichlet Process (HDP) Innovation**: Extended Bayesian non-parametric HDP model to incorporate phylogenetic tree structures, enabling learning of evolutionary dependencies between cancer subclones"
+          - "**Mathematical Framework**: Implemented hierarchical dependency structure where random measure (distribution of signatures) for child node is drawn from base distribution defined by parent, mathematically enforcing biological intuition of inheritance"
+          - "**Single-Cell Whole-Exome Sequencing**: Analyzed data from Tumor Profiler Study, large-scale multi-centric clinical melanoma study involving multiple Swiss research institutions (187 cells, 10 tumors)"
+          - "**Non-Parametric Bayesian Inference**: Utilized Dirichlet Process (DP) as prior in infinite mixture models, allowing model to learn number of mutational signatures from data rather than fixing a priori"
+          - "**Implementation in R**: Developed prototype using libraries for Dirichlet processes and custom tree-traversal algorithms for phylogenetic structure integration"
+          - "**Signature Discovery**: Successfully identified eight latent mutational signatures, demonstrating model's capability to capture cancer evolutionary processes"
+          - "**Critical Evaluation**: Identified limitations when comparing with COSMIC database (low cosine similarity), revealing that global databases derived from bulk sequencing may not be directly applicable to sparse single-cell data without informative priors"
+          - "**Theoretical Contribution**: Bridged gap between standard Non-negative Matrix Factorization (NMF) approaches treating tumors as 'bags of mutations' and evolutionary-aware signature estimation"
+          - "**Teaching Experience**: Delivered lecture on Statistical Models in Computational Biology covering hidden Markov models, EM algorithm, and Variational inference"
+          - "**Deep Mathematical Maturity**: Demonstrated expertise in stochastic processes, Bayesian non-parametrics, phylogenetics, and computational oncology"
+      - company: Stanford University School of Medicine
+        position: Research Data Analyst - Environmental Epidemiology
+        location: Palo Alto, USA
+        start_date: 2023-07
+        end_date: 2023-12
+        highlights:
+          - "Devised and implemented the statistical analysis in R, synthesized findings from 150 pertinent publications, and drove the manuscript from conceptualization to successful publication in Nature Medicine"
+          - "**Nature Medicine First Co-Author**: Led end-to-end statistical analysis resulting in first-author publication in Nature Medicine (2024), one of the world's top medical journals"
+          - "**Causal Inference in Environmental Health**: Quantified specific contribution of air pollution (PM2.5) to mortality gap between racial and socioeconomic groups in United States, disentangling effects from confounders"
+          - "**Big Data Engineering**: Curated and harmonized heterogeneous datasets including satellite-derived pollution estimates, census demographics, and death records across entire US (2000-2016)"
+          - "**Multi-Scale Geographic Data Integration**: Harmonized three distinct geographic resolutions (0.01° × 0.01° satellite grid → census tract level → county level) requiring spatial interpolation and population-weighted aggregation algorithms"
+          - "**Massive-Scale ETL Pipeline**: Processed 63+ million death records spanning 16 years (1990-2016) across 3,000+ US counties, integrating data from US Census Bureau, CDC National Vital Statistics, EPA air quality monitors, and satellite remote sensing"
+          - "**Temporal Data Harmonization**: Implemented linear interpolation algorithms to bridge census boundary changes across three decades (1990, 2000, 2010 vintages) using Longitudinal Tract Database crosswalks"
+          - "**GitHub Repository**: Published complete reproducible analysis pipeline at https://github.com/FridljDa/pm25_inequality demonstrating software engineering best practices"
+          - "**Data Publication**: Deposited national-level estimates in Zenodo (https://doi.org/10.5281/zenodo.11243236) following FAIR data principles"
+          - "**Statistical Modeling Expertise**: Implemented causal inference models in R to estimate 'Attributable Fraction' of mortality, adjusting for confounders using multivariate regression and sensitivity analyses"
+          - "**Interactive R Shiny Application**: Developed custom web application as analytical engine (not just presentation tool) allowing co-authors to explore 17-dimensional data interactively, visualizing non-linear relationships and detecting outliers"
+          - "**High-Impact Finding**: Revealed that over 50% of age-adjusted all-cause mortality difference between Black and White populations in US is attributable to environmental factors, with profound policy implications"
+          - "**Rigorous Peer Review Navigation**: Led manuscript through competitive 'Revise and Resubmit' cycle with strict two-month deadline, generating 15 new complex figures and additional robusticity checks to satisfy reviewers"
+          - "**Scientific Synthesis**: Synthesized findings from over 150 pertinent publications to ground statistical results in broader epidemiological context, demonstrating strong scientific communication skills"
+          - "**Manuscript Ownership**: Drove project from conceptualization to successful publication, writing initial manuscript and executing major revisions under tight deadlines"
+          - "**Large-Scale Data Analysis**: Processed county-level data covering 3,000+ US counties over 16 years, demonstrating capability to handle massive public health datasets"
+          - "**Collaboration with Domain Experts**: Worked closely with Pascal Geldsetzer and interdisciplinary team of epidemiologists, environmental scientists, and statisticians"
+      - company: European Molecular Biology Laboratory (EMBL)
+        position: Research Data Analyst - Statistical Genomics (Master's Thesis)
+        location: Heidelberg, Germany
+        start_date: 2021-10
+        end_date: 2022-05
+        highlights:
+          - "Developed and implemented a novel statistical method in R and C++ to identify outliers in large-scale genomic datasets, increasing discovery power by over 30%"
+          - "**IHW-Forest Algorithm Development**: Developed novel statistical procedure addressing multiple testing crisis in modern genomics, where millions of simultaneous hypothesis tests create false discovery challenges"
+          - "**Machine Learning for Hypothesis Weighting**: Designed Independent Hypothesis Weighting with Random Forests, leveraging multivariate covariates to increase statistical power beyond traditional Bonferroni and Benjamini-Hochberg corrections"
+          - "**Mechanism Innovation**: Random Forest regressor predicts probability of hypothesis being true based on metadata (gene expression, conservation score), with leaves partitioning covariate space for optimal weighting"
+          - "**False Discovery Rate (FDR) Control**: Constructed weights averaging to 1, ensuring overall FDR control while maximizing power for promising hypotheses in high-probability leaves"
+          - "**C++ Performance Optimization**: Core splitting and weighting logic optimized using C++ (via Rcpp) for handling sheer volume of genomic data, bridging high-level statistical abstraction with low-level memory management"
+          - "**Massive-Scale Validation**: Applied to dataset of 16 billion genetic association tests, increasing number of discovered associations by >30% compared to standard methods"
+          - "**Curse of Dimensionality Solution**: Solved key limitation where standard IHW fails with high-dimensional covariates, demonstrating algorithmic innovation for big data"
+          - "**Seven Scientific Presentations**: Presented research at seven events including seminar talks at Yale University and University of North Carolina, and competitively selected oral contribution at DAGStat 2022 (100+ scholars)"
+          - "**Peer Review Service**: Conducted peer reviews for manuscripts at Bioinformatics Advances and Cell Biology, demonstrating scientific maturity"
+          - "**Supervision**: Worked under guidance of Prof. Jan Johannes (Heidelberg), Dr. Wolfgang Huber (EMBL), and Dr. Nikos Ignatiadis (EMBL), senior leaders in statistical methodology"
+          - "**Master's Thesis Grade**: 1.0 (highest distinction) for thesis 'Better multiple Testing: Using multivariate co-data for hypothesis weighting'"
+      - company: Heidelberg Institute of Global Health
+        position: Research Data Analyst - Environmental Epidemiology
+        location: Heidelberg, Germany
+        start_date: 2020-10
+        end_date: 2021-09
+        highlights:
+          - "**Early-Stage Air Pollution Research**: Initial analysis phase of air pollution and health inequalities project in US under Pascal Geldsetzer's guidance, laying groundwork for subsequent Stanford collaboration"
+          - "**Data Wrangling and Exploration**: Preliminary data harmonization of air quality, mortality, and demographic datasets to establish feasibility of large-scale causal inference analysis"
+          - "**Research Continuity**: Project continued at Stanford (July 2023 - Dec 2023), ultimately resulting in Nature Medicine publication demonstrating long-term research commitment"
+    education:
+      - institution: University of Heidelberg
+        area: Mathematics
+        degree: M.Sc.
+        location: Heidelberg, Germany
+        start_date: 2020-10
+        end_date: 2023-05
+        highlights:
+          - "Grade: 1.0 (full marks, highest distinction)"
+          - "Master's Thesis: 'Better multiple Testing: Using multivariate co-data for hypothesis weighting' (Supervisors: Prof. Jan Johannes, Dr. Wolfgang Huber, EMBL)"
+          - "Focus Areas: Probability Theory, Machine Learning, High-Dimensional Statistics, Selective Inference, Stochastic Processes"
+          - "Selected Coursework: SQL and Database Systems, Statistics for Machine Learning, Graphical Modelling, Random Forests, Differential Geometry"
+          - "Awards: Gerhard C. Starck Foundation Stipend (merit-based), Baden-Württemberg Stipend (excellence award)"
+          - "Research Integration: Thesis work conducted at EMBL, integrating academic rigor with world-class research environment"
+      - institution: Yale University
+        area: Applied Mathematics
+        degree: Exchange Scholar
+        location: New Haven, USA
+        start_date: 2022-08
+        end_date: 2023-05
+        highlights:
+          - "Prestigious Selection: Chosen as one of two university-wide representatives from University of Heidelberg for year-long exchange program"
+          - "Grade: Honors (full marks) - highest academic distinction at Yale"
+          - "Program Affiliation: Hosted by Applied Mathematics Program, advised by Prof. Smita Krishnaswamy"
+          - "Advanced Coursework: 'Theory and Application of Deep Learning' (cutting-edge neural network theory), 'Geometric & Topological Methods in Machine Learning' (Prof. Smita Krishnaswamy - manifold learning, TDA), 'Differentiable Manifolds' (mathematical foundations), 'Statistical Methods in Human Genetics'"
+          - "Research Presentation: Presented at Yale Applied Math Seminar on 'Independent Hypothesis Weighting' to audience of faculty and graduate students"
+          - "Award: German Academic Exchange Service (DAAD) Stipend for academic excellence and research potential"
+          - "Academic Integration: Engaged with Yale's top-tier machine learning and applied mathematics community, attending seminars and collaborating with researchers"
+          - "Cross-Disciplinary Exposure: Coursework spanning pure mathematics (differential geometry) to applied ML (deep learning), demonstrating theoretical depth and practical orientation"
+      - institution: University of Heidelberg
+        area: Mathematics
+        degree: B.Sc.
+        location: Heidelberg, Germany
+        start_date: 2017-10
+        end_date: 2020-09
+        highlights:
+          - "Grade: 1.4 (excellent, top 10% of cohort)"
+          - "Bachelor's Thesis: 'Online estimation of the geometric median in a Hilbert space' - focusing on stochastic gradient descent convergence rates in infinite-dimensional spaces"
+          - "Minor: Computer Science"
+          - "Foundation: Rigorous training in real analysis, linear algebra, abstract algebra, topology, probability theory, and numerical analysis"
+          - "Award: Gerhard C. Starck Foundation Stipend for outstanding academic performance"
+          - "Early Research Exposure: Thesis work on optimization in functional analysis setting, demonstrating interest in theoretical foundations of machine learning"
+      - institution: Hebrew University of Jerusalem
+        area: Mathematics
+        degree: Exchange Student
+        location: Jerusalem, Israel
+        start_date: 2019-09
+        end_date: 2020-03
+        highlights:
+          - "International Academic Experience: Completed semester abroad at Israel's premier research university during undergraduate studies"
+          - "Graduate-Level Coursework: Functional Analysis, Algebraic Combinatorics, and Quantitative Models at the Einstein Institute of Mathematics, broadening mathematical perspective through different pedagogical tradition"
+          - "Awards: PROMOS Stipend (DAAD mobility program), Hebrew University of Jerusalem Stipend for academic merit"
+          - "Cultural Immersion: Developed cross-cultural communication skills and adaptability in diverse academic environment"
+      - institution: Karl-Friedrich-Gymnasium Mannheim
+        area: General Education
+        degree: Abitur (German University Entrance Qualification)
+        location: Mannheim, Germany
+        start_date: 2009-09
+        end_date: 2017-06
+        highlights:
+          - "Grade: 1.0 (full marks)"
+    certifications:
+      - name: Celonis Foundations
+        date: 2026-02
+        url: https://www.credly.com/badges/5c45662f-40e2-48fa-9052-9b516020d810
+      - name: Neural Networks and Deep Learning
+      - name: Certified SAFe 6 Practitioner
+      - name: SAFe for Teams Course (6.0)
+      - name: Toefl iBT 110
+      - name: Machine Learning in Production
+    teaching_experience:
+      - company: Studybees GmbH
+        position: Crash Course Tutor - Mathematics, Computer Science & Economics
+        location: Germany
+        start_date: 2018-04
+        end_date: 2019-08
+        highlights:
+          - "**Large-Scale Mentorship**: Mentored over 150 university students at University of Mannheim across 10 intensive crash courses for high-attrition subjects"
+      - company: Springer Nature
+        position: Freelance Writer - Mathematical Assessment Development
+        location: Germany
+        start_date: 2019-08
+        end_date: 2019-08
+        highlights:
+          - "**Specialized Content Creation**: Developed two comprehensive mathematical exams focused on statistical applications in laboratory settings for molecular biology students"
+          - "**Interdisciplinary Expertise**: Designed assessments requiring fusion of mathematical precision with biological context, testing analytical capabilities at intersection of quantitative and life sciences"
+          - "**Publisher Collaboration**: Worked with Springer Nature, world's leading academic publisher, ensuring content met rigorous quality and pedagogical standards"
+          - "**Assessment Design**: Balanced theoretical understanding with practical application, creating problems testing both computational skills and conceptual comprehension"
+    publications:
+      - title: "Disparities in air pollution attributable mortality in the US population by race, ethnicity and sociodemographic factors"
+        authors:
+          - Pascal Geldsetzer
+          - "***Daniel Fridljand***"
+          - Mathew V. Kiang
+          - Eran Bendavid
+          - Sam Heft-Neal
+          - Marshall Burke
+          - et al.
+        journal: Nature Medicine
+        date: 2024-07
+        url: https://www.nature.com/articles/s41591-024-03117-0
+    projects:
+      - name: "Agent Olympics Hackathon Munich 2026"
+        date: 2026-01
+        location: Munich
+        highlights:
+          - "Engineered a white-hat voice agent to execute automated prompt injection attacks against multi-layered AI defense systems"
+          - "Orchestrated complex social engineering flows, successfully manipulating a customer support agent to gain access to restricted technical support systems"
+          - "Exploited prompt injection vulnerabilities to bypass security guardrails and extract pre-planted sensitive information"
+          - "**OSINT Engine Development**: Implemented automated Open Source Intelligence (OSINT) collection and analysis system for target company and persona profiling, enabling highly personalized attack vectors"
+          - "**Multi-Channel Attack Engine**: Architected company-agnostic attack system executing personalized social engineering campaigns across email, SMS, and WhatsApp channels, leveraging gathered intelligence for maximum effectiveness"
+          - "**Fully Automated Red Team Operations**: Designed zero-human-interaction attack pipeline, demonstrating production-grade automation in security testing and vulnerability assessment"
+          - "Sponsored by Make (company by Celonis, OpenAi, revel8)"
+          - "At Celonis office in Munich"
+    skills:
+      - label: Programming Languages
+        details: "**Python** (5+ years, Expert): pandas, numpy, scikit-learn, PyTorch, TensorFlow, FastAPI, Streamlit, pytest, Pydantic, PydanticAI, DSPy; **R** (5+ years, Expert): tidyverse, ggplot2, dplyr, caret, Shiny, Rcpp, Bioconductor; **Java** (2+ years, Proficient): Java 8/17, Spring Framework, JBoss/WildFly, Gradle; **TypeScript/JavaScript** (2+ years, Proficient): React; **C++** (1+ year, Intermediate): Performance optimization, Rcpp integration, memory management; **SQL** (3+ years): Oracle DB, query optimization, database design; **Bash/Shell scripting** (3+ years): automation, DevOps tooling"
+      - label: Machine Learning & AI
+        details: "Deep Learning (PyTorch, TensorFlow, Keras), Large Language Models (prompt engineering, fine-tuning, model merging, Assembly-of-Experts), Random Forests, Gradient Boosting, Topological Data Analysis (TDA), Manifold Learning, LLM Frameworks (PydanticAI, DSPy, LangChain, Pydantic), Model Optimization, Hyperparameter Tuning"
+      - label: Statistical Methods & Mathematics
+        details: "Bayesian Non-parametrics (Hierarchical Dirichlet Processes, Dirichlet Process Mixtures), Causal Inference (DAGs, Confounder Adjustment, Propensity Scores), Multiple Testing Correction (FDR, Bonferroni, Benjamini-Hochberg, IHW), High-Dimensional Statistics, Selective Inference, Stochastic Processes, Graphical Modelling, Differential Geometry, Probability Theory, Multivariate Analysis, Generalized Linear Models (GLMs)"
+      - label: Data Science & Engineering
+        details: "ETL Pipeline Design, Data Warehousing, Big Data Processing (16B+ records), Geographic Data Harmonization (multi-resolution spatial integration), Census Boundary Crosswalk Algorithms, Population-Weighted Spatial Aggregation, Geospatial Data Analysis, Time-Series Analysis, Feature Engineering, Data Visualization (ggplot2, matplotlib, seaborn, Shiny), Exploratory Data Analysis (EDA), Statistical Modeling, A/B Testing, Experimental Design"
+      - label: DevOps & Infrastructure
+        details: "**Containerization**: Docker, Podman (daemonless, rootless execution); **CI/CD**: Jenkins (Groovy pipelines, shared libraries), GitHub Actions; **Cloud Platforms**: AWS (ECR, S3), Render.com, Supabase; **Orchestration**: Kubernetes; **Monitoring**: Prometheus, Grafana, Langfuse (LLM observability); **Code Quality**: SonarQube (Quality Gates, static analysis), unit testing, integration testing; **Version Control**: Git (advanced workflows, branching strategies)"
+      - label: Web Development & Frameworks
+        details: "**Frontend**: React, TypeScript, Streamlit, HTML/CSS; **Backend**: FastAPI (Python), Spring Boot (Java), JBoss/WildFly, RESTful API design (OpenAPI 3.1); **Databases**: Oracle DB, SQL query optimization; **API Integration**: WebSockets, OAuth, external service integration"
+      - label: Bioinformatics & Computational Biology
+        details: "Single-Cell Sequencing Analysis (whole-exome, whole-genome), Mutational Signature Estimation, Phylogenetic Tree Analysis, Genomic Data Processing, GWAS (Genome-Wide Association Studies), hQTL Analysis, Copy Number Variation (CNV), Cancer Genomics, Population Genetics, Bioconductor Ecosystem, COSMIC Database"
+      - label: Software Engineering Practices
+        details: "Design Patterns (Template, Strategy, Composite, Hexagonal Architecture, Ports & Adapters), Test-Driven Development (TDD), Clean Code, Agile/Scrum (2-week sprints), Code Review, Pair Programming, Documentation, Technical Debt Management, Refactoring, Legacy System Modernization"
+      - label: Domain Expertise
+        details: "Environmental Epidemiology, Public Health Data Analysis, Cancer Biology, Tumor Evolution, Supply Chain Management, Logistics Systems, Customer Support Automation, Document Intelligence"
+      - label: Scientific Communication
+        details: "Academic Writing (Nature Medicine publication), Conference Presentations (7 scientific talks including Yale, UNC, DAGStat), Peer Review (Bioinformatics Advances, Cell Biology), Technical Documentation, Interactive Visualization, Seminar Presentations, Teaching/Mentoring (150+ students)"
+      - label: Languages
+        details: "**English** (Professional working proficiency - C2, academic and technical communication), **German** (Native), **Russian** (Native)"
+      - label: Tools & Technologies
+        details: "Git/GitHub, VS Code, IntelliJ IDEA, Jupyter Notebooks, RStudio, LaTeX, Markdown, Mermaid (diagrams), Snakemake (workflow orchestration), Playwright (browser automation), LanguageTool, OpenAPI/Swagger, JIRA, Confluence, Notion"
+design:
+  theme: sb2nov
+  page:
+    size: us-letter
+    top_margin: 1.5cm     # Reduce from 2cm to gain vertical space
+    bottom_margin: 1.5cm  # Reduce from 2cm
+    left_margin: 1.5cm    # Reduce from 2cm (standard is often too wide)
+    right_margin: 1.5cm
+    show_footer: true
+    show_top_note: true
+  colors:
+    body: rgb(0, 0, 0)
+    name: rgb(0, 0, 0)
+    connections: rgb(0, 0, 0)
+    section_titles: rgb(0, 0, 0)
+    links: rgb(0, 79, 144)
+    footer: rgb(128, 128, 128)
+    top_note: rgb(128, 128, 128)
+  typography:
+    line_spacing: 0.6em
+    alignment: justified
+    date_and_location_column_alignment: right
+    font_family: New Computer Modern
+    font_size:
+      body: 10pt
+      name: 30pt
+    bold:
+      name: true
+      section_titles: true
+  links:
+    underline: true
+    show_external_link_icon: false
+  header:
+    alignment: center
+    photo_width: 2.5cm
+    space_below_name: 0.3cm       # Tighten header
+    space_below_connections: 0.3cm
+    connections:
+      show_icons: true
+      display_urls_instead_of_usernames: false
+      separator: ''
+      space_between_connections: 0.5cm
+      hyperlink: true
+  section_titles:
+    type: with_full_line
+    line_thickness: 0.5pt
+    space_above: 0.3cm
+    space_below: 0.1cm
+  sections:
+    allow_page_break: true
+    space_between_regular_entries: 1.2em
+  entries:
+    date_and_location_width: 4.15cm
+    side_space: 0.2cm
+    space_between_columns: 0.1cm
+    allow_page_break: true
+    short_second_row: false
+    summary:
+      space_above: 0cm
+      space_left: 0cm
+    highlights:
+      bullet: ◦
+      nested_bullet: '-'
+      space_left: 0.2cm
+      space_above: 0.15cm
+      space_between_items: 0.05cm
+      space_between_bullet_and_text: 0.5em
+  templates:
+    one_line_entry:
+      main_column: '**LABEL:** DETAILS'
+    education_entry:
+      main_column: |-
+        **INSTITUTION**
+        *DEGREE in AREA*
+        SUMMARY
+        HIGHLIGHTS
+      degree_column: ''
+      date_and_location_column: |-
+        *LOCATION*
+        *DATE*
+    experience_entry:
+      main_column: |-
+        **POSITION**
+        *COMPANY*
+        SUMMARY
+        HIGHLIGHTS
+      date_and_location_column: |-
+        *LOCATION*
+        *DATE*
+    publication_entry:
+      main_column: |-
+        **TITLE**
+        AUTHORS
+        URL (JOURNAL)
+      date_and_location_column: DATE
+locale:
+  language: english
+settings:
+  current_date: '2026-01-24'
+  bold_keywords:
+    - Python
+    - Machine Learning
