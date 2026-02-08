@@ -3,25 +3,34 @@ import type { ModelPerformanceData } from "./ModelPerformanceChart";
 
 export default function ModelRecommendations() {
   const [data, setData] = useState<ModelPerformanceData | null>(null);
-  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
-  }, []);
+    const controller = new AbortController();
 
-  useEffect(() => {
-    if (!mounted) return;
-    fetch(`${import.meta.env.BASE_URL}data/model-performance.json`)
+    fetch(`${import.meta.env.BASE_URL}data/model-performance.json`, {
+      signal: controller.signal,
+    })
       .then((r) => {
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         return r.json();
       })
-      .then(setData)
-      .catch(console.error);
-  }, [mounted]);
+      .then((json) => {
+        if (!controller.signal.aborted) {
+          setData(json);
+        }
+      })
+      .catch((error) => {
+        if (error.name !== "AbortError") {
+          console.error(error);
+        }
+      });
 
-  if (!mounted || !data) return null;
+    return () => {
+      controller.abort();
+    };
+  }, []);
 
+  if (!data) return null;
   const planning = data.models.filter((m) => m.recommended === "planning");
   const execution = data.models.filter((m) => m.recommended === "execution");
 
