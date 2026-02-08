@@ -248,29 +248,40 @@ function findBenchmarkScores(cursorName, bigCodeRows, arenaRows) {
 }
 
 function classifyModels(models) {
-  const getScore = (m) => m.arenaCodeElo || m.lmsysArenaElo || 0;
+  const MIN_ELO = 1200;
+  const MAX_EXEC_COST = 2.5;
 
-  const planningModels = models
-    .filter((m) => {
-      const elo = getScore(m);
-      return elo > 1450 || (elo >= 1380 && m.weightedCost >= 10);
-    })
-    .sort((a, b) => getScore(b) - getScore(a))
+  const getScore = (m) => m.arenaCodeElo || m.lmsysArenaElo || null;
+
+  const eligible = models.filter((m) => {
+    const elo = getScore(m);
+    return elo !== null && elo >= MIN_ELO;
+  });
+
+  const planPool = eligible.filter((m) => m.weightedCost > MAX_EXEC_COST);
+  const execPool = eligible.filter((m) => m.weightedCost <= MAX_EXEC_COST);
+
+  const isPareto = (m, pool) => {
+    const elo = getScore(m);
+    return !pool.some(
+      (other) =>
+        other.name !== m.name &&
+        getScore(other) >= elo &&
+        other.weightedCost <= m.weightedCost &&
+        (getScore(other) > elo || other.weightedCost < m.weightedCost)
+    );
+  };
+
+  const planPareto = planPool.filter((m) => isPareto(m, planPool));
+  const execPareto = execPool.filter((m) => isPareto(m, execPool));
+
+  const planningModels = planPareto
+    .sort((a, b) => getScore(b) / b.weightedCost - getScore(a) / a.weightedCost)
     .slice(0, 3)
     .map((m) => m.name);
 
-  const executionModels = models
-    .filter((m) => {
-      if (m.weightedCost >= 2.5) return false;
-      const elo = getScore(m);
-      const bcb = m.bigCodeBenchScore;
-      return elo > 1200 || (bcb !== null && bcb > 44);
-    })
-    .sort((a, b) => {
-      const aScore = getScore(a) || (a.bigCodeBenchScore ? a.bigCodeBenchScore * 28 : 0);
-      const bScore = getScore(b) || (b.bigCodeBenchScore ? b.bigCodeBenchScore * 28 : 0);
-      return bScore - aScore;
-    })
+  const executionModels = execPareto
+    .sort((a, b) => getScore(b) / b.weightedCost - getScore(a) / a.weightedCost)
     .slice(0, 3)
     .map((m) => m.name);
 

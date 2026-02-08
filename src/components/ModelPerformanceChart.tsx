@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import {
   ScatterChart,
   Scatter,
+  Line,
   XAxis,
   YAxis,
   ZAxis,
@@ -142,6 +143,35 @@ export default function ModelPerformanceChart() {
     );
   }
 
+  const MIN_ELO = 1200;
+  const MAX_EXEC_COST = 2.5;
+
+  const eligibleModels = chartPoints.filter((p) => p.x >= MIN_ELO);
+
+  const isPareto = (
+    point: (typeof chartPoints)[0],
+    pool: (typeof chartPoints)[0][]
+  ) => {
+    return !pool.some(
+      (other) =>
+        other.name !== point.name &&
+        other.x >= point.x &&
+        other.y <= point.y &&
+        (other.x > point.x || other.y < point.y)
+    );
+  };
+
+  const planningPool = eligibleModels.filter((p) => p.y > MAX_EXEC_COST);
+  const executionPool = eligibleModels.filter((p) => p.y <= MAX_EXEC_COST);
+
+  const planningPareto = planningPool
+    .filter((p) => isPareto(p, planningPool))
+    .sort((a, b) => a.x - b.x);
+
+  const executionPareto = executionPool
+    .filter((p) => isPareto(p, executionPool))
+    .sort((a, b) => a.x - b.x);
+
   const scoreRange = chartPoints.reduce(
     (acc, p) => ({
       min: Math.min(acc.min, p.x),
@@ -232,6 +262,30 @@ export default function ModelPerformanceChart() {
                 />
               ))}
             </Scatter>
+            {planningPareto.length > 1 && (
+              <Line
+                type="stepAfter"
+                data={planningPareto}
+                dataKey="y"
+                stroke={PLANNING_COLOR}
+                strokeWidth={2}
+                strokeDasharray="5 5"
+                dot={false}
+                isAnimationActive={false}
+              />
+            )}
+            {executionPareto.length > 1 && (
+              <Line
+                type="stepAfter"
+                data={executionPareto}
+                dataKey="y"
+                stroke={EXECUTION_COLOR}
+                strokeWidth={2}
+                strokeDasharray="5 5"
+                dot={false}
+                isAnimationActive={false}
+              />
+            )}
           </ScatterChart>
         </ResponsiveContainer>
       </div>
