@@ -193,7 +193,7 @@ export default function ModelPerformanceChart() {
   return (
     <figure className="my-6 w-full">
       <p id="model-performance-chart-description" className="sr-only">
-        Scatter plot comparing code performance (x-axis: Arena-Code or LMSYS Arena Elo, higher is better) against weighted cost per 1M tokens (y-axis, lower is better). Dashed lines show the average score and average cost, dividing the chart into four quadrants.
+        Scatter plot comparing code performance (x-axis: Arena-Code or LMSYS Arena Elo, higher is better) against weighted cost per 1M tokens (y-axis, lower is better).
       </p>
       <div
         className="h-[400px] w-full"
@@ -234,18 +234,6 @@ export default function ModelPerformanceChart() {
             />
             <ZAxis type="number" dataKey="weightedCost" range={[120, 400]} />
             <Tooltip content={<CustomTooltip />} cursor={{ strokeDasharray: "3 3" }} />
-            <ReferenceLine
-              x={(scoreRange.min + scoreRange.max) / 2}
-              stroke="currentColor"
-              strokeOpacity={0.2}
-              strokeDasharray="4 4"
-            />
-            <ReferenceLine
-              y={(costRange.min + costRange.max) / 2}
-              stroke="currentColor"
-              strokeOpacity={0.2}
-              strokeDasharray="4 4"
-            />
             <Scatter name="Models" data={chartPoints} fill="var(--scatter-fill, #64748b)">
               {chartPoints.map((entry) => (
                 <Cell
