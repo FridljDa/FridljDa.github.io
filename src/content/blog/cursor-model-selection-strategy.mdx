@@ -43,14 +43,13 @@ The chart below plots **cost** (weighted $/1M tokens: 70% input, 30% output) vs 
 
 ### How recommendations are selected
 
-Recommendations follow six principles for optimal cost-performance trade-offs:
+Recommendations follow five principles for optimal cost-performance trade-offs:
 
-1. **Minimum performance**: Both planning and execution models need Elo ≥ 1200
-2. **Cost ceiling**: Execution models must have Cost ≤ $2.5
-3. **No dominated models**: If model B has same-or-better performance AND same-or-lower cost than model A, don't recommend A
-4. **No dominated models**: If model B has same-or-lower cost AND same-or-better performance than model A, don't recommend A
-5. **Efficiency ranking**: Models are ranked by Elo per dollar
-6. **Top picks**: Maximum 3 models per category
+1. **Planning**: Elo ≥ 1300. **Execution**: 1200 ≤ Elo and Cost ≤ $2.5. The two sets can overlap.
+2. **No dominated models**: If model B has same-or-better performance AND same-or-lower cost than model A, don't recommend A
+3. **No dominated models**: If model B has same-or-lower cost AND same-or-better performance than model A, don't recommend A
+4. **Efficiency ranking**: Models are ranked by Elo per dollar
+5. **Top picks**: Maximum 3 models per category
 
 Principles 3 and 4 define the **Pareto frontier**: a model qualifies only if no other model is both better-performing and cheaper. This ensures you're never choosing a strictly dominated option.
 
@@ -66,10 +65,10 @@ $$
 
 Only models with Arena-Code or LMSYS Arena Elo scores qualify (no BigCodeBench-only models).
 
-**Step 2: Split by cost**
+**Step 2: Category criteria (not mutually exclusive)**
 
 $$
-\text{Planning}: \text{Cost} > \$2.5 \quad|\quad \text{Execution}: \text{Cost} \leq \$2.5
+\text{Planning}: \text{Elo} \geq 1300 \quad|\quad \text{Execution}: \text{Elo} \geq 1200 \,\wedge\, \text{Cost} \leq \$2.5
 $$
 
 **Step 3: Pareto optimality**
