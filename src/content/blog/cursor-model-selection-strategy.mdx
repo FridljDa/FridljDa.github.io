@@ -43,17 +43,7 @@ The chart below plots **cost** (weighted $/1M tokens: 70% input, 30% output) vs 
 
 ### How recommendations are selected
 
-Recommendations follow five principles for optimal cost-performance trade-offs:
-
-1. **Planning**: Elo ≥ 1300. **Execution**: 1200 ≤ Elo and Cost ≤ $2.5. The two sets can overlap.
-2. **No dominated models**: If model B has same-or-better performance AND same-or-lower cost than model A, don't recommend A
-3. **No dominated models**: If model B has same-or-lower cost AND same-or-better performance than model A, don't recommend A
-4. **Efficiency ranking**: Models are ranked by Elo per dollar
-5. **Top picks**: Maximum 3 models per category
-
-Principles 3 and 4 define the **Pareto frontier**: a model qualifies only if no other model is both better-performing and cheaper. This ensures you're never choosing a strictly dominated option.
-
-The chart shows Pareto frontiers as dashed lines (purple for planning, green for execution).
+Recommendations follow a mathematical approach for optimal cost-performance trade-offs. The chart shows Pareto frontiers as dashed lines (purple for planning, green for execution).
 
 **Mathematical formulation:**
 
@@ -71,9 +61,9 @@ $$
 \text{Planning}: \text{Elo} \geq 1300 \quad|\quad \text{Execution}: \text{Elo} \geq 1200 \,\wedge\, \text{Cost} \leq \$2.5
 $$
 
-**Step 3: Pareto optimality**
+**Step 3: Pareto optimality (no dominated models)**
 
-Within each category, keep only Pareto-optimal models (not dominated):
+Within each category, keep only Pareto-optimal models. A model qualifies only if no other model is both better-performing and cheaper, ensuring you never choose a strictly dominated option:
 
 $$
 \text{Pareto-optimal} \iff \nexists \text{ model } B: 
@@ -84,13 +74,13 @@ $$
 \end{cases}
 $$
 
-**Step 4: Rank by efficiency**
+**Step 4: Rank by efficiency and select top picks**
 
 $$
 \text{Efficiency} = \frac{\text{Elo}}{\text{Cost per 1M tokens}}
 $$
 
-Select top 3 models by efficiency (or fewer if frontier is smaller).
+Models are ranked by Elo per dollar. Select top 3 models by efficiency per category (or fewer if frontier is smaller).
 
 This approach guarantees recommended models represent the best cost-performance trade-offs available. The formula runs daily via [GitHub Actions](.github/workflows/update-model-data.yaml).
 
