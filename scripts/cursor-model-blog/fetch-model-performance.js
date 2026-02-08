@@ -247,6 +247,36 @@ function findBenchmarkScores(cursorName, bigCodeRows, arenaRows) {
   return result;
 }
 
+function classifyModels(models) {
+  const getScore = (m) => m.arenaCodeElo || m.lmsysArenaElo || 0;
+
+  const planningModels = models
+    .filter((m) => {
+      const elo = getScore(m);
+      return elo > 1450 || (elo >= 1380 && m.weightedCost >= 10);
+    })
+    .sort((a, b) => getScore(b) - getScore(a))
+    .slice(0, 3)
+    .map((m) => m.name);
+
+  const executionModels = models
+    .filter((m) => {
+      if (m.weightedCost >= 2.5) return false;
+      const elo = getScore(m);
+      const bcb = m.bigCodeBenchScore;
+      return elo > 1200 || (bcb !== null && bcb > 44);
+    })
+    .sort((a, b) => {
+      const aScore = getScore(a) || (a.bigCodeBenchScore ? a.bigCodeBenchScore * 28 : 0);
+      const bScore = getScore(b) || (b.bigCodeBenchScore ? b.bigCodeBenchScore * 28 : 0);
+      return bScore - aScore;
+    })
+    .slice(0, 3)
+    .map((m) => m.name);
+
+  return { planningModels, executionModels };
+}
+
 function main() {
   return (async () => {
     const scrapedPricing = await fetchCursorPricing();
@@ -268,9 +298,6 @@ function main() {
     const [bigCodeRows, arenaRows] = await Promise.all([fetchBigCodeBench(), fetchArenaCode()]);
 
     const models = [];
-    const recommendedPlanning = ["Claude 4.5 Sonnet", "Claude 4.5 Opus", "GPT-5.2", "GPT-5.2 Codex"];
-    const recommendedExecution = ["Gemini 3 Flash", "Gemini 2.5 Flash", "GPT-5 Mini", "Grok Code"];
-
     for (const p of finalPricing) {
       const weightedCost = p.input * 0.7 + p.output * 0.3;
       const benchScores = findBenchmarkScores(p.name, bigCodeRows, arenaRows);
@@ -283,17 +310,26 @@ function main() {
         bigCodeBenchScore: benchScores.bigCodeBenchScore,
         arenaCodeElo: benchScores.arenaCodeElo,
         lmsysArenaElo: benchScores.lmsysArenaElo,
-        recommended: recommendedPlanning.includes(p.name)
-          ? "planning"
-          : recommendedExecution.includes(p.name)
-            ? "execution"
-            : null,
+        recommended: null,
       });
+    }
+
+    const filtered = models.filter(
+      (m) =>
+        m.bigCodeBenchScore !== null || m.arenaCodeElo !== null || m.lmsysArenaElo !== null
+    );
+    const { planningModels, executionModels } = classifyModels(filtered);
+    for (const m of filtered) {
+      m.recommended = planningModels.includes(m.name)
+        ? "planning"
+        : executionModels.includes(m.name)
+          ? "execution"
+          : null;
     }
 
     const payload = {
       lastUpdated: new Date().toISOString(),
-      models: models.filter((m) => m.bigCodeBenchScore !== null || m.arenaCodeElo !== null || m.lmsysArenaElo !== null),
+      models: filtered,
     };
 
     mkdirSync(join(ROOT, "public", "data"), { recursive: true });

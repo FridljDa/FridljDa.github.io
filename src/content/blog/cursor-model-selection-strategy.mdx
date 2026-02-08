@@ -6,10 +6,11 @@ tags:
   - Productivity
 description: "Learn how to optimize your Cursor usage by choosing expensive models for planning and cheap models for execution, with a cost vs performance chart updated daily."
 image: /images/blog/cursor-model-selection-strategy/featured.png
-math: false
+math: true
 ---
 
 import ModelPerformanceChart from '../../components/ModelPerformanceChart';
+import ModelRecommendations from '../../components/ModelRecommendations';
 
 Checking Cursor’s [pricing](https://cursor.com/docs/models#model-pricing) and a [leaderboard](https://arena.ai/leaderboard/code) back and forth is tedious; using “the best” model for everything can lead to surprisingly high bills. A simpler approach: **one stronger model for planning, one cheaper model for execution.**
 
@@ -38,8 +39,37 @@ The chart below plots **cost** (weighted $/1M tokens: 70% input, 30% output) vs 
 
 ## Recommended pairings
 
-- **Planning:** Claude 4.5 Sonnet/Opus or GPT-5.2 / GPT-5.2 Codex.
-- **Execution:** Gemini 3 Flash, Gemini 2.5 Flash, or GPT-5 Mini.
+<ModelRecommendations client:load />
+
+### How recommendations are selected
+
+Models are automatically classified based on performance and cost:
+
+**Planning models** (max 3) are selected when:
+
+$$
+\text{Elo} > 1450 \quad \text{OR} \quad (\text{Elo} \geq 1380 \land \text{Cost} \geq \$10)
+$$
+
+This captures the highest performers regardless of cost, plus expensive premium models ideal for complex reasoning.
+
+**Execution models** (max 3) use a unified scoring system:
+
+$$
+\text{Cost} < \$2.5 \quad \text{AND} \quad (\text{Elo} > 1200 \lor \text{BigCodeBench} > 44)
+$$
+
+$$
+\text{UnifiedScore} = 
+\begin{cases}
+\text{Elo} & \text{if Elo available} \\
+\text{BigCodeBench} \times 28 & \text{otherwise}
+\end{cases}
+$$
+
+This ensures cost-effective models with proven coding ability make the cut, whether benchmarked on Arena-Code Elo or BigCodeBench.
+
+The formulas run daily via [GitHub Actions](.github/workflows/update-model-data.yaml), so recommendations stay current as new models arrive and benchmarks update.
 
 Use a slightly stronger execution model for tricky files, or a cheaper planner for simple tasks.
 
