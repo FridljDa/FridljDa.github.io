@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2026-02-08T04:23:50.661Z",
+  "lastUpdated": "2026-02-08T07:21:21.969Z",
   "models": [
     {
       "name": "Claude 4 Sonnet",
@@ -21,7 +21,7 @@
       "bigCodeBenchScore": 46.1,
       "arenaCodeElo": 1301,
       "lmsysArenaElo": null,
-      "recommended": null
+      "recommended": "execution"
     },
     {
       "name": "Claude 4.5 Opus",
@@ -43,7 +43,7 @@
       "bigCodeBenchScore": null,
       "arenaCodeElo": 1386,
       "lmsysArenaElo": null,
-      "recommended": "planning"
+      "recommended": null
     },
     {
       "name": "Claude 4.6 Opus",
@@ -54,7 +54,7 @@
       "bigCodeBenchScore": null,
       "arenaCodeElo": 1576,
       "lmsysArenaElo": null,
-      "recommended": null
+      "recommended": "planning"
     },
     {
       "name": "Gemini 2.5 Flash",
@@ -65,7 +65,7 @@
       "bigCodeBenchScore": null,
       "arenaCodeElo": null,
       "lmsysArenaElo": 1206,
-      "recommended": "execution"
+      "recommended": null
     },
     {
       "name": "Gemini 3 Flash",
@@ -109,7 +109,7 @@
       "bigCodeBenchScore": null,
       "arenaCodeElo": 1472,
       "lmsysArenaElo": null,
-      "recommended": null
+      "recommended": "planning"
     },
     {
       "name": "GPT-5 Mini",
@@ -164,7 +164,7 @@
       "bigCodeBenchScore": null,
       "arenaCodeElo": 1397,
       "lmsysArenaElo": null,
-      "recommended": "planning"
+      "recommended": null
     },
     {
       "name": "GPT-5.2 Codex",
@@ -175,7 +175,7 @@
       "bigCodeBenchScore": null,
       "arenaCodeElo": 1336,
       "lmsysArenaElo": null,
-      "recommended": "planning"
+      "recommended": null
     },
     {
       "name": "Grok Code",
@@ -186,7 +186,7 @@
       "bigCodeBenchScore": null,
       "arenaCodeElo": 1141,
       "lmsysArenaElo": null,
-      "recommended": "execution"
+      "recommended": null
     }
   ]
 }
