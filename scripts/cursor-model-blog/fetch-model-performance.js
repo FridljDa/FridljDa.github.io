@@ -248,17 +248,18 @@ function findBenchmarkScores(cursorName, bigCodeRows, arenaRows) {
 }
 
 function classifyModels(models) {
-  const MIN_ELO = 1200;
+  const MIN_EXEC_ELO = 1200;
+  const MIN_PLAN_ELO = 1300;
   const MAX_EXEC_COST = 2.5;
 
   const getScore = (m) => m.arenaCodeElo || m.lmsysArenaElo || null;
 
   const eligible = models.filter((m) => {
     const elo = getScore(m);
-    return elo !== null && elo >= MIN_ELO;
+    return elo !== null && elo >= MIN_EXEC_ELO;
   });
 
-  const planPool = eligible.filter((m) => m.weightedCost > MAX_EXEC_COST);
+  const planPool = eligible.filter((m) => getScore(m) >= MIN_PLAN_ELO);
   const execPool = eligible.filter((m) => m.weightedCost <= MAX_EXEC_COST);
 
   const isPareto = (m, pool) => {

@@ -143,10 +143,11 @@ export default function ModelPerformanceChart() {
     );
   }
 
-  const MIN_ELO = 1200;
+  const MIN_EXEC_ELO = 1200;
+  const MIN_PLAN_ELO = 1300;
   const MAX_EXEC_COST = 2.5;
 
-  const eligibleModels = chartPoints.filter((p) => p.x >= MIN_ELO);
+  const eligibleModels = chartPoints.filter((p) => p.x >= MIN_EXEC_ELO);
 
   const isPareto = (
     point: (typeof chartPoints)[0],
@@ -161,7 +162,7 @@ export default function ModelPerformanceChart() {
     );
   };
 
-  const planningPool = eligibleModels.filter((p) => p.y > MAX_EXEC_COST);
+  const planningPool = eligibleModels.filter((p) => p.x >= MIN_PLAN_ELO);
   const executionPool = eligibleModels.filter((p) => p.y <= MAX_EXEC_COST);
 
   const planningPareto = planningPool
