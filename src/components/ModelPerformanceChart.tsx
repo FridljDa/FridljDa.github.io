@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import {
-  ScatterChart,
+  ComposedChart,
   Scatter,
   Line,
   XAxis,
@@ -202,7 +202,7 @@ export default function ModelPerformanceChart() {
         aria-describedby="model-performance-chart-description"
       >
         <ResponsiveContainer width="100%" height="100%">
-          <ScatterChart
+          <ComposedChart
             margin={{ top: 20, right: 20, bottom: 20, left: 20 }}
             style={{ fontFamily: "inherit" }}
           >
@@ -287,7 +287,7 @@ export default function ModelPerformanceChart() {
                 isAnimationActive={false}
               />
             )}
-          </ScatterChart>
+          </ComposedChart>
         </ResponsiveContainer>
       </div>
       <figcaption className="mt-2 flex flex-wrap items-center gap-4 text-sm text-neutral-600 dark:text-neutral-400">
