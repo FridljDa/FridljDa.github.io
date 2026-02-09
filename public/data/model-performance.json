@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2026-02-08T07:41:22.003Z",
+  "lastUpdated": "2026-02-09T04:14:08.118Z",
   "models": [
     {
       "name": "Claude 4 Sonnet",
@@ -76,7 +76,7 @@
       "bigCodeBenchScore": null,
       "arenaCodeElo": 1442,
       "lmsysArenaElo": null,
-      "recommended": "execution"
+      "recommended": "planning"
     },
     {
       "name": "Gemini 3 Pro",
