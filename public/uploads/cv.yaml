@@ -274,7 +274,7 @@ cv:
           - "At Celonis office in Munich"
     skills:
       - label: Programming Languages
-        details: "Python (5+ years, Expert): pandas, numpy, scikit-learn, PyTorch, TensorFlow, FastAPI, Streamlit, pytest, Pydantic, PydanticAI, DSPy; R (5+ years, Expert): tidyverse, ggplot2, dplyr, caret, Shiny, Rcpp, Bioconductor; Java (2+ years, Proficient): Java 8/17, Spring Framework, JBoss/WildFly, Gradle; TypeScript/JavaScript (2+ years, Proficient): React; C++ (1+ year, Intermediate): Performance optimization, Rcpp integration, memory management; SQL (3+ years): Oracle DB, query optimization, database design; Bash/Shell scripting (3+ years): automation, DevOps tooling"
+        details: "Python (3+ years): pandas, numpy, scikit-learn, PyTorch, TensorFlow, FastAPI, Streamlit, pytest, Pydantic, PydanticAI, DSPy; R (5+ years, Expert): tidyverse, ggplot2, dplyr, caret, Shiny, Rcpp, Bioconductor; Java (2+ years): Java 8/17, Spring Framework, JBoss/WildFly, Gradle; TypeScript/JavaScript (2+ years, Proficient): React; C++ (1+ year, Intermediate): Performance optimization, Rcpp integration, memory management; SQL (3+ years): Oracle DB, query optimization, database design; Bash/Shell scripting (3+ years): automation, DevOps tooling"
       - label: Machine Learning & AI
         details: "Deep Learning (PyTorch, TensorFlow, Keras), Large Language Models (prompt engineering, fine-tuning, model merging, Assembly-of-Experts), Random Forests, Gradient Boosting, Topological Data Analysis (TDA), Manifold Learning, LLM Frameworks (PydanticAI, DSPy, LangChain, Pydantic), Model Optimization, Hyperparameter Tuning"
       - label: Statistical Methods & Mathematics
