@@ -37,6 +37,18 @@ The chart below plots **cost** (weighted $/1M tokens: 70% input, 30% output) vs 
 
 **How to read it:** Lower left = cheaper/weaker, upper right = pricier/stronger. Pick a **planning** model from the upper-right and an **execution** model from the lower half.
 
+### A caveat on token usage
+
+The charts above and the recommendations below think in **price per 1M tokens**, but **total cost for a task also depends on how many tokens each model uses for the same request**. Some models are more verbose or expand the context more aggressively; others stay more compact.
+
+![Model usage analysis by model](/images/blog/cursor-model-selection-strategy/model-usage-analysis.png)
+
+The figure above shows that **request volume and spend are distributed very unevenly across models**—“auto” and a few heavily used models dominate total cost even when their list price is modest.
+
+![Token usage per request by model](/images/blog/cursor-model-selection-strategy/token-usage-per-request-by-model.png)
+
+Here you can see that **total tokens per request can differ by orders of magnitude between models for similar tasks**. When you experiment with alternative models, keep an eye not just on price per token and Elo, but also on how long responses are and how much context they tend to pull in; that combination is what ultimately shows up on your bill.
+
 ## Recommended pairings
 
 <ModelRecommendations client:load />
