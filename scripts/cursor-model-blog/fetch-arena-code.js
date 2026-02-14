@@ -61,17 +61,27 @@ export async function fetchArenaCode() {
         });
       });
 
+      // Score format is "1567+17/-17" (ELO with confidence interval); extract leading number.
+      const parseScore = (raw) => {
+        const cleaned = raw.replace(/,/g, "").trim();
+        const match = cleaned.match(/^\d+/);
+        const scoreNum = match ? Number(match[0]) : NaN;
+        return Number.isFinite(scoreNum) ? scoreNum : null;
+      };
+
       return rows
         .filter((r) => r.model && r.score)
         .map((r) => {
-          const scoreNum = Number(r.score.replace(/,/g, ""));
+          const score = parseScore(r.score);
+          if (score === null) return null;
           return {
             model: r.model,
             modelNorm: normalizeForMatch(r.model),
-            score: Number.isFinite(scoreNum) ? scoreNum : 0,
+            score,
             benchmark: "Arena-Code",
           };
-        });
+        })
+        .filter(Boolean);
     } finally {
       await browser.close();
     }
