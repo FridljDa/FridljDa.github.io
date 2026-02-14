@@ -74,15 +74,15 @@ cv:
         start_date: 2024-12
         end_date: 2025-12
         highlights:
-          - "**DevOps & Pipeline Optimization**: Engineered a critical pipeline overhaul, replacing a legacy custom dependency solution with an Artifactory proxy. This reduced pipeline runtime from 8 hours to 30 seconds, eliminating development bottlenecks and accelerating feature delivery."
-          - "**DevSecOps & Security Governance**: Established a proactive security culture by integrating OWASP scans into the build pipeline and deploying Grafana dashboards for CVE monitoring. This provided management with visibility into modernization impacts and significantly reduced the application's risk profile."
-          - "**Mission-Critical Modernization**: As part of the platform team, drove the modernization (Java 8 to 17, JBoss to WildFly) of a global supply chain management application. Migrated Spring Framework services, optimized Oracle DB queries via SQLAlchemy, and implemented Docker/Kubernetes deployment strategies. Stabilized core bidding and ordering services to ensure 24/7 availability and data consistency for international logistics partners."
+          - "**Platform Modernization in Supply Chain Software**: Member of the platform team modernizing a mission-critical supply chain management application in a multi-year transformation program (Java 8 to 17, JBoss to WildFly)."
+          - "**DevOps Initiative with High ROI**: Implemented a JFrog Artifactory proxy in 3 days after repeated postponement due to overestimated effort. The solution has been continuously used since rollout and saves developers approximately 1-2 hours per person per week."
+          - "**DevSecOps & Security Governance**: Designed and configured OWASP scans in the CI pipeline and established CVE visibility for stakeholders, enabling proactive risk management throughout modernization."
           - "**Endpoint Modernization**: Migrated internal virus scanning service from SOAP endpoints to REST endpoints with Keycloak authentication, onboarding existing clients to the modernized API."
           - "**Technical Debt & Quality**: Systematically reduced legacy debt through aggressive quality governance, implementing static analysis and automated testing to establish a foundation for cloud-native migration."
-          - "**Agile Leadership & Strategy**: Selected to participate in Program Increment (PI) planning sessions, contributing to strategic planning and cross-team coordination. Enforced agile discipline with a two-week sprint cycle, achieving continuous integration and reliable production releases within every sprint."
+          - "**SAFe Delivery in Distributed Teams**: Delivered features in multinational distributed Scrum teams (5-8 engineers) under SAFe, contributed to Program Increment (PI) planning, and supported reliable two-week sprint releases."
           - "**Cross-Team Synergies**: Created synergies between feature teams working on different applications, improving collaboration and knowledge sharing."
           - "**Internal Knowledge Sharing**: Co-authored the internal 'AI Tool of the Week' blog series, providing weekly summaries of AI advancements including agentic workflows, AI-assisted coding, and multi-modal processing."
-          - "**Tech Stack**: React, TypeScript, Java 8/17, Spring Framework, JBoss/WildFly, Oracle DB, Gradle (build automation), JUnit (testing), Docker/Podman, Jenkins (CI/CD), SonarQube (quality analysis), Jfrog Artifactory."
+          - "**Tech Stack**: TypeScript, Java 17, Spring Boot, Oracle DB, OpenRewrite, Gradle, JUnit, Docker/Podman, Jenkins, SonarQube, OWASP Dependency-Check, JFrog Artifactory."
     data_science_experience:
       - company: ETH Zürich - Department of Biosystems Science and Engineering
         position: Research Data Analyst - Computational Oncology
@@ -274,7 +274,7 @@ cv:
           - "At Celonis office in Munich"
     skills:
       - label: Programming Languages
-        details: "Python (5+ years, Expert): pandas, numpy, scikit-learn, PyTorch, TensorFlow, FastAPI, Streamlit, pytest, Pydantic, PydanticAI, DSPy; R (5+ years, Expert): tidyverse, ggplot2, dplyr, caret, Shiny, Rcpp, Bioconductor; Java (2+ years, Proficient): Java 8/17, Spring Framework, JBoss/WildFly, Gradle; TypeScript/JavaScript (2+ years, Proficient): React; C++ (1+ year, Intermediate): Performance optimization, Rcpp integration, memory management; SQL (3+ years): Oracle DB, query optimization, database design; Bash/Shell scripting (3+ years): automation, DevOps tooling"
+        details: "Python (3+ years): pandas, numpy, scikit-learn, PyTorch, TensorFlow, FastAPI, Streamlit, pytest, Pydantic, PydanticAI, DSPy; R (5+ years, Expert): tidyverse, ggplot2, dplyr, caret, Shiny, Rcpp, Bioconductor; Java (2+ years): Java 8/17, Spring Framework, JBoss/WildFly, Gradle; TypeScript/JavaScript (2+ years, Proficient): React; C++ (1+ year, Intermediate): Performance optimization, Rcpp integration, memory management; SQL (3+ years): Oracle DB, query optimization, database design; Bash/Shell scripting (3+ years): automation, DevOps tooling"
       - label: Machine Learning & AI
         details: "Deep Learning (PyTorch, TensorFlow, Keras), Large Language Models (prompt engineering, fine-tuning, model merging, Assembly-of-Experts), Random Forests, Gradient Boosting, Topological Data Analysis (TDA), Manifold Learning, LLM Frameworks (PydanticAI, DSPy, LangChain, Pydantic), Model Optimization, Hyperparameter Tuning"
       - label: Statistical Methods & Mathematics
