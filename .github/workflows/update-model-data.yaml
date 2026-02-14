@@ -43,7 +43,7 @@ jobs:
       - name: Create branch, commit and push
         id: commit
         run: |
-          BRANCH_NAME="bot/update-model-data-$(date +%Y%m%d-%H%M%S)"
+          BRANCH_NAME="bot/update-model-data"
           git checkout -b "$BRANCH_NAME"
           git add public/data/model-performance.json
           if git diff --staged --quiet; then
@@ -51,7 +51,7 @@ jobs:
             echo "No changes to commit"
           else
             git commit -m "Update model performance data"
-            git push -u origin "$BRANCH_NAME"
+            git push -f origin "$BRANCH_NAME"
             echo "has_changes=true" >> "$GITHUB_OUTPUT"
             echo "branch_name=$BRANCH_NAME" >> "$GITHUB_OUTPUT"
           fi
@@ -61,8 +61,12 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh pr create \
-            --base master \
-            --head "${{ steps.commit.outputs.branch_name }}" \
-            --title "Update model performance data" \
-            --body "Automated update of model performance data."
+          if gh pr list --head bot/update-model-data --state open --json number --jq length | grep -q '^0$'; then
+            gh pr create \
+              --base master \
+              --head bot/update-model-data \
+              --title "Update model performance data" \
+              --body "Automated update of model performance data."
+          else
+            echo "PR already exists, force push updated it"
+          fi
