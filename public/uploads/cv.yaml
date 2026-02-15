@@ -272,11 +272,19 @@ cv:
           - "**Fully Automated Red Team Operations**: Designed zero-human-interaction attack pipeline, demonstrating production-grade automation in security testing and vulnerability assessment"
           - "Sponsored by Make (company by Celonis, OpenAi, revel8)"
           - "At Celonis office in Munich"
+      - name: "Modern LLM Architectures Workshop (TNG)"
+        date: 2026-02
+        location: TNG Internal
+        highlights:
+          - "**Transformer internals**: Built deep understanding of scaled dot-product attention, multi-head attention (Q/K/V projections, head concatenation), and decoder-block mechanics (residual connections, LayerNorm, FFN)"
+          - "**Hands-on PyTorch implementation**: Implemented SingleHeadAttention and MultiHeadAttention from scratch with golden-tensor assertions; implemented multi-head attention with KV-cache for autoregressive decoding and RMSNorm"
+          - "**Advanced architecture topics**: Studied inference-efficiency techniques (KV-cache, Grouped-Query Attention, Multi-Head Latent Attention), Mixture of Experts (MoE), and scaling-law trade-offs between model size and compute"
+          - "**Positional encoding**: Understood sinusoidal embeddings and Rotary Position Embeddings (RoPE) for relative position information; implemented RoPE in attention (apply_rope, inverse-frequency angles)"
     skills:
       - label: Programming Languages
         details: "Python (3+ years): pandas, numpy, scikit-learn, PyTorch, TensorFlow, FastAPI, Streamlit, pytest, Pydantic, PydanticAI, DSPy; R (5+ years, Expert): tidyverse, ggplot2, dplyr, caret, Shiny, Rcpp, Bioconductor; Java (2+ years): Java 8/17, Spring Framework, JBoss/WildFly, Gradle; TypeScript/JavaScript (2+ years, Proficient): React; C++ (1+ year, Intermediate): Performance optimization, Rcpp integration, memory management; SQL (3+ years): Oracle DB, query optimization, database design; Bash/Shell scripting (3+ years): automation, DevOps tooling"
       - label: Machine Learning & AI
-        details: "Deep Learning (PyTorch, TensorFlow, Keras), Large Language Models (prompt engineering, fine-tuning, model merging, Assembly-of-Experts), Random Forests, Gradient Boosting, Topological Data Analysis (TDA), Manifold Learning, LLM Frameworks (PydanticAI, DSPy, LangChain, Pydantic), Model Optimization, Hyperparameter Tuning"
+        details: "Deep Learning (PyTorch, TensorFlow, Keras), Transformer internals (scaled dot-product attention, multi-head attention, decoder blocks), positional encoding (sinusoidal, RoPE), inference efficiency (KV-cache, GQA, MLA, RMSNorm), Mixture of Experts (MoE), Large Language Models (prompt engineering, fine-tuning, model merging, Assembly-of-Experts), Random Forests, Gradient Boosting, Topological Data Analysis (TDA), Manifold Learning, LLM Frameworks (PydanticAI, DSPy, LangChain, Pydantic), Model Optimization, Hyperparameter Tuning"
       - label: Statistical Methods & Mathematics
         details: "Bayesian Non-parametrics (Hierarchical Dirichlet Processes, Dirichlet Process Mixtures), Causal Inference (DAGs, Confounder Adjustment, Propensity Scores), Multiple Testing Correction (FDR, Bonferroni, Benjamini-Hochberg, IHW), High-Dimensional Statistics, Selective Inference, Stochastic Processes, Graphical Modelling, Differential Geometry, Probability Theory, Multivariate Analysis, Generalized Linear Models (GLMs)"
       - label: Data Science & Engineering
