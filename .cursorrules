@@ -55,7 +55,7 @@ This is a personal website built with Astro, featuring an AI chat functionality 
 ### Testing Changes
 To test changes, you can:
 1. Run `npm test` locally (ensure dev server is running first)
-2. Commit, push, and check how it works on Render using MCP tools
+2. Commit, push, and verify on production (https://danielfridljand.de) or your Coolify preview
 
 ### Running Locally
 1. Set environment variable: `export GEMINI_API_KEY=your_key_here` (or create `.env` file)
@@ -65,12 +65,11 @@ To test changes, you can:
 ## Production
 
 ### Deployment
-- Production is deployed on Render (see `render.yaml`)
+- Production is deployed with Coolify on Hetzner (Docker). See [DEPLOYMENT.md](DEPLOYMENT.md).
 - Live site URL: **https://danielfridljand.de/**
 
 ### Production Debugging
-- **Use Render MCP tools** to debug production issues
-- Check service logs, metrics, and deployment status via Render MCP
-- Monitor service health and performance through Render MCP
+- Use Coolify dashboard for logs, restarts, and env vars.
+- Health check: `GET https://danielfridljand.de/api/health` should return 200.
 
 

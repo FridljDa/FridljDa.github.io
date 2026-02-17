@@ -1,64 +1,35 @@
 # Deployment Guide
 
-## Render Deployment
+## Coolify on Hetzner (Docker)
 
-### Initial Setup
+Production runs on a Hetzner server using [Coolify](https://coolify.io/) for build and deploy. You install and manage Coolify on the server; this repo provides a Dockerfile-based app.
 
-1. **Deploy using render.yaml blueprint:**
-   - Connect your GitHub repository to Render
-   - Use the `render.yaml` file to deploy the service
-   - Or deploy the service individually through the Render dashboard
+### Build and run settings in Coolify
 
-### Environment Variables
+- **Build context**: repository root
+- **Dockerfile path**: `./Dockerfile`
+- **Port**: app listens on `PORT` (default `4321`). In Coolify, set the container port to `4321` (or set `PORT` to match what Coolify assigns).
+- **Health check path**: `/api/health` (returns `{"status":"ok"}` with 200)
 
-**Important:** For Render deployment, set environment variables in the Render dashboard, NOT in a `.env` file. The `.env` file is only for local development (see README.md).
+### Environment variables
 
-#### Required Environment Variables
+Set these in Coolify for the service (not in `.env` in the repo; `.env` is for local dev only).
 
-Set these in the Render dashboard for your web service:
+**Required:**
 
-- `GEMINI_API_KEY` - Your Google Gemini API key (required for chat functionality)
-  - Get your API key from [Google AI Studio](https://makersuite.google.com/app/apikey)
-  - This key is used server-side and should be kept secure
+- `GEMINI_API_KEY` – Google Gemini API key for chat. Get it from [Google AI Studio](https://aistudio.google.com/app/apikey). Server-side only; keep secret.
+- `PUBLIC_SECRET_PASSWORD` – Secret for the prompt-injection hackathon challenge (blog). Required in production and local dev; tests use a fallback when unset.
 
-- `PUBLIC_SECRET_PASSWORD` - Secret password for the prompt injection hackathon challenge
-  - This is used in the blog post and should be kept secure
-  - REQUIRED: Must be set in both local development and production
-  - Tests use a fallback password (HackathonWinner2026!) when not set
+**Optional:**
 
-#### Optional Environment Variables
+- `PORT` – Port the app listens on (default in image: `4321`). Override if Coolify uses a different internal port.
 
-- `NODE_VERSION` - Node.js version (defaults to 20.11.0 as specified in render.yaml)
-- `PORT` - Port number (defaults to 10000, automatically set by Render)
+### Domain
 
-### Health Check Configuration
+Point **https://danielfridljand.de/** to the Coolify-managed app (proxy/ingress in Coolify or your reverse proxy).
 
-The service uses `/api/health` as the health check endpoint (configured in `render.yaml`). 
+### After deploy
 
-**If the health check path needs to be updated manually:**
-1. Go to the Render Dashboard: https://dashboard.render.com
-2. Navigate to your web service (`cv-chat-app`)
-3. Click on the "Settings" tab
-4. Scroll to the "Health Check Path" section
-5. Update the path from `/` to `/api/health`
-6. Save the changes
-
-**Verify the health endpoint:**
-- The endpoint should be accessible at: `https://cv-chat-app.onrender.com/api/health`
-- It should return: `{"status":"ok"}` with HTTP 200 status
-
-### Post-Deployment
-
-1. **Verify deployment:**
-   - Check that the service is running and accessible
-   - The health check endpoint (`/api/health`) should return 200 OK with `{"status":"ok"}`
-
-2. **Test chat functionality:**
-   - Navigate to your deployed site
-   - Open the chat interface
-   - Verify that chat requests are working correctly
-
-3. **Monitor logs:**
-   - Check Render service logs for any errors
-   - Ensure `GEMINI_API_KEY` is properly set (you should see "Key found" in logs, not "Key missing")
-
+1. **Health**: `https://danielfridljand.de/api/health` should return 200 and `{"status":"ok"}`.
+2. **Chat**: Open the site, use the chat; confirm requests succeed.
+3. **Logs**: In Coolify, check app logs; ensure `GEMINI_API_KEY` is set (e.g. no “Key missing” in logs).

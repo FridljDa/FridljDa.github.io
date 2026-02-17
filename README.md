@@ -39,7 +39,7 @@ The site will be available at `http://localhost:4321`.
 
 ## Production
 
-The live site is available at: **https://danielfridljand.de/**
+The live site is at **https://danielfridljand.de/** and is deployed with Coolify on Hetzner (Docker). See [DEPLOYMENT.md](DEPLOYMENT.md) for setup and env vars.
 
 ## Running Tests
 

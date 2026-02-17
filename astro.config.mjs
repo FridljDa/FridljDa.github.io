@@ -19,8 +19,7 @@ export default defineConfig({
   
   // Configure the Node.js adapter
   adapter: node({
-    // 'standalone' creates a server that runs on its own.
-    // This is ideal for Render web services.
+    // 'standalone' creates a server that runs on its own (Docker/Coolify, etc.).
     mode: 'standalone',
   }),
 
@@ -35,7 +34,7 @@ export default defineConfig({
   
   // Server configuration
   server: {
-    // HOST: true is critical for Docker/Render environments.
+    // HOST: true is required for Docker/cloud so the server binds to 0.0.0.0.
     // It binds the server to 0.0.0.0 instead of localhost/127.0.0.1
     // enabling external access through the container network.
     host: true,
