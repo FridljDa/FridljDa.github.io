@@ -1,0 +1,55 @@
+---
+title: "Langfuse in Production: Monitoring, Persistent Traces, and a Self-Improving Codebase"
+pubDate: 2026-02-25
+tags:
+  - AI
+  - Python
+  - Observability
+description: "How I use Langfuse in an AI support pipeline for monitoring, persisting evaluation runs for later review, and driving code improvements from eval data via Cursor skills."
+math: false
+---
+
+In a recent AI-powered support project I relied on [Langfuse](https://langfuse.com/) for three things: **monitoring** production and evaluation flows, **persisting** runs and traces so we can review them later, and **closing the loop** with Cursor skills so the codebase improves from evaluation data. This post walks through that setup and why it pays off.
+
+## 1. Monitoring production and evaluation flows
+
+We treat observability as a port: the app depends on a `MonitoringPort` interface, and the Langfuse implementation lives in an adapter. That keeps the core logic free of SDK details and makes it easy to test with a no-op or mock.
+
+**Traces and spans.** The adapter exposes an `observe` decorator that wraps any function and sends a span to Langfuse. We use it on intent classification, extraction, and agentic steps (fetch, plan, message). Each trace gets **provenance metadata**—git commit, branch, deploy env—so we can tie a run to a code version. We also set session IDs when we have them (e.g. from the chat UI), so we can group traces by conversation.
+
+**Token usage and cost.** We log input/output token counts and the model name on the current observation. Langfuse can then infer or display cost per call and per trace. That’s essential when we run evals or production traffic: we see which step and which model is expensive.
+
+**Prompt registration.** At startup we register prompts (e.g. intent classification, information extraction) with Langfuse. That gives a single place to see which prompt versions are in use and to compare runs when we change a prompt.
+
+In short: one monitoring port, one Langfuse adapter, and consistent metadata so we can debug and tune with full context.
+
+## 2. Persisting runs and traces for later review
+
+Evaluations are separate from unit tests: they measure performance over time and are built around **Langfuse datasets and dataset runs**. We keep evaluation data in git (e.g. JSONL files); a script syncs them into Langfuse as datasets. Each evaluation run loads a dataset, runs the task per item, applies evaluators, records scores on each trace, and links traces to dataset items. So in Langfuse we get **one trace per test case**, with input, output, and scores.
+
+**Scores and run-level metrics.** Evaluators return structured scores (e.g. intent match, correct tools selected, resolution helpfulness). We record them on the trace and also compute run-level aggregates—accuracy, pass rate, mean latency—and attach them to the dataset run. That way we can compare runs side by side: "this run after the prompt change" vs "last week’s run."
+
+**Why persistence matters.** We don’t throw away runs. We can open any past run, drill into a failed case, and see the full trace: which step failed, what the model saw and returned, and what the scorer said. That’s crucial for post-hoc debugging and for regression analysis when we refactor or change prompts.
+
+## 3. Self-improving codebase with Cursor skills and eval data
+
+The last piece is using that persisted data to **improve the code**. We run a triage loop that turns evaluation failures into targeted fixes.
+
+**Discover.** A script (and a Cursor skill) talks to the Langfuse API and finds failing eval traces—e.g. latest run per dataset item, filtered by time. Output is a list of failing traces with trace IDs and metadata.
+
+**Analyze.** For each failing trace we delegate to a Cursor subagent that fetches the trace (and, when needed, the underlying execution trace), classifies the root cause (e.g. wrong tool selection, extraction bug, prompt gap), and can post a comment back to Langfuse. The agent has access to our "analyzing failures" reference so classifications stay consistent.
+
+**Re-run.** After analysis we re-run only the failed cases. That confirms whether a fix actually passes and avoids re-running the full suite every time.
+
+We wired this into a single Cursor command (e.g. `/langfuse-triage-failures`): it discovers failures, hands each trace to the analyzer, then triggers the rerun. So the loop is: run evals → discover failures → analyze with AI assistance → fix code → re-run failed cases. The codebase improves from the same evaluation data we already persist.
+
+## Why this fits serious engineering
+
+This setup gives a few things that matter when shipping and maintaining AI in production:
+
+- **Measurable quality.** We’re not guessing whether a change helped; we compare runs and scores before and after.
+- **Robust telemetry.** Traces, token usage, and provenance are first-class, so we can debug and tune with full context.
+- **Closed loop.** Evaluation data doesn’t just sit in a dashboard—it feeds back into fixes via a repeatable triage and rerun workflow.
+- **Clean boundaries.** Monitoring is behind a port; evaluation and triage use the same Langfuse API and datasets, so the pipeline stays consistent.
+
+If you’re building AI pipelines and want observability, durable run history, and a way to turn eval failures into code improvements, this pattern—Langfuse for monitoring and datasets, plus a triage loop driven by Cursor skills—is easy to adopt and keeps the pipeline maintainable.
