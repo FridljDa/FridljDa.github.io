@@ -1,0 +1,93 @@
+---
+title: "Type-Safe Hybrid Workflows with Pydantic AI"
+pubDate: 2026-02-25
+tags:
+  - AI
+  - Python
+description: "How I use Pydantic AI in production to get full type safety and to choose deliberately between LLM-assisted steps and agentic flows—depending on the use case."
+math: false
+---
+
+In a recent project I used [Pydantic AI](https://ai.pydantic.dev/) as the single framework for every LLM touchpoint: classification, structured extraction, and full agentic flows with tools. The payoff was **one consistent, type-safe abstraction** and a clear way to decide *when* to use a simple "run once, get a validated struct" step versus a full agent with tools, retries, and fallbacks. This post explains that split and how it plays out in code.
+
+## Why type safety and workflow choice matter
+
+Without a typed contract, LLM outputs drift into stringly-typed land: you parse JSON (or worse, free text), hope the keys exist, and push validation to runtime. With Pydantic AI, you declare an `output_type`—a Pydantic model—and the framework turns that into the schema the model must satisfy and validates the response for you. That moves a whole class of errors to "fail at validation" instead of "fail later in business logic."
+
+Separately, not every step needs an agent. Sometimes you want a **single LLM call** that returns a structured result (e.g. intent label + confidence). Other times you need an **agent** that can call tools, iterate, and still produce a validated outcome—or a safe fallback if it times out or fails. Using the same library for both lets you keep one mental model and one dependency while still choosing the right shape per use case.
+
+## One abstraction, two modes
+
+Pydantic AI’s `Agent` is configured with a **model** (any provider), optional **system prompt**, and **output_type** (a Pydantic model). You run it with `agent.run(...)`. The difference between "LLM-assisted workflow" and "agentic workflow" is what you add on top:
+
+- **LLM-assisted:** No tools (or trivial ones). Single run; result is `result.output`, already an instance of `output_type`. Good for classification, extraction, scoring.
+- **Agentic:** Register **tools**; the agent can call them during the run. You still get a final `output_type` (or a fallback plan if the run fails). Good for "figure out what to fetch, then return a structured summary."
+
+In both cases the *contract* is the same: `output_type` defines what the caller gets. That keeps downstream code simple and type-checkable.
+
+## LLM-assisted: classification and extraction
+
+For steps that are "one shot, give me a struct," we use an agent with no tools and a single run.
+
+**Intent classification** is a good example: given a conversation, return a label from a fixed set (e.g. refund request, ticket lookup, general inquiry). The service holds an `Agent` with `output_type=IntentClassificationResult` and a system prompt loaded from a file. On each request it formats the conversation, calls `agent.run(formatted_history)`, and returns `result.output`. The caller always gets an `IntentClassificationResult`; no manual parsing.
+
+```python
+from pydantic_ai import Agent
+
+class IntentClassificationResult(BaseModel):
+    intent: Literal["refund", "ticket_lookup", "inquiry", ...]
+    confidence: float
+
+def make_classifier(model, system_prompt: str) -> Agent:
+    return Agent(
+        model=model,
+        system_prompt=system_prompt,
+        output_type=IntentClassificationResult,
+    )
+
+# Usage: one run, typed result
+result = await agent.run(formatted_conversation)
+classification: IntentClassificationResult = result.output
+```
+
+**Information extraction** follows the same pattern but with intent-specific output models: e.g. "extract email + transaction ID + cinema" for a "receive tickets" intent. Each extraction target is a Pydantic model; the agent’s `output_type` is that model. We use `output_retries=3` so that if the model returns invalid JSON or wrong types, Pydantic AI can retry instead of failing fast. After the run, we optionally run a second validation pass with conversation context (e.g. reference time for dates). So: one agent per extraction schema, one run per call, always a validated instance.
+
+So for "classify" and "extract," the pattern is: **Agent + output_type + single run**. No tools; the workflow is linear and easy to test.
+
+## Agentic: fetch, plan, message
+
+Where the system must *decide what to do* (e.g. which APIs to call, in what order), we use full agents with tools and explicit failure handling.
+
+**Fetch agent.** The agent has a system prompt that describes the goal (e.g. "find the transaction that matches this conversation") and a fixed set of tools (e.g. `search_by_id`, `search_by_email`). Its `output_type` is a "fetched data" model (e.g. transaction id, status, or "not found"). The runner runs the agent with a timeout; on timeout or exception it returns an *error* instance of the same type (e.g. `transaction_id=None`, `error_code="TIMEOUT"`) so the rest of the pipeline doesn’t have to special-case "did we get a result or not?" Tool calls are logged for observability.
+
+**Plan agent.** Here the agent’s job is to produce a *resolution plan*: a list of tool calls (e.g. "send message," "escalate," "close ticket") that downstream code will execute. The `output_type` is a plan model with a validated list of typed tool-call items. The runner wraps the call in a timeout; on timeout or validation failure it returns a **fallback plan** (e.g. "send this message + escalate") built from a template. So the pipeline always gets *some* plan; the agent improves it when it can.
+
+**Message agent.** For generating the actual customer-facing message text, we again use an agent with `output_type` (e.g. a model with a `message` field). If the LLM times out or fails validation after retries, we fall back to a pre-rendered template. So again: the caller always gets a string to send; the agent improves it when it can.
+
+In all three cases we use the same ideas: **typed output**, **timeouts**, **explicit fallbacks**. The pipeline stays deterministic at the "what do we do next?" level; only the *content* of the plan or message is LLM-generated.
+
+## When to use which
+
+A simple decision rule we use:
+
+- **Deterministic only:** No LLM. E.g. "we have an ID, look it up with one API call."
+- **LLM-assisted (one shot):** We need a structured decision or extraction (intent, entities, score). One run, one `output_type`. No tools (or only tools used outside the agent).
+- **Agentic:** We need the model to choose *actions* (which tools to call, or which plan to produce). Tools are registered; we still require a final `output_type` (or a constructed fallback with the same shape).
+
+We also mix them in one flow. For example: first run an LLM-assisted **intent + extraction** step. Then, depending on intent, run a **deterministic** lookup when possible (e.g. search by ID then by email); only if that fails do we run an **agentic fetch** agent. So "deterministic first, agent as fallback" keeps latency and cost lower while still handling ambiguous cases.
+
+## Model and step configuration
+
+We keep the LLM behind a small port (interface): one implementation per provider, so we can switch or mock in tests. Model selection is **step-based**: e.g. a different model (or env-driven model name) for "intent," "extraction," "fetch agent," "plan agent." That way we can use a faster/cheaper model for classification and a more capable one for planning, without changing the agent code. Pydantic AI doesn’t care; it just gets a model instance. All of that stays behind the port—no hardcoded endpoints or keys in the workflow code.
+
+## Why this fits production and product-led AI
+
+This setup gives a few things that matter when shipping and maintaining AI in a product:
+
+- **Type safety:** Callers work with `IntentClassificationResult`, `ExtractionInfo`, `ResolutionPlan`—not dicts or raw strings. Refactors and new intents are easier and safer.
+- **Predictable behavior:** Timeouts and fallback plans mean we always return *something* valid; we don’t bubble raw LLM failures to the user. That’s important for support automation and similar workflows.
+- **One stack:** One framework for both "single-shot struct" and "agent with tools" keeps dependencies and patterns consistent. New steps (e.g. another extraction type or another agent) follow the same rules.
+- **Observability:** We log which model and which step ran, and for agentic runs we log tool calls and outcomes. That makes it easier to debug and to tune prompts or models per step.
+- **Model-agnostic:** Swapping provider or model is a change in the port/dependency layer; the agents and runners stay the same.
+
+If you’re building agents or support automation that need both "simple" LLM steps and "full" agentic flows, Pydantic AI’s single abstraction plus a clear split between LLM-assisted and agentic steps is a good fit. You get type safety everywhere and a simple rule for when to use which kind of workflow.
