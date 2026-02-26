@@ -5,11 +5,11 @@ tags:
   - AI
   - Python
   - Observability
-description: "How I use Langfuse in an AI support pipeline for monitoring, persisting evaluation runs for later review, and driving code improvements from eval data via Cursor skills."
+description: "How I use Langfuse in an AI support pipeline for monitoring, persisting evaluation runs for later review, closing the loop with a multi-agent triage loop driven by Cursor, and a decision framework for when to fix eval data versus prompts."
 math: false
 ---
 
-In a recent AI-powered support project I relied on [Langfuse](https://langfuse.com/) for three things: **monitoring** production and evaluation flows, **persisting** runs and traces so we can review them later, and **closing the loop** with Cursor skills so the codebase improves from evaluation data. This post walks through that setup and why it pays off.
+In a recent AI-powered support project I relied on [Langfuse](https://langfuse.com/) for three things: **monitoring** production and evaluation flows, **persisting** runs and traces so we can review them later, and **closing the loop** with Cursor agents so the codebase improves from evaluation data. This post walks through that setup, how the triage loop is wired together, and a decision framework for when to fix evaluation data versus when to fix prompts.
 
 ## 1. Monitoring production and evaluation flows
 
@@ -17,7 +17,7 @@ We treat observability as a port: the app depends on a `MonitoringPort` interfac
 
 **Traces and spans.** The adapter exposes an `observe` decorator that wraps any function and sends a span to Langfuse. We use it on intent classification, extraction, and agentic steps (fetch, plan, message). Each trace gets **provenance metadata**—git commit, branch, deploy env—so we can tie a run to a code version. We also set session IDs when we have them (e.g. from the chat UI), so we can group traces by conversation.
 
-**Token usage and cost.** We log input/output token counts and the model name on the current observation. Langfuse can then infer or display cost per call and per trace. That’s essential when we run evals or production traffic: we see which step and which model is expensive.
+**Token usage and cost.** We log input/output token counts and the model name on the current observation. Langfuse can then infer or display cost per call and per trace. That's essential when we run evals or production traffic: we see which step and which model is expensive.
 
 **Prompt registration.** At startup we register prompts (e.g. intent classification, information extraction) with Langfuse. That gives a single place to see which prompt versions are in use and to compare runs when we change a prompt.
 
@@ -27,29 +27,79 @@ In short: one monitoring port, one Langfuse adapter, and consistent metadata so 
 
 Evaluations are separate from unit tests: they measure performance over time and are built around **Langfuse datasets and dataset runs**. We keep evaluation data in git (e.g. JSONL files); a script syncs them into Langfuse as datasets. Each evaluation run loads a dataset, runs the task per item, applies evaluators, records scores on each trace, and links traces to dataset items. So in Langfuse we get **one trace per test case**, with input, output, and scores.
 
-**Scores and run-level metrics.** Evaluators return structured scores (e.g. intent match, correct tools selected, resolution helpfulness). We record them on the trace and also compute run-level aggregates—accuracy, pass rate, mean latency—and attach them to the dataset run. That way we can compare runs side by side: "this run after the prompt change" vs "last week’s run."
+**Scores and run-level metrics.** Evaluators return structured scores (e.g. intent match, correct tools selected, resolution helpfulness). We record them on the trace and also compute run-level aggregates—accuracy, pass rate, mean latency—and attach them to the dataset run. That way we can compare runs side by side: "this run after the prompt change" vs "last week's run."
 
-**Why persistence matters.** We don’t throw away runs. We can open any past run, drill into a failed case, and see the full trace: which step failed, what the model saw and returned, and what the scorer said. That’s crucial for post-hoc debugging and for regression analysis when we refactor or change prompts.
+**Why persistence matters.** We don't throw away runs. We can open any past run, drill into a failed case, and see the full trace: which step failed, what the model saw and returned, and what the scorer said. That's crucial for post-hoc debugging and for regression analysis when we refactor or change prompts.
 
-## 3. Self-improving codebase with Cursor skills and eval data
+## 3. Self-improving codebase with Cursor agents and eval data
 
-The last piece is using that persisted data to **improve the code**. We run a triage loop that turns evaluation failures into targeted fixes.
+The last piece is using that persisted data to **improve the code**. We run a triage loop that turns evaluation failures into targeted fixes. A single Cursor command (`/langfuse-triage-failures`) orchestrates three specialized subagents end to end.
 
-**Discover.** A script (and a Cursor skill) talks to the Langfuse API and finds failing eval traces—e.g. latest run per dataset item, filtered by time. Output is a list of failing traces with trace IDs and metadata.
+```
+run evals
+    |
+    v
+[eval-discovery agent]
+  list_failing_traces.py -> FailingTrace[] JSON
+    |
+    v  (one handoff per trace, sequential)
+[eval-trace-analyzer agent]  x N
+  classify root cause
+  implement targeted fix (or no-op)
+  post comment to Langfuse trace
+  -> AnalyzerResult JSON
+    |
+    v
+[eval-rerunner agent]
+  rerun_failed_evals.py -> RerunResult[] JSON
+  confirm fixes pass
+```
 
-**Analyze.** For each failing trace we delegate to a Cursor subagent that fetches the trace (and, when needed, the underlying execution trace), classifies the root cause (e.g. wrong tool selection, extraction bug, prompt gap), and can post a comment back to Langfuse. The agent has access to our "analyzing failures" reference so classifications stay consistent.
+**Why sequential and not parallel.** The analyzer agents run one trace at a time, not concurrently. Each one may modify source files; parallel runs would cause conflicts. The orchestrator hands off the next trace only after the previous one has returned its `AnalyzerResult`.
 
-**Re-run.** After analysis we re-run only the failed cases. That confirms whether a fix actually passes and avoids re-running the full suite every time.
+**Typed contracts between agents.** Each handoff carries a typed payload—`FailingTrace` from discovery, `AnalyzerResult` from the analyzer, `RerunResult` from the rerunner—defined in a single contracts file that all agents reference. That keeps the pipeline consistent when agents are swapped or updated.
 
-We wired this into a single Cursor command (e.g. `/langfuse-triage-failures`): it discovers failures, hands each trace to the analyzer, then triggers the rerun. So the loop is: run evals → discover failures → analyze with AI assistance → fix code → re-run failed cases. The codebase improves from the same evaluation data we already persist.
+### Root-cause categories
+
+The analyzer classifies each failure into one of seven categories, each with its own remediation guide:
+
+| Category | What it means | Where to fix |
+|---|---|---|
+| `eval_data_wrong` | Ground truth or test fixture is incorrect | Update eval JSONL |
+| `mock_server_mismatch` | Mock doesn't match the real API contract | Fix mock server response |
+| `missing_mock_get_endpoint` | GET endpoint missing from mock | Add endpoint to mock |
+| `missing_mock_post_endpoint` | POST endpoint missing from mock | Add endpoint to mock |
+| `prompts_behavior` | Model does wrong thing due to prompt wording | Edit prompt template |
+| `system_behavior` | Code-level bug independent of prompts | Fix application code |
+| `something_else` | Likely flakiness or LLM non-determinism | Re-run; document if recurring |
+
+For `something_else` the agent posts a comment on the Langfuse trace and returns `implemented_fix: "no_code_change"`—no code is touched. Everything is still logged so we can spot recurring patterns.
+
+**One hard guardrail.** The analyzer is explicitly prohibited from editing raw customer-interaction fixtures. If a raw-case failure looks like a data problem, the fix goes into the prompt or comparison logic—not the fixture file. That boundary is enforced in the agent's system prompt, not just convention.
+
+## 4. When to fix eval data vs. when to fix prompts
+
+Once you have persistent traces and a triage loop, a subtler question emerges: given a set of failures, should you fix the *evaluation data* (ground truth, false positive patterns) or fix the *model behavior* (prompts, system behavior)? These are separate concerns and getting them confused wastes time.
+
+**Fix eval data first.** If the ground truth is wrong or the pattern matching is too strict, any metric you compute is misleading. You might "improve" precision by tightening a prompt when the real fix is correcting an over-broad ground-truth pattern. Symptoms: high unknown-positive count (model outputs that don't match any pattern), patterns that are too narrow or too loose, or anchors that match the right comment in the wrong location.
+
+**Fix prompts after.** Once eval data correctly reflects what the model *should* do, low precision or recall is a prompt problem. Symptoms: the model consistently misses a class of real issues (false negatives), or consistently flags things it shouldn't (false positives), and the patterns are already correct.
+
+In practice this means running two distinct workflows:
+
+- **Improve eval data:** Fetch traces with unknown positives, classify each one as true positive or false positive, update the JSONL pattern files, re-run to confirm counts moved correctly. Do not touch prompts here.
+- **Improve metrics:** With eval data stable, analyze failure patterns (grouped false negatives and false positives), edit the relevant prompt template, re-run and compare precision/recall/F1 before and after.
+
+Keeping these separate also prevents a common trap: adding ground-truth patterns to "fix" metrics instead of actually improving the model. If you do that, your eval data drifts away from reality and future metrics become meaningless.
 
 ## Why this fits serious engineering
 
 This setup gives a few things that matter when shipping and maintaining AI in production:
 
-- **Measurable quality.** We’re not guessing whether a change helped; we compare runs and scores before and after.
+- **Measurable quality.** We're not guessing whether a change helped; we compare runs and scores before and after.
 - **Robust telemetry.** Traces, token usage, and provenance are first-class, so we can debug and tune with full context.
-- **Closed loop.** Evaluation data doesn’t just sit in a dashboard—it feeds back into fixes via a repeatable triage and rerun workflow.
-- **Clean boundaries.** Monitoring is behind a port; evaluation and triage use the same Langfuse API and datasets, so the pipeline stays consistent.
+- **Closed loop.** Evaluation data doesn't just sit in a dashboard—it feeds back into fixes via a repeatable triage and rerun workflow.
+- **Clean boundaries.** Monitoring is behind a port; evaluation and triage use the same Langfuse API and datasets; the decision between "fix eval data" and "fix prompts" is explicit and kept separate.
+- **Guardrails by design.** Hard constraints (no editing raw customer fixtures, sequential analysis to avoid file conflicts, typed contracts between agents) are enforced in agent system prompts, not just convention.
 
-If you’re building AI pipelines and want observability, durable run history, and a way to turn eval failures into code improvements, this pattern—Langfuse for monitoring and datasets, plus a triage loop driven by Cursor skills—is easy to adopt and keeps the pipeline maintainable.
+If you're building AI pipelines and want observability, durable run history, and a way to turn eval failures into code improvements, this pattern—Langfuse for monitoring and datasets, a multi-agent triage loop driven by Cursor, and an explicit eval-data-vs-prompts decision framework—is easy to adopt and keeps the pipeline maintainable as the system grows.
