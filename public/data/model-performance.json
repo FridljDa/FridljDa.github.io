@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2026-02-14T11:16:27.736Z",
+  "lastUpdated": "2026-02-26T04:05:10.025Z",
   "models": [
     {
       "name": "Claude 4 Sonnet",
@@ -8,9 +8,9 @@
       "outputCost": 15,
       "weightedCost": 6.6,
       "bigCodeBenchScore": null,
-      "arenaCodeElo": 1390,
+      "arenaCodeElo": 1533,
       "lmsysArenaElo": null,
-      "recommended": null
+      "recommended": "planning"
     },
     {
       "name": "Claude 4.5 Haiku",
@@ -19,7 +19,7 @@
       "outputCost": 5,
       "weightedCost": 2.2,
       "bigCodeBenchScore": 46.1,
-      "arenaCodeElo": 1307,
+      "arenaCodeElo": 1306,
       "lmsysArenaElo": null,
       "recommended": null
     },
@@ -30,7 +30,7 @@
       "outputCost": 25,
       "weightedCost": 11,
       "bigCodeBenchScore": null,
-      "arenaCodeElo": 1469,
+      "arenaCodeElo": 1470,
       "lmsysArenaElo": null,
       "recommended": null
     },
@@ -54,7 +54,7 @@
       "bigCodeBenchScore": null,
       "arenaCodeElo": 1560,
       "lmsysArenaElo": null,
-      "recommended": "planning"
+      "recommended": null
     },
     {
       "name": "Gemini 2.5 Flash",
@@ -74,7 +74,7 @@
       "outputCost": 3,
       "weightedCost": 1.25,
       "bigCodeBenchScore": null,
-      "arenaCodeElo": 1444,
+      "arenaCodeElo": 1440,
       "lmsysArenaElo": null,
       "recommended": "planning"
     },
@@ -85,7 +85,7 @@
       "outputCost": 12,
       "weightedCost": 5,
       "bigCodeBenchScore": null,
-      "arenaCodeElo": 1449,
+      "arenaCodeElo": 1444,
       "lmsysArenaElo": null,
       "recommended": null
     },
@@ -96,7 +96,7 @@
       "outputCost": 12,
       "weightedCost": 5,
       "bigCodeBenchScore": null,
-      "arenaCodeElo": 1449,
+      "arenaCodeElo": 1444,
       "lmsysArenaElo": null,
       "recommended": null
     },
@@ -107,7 +107,7 @@
       "outputCost": 10,
       "weightedCost": 3.88,
       "bigCodeBenchScore": null,
-      "arenaCodeElo": 1473,
+      "arenaCodeElo": 1471,
       "lmsysArenaElo": null,
       "recommended": "planning"
     },
@@ -129,7 +129,7 @@
       "outputCost": 10,
       "weightedCost": 3.88,
       "bigCodeBenchScore": null,
-      "arenaCodeElo": 1331,
+      "arenaCodeElo": 1328,
       "lmsysArenaElo": null,
       "recommended": null
     },
@@ -140,7 +140,7 @@
       "outputCost": 10,
       "weightedCost": 3.88,
       "bigCodeBenchScore": null,
-      "arenaCodeElo": 1348,
+      "arenaCodeElo": 1343,
       "lmsysArenaElo": null,
       "recommended": null
     },
@@ -151,7 +151,7 @@
       "outputCost": 2,
       "weightedCost": 0.77,
       "bigCodeBenchScore": null,
-      "arenaCodeElo": 1245,
+      "arenaCodeElo": 1242,
       "lmsysArenaElo": null,
       "recommended": "execution"
     },
@@ -162,7 +162,7 @@
       "outputCost": 14,
       "weightedCost": 5.43,
       "bigCodeBenchScore": null,
-      "arenaCodeElo": 1398,
+      "arenaCodeElo": 1395,
       "lmsysArenaElo": null,
       "recommended": null
     },
@@ -173,7 +173,7 @@
       "outputCost": 14,
       "weightedCost": 5.43,
       "bigCodeBenchScore": null,
-      "arenaCodeElo": 1338,
+      "arenaCodeElo": 1336,
       "lmsysArenaElo": null,
       "recommended": null
     },
@@ -184,7 +184,29 @@
       "outputCost": 1.5,
       "weightedCost": 0.59,
       "bigCodeBenchScore": null,
-      "arenaCodeElo": 1143,
+      "arenaCodeElo": 1140,
+      "lmsysArenaElo": null,
+      "recommended": null
+    },
+    {
+      "name": "Gemini 3.1 Pro",
+      "provider": "Google",
+      "inputCost": 2,
+      "outputCost": 12,
+      "weightedCost": 5,
+      "bigCodeBenchScore": null,
+      "arenaCodeElo": 1461,
+      "lmsysArenaElo": null,
+      "recommended": null
+    },
+    {
+      "name": "Kimi K2.5",
+      "provider": "Moonshot",
+      "inputCost": 0.6,
+      "outputCost": 3,
+      "weightedCost": 1.32,
+      "bigCodeBenchScore": null,
+      "arenaCodeElo": 1436,
       "lmsysArenaElo": null,
       "recommended": null
     }
