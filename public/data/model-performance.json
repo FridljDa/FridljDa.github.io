@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2026-02-26T04:05:10.025Z",
+  "lastUpdated": "2026-03-01T04:10:57.679Z",
   "models": [
     {
       "name": "Claude 4 Sonnet",
@@ -8,7 +8,7 @@
       "outputCost": 15,
       "weightedCost": 6.6,
       "bigCodeBenchScore": null,
-      "arenaCodeElo": 1533,
+      "arenaCodeElo": 1531,
       "lmsysArenaElo": null,
       "recommended": "planning"
     },
@@ -19,7 +19,7 @@
       "outputCost": 5,
       "weightedCost": 2.2,
       "bigCodeBenchScore": 46.1,
-      "arenaCodeElo": 1306,
+      "arenaCodeElo": 1305,
       "lmsysArenaElo": null,
       "recommended": null
     },
@@ -30,7 +30,7 @@
       "outputCost": 25,
       "weightedCost": 11,
       "bigCodeBenchScore": null,
-      "arenaCodeElo": 1470,
+      "arenaCodeElo": 1471,
       "lmsysArenaElo": null,
       "recommended": null
     },
@@ -74,7 +74,7 @@
       "outputCost": 3,
       "weightedCost": 1.25,
       "bigCodeBenchScore": null,
-      "arenaCodeElo": 1440,
+      "arenaCodeElo": 1441,
       "lmsysArenaElo": null,
       "recommended": "planning"
     },
@@ -85,7 +85,7 @@
       "outputCost": 12,
       "weightedCost": 5,
       "bigCodeBenchScore": null,
-      "arenaCodeElo": 1444,
+      "arenaCodeElo": 1443,
       "lmsysArenaElo": null,
       "recommended": null
     },
@@ -96,7 +96,7 @@
       "outputCost": 12,
       "weightedCost": 5,
       "bigCodeBenchScore": null,
-      "arenaCodeElo": 1444,
+      "arenaCodeElo": 1443,
       "lmsysArenaElo": null,
       "recommended": null
     },
@@ -140,7 +140,7 @@
       "outputCost": 10,
       "weightedCost": 3.88,
       "bigCodeBenchScore": null,
-      "arenaCodeElo": 1343,
+      "arenaCodeElo": 1342,
       "lmsysArenaElo": null,
       "recommended": null
     },
@@ -173,7 +173,7 @@
       "outputCost": 14,
       "weightedCost": 5.43,
       "bigCodeBenchScore": null,
-      "arenaCodeElo": 1336,
+      "arenaCodeElo": 1334,
       "lmsysArenaElo": null,
       "recommended": null
     },
