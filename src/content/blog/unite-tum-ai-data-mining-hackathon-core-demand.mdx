@@ -1,0 +1,72 @@
+---
+title: "Unite x TUM.ai Data Mining Hackathon: Core Demand Prediction"
+pubDate: 2026-03-08
+tags:
+  - Data
+  - ML
+  - Hackathon
+description: "How we tackled Challenge 2 at the Unite x TUM.ai Data Mining Hackathon: fee-aware portfolio optimization for recurring procurement demand, from raw PLI data to a two-stage model and NACE-informed cold start."
+math: true
+---
+
+I took part in the [Unite x TUM.ai Data Mining Hackathon](https://www.unite.ai/) (March 6–8, 2026, Munich). Our team chose **Challenge 2: Core Demand Prediction & Value Optimization**—predict which recurring procurement needs to put into a “Core Demand” portfolio so that **net economic benefit** (savings minus fixed fees) is maximized. This post summarizes the problem, our pipeline and modeling choices, and what we learned.
+
+## Why this challenge was interesting
+
+The setup is not “predict what buyers will buy.” It’s an **economic portfolio problem**: every item you recommend incurs a fixed monthly fee (€10 in the scoring setup), and you only earn savings when that item actually recurs. Over-predict and fees dominate; under-predict and you leave savings on the table. You also face **cold start** (buyers with no history) and **warm start** (history available), plus messy real-world data: duplicate SKUs, missing attributes, inconsistent descriptions. That made it a good fit for a weekend of focused data engineering and modeling.
+
+## Challenge setup and scoring
+
+- **Objective:** For each buyer, recommend a set of “Core Demand” elements (recurring needs). Submissions are scored as **Net Score = Total Savings − Total Fees** across all buyers.
+- **Savings:** When a recommended (buyer, product) pair matches actual core demand in the holdout period, savings are generated (in the provided setup, 10% of historical spend on matched items; the exact formula was a black box).
+- **Fees:** €10 per predicted element per month, regardless of correctness.
+- **Levels:** Level 1 = E-Class only; Level 2 = E-Class + Manufacturer; Level 3 = methodology-focused (clustered feature combinations). We optimized for Level 1 and Level 2.
+
+So the trade-off is explicit: precision and portfolio discipline matter as much as recall.
+
+## Data and pipeline
+
+We had anonymized procurement line items (PLIs): order date, buyer, eclass, manufacturer, quantity, unit value, NACE and company metadata. Cold buyers had all PLIs removed from training; warm buyers used a temporal split (lookback for features, post-cutoff for targets and evaluation).
+
+The pipeline was staged:
+
+1. **Candidate generation (warm):** Restrict to eclasses (Level 1) or eclass+manufacturer (Level 2) from the buyer’s history that met minimum order frequency and spend in a lookback window. No history-based candidates for cold buyers.
+2. **Feature engineering:** Per (buyer, eclass) or (buyer, eclass, manufacturer) we built frequency, recency, spend, tenure-normalized (e.g. average monthly orders/spend), calendar, and buyer-context features—all strictly pre-cutoff to avoid leakage.
+3. **Cold path:** Cold buyers received a fixed number of recommendations from **industry-informed rankings** (NACE hierarchy with fallback to global), not from a learned per-buyer model, to control fee exposure.
+
+## Modeling strategy
+
+We used several approaches and tuned selection (threshold + per-buyer cap) on the online leaderboard.
+
+- **Baseline (v1):** Hand-crafted score: activity/frequency + √(spend) − recency penalty, then threshold and top-K per buyer.
+- **Two-stage (v2) — main workhorse:** Stage A: classifier for recurrence probability; Stage B: regressor for expected future spend *given* recurrence. Combined expected value ≈ P(recur) × E(spend | recur); then subtract fee and apply threshold + top-K. Implemented with LightGBM.
+- **Phase3-style (phase3_repro):** Heuristic score from lookback orders, recency decay, and spend (with optional monthlyized rates for tenure fairness), useful as a fallback and in the hybrid.
+- **Hybrid:** Primary portfolio from the two-stage model, backfilled from phase3_repro up to a target per-buyer size when we were under-submitting.
+
+Selection policy was critical: score threshold (including negative thresholds to allow more predictions), per-buyer top-K cap, and guardrails (min orders, min months, high-spend exception). We ran threshold and top-K sweeps and archived runs to compare total score, fees, hits, and spend capture.
+
+## What worked and what didn’t
+
+- **Fee-aware framing helped.** Treating the problem as portfolio optimization (expected utility minus fee) kept us from blindly maximizing recall.
+- **Cold start:** Using NACE-based rankings and a separate `cold_start_top_k` cap kept cold recommendations sensible and fee-controlled.
+- **Under-submission was the main bottleneck.** Our two-stage model was conservative; leaders had higher spend capture (e.g. 76–79% at Level 1). Our best runs came from relaxing the score threshold and/or increasing top-K and from the hybrid when we needed more breadth.
+- **Tuning and ops:** Reusing existing scores and running selection-only sweeps (Snakemake from portfolio through submission) let us iterate quickly. Archiving runs and comparing metrics (total score, savings, fees, spend capture, prediction volume) made it clear that the issue was selection breadth, not candidate set size.
+
+## Results
+
+On the final leaderboard:
+
+- **Level 1 (E-Class):** Our team (AAD) placed **5th** with Net Score **€1,327,614.87**, 64.7% spend captured (17,661 hits). Top teams were in the €1.44M–€1.51M range with 76–80% capture.
+- **Level 2 (E-Class + Manufacturer):** We placed **3rd** with **€423,553.47**, 25.5% spend captured (7,701 hits). The top two had higher fees and 32–33% capture.
+
+So we had a strong Level 2 result relative to the field, and at Level 1 we were clearly under-submitting; the docs we wrote afterward (e.g. negative-threshold sweeps, hybrid backfill) were aimed at the next iteration.
+
+## Takeaways
+
+- **Economic objective first.** Align the model and selection policy with Net Score (savings − fees), not just accuracy or recall.
+- **Cold start is high leverage.** Naive cold handling wastes fee budget; industry/context priors and a separate cap are essential.
+- **Selection policy is a first-class tunable.** Threshold and per-buyer cap often matter more than fancier models when the bottleneck is submission breadth.
+- **Scoring as a black box.** The organizers could change the savings formula or fee; we avoided hardcoding a single rate and tuned against the actual leaderboard.
+- **Operationalize tuning.** Run archiving, parameter sweeps, and clear metrics (score, fees, hits, spend capture, warm/cold shape) make it possible to diagnose under-submission and compare approaches systematically.
+
+If you’re building demand or recommendation systems where every prediction has a cost, this challenge is a compact blueprint: candidate generation, warm/cold split, a two-stage or factorized value model, and a disciplined selection policy tuned to the economic objective.
