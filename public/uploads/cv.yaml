@@ -1,6 +1,5 @@
 cv:
   name: Daniel Fridljand
-  output_folder_name: rendercv_output
   photo: ../images/fridljand_daniel.jpg
   location: Munich, Germany
   website: https://danielfridljand.de
