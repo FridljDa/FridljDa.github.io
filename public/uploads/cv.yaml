@@ -260,6 +260,15 @@ cv:
           - "**ESG & Corporate Relevance**: Key finding—racial disparities in air pollution mortality exceed income-based disparities—directly informs Environmental, Social, and Governance (ESG) strategies, public health policy, and corporate sustainability frameworks"
           - "**High-Impact Finding with Real-World Applications**: Research demonstrates immediate relevance for health tech, government affairs, environmental consulting, and sustainability roles by bridging rigorous quantitative analysis with actionable policy insights"
     projects:
+      - name: "Data Mining Hackathon - Core Demand Prediction (Unite)"
+        date: 2026-03
+        location: Online
+        highlights:
+          - "Built an end-to-end procurement demand prediction pipeline with Snakemake, combining candidate generation, feature engineering, two-stage LightGBM modelling, portfolio selection, and automated submission workflows"
+          - "Achieved **3rd place in Level 2 (E-Class + Manufacturer)** with a net score of **EUR 423,553.47** as team AAD, balancing savings-vs-fee trade-offs under a black-box economic scoring function"
+          - "Achieved **5th place in Level 1 (E-Class)** with a net score of **EUR 1,327,614.87**, demonstrating robust performance across both warm-start and cold-start buyer settings"
+          - "Designed and documented value-aware optimization strategy (score threshold and top-k per buyer sweeps), improving portfolio breadth and spend capture while controlling fee exposure"
+          - "**Tech Stack**: Python, LightGBM, Snakemake, pandas, parquet/CSV pipelines, reproducible experiment tracking"
       - name: "Agent Olympics Hackathon Munich 2026"
         date: 2026-01
         location: Munich
