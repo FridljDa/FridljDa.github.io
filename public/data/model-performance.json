@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2026-03-06T03:58:02.617Z",
+  "lastUpdated": "2026-03-14T03:59:37.866Z",
   "models": [
     {
       "name": "Claude 4 Sonnet",
@@ -8,7 +8,7 @@
       "outputCost": 15,
       "weightedCost": 6.6,
       "bigCodeBenchScore": null,
-      "arenaCodeElo": 1523,
+      "arenaCodeElo": 1524,
       "lmsysArenaElo": null,
       "recommended": "planning"
     },
@@ -19,7 +19,7 @@
       "outputCost": 5,
       "weightedCost": 2.2,
       "bigCodeBenchScore": 46.1,
-      "arenaCodeElo": 1310,
+      "arenaCodeElo": 1309,
       "lmsysArenaElo": null,
       "recommended": null
     },
@@ -30,7 +30,7 @@
       "outputCost": 25,
       "weightedCost": 11,
       "bigCodeBenchScore": null,
-      "arenaCodeElo": 1475,
+      "arenaCodeElo": 1472,
       "lmsysArenaElo": null,
       "recommended": null
     },
@@ -52,7 +52,7 @@
       "outputCost": 25,
       "weightedCost": 11,
       "bigCodeBenchScore": null,
-      "arenaCodeElo": 1555,
+      "arenaCodeElo": 1552,
       "lmsysArenaElo": null,
       "recommended": null
     },
@@ -74,7 +74,7 @@
       "outputCost": 3,
       "weightedCost": 1.25,
       "bigCodeBenchScore": null,
-      "arenaCodeElo": 1442,
+      "arenaCodeElo": 1441,
       "lmsysArenaElo": null,
       "recommended": "planning"
     },
@@ -85,7 +85,7 @@
       "outputCost": 12,
       "weightedCost": 5,
       "bigCodeBenchScore": null,
-      "arenaCodeElo": 1442,
+      "arenaCodeElo": 1440,
       "lmsysArenaElo": null,
       "recommended": null
     },
@@ -96,7 +96,7 @@
       "outputCost": 12,
       "weightedCost": 5,
       "bigCodeBenchScore": null,
-      "arenaCodeElo": 1442,
+      "arenaCodeElo": 1440,
       "lmsysArenaElo": null,
       "recommended": null
     },
@@ -107,7 +107,7 @@
       "outputCost": 10,
       "weightedCost": 3.88,
       "bigCodeBenchScore": null,
-      "arenaCodeElo": 1472,
+      "arenaCodeElo": 1460,
       "lmsysArenaElo": null,
       "recommended": "planning"
     },
@@ -129,7 +129,7 @@
       "outputCost": 10,
       "weightedCost": 3.88,
       "bigCodeBenchScore": null,
-      "arenaCodeElo": 1330,
+      "arenaCodeElo": 1329,
       "lmsysArenaElo": null,
       "recommended": null
     },
@@ -140,7 +140,7 @@
       "outputCost": 10,
       "weightedCost": 3.88,
       "bigCodeBenchScore": null,
-      "arenaCodeElo": 1344,
+      "arenaCodeElo": 1343,
       "lmsysArenaElo": null,
       "recommended": null
     },
@@ -162,7 +162,7 @@
       "outputCost": 14,
       "weightedCost": 5.43,
       "bigCodeBenchScore": null,
-      "arenaCodeElo": 1396,
+      "arenaCodeElo": 1395,
       "lmsysArenaElo": null,
       "recommended": null
     },
@@ -173,7 +173,7 @@
       "outputCost": 14,
       "weightedCost": 5.43,
       "bigCodeBenchScore": null,
-      "arenaCodeElo": 1341,
+      "arenaCodeElo": 1342,
       "lmsysArenaElo": null,
       "recommended": null
     },
@@ -184,7 +184,7 @@
       "outputCost": 1.5,
       "weightedCost": 0.59,
       "bigCodeBenchScore": null,
-      "arenaCodeElo": 1142,
+      "arenaCodeElo": 1143,
       "lmsysArenaElo": null,
       "recommended": null
     },
@@ -195,7 +195,29 @@
       "outputCost": 12,
       "weightedCost": 5,
       "bigCodeBenchScore": null,
-      "arenaCodeElo": 1461,
+      "arenaCodeElo": 1457,
+      "lmsysArenaElo": null,
+      "recommended": null
+    },
+    {
+      "name": "GPT-5.3 Codex",
+      "provider": "OpenAI",
+      "inputCost": 1.75,
+      "outputCost": 14,
+      "weightedCost": 5.43,
+      "bigCodeBenchScore": null,
+      "arenaCodeElo": 1406,
+      "lmsysArenaElo": null,
+      "recommended": null
+    },
+    {
+      "name": "GPT-5.4",
+      "provider": "OpenAI",
+      "inputCost": 2.5,
+      "outputCost": 15,
+      "weightedCost": 6.25,
+      "bigCodeBenchScore": null,
+      "arenaCodeElo": 1460,
       "lmsysArenaElo": null,
       "recommended": null
     },
@@ -206,7 +228,7 @@
       "outputCost": 3,
       "weightedCost": 1.32,
       "bigCodeBenchScore": null,
-      "arenaCodeElo": 1438,
+      "arenaCodeElo": 1437,
       "lmsysArenaElo": null,
       "recommended": null
     }
