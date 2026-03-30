@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2026-03-06T03:58:02.617Z",
+  "lastUpdated": "2026-03-30T07:48:13.220Z",
   "models": [
     {
       "name": "Claude 4 Sonnet",
@@ -19,7 +19,7 @@
       "outputCost": 5,
       "weightedCost": 2.2,
       "bigCodeBenchScore": 46.1,
-      "arenaCodeElo": 1310,
+      "arenaCodeElo": 1309,
       "lmsysArenaElo": null,
       "recommended": null
     },
@@ -30,7 +30,7 @@
       "outputCost": 25,
       "weightedCost": 11,
       "bigCodeBenchScore": null,
-      "arenaCodeElo": 1475,
+      "arenaCodeElo": 1465,
       "lmsysArenaElo": null,
       "recommended": null
     },
@@ -52,7 +52,7 @@
       "outputCost": 25,
       "weightedCost": 11,
       "bigCodeBenchScore": null,
-      "arenaCodeElo": 1555,
+      "arenaCodeElo": 1549,
       "lmsysArenaElo": null,
       "recommended": null
     },
@@ -74,7 +74,7 @@
       "outputCost": 3,
       "weightedCost": 1.25,
       "bigCodeBenchScore": null,
-      "arenaCodeElo": 1442,
+      "arenaCodeElo": 1437,
       "lmsysArenaElo": null,
       "recommended": "planning"
     },
@@ -85,7 +85,7 @@
       "outputCost": 12,
       "weightedCost": 5,
       "bigCodeBenchScore": null,
-      "arenaCodeElo": 1442,
+      "arenaCodeElo": 1438,
       "lmsysArenaElo": null,
       "recommended": null
     },
@@ -96,7 +96,7 @@
       "outputCost": 12,
       "weightedCost": 5,
       "bigCodeBenchScore": null,
-      "arenaCodeElo": 1442,
+      "arenaCodeElo": 1438,
       "lmsysArenaElo": null,
       "recommended": null
     },
@@ -107,7 +107,7 @@
       "outputCost": 10,
       "weightedCost": 3.88,
       "bigCodeBenchScore": null,
-      "arenaCodeElo": 1472,
+      "arenaCodeElo": 1457,
       "lmsysArenaElo": null,
       "recommended": "planning"
     },
@@ -129,7 +129,7 @@
       "outputCost": 10,
       "weightedCost": 3.88,
       "bigCodeBenchScore": null,
-      "arenaCodeElo": 1330,
+      "arenaCodeElo": 1328,
       "lmsysArenaElo": null,
       "recommended": null
     },
@@ -140,7 +140,7 @@
       "outputCost": 10,
       "weightedCost": 3.88,
       "bigCodeBenchScore": null,
-      "arenaCodeElo": 1344,
+      "arenaCodeElo": 1339,
       "lmsysArenaElo": null,
       "recommended": null
     },
@@ -151,7 +151,7 @@
       "outputCost": 2,
       "weightedCost": 0.77,
       "bigCodeBenchScore": null,
-      "arenaCodeElo": 1244,
+      "arenaCodeElo": 1238,
       "lmsysArenaElo": null,
       "recommended": "execution"
     },
@@ -162,7 +162,7 @@
       "outputCost": 14,
       "weightedCost": 5.43,
       "bigCodeBenchScore": null,
-      "arenaCodeElo": 1396,
+      "arenaCodeElo": 1403,
       "lmsysArenaElo": null,
       "recommended": null
     },
@@ -173,7 +173,7 @@
       "outputCost": 14,
       "weightedCost": 5.43,
       "bigCodeBenchScore": null,
-      "arenaCodeElo": 1341,
+      "arenaCodeElo": 1336,
       "lmsysArenaElo": null,
       "recommended": null
     },
@@ -184,7 +184,7 @@
       "outputCost": 1.5,
       "weightedCost": 0.59,
       "bigCodeBenchScore": null,
-      "arenaCodeElo": 1142,
+      "arenaCodeElo": 1138,
       "lmsysArenaElo": null,
       "recommended": null
     },
@@ -195,7 +195,40 @@
       "outputCost": 12,
       "weightedCost": 5,
       "bigCodeBenchScore": null,
-      "arenaCodeElo": 1461,
+      "arenaCodeElo": 1455,
+      "lmsysArenaElo": null,
+      "recommended": null
+    },
+    {
+      "name": "GPT-5.3 Codex",
+      "provider": "OpenAI",
+      "inputCost": 1.75,
+      "outputCost": 14,
+      "weightedCost": 5.43,
+      "bigCodeBenchScore": null,
+      "arenaCodeElo": 1407,
+      "lmsysArenaElo": null,
+      "recommended": null
+    },
+    {
+      "name": "GPT-5.4",
+      "provider": "OpenAI",
+      "inputCost": 2.5,
+      "outputCost": 15,
+      "weightedCost": 6.25,
+      "bigCodeBenchScore": null,
+      "arenaCodeElo": 1457,
+      "lmsysArenaElo": null,
+      "recommended": null
+    },
+    {
+      "name": "Grok 4.20",
+      "provider": "xAI",
+      "inputCost": 2,
+      "outputCost": 6,
+      "weightedCost": 3.2,
+      "bigCodeBenchScore": null,
+      "arenaCodeElo": 1378,
       "lmsysArenaElo": null,
       "recommended": null
     },
@@ -206,7 +239,7 @@
       "outputCost": 3,
       "weightedCost": 1.32,
       "bigCodeBenchScore": null,
-      "arenaCodeElo": 1438,
+      "arenaCodeElo": 1430,
       "lmsysArenaElo": null,
       "recommended": null
     }
