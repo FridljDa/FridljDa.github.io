@@ -94,13 +94,19 @@ A shared absmax scalar per 64-weight block
 
 This is why it's not just a lookup table — it's a lookup table plus a per-block scale factor.
 
+# Distributed Inference
+https://vllm.ai/blog/distributed-inference
+Column Parallelism: Splitting weight matrices along columns and concatenating results after computation.
+Row Parallelism: Splitting matrices along rows, summing partial results post-computation.
+
 ## TODOs
 - [ ] host an llm on Laptop
 - [ ] fine-tune it with lora
 - [ ] quantize it
 - [ ] vllm tricks for efficiency
     https://www.aleksagordic.com/blog/vllm
-- [ ] refresh cach for transformer architecture
+- [ ] KV caches, speculative decoding, and prefill-to-decode transitions
+- [ ] refresh KV cach for transformer architecture
 https://github.com/karpathy/nanoGPT
 https://github.com/karpathy/nanochat
 https://www.youtube.com/watch?v=kCc8FmEb1nY
