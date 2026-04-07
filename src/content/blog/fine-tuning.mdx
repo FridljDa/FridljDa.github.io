@@ -77,9 +77,27 @@ The memory saving comes from step 1: you never have a full bf16 W₀ in VRAM sim
 - **fp16**: smaller range than bf16, mostly legacy, avoid for training
 - **NF4**: not a general float format — a lookup table optimized for Gaussian weight distributions, inference/frozen weights only
 
+The quantization/dequantization process
+python# Quantization (once, before training)
+index = argmin(|w - codebook|)  # find nearest of 16 levels
+store(index)                     # 4 bits
+
+# Dequantization (every forward pass, block by block)
+w_approx = codebook[index]      # lookup, gives bf16 value
+
+One more detail: block-wise scaling
+The codebook values are in [-1, 1]. Real weights aren't. So before quantizing, each block of 64 weights gets divided by its own absmax scalar to normalize into [-1, 1]. That scalar is stored separately (in fp32, then itself double-quantized).
+So the full stored representation per weight is:
+
+4-bit index (the weight itself)
+A shared absmax scalar per 64-weight block
+
+This is why it's not just a lookup table — it's a lookup table plus a per-block scale factor.
+
 ## TODOs
 - [ ] host an llm on Laptop
 - [ ] fine-tune it with lora
 - [ ] quantize it
 - [ ] vllm tricks for effeciency
+    https://www.aleksagordic.com/blog/vllm
 - [ ] refresh cach for transformer architecture
