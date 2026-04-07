@@ -9,3 +9,11 @@ math: true
 ---
 
 ## Lora
+- A fine-tuned model's weight matrix W' ≈ W₀ + ΔW, where ΔW has low intrinsic rank.
+- The modified forward pass is h = W₀x + BAx, where B ∈ ℝ^(d×r), A ∈ ℝ^(r×k), and rank r ≪ min(d,k). A is initialized with random Gaussian, B is initialized to zero — so ΔW = BA is zero at the start of training.
+
+## TODOs
+- [ ] host an llm on Laptop
+- [ ] fine-tune it with lora
+- [ ] quantize it
+- [ ] vllm tricks for effeciency
