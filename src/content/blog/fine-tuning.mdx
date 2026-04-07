@@ -99,6 +99,85 @@ https://vllm.ai/blog/distributed-inference
 Column Parallelism: Splitting weight matrices along columns and concatenating results after computation.
 Row Parallelism: Splitting matrices along rows, summing partial results post-computation.
 
+# speculative decoding
+
+Great topic — it's one of the most practically important inference-time optimizations and comes up a lot in production LLM work.
+
+---
+
+## The core problem it solves
+
+Autoregressive generation is **sequential by construction** — to generate token t+1 you need token t. This means you can't parallelize across the output sequence. Each forward pass through a 7B+ model costs real time, even on good hardware.
+
+Speculative decoding breaks this bottleneck.
+
+---
+
+## The idea
+
+You use **two models**:
+
+- **Draft model**: small, cheap (e.g. 1B)
+- **Target model**: large, expensive (e.g. 70B) — the one you actually care about
+
+The algorithm:
+
+```
+1. Draft model generates k tokens quickly (e.g. k=5)
+2. Target model evaluates all k tokens in ONE forward pass
+3. Accept or reject each draft token based on probability ratio
+4. If rejected at position i, resample from target at that position
+5. Repeat
+```
+
+Step 2 is the key insight — the target model can score k tokens **in parallel** in a single forward pass because at verification time you already have the full sequence. You're exploiting the fact that the expensive model's forward pass over a known sequence is much cheaper than generating autoregressively.
+
+---
+
+## The math (important for interviews)
+
+Let the draft model propose token x with probability q(x), and the target model assign probability p(x).
+
+Accept x with probability:
+
+$$\min\left(1, \frac{p(x)}{q(x)}\right)$$
+
+If p(x) ≥ q(x) — target agrees or is even more confident → **always accept**
+
+If p(x) < q(x) — draft was overconfident → **accept with probability p/q, otherwise resample**
+
+This is rejection sampling. The crucial guarantee: **the output distribution is exactly the target model's distribution**. Speculative decoding is lossless — not an approximation.
+
+---
+
+## Why it works in practice
+
+Most tokens in fluent text are predictable. "The cat sat on the ___" — even a small model will draft "mat" or "floor" correctly. The target model spends its budget verifying cheap tokens in bulk and only does real work when the draft goes wrong.
+
+Typical speedup: **2–3× wall-clock time** for the target model, with zero quality degradation.
+
+---
+
+## The failure mode
+
+If the draft model is too different from the target — wrong domain, wrong task — rejection rate is high and you get little benefit. The draft model needs to be a **good approximation** of the target, just cheaper. Common choices:
+
+- A smaller model from the same family (e.g. DeepSeek-1.3B drafting for DeepSeek-67B)
+- An earlier layer checkpoint of the same model
+- The target model itself with early exit (self-speculative decoding)
+
+---
+
+## Connection to your work
+
+For your cinema SaaS customer support system, if you fine-tune DeepSeek with QLoRA, speculative decoding is a natural complement: fine-tune both the large target **and** a small draft model on your domain data, then use speculative decoding at inference. The draft model will have high acceptance rate because it's in-domain. This is one of the cleaner ways to get near-full-model quality at significantly reduced latency cost.
+
+---
+
+## Interview one-liner
+
+> "Speculative decoding uses a cheap draft model to propose k tokens, then verifies all k in one parallel forward pass of the expensive target model using rejection sampling with acceptance probability min(1, p/q). Output distribution is provably identical to the target model alone — it's a pure latency optimization, not an approximation."
+
 ## TODOs
 - [ ] host an llm on Laptop
 - [ ] fine-tune it with lora
@@ -106,10 +185,12 @@ Row Parallelism: Splitting matrices along rows, summing partial results post-com
 - [ ] vllm tricks for efficiency
     https://www.aleksagordic.com/blog/vllm
 - [ ] KV caches,
-- [ ] speculative decoding,
+- [x] speculative decoding,
 - [ ] prefill-to-decode transitions
 - [ ] PagedAttention
 - [ ] refresh KV cach for transformer architecture
+in what sense encoder/decoder?
+masking
 https://github.com/karpathy/nanoGPT
 https://github.com/karpathy/nanochat
 https://www.youtube.com/watch?v=kCc8FmEb1nY
