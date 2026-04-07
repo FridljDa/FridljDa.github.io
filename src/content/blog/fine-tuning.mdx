@@ -22,6 +22,61 @@ Think of it this way. ΔW = BA is a sum of r rank-1 terms:
 
 $$\Delta W = \sum_{i=1}^{r} b_i a_i^T$$
 
+## QLora
+
+
+## The core idea: trading range vs. precision
+
+A floating point number has three parts:
+
+```
+[sign | exponent | mantissa]
+```
+
+- **Exponent** → how big/small the number can be (range)
+- **Mantissa** → how precisely you can represent it (precision)
+
+You have a fixed bit budget. Every format makes a different tradeoff.
+
+## Why the adapters A and B must stay in bf16
+
+During backprop, gradients of A and B can be very small (especially early in training) or vary widely in magnitude across layers. You need:
+- Enough **range** to not overflow (→ need 8 exponent bits, rules out fp16)
+- Enough **precision** to accumulate small gradient updates meaningfully (→ rules out 4-bit)
+
+bf16 is the minimum viable format for this.
+
+---
+
+## Why W₀ can drop to 4-bit
+
+W₀ is frozen — it never receives gradient updates. It just needs to produce a numerically reasonable matrix multiplication output. Pretrained weights are well-behaved (approximately Gaussian, no extreme values), so you can quantize aggressively.
+The forward pass accumulation still happens in bf16 — you dequantize block-by-block on the fly during the forward pass, multiply, then discard. You never store a bf16 copy of the full W₀.
+
+---
+
+## The full QLoRA forward pass, concretely
+
+```
+1. Load W₀ block in NF4 (4-bit, on GPU)
+2. Dequantize that block → bf16 (temporary, small)
+3. Compute W₀x in bf16
+4. Discard the bf16 block
+5. Add (α/r) · BAx  [A, B already in bf16]
+6. Output h in bf16
+```
+
+The memory saving comes from step 1: you never have a full bf16 W₀ in VRAM simultaneously.
+
+---
+
+## One-line intuitions to remember
+
+- **fp32**: the "safe default," expensive, used for optimizer states in sensitive cases
+- **bf16**: fp32's range, half the memory — the standard training format on modern GPUs
+- **fp16**: smaller range than bf16, mostly legacy, avoid for training
+- **NF4**: not a general float format — a lookup table optimized for Gaussian weight distributions, inference/frozen weights only
+
 ## TODOs
 - [ ] host an llm on Laptop
 - [ ] fine-tune it with lora
