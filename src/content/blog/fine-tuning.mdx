@@ -9,11 +9,22 @@ math: true
 ---
 
 ## Lora
-- A fine-tuned model's weight matrix W' ≈ W₀ + ΔW, where ΔW has low intrinsic rank.
+- A fine-tuned model's weight matrix W' ≈ W₀ + ΔW, where ΔW has low intrinsic rank (r).
 - The modified forward pass is h = W₀x + BAx, where B ∈ ℝ^(d×r), A ∈ ℝ^(r×k), and rank r ≪ min(d,k). A is initialized with random Gaussian, B is initialized to zero — so ΔW = BA is zero at the start of training.
+- In practice, we scale:
+
+$$h = W_0x + \frac{\alpha}{r} \cdot BAx$$
+
+The **α/r scaling** is applied to the adapter's contribution before it's added to the frozen weights' output. +
+By dividing by r, we normalize the adapter's output based on its rank, ensuring that the magnitude of the updates remains consistent regardless of the chosen rank.
+
+Think of it this way. ΔW = BA is a sum of r rank-1 terms:
+
+$$\Delta W = \sum_{i=1}^{r} b_i a_i^T$$
 
 ## TODOs
 - [ ] host an llm on Laptop
 - [ ] fine-tune it with lora
 - [ ] quantize it
 - [ ] vllm tricks for effeciency
+- [ ] refresh cach for transformer architecture
