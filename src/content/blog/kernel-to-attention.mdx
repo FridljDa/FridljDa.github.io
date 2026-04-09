@@ -1,9 +1,207 @@
 ---
-title: "TODO"
-pubDate: TODOD
+title: "From Kernel Regression to Self-Attention: A Line-by-Line Derivation"
+pubDate: 2025-04-09
 tags:
   - AI
-description: ""
+  - Math
+description: "Self-attention seems like magic until you realize it's just nonparametric kernel regression in disguise. Here is the derivation, step by step."
 image: TODO
 math: true
 ---
+
+I have a mathematics background, and kernel regression is something I have studied deeply as part of advanced statistics.
+
+Self-attention, on the other hand, felt slippery to me when I started learning it. It is confusing that the input tokens $x$ play so many roles at once: they are queries, keys, and values.
+
+Based on §15.4.2 and §15.5 of Kevin P. Murphy's *[Probabilistic Machine Learning: An Introduction](https://probml.github.io/pml-book/book1.html)* I will derive the self-attention from kernel regression.
+
+
+---
+
+## 1. The setup: kernel regression
+
+Suppose you have $n$ training pairs $(x_1, y_1), \ldots, (x_n, y_n)$ and a new test point $x$. You want to predict $f(x)$.
+
+The kernel regression estimator (Nadaraya-Watson) says: take a **weighted average of all the training labels**, where the weight given to $y_i$ depends on how similar $x$ is to $x_i$:
+
+$$
+f(x) = \sum_{i=1}^{n} \omega_i(x,\, x_{1:n})\, y_i
+\tag{1}
+$$
+
+where the weights $\omega_i$ are non-negative and sum to 1. This is already a familiar structure: a convex combination of values, with data-dependent weights. The only question is how to define "similarity."
+
+---
+
+## 2. Choosing a kernel
+
+The most natural similarity measure is the **Gaussian kernel**:
+
+$$
+K_\sigma(u) = \frac{1}{\sqrt{2\pi}\,\sigma}\,\exp\!\left(-\frac{u^2}{2\sigma^2}\right)
+\tag{2}
+$$
+
+where $\sigma$ is the bandwidth — a smaller $\sigma$ means the model only looks at very nearby points, a larger $\sigma$ means it smooths broadly.
+
+We define the attention score of $x$ toward $x_i$ as:
+
+$$
+a(x, x_i) = K_\sigma(x - x_i)
+\tag{3}
+$$
+
+To normalize these into weights, we divide by the sum over all training points. The normalizing constant $\frac{1}{\sqrt{2\pi}\sigma}$ cancels in numerator and denominator, so we can drop it.
+
+---
+
+## 3. Reparametrizing: from $\sigma$ to $\alpha$
+
+Let's reparametrize by setting $\alpha^2 = 1/\sigma^2$ (i.e., $\alpha$ is the inverse bandwidth, or *precision*). The kernel becomes:
+
+$$
+K(u;\, \alpha) = \exp\!\left(-\frac{\alpha^2}{2}\,u^2\right)
+\tag{4}
+$$
+
+This is just a scaling convention, but it will cleanly match the form of attention scores we see in practice.
+
+Plugging (4) into the Nadaraya-Watson estimator (1):
+
+$$
+f(x) = \sum_{i=1}^{n} \frac{\exp\!\left[-\dfrac{1}{2}((x - x_i)\,\alpha)^2\right]}{\displaystyle\sum_{j=1}^{n} \exp\!\left[-\dfrac{1}{2}((x - x_j)\,\alpha)^2\right]}\, y_i
+\tag{5}
+$$
+
+---
+
+## 4. Recognizing the softmax
+
+Look at the weights in (5). For a fixed $x$, define the vector of scores:
+
+$$
+s_i(x) = -\frac{1}{2}\left((x - x_i)\,\alpha\right)^2, \quad i = 1, \ldots, n
+\tag{6}
+$$
+
+Then the weight on $y_i$ is exactly:
+
+$$
+\omega_i = \frac{e^{s_i}}{\sum_j e^{s_j}} = \operatorname{softmax}_i(s_1, \ldots, s_n)
+\tag{7}
+$$
+
+So (5) can be written compactly as:
+
+$$
+f(x) = \sum_{i=1}^{n} \operatorname{softmax}_i\!\left(s_1(x), \ldots, s_n(x)\right)\, y_i
+\tag{8}
+$$
+
+The softmax is not a design choice imposed from outside — it **falls out automatically** from normalizing a Gaussian kernel. The kernel ensures the weights are positive; normalization makes them sum to one; together they give you softmax.
+
+---
+
+## 5. Naming the pieces: queries, keys, values
+
+Now rename the objects to match the standard attention vocabulary:
+
+| Kernel regression | Attention |
+|---|---|
+| Test point $x$ | **Query** $q$ |
+| Training inputs $x_i$ | **Keys** $k_i$ |
+| Training labels $y_i$ | **Values** $v_i$ |
+| Attention score $s_i(x)$ | $a(q, k_i)$ |
+
+With this naming, (8) becomes:
+
+$$
+\operatorname{Attn}(q,\, \{(k_i, v_i)\}) = \sum_i \operatorname{softmax}_i\!\left(a(q, k_1), \ldots, a(q, k_n)\right)\, v_i
+\tag{9}
+$$
+
+This is the general attention formula. We have derived it, not postulated it.
+
+---
+
+## 6. From Gaussian scores to dot-product scores
+
+The Gaussian score (6) involves the squared distance $(q - k_i)^2$. Let's expand it:
+
+$$
+-\frac{\alpha^2}{2}(q - k_i)^2 = -\frac{\alpha^2}{2}\|q\|^2 + \alpha^2\, q^\top k_i - \frac{\alpha^2}{2}\|k_i\|^2
+\tag{10}
+$$
+
+The first term $-\frac{\alpha^2}{2}\|q\|^2$ is constant across all $i$, so it vanishes inside the softmax. If we additionally assume all keys are normalized so $\|k_i\| = 1$, the third term is also constant and disappears too.
+
+What remains is:
+
+$$
+a(q, k_i) = \alpha^2\, q^\top k_i
+\tag{11}
+$$
+
+This is the **dot-product attention score**. The $\alpha^2$ factor is just a scaling constant — in practice it is set to $1/\sqrt{d}$ where $d$ is the dimension of the query/key vectors (this keeps the magnitudes of the dot products stable as $d$ grows). Plugging (11) into (9):
+
+$$
+\operatorname{Attn}(q, K, V) = \operatorname{softmax}\!\left(\frac{QK^\top}{\sqrt{d}}\right)V
+\tag{12}
+$$
+
+where $Q$, $K$, $V$ are the matrices of queries, keys, and values stacked into rows. This is **scaled dot-product attention** — the exact formula in "Attention Is All You Need" [Vaswani et al., 2017].
+
+---
+
+## 7. Making it parametric: learned projections
+
+So far, queries, keys, and values are the raw inputs. But in a neural network we want to *learn* what aspects of the input to compare. We introduce learned linear projections:
+
+$$
+q = W^{(q)} x_{\text{query}}, \quad k_i = W^{(k)} x_i, \quad v_i = W^{(v)} x_i
+\tag{13}
+$$
+
+This is the step that turns nonparametric kernel regression into a *trained* attention mechanism. The matrices $W^{(q)}, W^{(k)}, W^{(v)}$ are learned end-to-end by backpropagation.
+
+---
+
+## 8. Self-attention
+
+The final step is the key trick of the Transformer: make the model attend **to itself**.
+
+In standard sequence-to-sequence attention, a decoder state queries the encoder's representations. In **self-attention**, we let every position in a sequence attend to every other position *in the same sequence*. For a sequence of input tokens $x_1, \ldots, x_n$:
+
+$$
+y_i = \operatorname{Attn}\!\left(W^{(q)} x_i,\;\{(W^{(k)} x_j,\; W^{(v)} x_j)\}_{j=1}^{n}\right)
+\tag{14}
+$$
+
+Each token $x_i$ acts simultaneously as a query (asking "who is relevant to me?") and contributes a key and value (answering "here is what I offer to others"). This lets the model build **context-dependent representations**: the embedding of the word "it" can depend on whether the surrounding sentence is about an animal or a street.
+
+Because there are no recurrences, all $n$ outputs $y_1, \ldots, y_n$ can be computed in parallel — this is what makes Transformers so much faster to train than RNNs.
+
+---
+
+## Summary
+
+Here is the full derivation in one view:
+
+$$
+\underbrace{f(x) = \sum_i \omega_i(x)\, y_i}_{\text{kernel regression}}
+\;\xrightarrow{\text{Gaussian kernel}}\;
+\underbrace{\sum_i \operatorname{softmax}_i\!\left(-\tfrac{1}{2}\|(q - k_i)\alpha\|^2\right) v_i}_{\text{nonparametric attention}}
+$$
+
+$$
+\xrightarrow{\text{expand, drop constants}}\;
+\underbrace{\operatorname{softmax}\!\left(\tfrac{QK^\top}{\sqrt{d}}\right)V}_{\text{scaled dot-product attention}}
+\;\xrightarrow{\text{add projections + self-query}}\;
+\underbrace{y_i = \operatorname{Attn}(W^{(q)}x_i, W^{(k)}X, W^{(v)}X)}_{\text{self-attention}}
+$$
+
+Self-attention is not a mysterious black box. It is the natural result of applying a Gaussian similarity kernel, normalizing with softmax, adding learned projections, and letting a sequence attend to itself. Every piece has a reason.
+
+---
+
+*Primary reference: Kevin P. Murphy, "Probabilistic Machine Learning: An Introduction", MIT Press (2022). The kernel-regression-as-attention framing is developed in §15.4.2 (pp. 520–521); self-attention and the transformer architecture are covered in §15.5–15.5.2 (pp. 526–527). Available online at [probml.github.io/pml-book/book1.html](https://probml.github.io/pml-book/book1.html). Original transformer paper: Vaswani et al., "Attention Is All You Need", NeurIPS 2017.*
