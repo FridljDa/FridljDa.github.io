@@ -1,0 +1,24 @@
+---
+title: "Strategic Model Selection in Cursor: Balancing Cost and Performance"
+pubDate: 2026-04-18
+tags:
+  - AI
+  - Productivity
+description: "TODO"
+image: /images/blog/cursor-model-selection-strategy/featured.png
+math: false
+---
+
+As described in my previous post on [Cursor's model selection strategy](https://www.cursor.com/blog/cursor-model-selection-strategy),
+I use different Models for different tasks in Cursor. At the time of writing this post:
+- Default Planning model: `GPT-5.3 Codex` or `Composer 2`
+    - In my experience, `Composer 2` is very concise in the sense that it takes few tokens to achieve the same result. See https://cursor.com/blog/composer-2 for more details
+- Planning model when I am feeling like premium: `GPT-5.4` or `Claude 4.6 Sonnet`
+    - I have noticed that  `Claude 4.6 Sonnet` is more likely to challenge my ideas, which I appreciate
+- Plan execution model: `Gemini 3 Flash`
+
+Despite this cost optimization strategy, Cursor costs have been steadily increasing over the past few months. In this post, I downloaded my usage data from the [Cursor dashboard](https://cursor.com/dashboard/usage) and analyzed it to understand the cost drivers.
+
+https://cursor.com/docs/models-and-pricing#model-pricing
+
+public/images/blog/cursor-revisited/img.png
