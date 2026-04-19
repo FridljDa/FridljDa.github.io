@@ -138,7 +138,7 @@ flowchart TD
 
 - The Marketplace Search and Policy Lookup Endpoints are unlikely to change often. Implementing a good method with exponential bakoff, error handling, ... is a one-time investment. This is better than the AI agent having to figure out how to interact with them on the fly, every time.
 - Extracting information from unstructured text is a well scoped task. We can build targeted evals, improve prompts. We might take a cheaper LLM for this step or even swap it for Named Entity Recognition model.
-
+- LLMs have seen code countless time in the training data. they have not seen your specific business requirements/ policies.
 
 This approach has several concrete advantages over the agentic alternatives:
 
