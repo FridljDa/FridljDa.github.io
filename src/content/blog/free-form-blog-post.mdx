@@ -49,34 +49,31 @@ flowchart TD
 We have one agent for the search, one for the policy and one for the order placement. We transition between the agents via regular Code.
 ```mermaid
 flowchart TD
-    INPUT(["📧 Bob's Laptop Request"])
+    INPUT([📧 Bob's Laptop Request])
 
-    INPUT --> A1
+    INPUT -->|code handoff| A1
+    INPUT -->|code handoff| A2
 
-    subgraph A1["🤖 Search Agent"]
-        S1["Parse specs from request\nMacBook Pro, M4 Max, 32GB…"]
-        S1 --> S2[Query AwesomeMarketplace]
-        S2 --> S3[Return ranked results]
+    subgraph A1 ["🤖 Search Agent"]
+        S1[Parse specs & query] -- Search --> T1[🔍 AwesomeMarketplace\nSearch Tool]
+        T1 -- Ranked options --> S1
     end
 
-    S3 -->|code handoff| A2
-
-    subgraph A2["🤖 Policy Agent"]
-        P1[Read Finance dept. policy]
-        P1 --> P2{"Price ≤ $3,000?"}
-        P2 -- Yes --> P3[Approve selection]
-        P2 -- No --> P4["Flag & select\ncheapest compliant option"]
+    subgraph A2 ["🤖 Policy Agent"]
+        P1[Retrieve budget cap] -- Lookup --> T2[📋 Company Policy\nTool]
+        T2 -- Budget cap $3,000 --> P1
     end
 
-    P3 -->|code handoff| A3
-    P4 -->|code handoff| A3
+    A1 -->|code handoff| A3
+    A2 -->|code handoff| A3
 
-    subgraph A3["🤖 Order Agent"]
-        O1[Prepare order payload]
-        O1 --> O2["Place order on\nAwesomeMarketplace"]
+    subgraph A3 ["🤖 Order Agent"]
+        O1[Select compliant option] -- Place order --> T3[🛒 AwesomeMarketplace\nOrder Tool]
+        T3 -- Confirmation --> O1
     end
 
-    O2 --> OUT(["✅ Order placed,\nnotify Bob"])
+    A3 --> OUT([✅ Order placed,\nnotify Bob])
+
 ```
 
 # The specialised agent approach
