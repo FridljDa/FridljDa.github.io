@@ -4,30 +4,44 @@ pubDate: 2026-04-19
 updatedDate: 2026-04-19
 tags:
   - AI
-description: ""
+description: "Coding agents are impressive — but outside of code, deterministic workflows still win. Here's why, illustrated through a procurement example."
+image:
 ---
 
-Progress in the frontier AI models has allowed coding agents to tackle ever more complex and long-running tasks.
-Coding Benchmark are saturated more and more and the progress is very impressive.
-In many benchmarks, the coding agents get extrem flexibility e.g. simply terminal access (https://www.tbench.ai/), it tries things things and iterates until a given task is done.
-Software is usually a combination of code snippets LLMs have seen during training plenty of time and the fact that coding agents can iterate and evaluate progress allows them so solve very complex tasks.
+Progress in frontier AI models has allowed coding agents to tackle ever more complex and long-running tasks. Benchmarks are saturating fast, and the trajectory is genuinely impressive.
 
-However, outside of coding tasks AI workflows still rule over agentic approaches. Let's take the following example: Employer Bob from OilVentures sends the following request to his procurement department:
+What makes coding agents so effective is a combination of two things. First, software is largely composed of patterns LLMs have seen countless times during training — syntax, idioms, libraries, algorithms. Second, and more importantly, agents can *iterate*. In many benchmarks, coding agents are given nothing but terminal access — like [tbench](https://www.tbench.ai/) — and are left to try things, observe results, and loop until the task is done. That tight evaluate-and-retry loop is what allows them to crack problems that would have seemed out of reach just a year ago.
 
-> I need a new Laptop for my work. I would like:
+However, outside of coding, AI workflows still outperform fully agentic approaches for many business tasks. To understand why, let's walk through a concrete example.
+
+---
+
+## The scenario
+
+Bob from OilVentures sends the following request to his procurement department:
+
+> I need a new laptop for my work. I would like:
 > - MacBook Pro
 > - M4 Max Chip
 > - 16 inch
 > - 32GB RAM
 > - 1TB Storage
+>
 > I am working in the finance department. Can you please find the best options for me and make the purchase?
 
-The procurement department often gets requests for new laptops. They want to automate this.
-At the AwesomeMarketplace, they need specify the brand, the model, the chip, RAM and storage to filter for a laptop.
-The maximum allowance per company policy for a laptop at OilVentures is $3000 for the finance department.
+The procurement department handles requests like this regularly and wants to automate it. Two constraints are relevant:
 
-# The fully agentic approach
-The Procurement agent gets Access to the AwesomeMarketplace search, the company policy and can place Product orders on AwesomeMarketplace.
+- **AwesomeMarketplace** (their vendor) requires brand, model, chip, RAM, and storage to filter products.
+- **OilVentures policy** caps laptop spend at **$3,000** for the finance department.
+
+We'll look at three ways to automate this.
+
+---
+
+## 1. The fully agentic approach
+
+A single Procurement Agent gets access to all three tools — marketplace search, company policy, and order placement — and figures out the rest on its own.
+
 ```mermaid
 flowchart TD
     INPUT([Bob's Laptop Request])
@@ -43,8 +57,14 @@ flowchart TD
     A5 --> OUT1([✅ Order placed,\nnotify Bob])
 ```
 
-# Specialised multi-agent
-We have one agent for the search, one for the policy and one for the order placement. We transition between the agents via regular Code.
+This looks elegant, but it has a serious problem: there is no guarantee the agent will check the policy *before* placing the order. It might. It might not. And if it places a non-compliant order, you only find out after the fact. Unlike coding tasks — where a failed test is cheap and reversible — a wrongly submitted purchase order has real consequences. As the ServiceNow CEO [put it](https://open.spotify.com/episode/11xeL3QCAF77z1vxOp0am0?si=fc70f33f0dd64ab4): people forgive other people for making mistakes. They don't forgive software.
+
+---
+
+## 2. The specialised multi-agent approach
+
+Rather than one agent doing everything, we give each task its own dedicated agent with a single tool. Regular code orchestrates the handoffs between them, and Search and Policy agents run in parallel.
+
 ```mermaid
 flowchart TD
     INPUT([Bob's Laptop Request])
@@ -73,16 +93,16 @@ flowchart TD
 
     T3 --> OUT1([✅ Order placed,\nnotify Bob])
     O2 -- No --> OUT2([❌ Order not compliant,\nnotify Bob])
-
 ```
 
-Compared to the coding from the introduction, we still have the problem that
+This is better. Each agent has a narrow, well-defined job, and code controls the sequencing — so we know the policy check always happens before the order. But three LLM calls for what is largely a structured task still feels like overkill. The Search and Policy agents are essentially doing retrieval with a thin reasoning wrapper. We're paying the cost of LLM unpredictability where we don't need to.
 
-https://open.spotify.com/episode/11xeL3QCAF77z1vxOp0am0?si=fc70f33f0dd64ab4
-service now ceo  said people forgive if people make mistaked, not when software makes mistakes 
+---
 
-# The specialised agent approach
-We have one agent which extracts the relevant information from the request and then we have a regular code workflow which does the search, checks the policy and places the order.
+## 3. The hybrid approach: extraction agent + code workflow
+
+The key insight is that there is only *one* genuinely hard part of Bob's request: parsing his free-text message into a structured spec the marketplace API can consume. Everything after that — the search, the policy check, the order — can be handled deterministically by regular code.
+
 ```mermaid
 flowchart TD
     INPUT([Bob's Laptop Request])
@@ -115,10 +135,12 @@ flowchart TD
 
     O2 -- Yes --> OUT1([✅ Order placed,\nnotify Bob])
     O2 -- No --> OUT2([❌ Order not compliant,\nnotify Bob])
-
 ```
 
-- Auditability
-- Policy enforcement
+This approach has several concrete advantages over the agentic alternatives:
 
-https://danielfridljand.de/post/pydantic-ai-type-safe-hybrid-workflows
+- **Auditability** — every step after extraction is deterministic code. You can log, test, and trace it exactly like any other software.
+- **Policy enforcement** — the budget check is a hard `if` statement, not a suggestion to an LLM. It cannot be reasoned around.
+- **Minimal LLM surface area** — the agent is only used where it adds irreplaceable value: understanding messy natural language. The blast radius of any model error is contained to that one step.
+
+This is the pattern I'd reach for first in any process automation task: use an LLM to bridge the gap between human language and structured data, then let code do the rest. For a deeper dive into how to implement this cleanly with PydanticAI, see [this post](https://danielfridljand.de/post/pydantic-ai-type-safe-hybrid-workflows).
