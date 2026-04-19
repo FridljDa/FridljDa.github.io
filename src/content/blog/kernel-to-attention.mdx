@@ -1,167 +1,190 @@
 ---
 title: "From Kernel Regression to Self-Attention: A Line-by-Line Derivation"
-pubDate: 2025-04-09
+pubDate: 2025-04-09T00:00:00.000Z
 tags:
   - AI
   - Math
-description: "Self-attention seems like magic until you realize it's just nonparametric kernel regression in disguise. Here is the derivation, step by step."
-image: TODO
 math: true
+image: TODO
 ---
 
 I have a mathematics background, and kernel regression is something I have studied deeply as part of advanced statistics.
 
-Self-attention, on the other hand, felt slippery to me when I started learning it. It is confusing that the input tokens $x$ play so many roles at once: they are queries, keys, and values.
+Self-attention, on the other hand, felt slippery to me when I started learning it. It is confusing that the input tokens $\boldsymbol{x}$ play so many roles at once: they are queries, keys, and values.
 
-If you happen to have the same background (i.e. understanding of kernel regression but not of attention), this post is for you.
-Based on §15.4.2 and §15.5 of Kevin P. Murphy's *[Probabilistic Machine Learning: An Introduction](https://probml.github.io/pml-book/book1.html)* I will derive the self-attention from kernel regression.
+If you happen to have the same background — comfortable with kernel regression, uncertain about attention — this post is for you. Following §15.4.2 and §15.5 of Kevin P. Murphy's *[Probabilistic Machine Learning: An Introduction](https://probml.github.io/pml-book/book1.html)*, I will derive self-attention from kernel regression step by step. I keep Murphy's notation where possible so the post can be read alongside the book.
 
 ---
 
-## 1. A kernel
+## 1. Kernel regression
 
-Let $a:\mathbb{R}^d \times\mathbb{R}^d \rightarrow \mathbb{R}^+$ be a measure of similarity between two points. We want $a(x, y)$ to be large when $x$ and $y$ are close, and small when they are far apart.
-A common similarity measure is based on the **Gaussian kernel**:
+Suppose we have $n$ training pairs $(\boldsymbol{x}_1, y_1), \ldots, (\boldsymbol{x}_n, y_n)$ with $\boldsymbol{x}_i \in \mathbb{R}^d$ and $y_i \in \mathbb{R}$, and we want to predict $y$ at a new test point $\boldsymbol{x}$. The **Nadaraya–Watson** estimator says: take a weighted average of the training labels, where the weight given to $y_i$ depends on how similar $\boldsymbol{x}$ is to $\boldsymbol{x}_i$:
 
 $$
-a(x,y)=\sqrt{2\pi}\cdot K(x-y) =\exp\!\left(-\frac{(x-y)^2}{2}\right)
+f(\boldsymbol{x}) = \sum_{i=1}^{n} \alpha_i(\boldsymbol{x},\, \boldsymbol{x}_{1:n})\, y_i
 \tag{1}
 $$
 
-Suppose you have $n$ training pairs $(x_1, y_1), \ldots, (x_N, y_N)$ and a new test point $x$. We define kernel regression weight $\alpha_i(x,x_{1:N})$ as:
+Here $\alpha_i(\boldsymbol{x}, \boldsymbol{x}_{1:n}) \geq 0$ are weights that sum to one (for any fixed $\boldsymbol{x}$). A standard way to build them is to start from a **density kernel**. We will use the Gaussian:
 
 $$
-\begin{aligned}
-\alpha_i(x,x_{1:N}) &= \frac{a(x,x_i)}{\sum_{j=1}^N a(x,x_j)} \\
-&= \frac{\exp\!\left(-\frac{(x-x_i)^2}{2}\right)}{\displaystyle\sum_{j=1}^N \exp\!\left(-\frac{(x-x_j)^2}{2}\right)}
-\end{aligned}
+\mathcal{K}_\sigma(u) = \frac{1}{\sqrt{2\pi\sigma^2}}\, \exp\!\left(-\frac{u^2}{2\sigma^2}\right)
 \tag{2}
 $$
 
-Recall that
+where $\sigma$ is called the *bandwidth*. We then define the unnormalized similarity score between $\boldsymbol{x}$ and $\boldsymbol{x}_i$ as $a(\boldsymbol{x}, \boldsymbol{x}_i) = \mathcal{K}_\sigma(\|\boldsymbol{x} - \boldsymbol{x}_i\|)$. Because the weights $\alpha_i$ will be normalized, the prefactor $1/\sqrt{2\pi\sigma^2}$ is irrelevant and we drop it. Writing $\beta^2 = 1/\sigma^2$, the score simplifies to
+
 $$
-\operatorname{softmax}_i(s_1, \ldots, s_n) = \frac{e^{s_i}}{\sum_j e^{s_j}}
+a(\boldsymbol{x}, \boldsymbol{x}_i) = \exp\!\left(-\frac{\beta^2}{2}\, \|\boldsymbol{x} - \boldsymbol{x}_i\|^2\right)
 \tag{3}
 $$
 
-With that, (2) can be rewritten as:
+Normalizing gives the weights:
+
 $$
-\alpha_i(x,x_{1:N})=\operatorname{softmax}_i\!\left(-\frac{(x-x_1)^2}{2}, \ldots, -\frac{(x-x_N)^2}{2}\right)
+\alpha_i(\boldsymbol{x}, \boldsymbol{x}_{1:n}) = \frac{\exp\!\left(-\frac{\beta^2}{2}\|\boldsymbol{x} - \boldsymbol{x}_i\|^2\right)}{\sum_{j=1}^n \exp\!\left(-\frac{\beta^2}{2}\|\boldsymbol{x} - \boldsymbol{x}_j\|^2\right)}
 \tag{4}
 $$
 
-$\alpha_i(x,x_{1:N})$ sum to $1$. With that out of the way, we can introduce approach the prediction task $f(x)$ underlying $(x_1, y_1), \ldots, (x_N, y_N)$ .
-
-The kernel regression estimator (Nadaraya-Watson) says: take a **weighted average of all the training labels**, where the weight given to $y_i$ depends on how similar $x$ is to $x_i$:
+Recall the softmax:
 
 $$
-f(x) = \sum_{i=1}^{n} \alpha_i(x,\, x_{1:n})\, y_i
+\operatorname{softmax}_i(s_1, \ldots, s_n) = \frac{e^{s_i}}{\sum_{j=1}^n e^{s_j}}
 \tag{5}
 $$
 
-We obtain a convex combination of values, with data-dependent weights.
+So (4) is just a softmax with negative-squared-distance scores:
+
+$$
+\alpha_i(\boldsymbol{x}, \boldsymbol{x}_{1:n}) = \operatorname{softmax}_i\!\left(-\tfrac{\beta^2}{2}\|\boldsymbol{x} - \boldsymbol{x}_1\|^2,\, \ldots,\, -\tfrac{\beta^2}{2}\|\boldsymbol{x} - \boldsymbol{x}_n\|^2\right)
+\tag{6}
+$$
 
 ---
 
-## 5. Naming the pieces: queries, keys, values
+## 2. From kernel regression to a generic similarity
 
-Now rename the objects to match the standard attention vocabulary:
-
-| Kernel regression | Attention |
-|---|---|
-| Test point $x$ | **Query** $q$ |
-| Training inputs $x_i$ | **Keys** $k_i$ |
-| Training labels $y_i$ | **Values** $v_i$ |
-| Attention score $s_i(x)$ | $a(q, k_i)$ |
-
-With this naming, (8) becomes:
+Substituting (6) into (1) gives
 
 $$
-\operatorname{Attn}(q,\, \{(k_i, v_i)\}) = \sum_{i=1}^N \operatorname{softmax}_i\!\left(a(q, k_1), \ldots, a(q, k_n)\right)\, v_i
+f(\boldsymbol{x}) = \sum_{i=1}^{n} \operatorname{softmax}_i\!\left(-\tfrac{\beta^2}{2}\|\boldsymbol{x} - \boldsymbol{x}_1\|^2,\, \ldots,\, -\tfrac{\beta^2}{2}\|\boldsymbol{x} - \boldsymbol{x}_n\|^2\right)\, y_i
+\tag{7}
+$$
+
+This is still pure kernel regression — we have only rewritten it. Now observe that the negative squared distance plays *one specific role* here: it scores how similar $\boldsymbol{x}$ is to each $\boldsymbol{x}_i$. Nothing in the structure of (7) forces that particular choice. Replacing it with a generic similarity function $a(\boldsymbol{x}, \boldsymbol{x}_i)$ gives
+
+$$
+f(\boldsymbol{x}) = \sum_{i=1}^{n} \operatorname{softmax}_i\!\left(a(\boldsymbol{x}, \boldsymbol{x}_1),\, \ldots,\, a(\boldsymbol{x}, \boldsymbol{x}_n)\right)\, y_i
+\tag{8}
+$$
+
+No modelling power has been added — we have only made the similarity function a pluggable component. That small abstraction is what opens the door to the attention vocabulary.
+
+---
+
+## 3. Naming the pieces: queries, keys, values
+
+We rename the objects to match standard attention notation:
+
+| Kernel regression       | Attention                  |
+|-------------------------|----------------------------|
+| Test point $\boldsymbol{x}$      | **Query** $\boldsymbol{q}$         |
+| Training input $\boldsymbol{x}_i$ | **Key** $\boldsymbol{k}_i$         |
+| Training label $y_i$     | **Value** $\boldsymbol{v}_i$         |
+| Similarity $a(\boldsymbol{x}, \boldsymbol{x}_i)$ | Attention score $a(\boldsymbol{q}, \boldsymbol{k}_i)$ |
+
+With this renaming, (8) becomes
+
+$$
+\operatorname{Attn}\!\left(\boldsymbol{q},\, \{(\boldsymbol{k}_i, \boldsymbol{v}_i)\}_{i=1}^n\right) = \sum_{i=1}^n \operatorname{softmax}_i\!\left(a(\boldsymbol{q}, \boldsymbol{k}_1),\, \ldots,\, a(\boldsymbol{q}, \boldsymbol{k}_n)\right) \boldsymbol{v}_i
 \tag{9}
 $$
 
-This is the general attention formula. We have derived it, not postulated it.
+This is the general attention formula. We have *derived* it, not postulated it.
+
+The renaming is not cosmetic. In kernel regression, the training input $\boldsymbol{x}_i$ plays two roles at once: it is the *address* used to decide how much weight training point $i$ receives, and it is (together with $y_i$) the *payload* that gets aggregated into the output. Attention separates these roles by name. A **key** is an address — what the query is compared against. A **value** is a payload — what actually gets returned. Right now keys and values are still tied together ($\boldsymbol{k}_i = \boldsymbol{x}_i$ and $\boldsymbol{v}_i = y_i$), so the distinction looks redundant. It earns its keep in Section 5, where learned projections will pull keys and values out of the input along *different* directions: the model can learn to match on one aspect of a token and return another.
 
 ---
 
-## 6. From Gaussian scores to dot-product scores
+## 4. From Gaussian scores to dot-product scores
 
-The Gaussian score (6) involves the squared distance $(q - k_i)^2$. Let's expand it:
+The Gaussian score in (3) involves a squared distance. Expand it:
 
 $$
--\frac{\alpha^2}{2}(q - k_i)^2 = -\frac{\alpha^2}{2}\|q\|^2 + \alpha^2\, q^\top k_i - \frac{\alpha^2}{2}\|k_i\|^2
+-\frac{\beta^2}{2}\, \|\boldsymbol{q} - \boldsymbol{k}_i\|^2 = -\frac{\beta^2}{2}\|\boldsymbol{q}\|^2 \;+\; \beta^2\, \boldsymbol{q}^\top \boldsymbol{k}_i \;-\; \frac{\beta^2}{2}\|\boldsymbol{k}_i\|^2
 \tag{10}
 $$
 
-The first term $-\frac{\alpha^2}{2}\|q\|^2$ is constant across all $i$, so it vanishes inside the softmax. If we additionally assume all keys are normalized so $\|k_i\| = 1$, the third term is also constant and disappears too.
-
-What remains is:
+The first term $-\tfrac{\beta^2}{2}\|\boldsymbol{q}\|^2$ does not depend on $i$, so it is a constant offset inside the softmax and vanishes on normalization. If we additionally assume keys are unit-norm, the third term is also constant and drops out. What remains is
 
 $$
-a(q, k_i) = \alpha^2\, q^\top k_i
+a(\boldsymbol{q}, \boldsymbol{k}_i) = \beta^2\, \boldsymbol{q}^\top \boldsymbol{k}_i
 \tag{11}
 $$
 
-This is the **dot-product attention score**. The $\alpha^2$ factor is just a scaling constant — in practice it is set to $1/\sqrt{d}$ where $d$ is the dimension of the query/key vectors (this keeps the magnitudes of the dot products stable as $d$ grows). Plugging (11) into (9):
+This is the **dot-product attention score**. The scalar $\beta^2$ is just a constant; in practice it is set to $1/\sqrt{d}$, where $d$ is the dimension of the query and key vectors. The reason for that specific choice is statistical: if the components of $\boldsymbol{q}$ and $\boldsymbol{k}_i$ are independent with unit variance, the dot product $\boldsymbol{q}^\top \boldsymbol{k}_i$ has variance $d$. Dividing by $\sqrt{d}$ keeps the score variance $O(1)$ as $d$ grows, which prevents the softmax from saturating.
+
+Stacking queries, keys, and values into matrices $Q$, $K$, $V$ (one row per item) and plugging (11) into (9) gives
 
 $$
-\operatorname{Attn}(q, K, V) = \operatorname{softmax}\!\left(\frac{QK^\top}{\sqrt{d}}\right)V
+\operatorname{Attn}(Q, K, V) = \operatorname{softmax}\!\left(\frac{Q K^\top}{\sqrt{d}}\right) V
 \tag{12}
 $$
 
-where $Q$, $K$, $V$ are the matrices of queries, keys, and values stacked into rows. This is **scaled dot-product attention** — the exact formula in "Attention Is All You Need" [Vaswani et al., 2017].
+This is **scaled dot-product attention** — the exact formula from "Attention Is All You Need" [Vaswani et al., 2017].
 
 ---
 
-## 7. Making it parametric: learned projections
+## 5. Making it parametric: learned projections
 
-So far, queries, keys, and values are the raw inputs. But in a neural network we want to *learn* what aspects of the input to compare. We introduce learned linear projections:
+So far, queries, keys, and values are the raw inputs. But in a neural network we want to *learn* what aspects of the input to compare on and what aspects to return. Introduce three learned linear projections:
 
 $$
-q = W^{(q)} x_{\text{query}}, \quad k_i = W^{(k)} x_i, \quad v_i = W^{(v)} x_i
+\boldsymbol{q} = W^{(q)} \boldsymbol{x}_{\text{query}}, \quad \boldsymbol{k}_i = W^{(k)} \boldsymbol{x}_i, \quad \boldsymbol{v}_i = W^{(v)} \boldsymbol{x}_i
 \tag{13}
 $$
 
-This is the step that turns nonparametric kernel regression into a *trained* attention mechanism. The matrices $W^{(q)}, W^{(k)}, W^{(v)}$ are learned end-to-end by backpropagation.
+This is the step that turns nonparametric kernel regression into a *trained* attention mechanism. The matrices $W^{(q)}, W^{(k)}, W^{(v)}$ are learned end-to-end by backpropagation. It is also where the key/value split in Section 3 pays off: the same input $\boldsymbol{x}_i$ is projected through two different matrices, so the key (address) and value (payload) can carry genuinely different information.
 
 ---
 
-## 8. Self-attention
+## 6. Self-attention
 
 The final step is the key trick of the Transformer: make the model attend **to itself**.
 
-In standard sequence-to-sequence attention, a decoder state queries the encoder's representations. In **self-attention**, we let every position in a sequence attend to every other position *in the same sequence*. For a sequence of input tokens $x_1, \ldots, x_n$:
+In standard sequence-to-sequence attention, a decoder state queries an encoder's representations. In **self-attention**, every position in a sequence attends to every other position *in the same sequence*. For input tokens $\boldsymbol{x}_1, \ldots, \boldsymbol{x}_n$ and each $i$,
 
 $$
-y_i = \operatorname{Attn}\!\left(W^{(q)} x_i,\;\{(W^{(k)} x_j,\; W^{(v)} x_j)\}_{j=1}^{n}\right)
+\boldsymbol{y}_i = \operatorname{Attn}\!\left(W^{(q)} \boldsymbol{x}_i,\; \left\{\left(W^{(k)} \boldsymbol{x}_j,\; W^{(v)} \boldsymbol{x}_j\right)\right\}_{j=1}^{n}\right)
 \tag{14}
 $$
 
-Each token $x_i$ acts simultaneously as a query (asking "who is relevant to me?") and contributes a key and value (answering "here is what I offer to others"). This lets the model build **context-dependent representations**: the embedding of the word "it" can depend on whether the surrounding sentence is about an animal or a street.
+Each token $\boldsymbol{x}_i$ acts simultaneously as a query (asking "who is relevant to me?") and contributes a key and value (answering "here is what I offer to others"). This lets the model build **context-dependent representations**: the embedding of the word *it* can depend on whether the surrounding sentence is about an animal or a street.
 
-Because there are no recurrences, all $n$ outputs $y_1, \ldots, y_n$ can be computed in parallel — this is what makes Transformers so much faster to train than RNNs.
+Because there are no recurrences, all $n$ outputs $\boldsymbol{y}_1, \ldots, \boldsymbol{y}_n$ can be computed in parallel — this is what makes Transformers so much faster to train than RNNs.
 
 ---
 
 ## Summary
 
-Here is the full derivation in one view:
+The full derivation in one view:
 
 $$
-\underbrace{f(x) = \sum_i \omega_i(x)\, y_i}_{\text{kernel regression}}
+\underbrace{f(\boldsymbol{x}) = \sum_i \alpha_i(\boldsymbol{x}, \boldsymbol{x}_{1:n})\, y_i}_{\text{kernel regression}}
 \;\xrightarrow{\text{Gaussian kernel}}\;
-\underbrace{\sum_i \operatorname{softmax}_i\!\left(-\tfrac{1}{2}\|(q - k_i)\alpha\|^2\right) v_i}_{\text{nonparametric attention}}
+\underbrace{\sum_i \operatorname{softmax}_i\!\left(-\tfrac{\beta^2}{2}\|\boldsymbol{x} - \boldsymbol{x}_i\|^2\right) y_i}_{\text{nonparametric attention}}
 $$
 
 $$
-\xrightarrow{\text{expand, drop constants}}\;
-\underbrace{\operatorname{softmax}\!\left(\tfrac{QK^\top}{\sqrt{d}}\right)V}_{\text{scaled dot-product attention}}
-\;\xrightarrow{\text{add projections + self-query}}\;
-\underbrace{y_i = \operatorname{Attn}(W^{(q)}x_i, W^{(k)}X, W^{(v)}X)}_{\text{self-attention}}
+\xrightarrow{\text{generalize similarity, rename}}\;
+\underbrace{\sum_i \operatorname{softmax}_i\!\left(a(\boldsymbol{q}, \boldsymbol{k}_i)\right) \boldsymbol{v}_i}_{\text{general attention}}
+\;\xrightarrow{\text{expand, drop constants}}\;
+\underbrace{\operatorname{softmax}\!\left(\tfrac{Q K^\top}{\sqrt{d}}\right) V}_{\text{scaled dot-product}}
+\;\xrightarrow{\text{learned projections + self-query}}\;
+\underbrace{\boldsymbol{y}_i = \operatorname{Attn}(W^{(q)} \boldsymbol{x}_i, W^{(k)} X, W^{(v)} X)}_{\text{self-attention}}
 $$
 
-Self-attention is not a mysterious black box. It is the natural result of applying a Gaussian similarity kernel, normalizing with softmax, adding learned projections, and letting a sequence attend to itself. Every piece has a reason.
+Self-attention is not a mysterious black box. It is the natural result of applying a Gaussian similarity kernel, normalizing with softmax, generalizing the similarity, adding learned projections, and letting a sequence attend to itself. Every piece has a reason.
 
 ---
 
