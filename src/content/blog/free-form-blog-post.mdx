@@ -136,10 +136,15 @@ flowchart TD
     O2 -- No --> OUT2([❌ Order not compliant,\nnotify Bob])
 ```
 
+- The Marketplace Search and Policy Lookup Endpoints are unlikely to change often. Implementing a good method with exponential bakoff, error handling, ... is a one-time investment. This is better than the AI agent having to figure out how to interact with them on the fly, every time.
+- Extracting information from unstructured text is a well scoped task. We can build targeted evals, improve prompts. We might take a cheaper LLM for this step or even swap it for Named Entity Recognition model.
+
+
 This approach has several concrete advantages over the agentic alternatives:
 
 - **Auditability** — every step after extraction is deterministic code. You can log, test, and trace it exactly like any other software.
 - **Policy enforcement** — the budget check is a hard `if` statement, not a suggestion to an LLM. It cannot be reasoned around.
+-
 - **Minimal LLM surface area** — the agent is only used where it adds irreplaceable value: understanding messy natural language. The blast radius of any model error is contained to that one step.
 
 This is the pattern I'd reach for first in any process automation task: use an LLM to bridge the gap between human language and structured data, then let code do the rest. For a deeper dive into how to implement this cleanly with PydanticAI, see [this post](https://danielfridljand.de/post/pydantic-ai-type-safe-hybrid-workflows).
