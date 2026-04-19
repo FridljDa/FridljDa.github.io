@@ -13,92 +13,51 @@ I have a mathematics background, and kernel regression is something I have studi
 
 Self-attention, on the other hand, felt slippery to me when I started learning it. It is confusing that the input tokens $x$ play so many roles at once: they are queries, keys, and values.
 
+If you happen to have the same background (i.e. understanding of kernel regression but not of attention), this post is for you.
 Based on §15.4.2 and §15.5 of Kevin P. Murphy's *[Probabilistic Machine Learning: An Introduction](https://probml.github.io/pml-book/book1.html)* I will derive the self-attention from kernel regression.
-
 
 ---
 
-## 1. The setup: kernel regression
+## 1. A kernel
 
-Suppose you have $n$ training pairs $(x_1, y_1), \ldots, (x_n, y_n)$ and a new test point $x$. You want to predict $f(x)$.
+Let $a:\mathbb{R}^d \times\mathbb{R}^d \rightarrow \mathbb{R}^+$ be a measure of similarity between two points. We want $a(x, y)$ to be large when $x$ and $y$ are close, and small when they are far apart.
+A common similarity measure is based on the **Gaussian kernel**:
+
+$$
+a(x,y)=\sqrt{2\pi}\cdot K(x-y) =\exp\!\left(-\frac{(x-y)^2}{2}\right)
+\tag{1}
+$$
+
+Suppose you have $n$ training pairs $(x_1, y_1), \ldots, (x_N, y_N)$ and a new test point $x$. We define kernel regression weight $\alpha_i(x,x_{1:N})$ as:
+
+$$
+\alpha_i(x,x_{1:N})=\frac{a(x,x_i)}{\sum_{j=1}^N a(x,x_j)}
+\\= \frac{\exp\!\left(-\frac{(x-x_i)^2}{2}\right)}{\displaystyle\sum_{j=1}^N \exp\!\left(-\frac{(x-x_j)^2}{2}\right)}
+\tag{2}
+$$
+
+Recall that
+$$
+\operatorname{softmax}_i(s_1, \ldots, s_n) = \frac{e^{s_i}}{\sum_j e^{s_j}}
+\tag{3}
+$$
+
+With that, (2) can be rewritten as:
+$$
+\alpha_i(x,x_{1:N})=\operatorname{softmax}_i\!\left(-\frac{(x-x_1)^2}{2}, \ldots, -\frac{(x-x_N)^2}{2}\right)
+\tag{4}
+$$
+
+$\alpha_i(x,x_{1:N})$ sum to $1$. With that out of the way, we can introduce approach the prediction task $f(x)$ underlying $(x_1, y_1), \ldots, (x_N, y_N)$ .
 
 The kernel regression estimator (Nadaraya-Watson) says: take a **weighted average of all the training labels**, where the weight given to $y_i$ depends on how similar $x$ is to $x_i$:
 
 $$
-f(x) = \sum_{i=1}^{n} \omega_i(x,\, x_{1:n})\, y_i
-\tag{1}
-$$
-
-where the weights $\omega_i$ are non-negative and sum to 1. This is already a familiar structure: a convex combination of values, with data-dependent weights. The only question is how to define "similarity."
-
----
-
-## 2. Choosing a kernel
-
-The most natural similarity measure is the **Gaussian kernel**:
-
-$$
-K_\sigma(u) = \frac{1}{\sqrt{2\pi}\,\sigma}\,\exp\!\left(-\frac{u^2}{2\sigma^2}\right)
-\tag{2}
-$$
-
-where $\sigma$ is the bandwidth — a smaller $\sigma$ means the model only looks at very nearby points, a larger $\sigma$ means it smooths broadly.
-
-We define the attention score of $x$ toward $x_i$ as:
-
-$$
-a(x, x_i) = K_\sigma(x - x_i)
-\tag{3}
-$$
-
-To normalize these into weights, we divide by the sum over all training points. The normalizing constant $\frac{1}{\sqrt{2\pi}\sigma}$ cancels in numerator and denominator, so we can drop it.
-
----
-
-## 3. Reparametrizing: from $\sigma$ to $\alpha$
-
-Let's reparametrize by setting $\alpha^2 = 1/\sigma^2$ (i.e., $\alpha$ is the inverse bandwidth, or *precision*). The kernel becomes:
-
-$$
-K(u;\, \alpha) = \exp\!\left(-\frac{\alpha^2}{2}\,u^2\right)
-\tag{4}
-$$
-
-This is just a scaling convention, but it will cleanly match the form of attention scores we see in practice.
-
-Plugging (4) into the Nadaraya-Watson estimator (1):
-
-$$
-f(x) = \sum_{i=1}^{n} \frac{\exp\!\left[-\dfrac{1}{2}((x - x_i)\,\alpha)^2\right]}{\displaystyle\sum_{j=1}^{n} \exp\!\left[-\dfrac{1}{2}((x - x_j)\,\alpha)^2\right]}\, y_i
+f(x) = \sum_{i=1}^{n} \alpha_i(x,\, x_{1:n})\, y_i
 \tag{5}
 $$
 
----
-
-## 4. Recognizing the softmax
-
-Look at the weights in (5). For a fixed $x$, define the vector of scores:
-
-$$
-s_i(x) = -\frac{1}{2}\left((x - x_i)\,\alpha\right)^2, \quad i = 1, \ldots, n
-\tag{6}
-$$
-
-Then the weight on $y_i$ is exactly:
-
-$$
-\omega_i = \frac{e^{s_i}}{\sum_j e^{s_j}} = \operatorname{softmax}_i(s_1, \ldots, s_n)
-\tag{7}
-$$
-
-So (5) can be written compactly as:
-
-$$
-f(x) = \sum_{i=1}^{n} \operatorname{softmax}_i\!\left(s_1(x), \ldots, s_n(x)\right)\, y_i
-\tag{8}
-$$
-
-The softmax is not a design choice imposed from outside — it **falls out automatically** from normalizing a Gaussian kernel. The kernel ensures the weights are positive; normalization makes them sum to one; together they give you softmax.
+We obtain a convex combination of values, with data-dependent weights.
 
 ---
 
@@ -116,7 +75,7 @@ Now rename the objects to match the standard attention vocabulary:
 With this naming, (8) becomes:
 
 $$
-\operatorname{Attn}(q,\, \{(k_i, v_i)\}) = \sum_i \operatorname{softmax}_i\!\left(a(q, k_1), \ldots, a(q, k_n)\right)\, v_i
+\operatorname{Attn}(q,\, \{(k_i, v_i)\}) = \sum_{i=1}^N \operatorname{softmax}_i\!\left(a(q, k_1), \ldots, a(q, k_n)\right)\, v_i
 \tag{9}
 $$
 
