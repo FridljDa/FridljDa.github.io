@@ -33,12 +33,10 @@ flowchart TD
     INPUT([📧 Bob's Laptop Request])
     INPUT --> A1[🤖 Procurement Agent\nreasoning loop]
 
-    A1 --> A2{Next action?}
-
-    A2 -- Search products --> A3[🔍 AwesomeMarketplace\nSearch Tool]
-    A2 -- Check policy --> A4[📋 Company Policy\nTool]
-    A2 -- Place order --> A5[🛒 AwesomeMarketplace\nOrder Tool]
-    A2 -- Done --> A6([✅ Order placed,\nnotify Bob])
+    A1 -- Search products --> A3[🔍 AwesomeMarketplace\nSearch Tool]
+    A1 -- Check policy --> A4[📋 Company Policy\nTool]
+    A1 -- Place order --> A5[🛒 AwesomeMarketplace\nOrder Tool]
+    A1 -- Done --> A6([✅ Order placed,\nnotify Bob])
 
     A3 -- Results --> A1
     A4 -- Policy data --> A1
