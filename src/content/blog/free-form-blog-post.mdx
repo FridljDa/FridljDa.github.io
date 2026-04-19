@@ -28,7 +28,22 @@ The maximum allowance per company policy for a laptop at OilVentures is $3000 fo
 
 # The fully agentic approach
 The Procurement agent gets Access to the AwesomeMarketplace search, the company policy and can place Product orders on AwesomeMarketplace.
+```mermaid
+flowchart TD
+    INPUT([📧 Bob's Laptop Request])
+    INPUT --> A1[🤖 Procurement Agent\nreasoning loop]
 
+    A1 --> A2{Next action?}
+
+    A2 -- Search products --> A3[🔍 AwesomeMarketplace\nSearch Tool]
+    A2 -- Check policy --> A4[📋 Company Policy\nTool]
+    A2 -- Place order --> A5[🛒 AwesomeMarketplace\nOrder Tool]
+    A2 -- Done --> A6([✅ Order placed,\nnotify Bob])
+
+    A3 -- Results --> A1
+    A4 -- Policy data --> A1
+    A5 -- Order confirmation --> A6
+```
 
 # Specialised multi-agent
 We have one agent for the search, one for the policy and one for the order placement. We transition between the agents via regular Code.
@@ -66,6 +81,30 @@ flowchart TD
 
 # The specialised agent approach
 We have one agent which extracts the relevant information from the request and then we have a regular code workflow which does the search, checks the policy and places the order.
+```mermaid
+flowchart TD
+    INPUT([📧 Bob's Laptop Request])
+
+    INPUT --> A1
+
+    subgraph A1 ["🤖 Extraction Agent"]
+        E1[Parse unstructured request]
+        E1 --> E2[Output structured spec\nbrand, model, chip,\nRAM, storage, dept.]
+    end
+
+    E2 -->|structured JSON handoff| W1
+
+    subgraph W1 ["⚙️ Code Workflow"]
+        W2[Query AwesomeMarketplace\nwith exact spec filters]
+        W2 --> W3[Fetch Finance dept.\nbudget cap from policy DB]
+        W3 --> W4{Best match\n≤ $3,000?}
+        W4 -- Yes --> W5[Place order via\nAwesomeMarketplace API]
+        W4 -- No --> W6[Select cheapest\ncompliant alternative]
+        W6 --> W5
+    end
+
+    W5 --> OUT([✅ Order placed,\nnotify Bob])
+```
 
 - Auditability
 - Policy enforcement
