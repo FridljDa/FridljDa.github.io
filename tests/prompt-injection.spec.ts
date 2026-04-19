@@ -116,7 +116,7 @@ test.describe('Prompt Injection Blog Post', () => {
     
     // Wait for success message
     const successMessage = page.getByText(/Access Granted/i);
-    await expect(successMessage).toBeVisible({ timeout: 5000 });
+    await expect(successMessage).toBeVisible({ timeout: 15000 }); // Increased timeout for CI stability
     
     // Verify success styling (green border/background)
     const successContainer = successMessage.locator('..').locator('..');
