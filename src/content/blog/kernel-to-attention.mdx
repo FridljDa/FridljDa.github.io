@@ -31,8 +31,10 @@ $$
 Suppose you have $n$ training pairs $(x_1, y_1), \ldots, (x_N, y_N)$ and a new test point $x$. We define kernel regression weight $\alpha_i(x,x_{1:N})$ as:
 
 $$
-\alpha_i(x,x_{1:N})=\frac{a(x,x_i)}{\sum_{j=1}^N a(x,x_j)}
-\\= \frac{\exp\!\left(-\frac{(x-x_i)^2}{2}\right)}{\displaystyle\sum_{j=1}^N \exp\!\left(-\frac{(x-x_j)^2}{2}\right)}
+\begin{aligned}
+\alpha_i(x,x_{1:N}) &= \frac{a(x,x_i)}{\sum_{j=1}^N a(x,x_j)} \\
+&= \frac{\exp\!\left(-\frac{(x-x_i)^2}{2}\right)}{\displaystyle\sum_{j=1}^N \exp\!\left(-\frac{(x-x_j)^2}{2}\right)}
+\end{aligned}
 \tag{2}
 $$
 
