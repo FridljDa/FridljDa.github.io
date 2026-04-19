@@ -9,9 +9,9 @@ description: "Coding agents are impressive — but outside of code, deterministi
 
 Progress in frontier AI models has allowed coding agents to tackle ever more complex and long-running tasks. Benchmarks are saturating fast, and the trajectory is genuinely impressive.
 
-What makes coding agents so effective is a combination of two things. First, software is largely composed of patterns LLMs have seen countless times during training — syntax, idioms, libraries, algorithms. Second, and more importantly, agents can *iterate*. In many benchmarks, coding agents are given nothing but terminal access — like [tbench](https://www.tbench.ai/) — and are left to try things, observe results, and loop until the task is done. That tight evaluate-and-retry loop is what allows them to crack problems that would have seemed out of reach just a year ago.
+What makes coding agents so effective is a combination of three things. First, software is largely composed of patterns LLMs have seen countless times during training — syntax, idioms, libraries, algorithms. Second, code gives you *automated evaluation for free*. You run it, and you get a compiler error, a failing test, or a stack trace. The agent doesn't need to know whether it's right — the environment tells it. Third, and most importantly, agents can iterate cheaply. A bad attempt costs a few seconds of compute and nothing irreversible happens. In many benchmarks, coding agents are given nothing but terminal access — like [tbench](https://www.tbench.ai/) — and are left to try things, observe results, and loop until the task is done. That tight feedback loop is what allows them to crack problems that would have seemed out of reach just a year ago.
 
-However, outside of coding, AI workflows still outperform fully agentic approaches for many business tasks. To understand why, let's walk through a concrete example.
+But this combination — abundant training data, automated feedback, and cheap retries — is specific to code. Most business tasks don't have any of it. There is no compiler for procurement policy. LLMs haven't seen your internal approval chains or vendor contracts during training. And placing a wrong order isn't something you can just undo and retry. To understand what this means in practice, let's walk through a concrete example.
 
 ---
 
@@ -136,15 +136,14 @@ flowchart TD
     O2 -- No --> OUT2([❌ Order not compliant,\nnotify Bob])
 ```
 
-- The Marketplace Search and Policy Lookup Endpoints are unlikely to change often. Implementing a good method with exponential bakoff, error handling, ... is a one-time investment. This is better than the AI agent having to figure out how to interact with them on the fly, every time.
-- Extracting information from unstructured text is a well scoped task. We can build targeted evals, improve prompts. We might take a cheaper LLM for this step or even swap it for Named Entity Recognition model.
-- LLMs have seen code countless time in the training data. they have not seen your specific business requirements/ policies.
+Why does this work better than the agentic alternatives?
 
-This approach has several concrete advantages over the agentic alternatives:
+**Use code where code is enough.** The Marketplace Search and Policy Lookup endpoints are unlikely to change often. Implementing a robust integration with exponential backoff, error handling, and retries is a one-time investment — and it'll be more reliable than an agent figuring out how to interact with them on the fly, every time.
 
-- **Auditability** — every step after extraction is deterministic code. You can log, test, and trace it exactly like any other software.
-- **Policy enforcement** — the budget check is a hard `if` statement, not a suggestion to an LLM. It cannot be reasoned around.
--
-- **Minimal LLM surface area** — the agent is only used where it adds irreplaceable value: understanding messy natural language. The blast radius of any model error is contained to that one step.
+**Scope the LLM to what only an LLM can do.** Extracting structured information from unstructured text is a well-defined task. You can build targeted evals, iterate on prompts, use a cheaper model — or even swap the LLM out for a Named Entity Recognition model if your input vocabulary is bounded enough. None of that is possible when the LLM is entangled with search, policy, and ordering logic.
+
+**Don't ask an LLM to enforce rules it hasn't seen.** LLMs have seen code countless times in their training data. They have *not* seen your specific business requirements, procurement policies, or vendor contracts. A deterministic policy check is a hard `if` statement. It cannot be reasoned around, hallucinated, or skipped.
+
+**Auditability comes for free.** Every step after extraction is regular code. You can log, test, and trace it exactly like any other software. When something goes wrong — and it will — you know exactly where to look.
 
 This is the pattern I'd reach for first in any process automation task: use an LLM to bridge the gap between human language and structured data, then let code do the rest. For a deeper dive into how to implement this cleanly with PydanticAI, see [this post](https://danielfridljand.de/post/pydantic-ai-type-safe-hybrid-workflows).
