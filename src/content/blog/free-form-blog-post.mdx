@@ -31,35 +31,34 @@ The Procurement agent gets Access to the AwesomeMarketplace search, the company 
 
 ```mermaid
 flowchart TD
-    INPUT([📧 Bob's Laptop Request])
+    INPUT(["📧 Bob's Laptop Request"])
 
     INPUT --> A1
 
-    subgraph A1 ["🤖 Search Agent"]
-        S1[Parse specs from request\nMacBook Pro, M4 Max, 32GB…]
+    subgraph A1["🤖 Search Agent"]
+        S1["Parse specs from request\nMacBook Pro, M4 Max, 32GB…"]
         S1 --> S2[Query AwesomeMarketplace]
         S2 --> S3[Return ranked results]
     end
 
     S3 -->|code handoff| A2
 
-    subgraph A2 ["🤖 Policy Agent"]
+    subgraph A2["🤖 Policy Agent"]
         P1[Read Finance dept. policy]
-        P1 --> P2{Price ≤ $3,000?}
+        P1 --> P2{"Price ≤ $3,000?"}
         P2 -- Yes --> P3[Approve selection]
-        P2 -- No --> P4[Flag & select\ncheapest compliant option]
+        P2 -- No --> P4["Flag & select\ncheapest compliant option"]
     end
 
     P3 -->|code handoff| A3
     P4 -->|code handoff| A3
 
-    subgraph A3 ["🤖 Order Agent"]
+    subgraph A3["🤖 Order Agent"]
         O1[Prepare order payload]
-        O1 --> O2[Place order on\nAwesomeMarketplace]
+        O1 --> O2["Place order on\nAwesomeMarketplace"]
     end
 
-    O2 --> OUT([✅ Order placed,\nnotify Bob])
-
+    O2 --> OUT(["✅ Order placed,\nnotify Bob"])
 ```
 
 # Specialised multi-agent
