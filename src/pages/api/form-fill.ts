@@ -90,7 +90,8 @@ export const POST: APIRoute = async ({ request }) => {
         responseMimeType: 'application/json',
         responseSchema: {
           type: SchemaType.OBJECT,
-          properties: geminiProperties as Record<string, { type: SchemaType }>,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          properties: geminiProperties as any,
           required: (jsonSchema.required ?? []) as string[],
         },
       },
