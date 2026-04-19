@@ -78,27 +78,39 @@ flowchart TD
 We have one agent which extracts the relevant information from the request and then we have a regular code workflow which does the search, checks the policy and places the order.
 ```mermaid
 flowchart TD
-    INPUT([📧 Bob's Laptop Request])
+    INPUT([Bob's Laptop Request])
 
-    INPUT --> A1
+    INPUT -->|code handoff| A1
 
-    subgraph A1 ["🤖 Extraction Agent"]
+    subgraph A1 ["🤖 Extraction Agent  —  only LLM step"]
         E1[Parse unstructured request]
-        E1 --> E2[Output structured spec\nbrand, model, chip,\nRAM, storage, dept.]
+        E1 --> E2[Structured spec\nbrand, model, chip, RAM, storage]
     end
 
-    E2 -->|structured JSON handoff| W1
+    A1 -->|code handoff| W1
+    A1 -->|code handoff| W2
 
-    subgraph W1 ["⚙️ Code Workflow"]
-        W2[Query AwesomeMarketplace\nwith exact spec filters]
-        W2 --> W3[Fetch Finance dept.\nbudget cap from policy DB]
-        W3 --> W4{Best match\n≤ $3,000?}
-        W4 -- Yes --> W5[Place order via\nAwesomeMarketplace API]
-        W4 -- No --> W6[Select cheapest\ncompliant alternative]
-        W6 --> W5
+    subgraph W1 ["⚙️ Marketplace Search"]
+        S1[Query AwesomeMarketplace\nwith exact spec filters]
     end
 
-    W5 --> OUT([✅ Order placed,\nnotify Bob])
+    subgraph W2 ["⚙️ Policy Lookup"]
+        P1[Read Finance dept.\nbudget cap from policy DB]
+    end
+
+    W1 -->|code handoff| W3
+    W2 -->|code handoff| W3
+
+    subgraph W3 ["⚙️ Order Placement"]
+        O1[Check best match against budget]
+        O1 --> O2{Price 3000?}
+        O2 -- Yes --> O3[Place order via\nAwesomeMarketplace API]
+        O2 -- No --> O4[Select cheapest\ncompliant alternative]
+        O4 --> O3
+    end
+
+    W3 --> OUT([Order placed, notify Bob])
+
 ```
 
 - Auditability
