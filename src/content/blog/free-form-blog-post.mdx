@@ -30,24 +30,24 @@ The maximum allowance per company policy for a laptop at OilVentures is $3000 fo
 The Procurement agent gets Access to the AwesomeMarketplace search, the company policy and can place Product orders on AwesomeMarketplace.
 ```mermaid
 flowchart TD
-    INPUT([📧 Bob's Laptop Request])
+    INPUT([Bob's Laptop Request])
     INPUT --> A1[🤖 Procurement Agent\nreasoning loop]
 
     A1 -- Search products --> A3[🔍 AwesomeMarketplace\nSearch Tool]
     A1 -- Check policy --> A4[📋 Company Policy\nTool]
     A1 -- Place order --> A5[🛒 AwesomeMarketplace\nOrder Tool]
-    A1 -- Done --> A6([✅ Order placed,\nnotify Bob])
+    A1 -- Not compliant --> OUT2([❌ Order not compliant,\nnotify Bob])
 
     A3 -- Results --> A1
     A4 -- Policy data --> A1
-    A5 -- Order confirmation --> A6
+    A5 --> OUT1([✅ Order placed,\nnotify Bob])
 ```
 
 # Specialised multi-agent
 We have one agent for the search, one for the policy and one for the order placement. We transition between the agents via regular Code.
 ```mermaid
 flowchart TD
-    INPUT([📧 Bob's Laptop Request])
+    INPUT([Bob's Laptop Request])
 
     INPUT -->|code handoff| A1
     INPUT -->|code handoff| A2
@@ -66,11 +66,14 @@ flowchart TD
     A2 -->|code handoff| A3
 
     subgraph A3 ["🤖 Order Agent"]
-        O1[Select compliant option] -- Place order --> T3[🛒 AwesomeMarketplace\nOrder Tool]
-        T3 -- Confirmation --> O1
+        O1[Check best match against budget]
+        O1 --> O2{Price within\n$3,000 cap?}
+        O2 -- Yes --> T3[🛒 AwesomeMarketplace\nOrder Tool]
     end
 
-    A3 --> OUT([✅ Order placed,\nnotify Bob])
+    T3 --> OUT1([✅ Order placed,\nnotify Bob])
+    O2 -- No --> OUT2([❌ Order not compliant,\nnotify Bob])
+
 
 ```
 
@@ -103,13 +106,11 @@ flowchart TD
 
     subgraph W3 ["⚙️ Order Placement"]
         O1[Check best match against budget]
-        O1 --> O2{Price 3000?}
-        O2 -- Yes --> O3[Place order via\nAwesomeMarketplace API]
-        O2 -- No --> O4[Select cheapest\ncompliant alternative]
-        O4 --> O3
+        O1 --> O2{Price within\n$3,000 cap?}
     end
 
-    W3 --> OUT([Order placed, notify Bob])
+    O2 -- Yes --> OUT1([✅ Order placed,\nnotify Bob])
+    O2 -- No --> OUT2([❌ Order not compliant,\nnotify Bob])
 
 ```
 
