@@ -29,6 +29,9 @@ The maximum allowance per company policy for a laptop at OilVentures is $3000 fo
 # The fully agentic approach
 The Procurement agent gets Access to the AwesomeMarketplace search, the company policy and can place Product orders on AwesomeMarketplace.
 
+
+# Specialised multi-agent
+We have one agent for the search, one for the policy and one for the order placement. We transition between the agents via regular Code.
 ```mermaid
 flowchart TD
     INPUT(["📧 Bob's Laptop Request"])
@@ -60,9 +63,6 @@ flowchart TD
 
     O2 --> OUT(["✅ Order placed,\nnotify Bob"])
 ```
-
-# Specialised multi-agent
-We have one agent for the search, one for the policy and one for the order placement. We transition between the agents via regular Code.
 
 # The specialised agent approach
 We have one agent which extracts the relevant information from the request and then we have a regular code workflow which does the search, checks the policy and places the order.
