@@ -15,6 +15,7 @@ import { calculateReadingTime, formatReadingTime } from '../../utils/reading-tim
 import { readBlogPostFile, extractMarkdownContent } from '../../utils/content-reader';
 import { METADATA_SEPARATOR } from '../../utils/constants';
 import ClockIcon from '../../components/ClockIcon.astro';
+import MermaidInit from '../../components/MermaidInit';
 
 const slug = Astro.params.slug;
 if (!slug) {
@@ -137,6 +138,7 @@ const githubEditUrl = `https://github.com/${SITE.github.owner}/${SITE.github.rep
           <div class="flex-1 max-w-4xl mx-auto lg:mx-0">
             <div class="prose prose-lg dark:prose-invert max-w-none">
               <Content />
+              <MermaidInit client:load />
             </div>
           </div>
           

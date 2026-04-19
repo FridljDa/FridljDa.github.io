@@ -29,6 +29,12 @@
 }
 
 @layer components {
+  /* Client-rendered Mermaid (see MermaidInit.tsx) */
+  .mermaid-chart svg {
+    max-width: 100%;
+    height: auto;
+  }
+
   /* GitHub-style heading links: entire heading wrapped in anchor */
   .heading-link {
     color: inherit !important;
