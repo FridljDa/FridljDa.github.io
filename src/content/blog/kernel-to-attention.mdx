@@ -32,31 +32,31 @@ $$
 \tag{2}
 $$
 
-where $\sigma$ is called the *bandwidth*. We then define the unnormalized similarity score between $\boldsymbol{x}$ and $\boldsymbol{x}_i$ as $a(\boldsymbol{x}, \boldsymbol{x}_i) = \mathcal{K}_\sigma(\|\boldsymbol{x} - \boldsymbol{x}_i\|)$. Because the weights $\alpha_i$ will be normalized, the prefactor $1/\sqrt{2\pi\sigma^2}$ is irrelevant and we drop it. Writing $\beta^2 = 1/\sigma^2$, the score simplifies to
-
-$$
-a(\boldsymbol{x}, \boldsymbol{x}_i) = \exp\!\left(-\frac{\beta^2}{2}\, \|\boldsymbol{x} - \boldsymbol{x}_i\|^2\right)
-\tag{3}
-$$
-
-Normalizing gives the weights:
+where $\sigma$ is called the *bandwidth*. We build the weights $\alpha_i$ by normalizing the kernel across training points. Because of the normalization, the prefactor $1/\sqrt{2\pi\sigma^2}$ is irrelevant and we drop it. Writing $\beta^2 = 1/\sigma^2$,
 
 $$
 \alpha_i(\boldsymbol{x}, \boldsymbol{x}_{1:n}) = \frac{\exp\!\left(-\frac{\beta^2}{2}\|\boldsymbol{x} - \boldsymbol{x}_i\|^2\right)}{\sum_{j=1}^n \exp\!\left(-\frac{\beta^2}{2}\|\boldsymbol{x} - \boldsymbol{x}_j\|^2\right)}
-\tag{4}
+\tag{3}
 $$
 
 Recall the softmax:
 
 $$
 \operatorname{softmax}_i(s_1, \ldots, s_n) = \frac{e^{s_i}}{\sum_{j=1}^n e^{s_j}}
+\tag{4}
+$$
+
+Comparing (3) with (4), the weights are exactly a softmax — applied to the *exponent* of the Gaussian, not to its value. We give that exponent a name. Define the **attention score**
+
+$$
+a(\boldsymbol{x}, \boldsymbol{x}_i) = -\frac{\beta^2}{2}\, \|\boldsymbol{x} - \boldsymbol{x}_i\|^2
 \tag{5}
 $$
 
-So (4) is just a softmax with negative-squared-distance scores:
+A note on terminology. A Gaussian kernel offers two natural candidates for "how similar $\boldsymbol{x}$ is to $\boldsymbol{x}_i$": the kernel value $\exp(a(\boldsymbol{x}, \boldsymbol{x}_i))$ itself (bounded in $(0, 1]$), or the exponent $a(\boldsymbol{x}, \boldsymbol{x}_i)$ (unbounded, real-valued). The attention literature reserves *score* for the latter — the logit that enters the softmax — and we follow that convention throughout. With (5) in hand, (3) becomes
 
 $$
-\alpha_i(\boldsymbol{x}, \boldsymbol{x}_{1:n}) = \operatorname{softmax}_i\!\left(-\tfrac{\beta^2}{2}\|\boldsymbol{x} - \boldsymbol{x}_1\|^2,\, \ldots,\, -\tfrac{\beta^2}{2}\|\boldsymbol{x} - \boldsymbol{x}_n\|^2\right)
+\alpha_i(\boldsymbol{x}, \boldsymbol{x}_{1:n}) = \operatorname{softmax}_i\!\left(a(\boldsymbol{x}, \boldsymbol{x}_1),\, \ldots,\, a(\boldsymbol{x}, \boldsymbol{x}_n)\right)
 \tag{6}
 $$
 
@@ -67,18 +67,18 @@ $$
 Substituting (6) into (1) gives
 
 $$
-f(\boldsymbol{x}) = \sum_{i=1}^{n} \operatorname{softmax}_i\!\left(-\tfrac{\beta^2}{2}\|\boldsymbol{x} - \boldsymbol{x}_1\|^2,\, \ldots,\, -\tfrac{\beta^2}{2}\|\boldsymbol{x} - \boldsymbol{x}_n\|^2\right)\, y_i
+f(\boldsymbol{x}) = \sum_{i=1}^{n} \operatorname{softmax}_i\!\left(a(\boldsymbol{x}, \boldsymbol{x}_1),\, \ldots,\, a(\boldsymbol{x}, \boldsymbol{x}_n)\right)\, y_i
 \tag{7}
 $$
 
-This is still pure kernel regression — we have only rewritten it. Now observe that the negative squared distance plays *one specific role* here: it scores how similar $\boldsymbol{x}$ is to each $\boldsymbol{x}_i$. Nothing in the structure of (7) forces that particular choice. Replacing it with a generic similarity function $a(\boldsymbol{x}, \boldsymbol{x}_i)$ gives
+This is still pure kernel regression — we have only rewritten it. Now observe that the Gaussian score in (5) plays *one specific role* here: it measures how similar $\boldsymbol{x}$ is to each $\boldsymbol{x}_i$. Nothing in the structure of (7) forces that particular choice. Letting $a(\boldsymbol{x}, \boldsymbol{x}_i)$ refer to a generic similarity score — not just the Gaussian one — gives
 
 $$
 f(\boldsymbol{x}) = \sum_{i=1}^{n} \operatorname{softmax}_i\!\left(a(\boldsymbol{x}, \boldsymbol{x}_1),\, \ldots,\, a(\boldsymbol{x}, \boldsymbol{x}_n)\right)\, y_i
 \tag{8}
 $$
 
-No modelling power has been added — we have only made the similarity function a pluggable component. That small abstraction is what opens the door to the attention vocabulary.
+Equations (7) and (8) look identical — and that is the point. Only the *meaning* of $a$ has widened: in (7) it is fixed to the Gaussian form (5); in (8) it is any real-valued function. No modelling power has been added; the similarity function has become a pluggable component. That small abstraction is what opens the door to the attention vocabulary.
 
 ---
 
@@ -91,7 +91,7 @@ We rename the objects to match standard attention notation:
 | Test point $\boldsymbol{x}$      | **Query** $\boldsymbol{q}$         |
 | Training input $\boldsymbol{x}_i$ | **Key** $\boldsymbol{k}_i$         |
 | Training label $y_i$     | **Value** $\boldsymbol{v}_i$         |
-| Similarity $a(\boldsymbol{x}, \boldsymbol{x}_i)$ | Attention score $a(\boldsymbol{q}, \boldsymbol{k}_i)$ |
+| Attention score $a(\boldsymbol{x}, \boldsymbol{x}_i)$ | Attention score $a(\boldsymbol{q}, \boldsymbol{k}_i)$ |
 
 With this renaming, (8) becomes
 
