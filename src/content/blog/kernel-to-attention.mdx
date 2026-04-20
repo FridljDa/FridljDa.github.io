@@ -86,11 +86,11 @@ Equations (7) and (8) look identical — and that is the point. Only the *meanin
 
 We rename the objects to match standard attention notation:
 
-| Kernel regression       | Attention                  |
-|-------------------------|----------------------------|
-| Test point $\boldsymbol{x}$      | **Query** $\boldsymbol{q}$         |
-| Training input $\boldsymbol{x}_i$ | **Key** $\boldsymbol{k}_i$         |
-| Training label $y_i$     | **Value** $\boldsymbol{v}_i$         |
+| Kernel regression       | Attention                  | Role                                |
+|-------------------------|----------------------------|-------------------------------------|
+| Test point $\boldsymbol{x}$      | **Query** $\boldsymbol{q}$         | What we are predicting at           |
+| Training input $\boldsymbol{x}_i$ | **Key** $\boldsymbol{k}_i$         | What the query is compared against  |
+| Training label $y_i$     | **Value** $\boldsymbol{v}_i$         | What gets averaged into the output  |
 
 With this renaming, (8) becomes
 
@@ -99,9 +99,7 @@ $$
 \tag{9}
 $$
 
-This is the general attention formula. We have *derived* it, not postulated it.
-
-The renaming is not cosmetic. In kernel regression, the training input $\boldsymbol{x}_i$ plays two roles at once: it is the *address* used to decide how much weight training point $i$ receives, and it is (together with $y_i$) the *payload* that gets aggregated into the output. Attention separates these roles by name. A **key** is an address — what the query is compared against. A **value** is a payload — what actually gets returned. Right now keys and values are still tied together ($\boldsymbol{k}_i = \boldsymbol{x}_i$ and $\boldsymbol{v}_i = y_i$), so the distinction looks redundant. It earns its keep in Section 5, where learned projections will pull keys and values out of the input along *different* directions: the model can learn to match on one aspect of a token and return another.
+This is mostly a rename: $\boldsymbol{k}_i = \boldsymbol{x}_i$ and $\boldsymbol{v}_i = y_i$. The split earns its keep in §5, where learned projections will let keys and values diverge.
 
 ---
 
@@ -143,7 +141,7 @@ $$
 \tag{13}
 $$
 
-This is the step that turns nonparametric kernel regression into a *trained* attention mechanism. The matrices $W^{(q)}, W^{(k)}, W^{(v)}$ are learned end-to-end by backpropagation. It is also where the key/value split in Section 3 pays off: the same input $\boldsymbol{x}_i$ is projected through two different matrices, so the key (address) and value (payload) can carry genuinely different information.
+This is the step that turns nonparametric kernel regression into a *trained* attention mechanism. The matrices $W^{(q)}, W^{(k)}, W^{(v)}$ are learned end-to-end by backpropagation. It is also where the key/value split in §3 pays off: the same input $\boldsymbol{x}_i$ is projected through two different matrices, so the key (what a token is matched on) and value (what a token contributes) can carry genuinely different information.
 
 ---
 
