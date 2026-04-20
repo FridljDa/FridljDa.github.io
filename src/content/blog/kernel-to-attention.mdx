@@ -53,7 +53,7 @@ a(\boldsymbol{x}, \boldsymbol{x}_i) = -\frac{\beta^2}{2}\, \|\boldsymbol{x} - \b
 \tag{5}
 $$
 
-A note on terminology. A Gaussian kernel offers two natural candidates for "how similar $\boldsymbol{x}$ is to $\boldsymbol{x}_i$": the kernel value $\exp(a(\boldsymbol{x}, \boldsymbol{x}_i))$ itself (bounded in $(0, 1]$), or the exponent $a(\boldsymbol{x}, \boldsymbol{x}_i)$ (unbounded, real-valued). The attention literature reserves *score* for the latter — the logit that enters the softmax — and we follow that convention throughout. With (5) in hand, (3) becomes
+With this, (3) becomes
 
 $$
 \alpha_i(\boldsymbol{x}, \boldsymbol{x}_{1:n}) = \operatorname{softmax}_i\!\left(a(\boldsymbol{x}, \boldsymbol{x}_1),\, \ldots,\, a(\boldsymbol{x}, \boldsymbol{x}_n)\right)
