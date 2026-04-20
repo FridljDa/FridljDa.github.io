@@ -174,18 +174,13 @@ Because there are no recurrences, all $n$ outputs $\boldsymbol{y}_1, \ldots, \bo
 The full derivation in one view:
 
 $$
-\underbrace{f(\boldsymbol{x}) = \sum_i \alpha_i(\boldsymbol{x}, \boldsymbol{x}_{1:n})\, y_i}_{\text{kernel regression}}
-\;\xrightarrow{\text{Gaussian kernel}}\;
-\underbrace{\sum_i \operatorname{softmax}_i\!\left(-\tfrac{\beta^2}{2}\|\boldsymbol{x} - \boldsymbol{x}_i\|^2\right) y_i}_{\text{nonparametric attention}}
-$$
-
-$$
-\xrightarrow{\text{generalize similarity, rename}}\;
-\underbrace{\sum_i \operatorname{softmax}_i\!\left(a(\boldsymbol{q}, \boldsymbol{k}_i)\right) \boldsymbol{v}_i}_{\text{general attention}}
-\;\xrightarrow{\text{expand, drop constants}}\;
-\underbrace{\operatorname{softmax}\!\left(\tfrac{Q K^\top}{\sqrt{d}}\right) V}_{\text{scaled dot-product}}
-\;\xrightarrow{\text{learned projections + self-query}}\;
-\underbrace{\boldsymbol{y}_i = \operatorname{Attn}(W^{(q)} \boldsymbol{x}_i, W^{(k)} X, W^{(v)} X)}_{\text{self-attention}}
+\begin{aligned}
+& \underbrace{f(\boldsymbol{x}) = \sum_i \alpha_i(\boldsymbol{x}, \boldsymbol{x}_{1:n})\, y_i}_{\text{kernel regression}} \\[4pt]
+\xrightarrow{\text{Gaussian kernel}} \quad & \underbrace{\sum_i \operatorname{softmax}_i\!\left(-\tfrac{\beta^2}{2}\|\boldsymbol{x} - \boldsymbol{x}_i\|^2\right) y_i}_{\text{nonparametric attention}} \\[4pt]
+\xrightarrow{\text{generalize similarity, rename}} \quad & \underbrace{\sum_i \operatorname{softmax}_i\!\left(a(\boldsymbol{q}, \boldsymbol{k}_i)\right) \boldsymbol{v}_i}_{\text{general attention}} \\[4pt]
+\xrightarrow{\text{expand, drop constants}} \quad & \underbrace{\operatorname{softmax}\!\left(\tfrac{Q K^\top}{\sqrt{d}}\right) V}_{\text{scaled dot-product}} \\[4pt]
+\xrightarrow{\text{learned projections + self-query}} \quad & \underbrace{\boldsymbol{y}_i = \operatorname{Attn}(W^{(q)} \boldsymbol{x}_i, W^{(k)} X, W^{(v)} X)}_{\text{self-attention}}
+\end{aligned}
 $$
 
 Self-attention is not a mysterious black box. It is the natural result of applying a Gaussian similarity kernel, normalizing with softmax, generalizing the similarity, adding learned projections, and letting a sequence attend to itself. Every piece has a reason.
