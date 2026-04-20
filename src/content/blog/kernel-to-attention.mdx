@@ -99,7 +99,7 @@ $$
 \tag{9}
 $$
 
-This is mostly a rename: $\boldsymbol{k}_i = \boldsymbol{x}_i$ and $\boldsymbol{v}_i = y_i$. The split earns its keep in §7, where learned projections will let keys and values diverge.
+This is mostly a rename: $\boldsymbol{k}_i = \boldsymbol{x}_i$ and $\boldsymbol{v}_i = y_i$. The split earns its keep in §8, where learned projections will let keys and values diverge.
 
 ---
 
@@ -146,18 +146,26 @@ $$
 
 So the raw dot product has standard deviation $\sqrt{d}$ — it grows with dimension. Without rescaling, large-magnitude inputs push the softmax into a saturated regime where one score dominates and gradients with respect to the others vanish. Dividing by $\sqrt{d}$ keeps the score variance at $O(1)$ independent of $d$, keeping the softmax in a well-behaved regime.
 
-Stacking queries, keys, and values into matrices $Q$, $K$, $V$ (one row per item) and plugging (12) into (9) gives
+---
+
+## 6. Matrix form
+
+We now have all three ingredients: a softmax (6), a dot-product score (12), and a $1/\sqrt{d}$ rescaling. Computing attention for each query one at a time would work, but the whole pipeline vectorizes cleanly: stack the $n$ queries, keys, and values as rows of matrices $Q, K, V$ — each of shape $n \times d$ — and the attention formula collapses to a single matrix expression:
 
 $$
 \operatorname{Attn}(Q, K, V) = \operatorname{softmax}\!\left(\frac{Q K^\top}{\sqrt{d}}\right) V
 \tag{13}
 $$
 
-This is **scaled dot-product attention** — the exact formula from "[Attention Is All You Need](https://arxiv.org/abs/1706.03762)" [Vaswani et al., 2017].
+This is **scaled dot-product attention** — the exact formula from "[Attention Is All You Need](https://arxiv.org/abs/1706.03762)" [Vaswani et al., 2017]. Read left to right, the pipeline has a clear shape:
+
+![Scaled dot-product attention as a matrix pipeline: Q (n×d) times K^T (d×n) gives an n×n score matrix, which softmax turns into an attention matrix A (n×n), which multiplied by V (n×d) yields the output Y (n×d).](/images/blog/kernel-to-attention/attention_matrix_form.png)
+
+$Q K^\top$ produces an $n \times n$ matrix of pairwise scores — row $i$, column $j$ holds $\boldsymbol{q}_i^\top \boldsymbol{k}_j$. After scaling and row-wise softmax, this becomes the **attention matrix** $A$: row $i$ is the probability distribution query $i$ places over the $n$ keys. Multiplying by $V$ mixes the values according to those weights, and the $i$-th row of $Y$ is the output for query $i$.
 
 ---
 
-## 6. Self-attention
+## 7. Self-attention
 
 So far we have been in the kernel-regression setting: each training point came with a scalar label $y_i$, and the value in (9) was $\boldsymbol{v}_i = y_i$. A Transformer processes something different — a sequence of tokens $\boldsymbol{x}_1, \ldots, \boldsymbol{x}_n$ with no labels attached. There are no $y_i$'s. Every position has to supply its own payload.
 
@@ -172,7 +180,7 @@ Each token $\boldsymbol{x}_i$ acts simultaneously as a query (asking "who is rel
 
 ---
 
-## 7. Making it parametric: learned projections
+## 8. Making it parametric: learned projections
 
 To let keys and values carry different information — and more broadly, to let the model learn *what* aspects of each token to match on and return — introduce three learned linear projections:
 
