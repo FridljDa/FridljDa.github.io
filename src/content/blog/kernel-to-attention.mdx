@@ -99,7 +99,7 @@ $$
 \tag{9}
 $$
 
-This is mostly a rename: $\boldsymbol{k}_i = \boldsymbol{x}_i$ and $\boldsymbol{v}_i = y_i$. The split earns its keep in §8, where learned projections will let keys and values diverge.
+This is mostly a rename: $\boldsymbol{k}_i = \boldsymbol{x}_i$ and $\boldsymbol{v}_i = y_i$. The split earns its keep in [§8](#8-making-it-parametric-learned-projections), where learned projections will let keys and values diverge.
 
 ---
 
@@ -126,7 +126,7 @@ a(\boldsymbol{q}, \boldsymbol{k}_i) = \frac{\boldsymbol{q}^\top \boldsymbol{k}_i
 \tag{12}
 $$
 
-This is the **dot-product attention score**. It tells us the *form* of the similarity — but not its magnitude. The bandwidth $\sigma$ is still a free parameter; §5 determines its standard value.
+This is the **dot-product attention score**. It tells us the *form* of the similarity — but not its magnitude. The bandwidth $\sigma$ is still a free parameter; [§5](#5-scaling-why-divide-by-sqrtd) determines its standard value.
 
 ---
 
@@ -196,7 +196,7 @@ $$
 \tag{16}
 $$
 
-This is the step that turns nonparametric kernel regression into a *trained* attention mechanism. The key/value split from §3 now earns its keep: because $W^{(k)}$ and $W^{(v)}$ are independent matrices, a token can be matched on one aspect of itself and return another.
+This is the step that turns nonparametric kernel regression into a *trained* attention mechanism. The key/value split from [§3](#3-naming-the-pieces-queries-keys-values) now earns its keep: because $W^{(k)}$ and $W^{(v)}$ are independent matrices, a token can be matched on one aspect of itself and return another.
 
 ---
 
