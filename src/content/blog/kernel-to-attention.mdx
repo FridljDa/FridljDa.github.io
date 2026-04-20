@@ -150,7 +150,7 @@ So the raw dot product has standard deviation $\sqrt{d}$ — it grows with dimen
 
 ## 6. Matrix form
 
-We now have all three ingredients: a softmax (6), a dot-product score $\tilde{a}$ (12), and a $1/\sqrt{d}$ rescaling. Computing attention for each query one at a time would work, but the whole pipeline vectorizes cleanly. Stack the $n$ queries, keys, and values as rows of matrices:
+We now have all three ingredients: a softmax (6), a dot-product score $\tilde{a}$ (12), and a $1/\sqrt{d}$ rescaling. The whole pipeline vectorizes cleanly: stack the $n$ queries, keys, and values as rows of matrices:
 
 $$
 Q = \begin{pmatrix} \boldsymbol{q}_1^\top \\ \vdots \\ \boldsymbol{q}_n^\top \end{pmatrix}, \quad
@@ -172,7 +172,7 @@ QK^\top =
 \end{pmatrix}
 $$
 
-Row $i$ holds all the scores that query $i$ assigns to every key. Scaling by $1/\sqrt{d}$ and applying softmax row-wise turns each row into a probability distribution — the **attention weights** for that query. Multiplying by $V$ then takes a weighted average of the value rows for each query, giving the output matrix $Y \in \mathbb{R}^{n \times d}$:
+Row $i$ holds all the scores that query $i$ assigns to every key. Scaling by $1/\sqrt{d}$ and applying softmax row-wise turns each row into a probability distribution — the **attention weights** for that query. Multiplying by $V$ then takes a weighted average of the value rows for each query, giving the output matrix $Y \in \mathbb{R}^{n \times d}$. This is exactly (9) computed for all queries at once:
 
 $$
 Y = \operatorname{Attn}(Q, K, V) = \operatorname{softmax}\!\left(\frac{Q K^\top}{\sqrt{d}}\right) V
