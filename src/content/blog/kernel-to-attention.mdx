@@ -158,10 +158,24 @@ K = \begin{pmatrix} \boldsymbol{k}_1^\top \\ \vdots \\ \boldsymbol{k}_n^\top \en
 V = \begin{pmatrix} \boldsymbol{v}_1^\top \\ \vdots \\ \boldsymbol{v}_n^\top \end{pmatrix} \quad \in \mathbb{R}^{n \times d}
 $$
 
-and the attention formula collapses to a single matrix expression:
+Then $QK^\top$ is an $n\times n$ matrix whose $(i,j)$ entry is exactly the dot-product score $\tilde{a}(\boldsymbol{q}_i, \boldsymbol{k}_j) = \boldsymbol{q}_i^\top\boldsymbol{k}_j$. To see this concretely, consider $n = 3$ tokens and $d = 2$:
 
 $$
-\operatorname{Attn}(Q, K, V) = \operatorname{softmax}\!\left(\frac{Q K^\top}{\sqrt{d}}\right) V
+QK^\top =
+\begin{pmatrix} q_{11} & q_{12} \\ q_{21} & q_{22} \\ q_{31} & q_{32} \end{pmatrix}
+\begin{pmatrix} k_{11} & k_{21} & k_{31} \\ k_{12} & k_{22} & k_{32} \end{pmatrix}
+=
+\begin{pmatrix}
+\boldsymbol{q}_1^\top\boldsymbol{k}_1 & \boldsymbol{q}_1^\top\boldsymbol{k}_2 & \boldsymbol{q}_1^\top\boldsymbol{k}_3 \\
+\boldsymbol{q}_2^\top\boldsymbol{k}_1 & \boldsymbol{q}_2^\top\boldsymbol{k}_2 & \boldsymbol{q}_2^\top\boldsymbol{k}_3 \\
+\boldsymbol{q}_3^\top\boldsymbol{k}_1 & \boldsymbol{q}_3^\top\boldsymbol{k}_2 & \boldsymbol{q}_3^\top\boldsymbol{k}_3
+\end{pmatrix}
+$$
+
+Row $i$ holds all the scores that query $i$ assigns to every key. Scaling by $1/\sqrt{d}$ and applying softmax row-wise turns each row into a probability distribution — the **attention weights** for that query. Multiplying by $V$ then takes a weighted average of the value rows for each query, giving the output matrix $Y \in \mathbb{R}^{n \times d}$:
+
+$$
+Y = \operatorname{Attn}(Q, K, V) = \operatorname{softmax}\!\left(\frac{Q K^\top}{\sqrt{d}}\right) V
 \tag{13}
 $$
 
@@ -169,7 +183,7 @@ This is **scaled dot-product attention** — the exact formula from "[Attention 
 
 ![Scaled dot-product attention as a matrix pipeline: Q (n×d) times K^T (d×n) gives an n×n score matrix, which softmax turns into an attention matrix A (n×n), which multiplied by V (n×d) yields the output Y (n×d).](/images/blog/kernel-to-attention/attention_matrix_form.png)
 
-$Q K^\top$ produces an $n \times n$ matrix of pairwise scores — row $i$, column $j$ holds $\boldsymbol{q}_i^\top \boldsymbol{k}_j$. After scaling and row-wise softmax, this becomes the **attention matrix** $A$: row $i$ is the probability distribution query $i$ places over the $n$ keys. Multiplying by $V$ mixes the values according to those weights, and the $i$-th row of $Y$ is the output for query $i$.
+The $i$-th row of $Y$ is the output for query $i$: a context-weighted blend of all the values, where the weights are determined by how well query $i$ matches each key.
 
 ---
 
