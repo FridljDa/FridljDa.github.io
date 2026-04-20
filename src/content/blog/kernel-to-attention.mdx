@@ -150,7 +150,15 @@ So the raw dot product has standard deviation $\sqrt{d}$ — it grows with dimen
 
 ## 6. Matrix form
 
-We now have all three ingredients: a softmax (6), a dot-product score $\tilde{a}$ (12), and a $1/\sqrt{d}$ rescaling. Computing attention for each query one at a time would work, but the whole pipeline vectorizes cleanly: stack the $n$ queries, keys, and values as rows of matrices $Q, K, V$ — each of shape $n \times d$ — and the attention formula collapses to a single matrix expression:
+We now have all three ingredients: a softmax (6), a dot-product score $\tilde{a}$ (12), and a $1/\sqrt{d}$ rescaling. Computing attention for each query one at a time would work, but the whole pipeline vectorizes cleanly. Stack the $n$ queries, keys, and values as rows of matrices:
+
+$$
+Q = \begin{pmatrix} \boldsymbol{q}_1^\top \\ \vdots \\ \boldsymbol{q}_n^\top \end{pmatrix}, \quad
+K = \begin{pmatrix} \boldsymbol{k}_1^\top \\ \vdots \\ \boldsymbol{k}_n^\top \end{pmatrix}, \quad
+V = \begin{pmatrix} \boldsymbol{v}_1^\top \\ \vdots \\ \boldsymbol{v}_n^\top \end{pmatrix} \quad \in \mathbb{R}^{n \times d}
+$$
+
+and the attention formula collapses to a single matrix expression:
 
 $$
 \operatorname{Attn}(Q, K, V) = \operatorname{softmax}\!\left(\frac{Q K^\top}{\sqrt{d}}\right) V
