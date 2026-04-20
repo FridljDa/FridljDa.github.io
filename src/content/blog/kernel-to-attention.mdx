@@ -32,10 +32,10 @@ $$
 \tag{2}
 $$
 
-where $\sigma$ is called the *bandwidth*. We build the weights $\alpha_i$ by normalizing the kernel across training points. Because of the normalization, the prefactor $1/\sqrt{2\pi\sigma^2}$ is irrelevant and we drop it. Writing $\beta^2 = 1/\sigma^2$,
+where $\sigma$ is called the *bandwidth*. We build the weights $\alpha_i$ by normalizing the kernel across training points. Because of the normalization, the prefactor $1/\sqrt{2\pi\sigma^2}$ is irrelevant and we drop it:
 
 $$
-\alpha_i(\boldsymbol{x}, \boldsymbol{x}_{1:n}) = \frac{\exp\!\left(-\frac{\beta^2}{2}\|\boldsymbol{x} - \boldsymbol{x}_i\|^2\right)}{\sum_{j=1}^n \exp\!\left(-\frac{\beta^2}{2}\|\boldsymbol{x} - \boldsymbol{x}_j\|^2\right)}
+\alpha_i(\boldsymbol{x}, \boldsymbol{x}_{1:n}) = \frac{\exp\!\left(-\dfrac{\|\boldsymbol{x} - \boldsymbol{x}_i\|^2}{2\sigma^2}\right)}{\sum_{j=1}^n \exp\!\left(-\dfrac{\|\boldsymbol{x} - \boldsymbol{x}_j\|^2}{2\sigma^2}\right)}
 \tag{3}
 $$
 
@@ -49,7 +49,7 @@ $$
 Comparing (3) with (4), the weights are exactly a softmax — applied to the *exponent* of the Gaussian, not to its value. We give that exponent a name. Define the **attention score**
 
 $$
-a(\boldsymbol{x}, \boldsymbol{x}_i) = -\frac{\beta^2}{2}\, \|\boldsymbol{x} - \boldsymbol{x}_i\|^2
+a(\boldsymbol{x}, \boldsymbol{x}_i) = -\frac{\|\boldsymbol{x} - \boldsymbol{x}_i\|^2}{2\sigma^2}
 \tag{5}
 $$
 
@@ -108,31 +108,31 @@ This is mostly a rename: $\boldsymbol{k}_i = \boldsymbol{x}_i$ and $\boldsymbol{
 The Gaussian score in (3) involves a squared distance. Expand it:
 
 $$
--\frac{\beta^2}{2}\, \|\boldsymbol{q} - \boldsymbol{k}_i\|^2 = -\frac{\beta^2}{2}\|\boldsymbol{q}\|^2 \;+\; \beta^2\, \boldsymbol{q}^\top \boldsymbol{k}_i \;-\; \frac{\beta^2}{2}\|\boldsymbol{k}_i\|^2
+-\frac{\|\boldsymbol{q} - \boldsymbol{k}_i\|^2}{2\sigma^2} = -\frac{\|\boldsymbol{q}\|^2}{2\sigma^2} \;+\; \frac{\boldsymbol{q}^\top \boldsymbol{k}_i}{\sigma^2} \;-\; \frac{\|\boldsymbol{k}_i\|^2}{2\sigma^2}
 \tag{10}
 $$
 
-The first term $-\tfrac{\beta^2}{2}\|\boldsymbol{q}\|^2$ does not depend on $i$. To see why such a term vanishes, note that for any constant $c$ independent of $i$,
+The first term $-\|\boldsymbol{q}\|^2/(2\sigma^2)$ does not depend on $i$. To see why such a term vanishes, note that for any constant $c$ independent of $i$,
 
 $$
 \operatorname{softmax}_i(s_1 + c, \ldots, s_n + c) = \frac{e^{s_i + c}}{\sum_j e^{s_j + c}} = \frac{e^c\, e^{s_i}}{e^c \sum_j e^{s_j}} = \operatorname{softmax}_i(s_1, \ldots, s_n)
 \tag{11}
 $$
 
-so adding an $i$-independent constant to every score leaves the weights unchanged. The $-\tfrac{\beta^2}{2}\|\boldsymbol{q}\|^2$ term is exactly such a constant and drops out. If we additionally assume keys are unit-norm, the third term $-\tfrac{\beta^2}{2}\|\boldsymbol{k}_i\|^2$ is also constant and drops out. What remains is
+so adding an $i$-independent constant to every score leaves the weights unchanged. The $-\|\boldsymbol{q}\|^2/(2\sigma^2)$ term is exactly such a constant and drops out. If we additionally assume keys are unit-norm, the third term $-\|\boldsymbol{k}_i\|^2/(2\sigma^2)$ is also constant and drops out. What remains is
 
 $$
-a(\boldsymbol{q}, \boldsymbol{k}_i) = \beta^2\, \boldsymbol{q}^\top \boldsymbol{k}_i
+a(\boldsymbol{q}, \boldsymbol{k}_i) = \frac{\boldsymbol{q}^\top \boldsymbol{k}_i}{\sigma^2}
 \tag{12}
 $$
 
-This is the **dot-product attention score**. It tells us the *form* of the similarity — but not its magnitude. The scalar $\beta^2$ is still a free parameter; §5 determines its standard value.
+This is the **dot-product attention score**. It tells us the *form* of the similarity — but not its magnitude. The bandwidth $\sigma$ is still a free parameter; §5 determines its standard value.
 
 ---
 
 ## 5. Scaling: why divide by $\sqrt{d}$
 
-In practice $\beta^2 = 1/\sqrt{d}$, where $d$ is the dimension of the query and key vectors. The reason is statistical. Suppose the components of $\boldsymbol{q}$ and $\boldsymbol{k}_i$ are independent, with mean zero and unit variance. Each product term $q_\ell\, k_{i,\ell}$ is then also mean-zero, with
+In practice $\sigma^2 = \sqrt{d}$, where $d$ is the dimension of the query and key vectors, so the score (12) becomes $\boldsymbol{q}^\top \boldsymbol{k}_i / \sqrt{d}$. The reason is statistical. Suppose the components of $\boldsymbol{q}$ and $\boldsymbol{k}_i$ are independent, with mean zero and unit variance. Each product term $q_\ell\, k_{i,\ell}$ is then also mean-zero, with
 
 $$
 \operatorname{Var}(q_\ell\, k_{i,\ell}) = \mathbb{E}[q_\ell^2]\, \mathbb{E}[k_{i,\ell}^2] = 1
@@ -144,7 +144,7 @@ $$
 \operatorname{Var}(\boldsymbol{q}^\top \boldsymbol{k}_i) = \operatorname{Var}\!\left(\sum_{\ell=1}^d q_\ell\, k_{i,\ell}\right) = \sum_{\ell=1}^d \operatorname{Var}(q_\ell\, k_{i,\ell}) = d
 $$
 
-So the raw dot product has standard deviation $\sqrt{d}$ — it grows with dimension. Without rescaling, large-magnitude inputs push the softmax into a saturated regime where one score dominates and gradients with respect to the others vanish. Dividing by $\sqrt{d}$ keeps the score variance at $O(1)$ independent of $d$, keeping the softmax in a well-behaved regime.
+So the raw dot product has standard deviation $\sqrt{d}$ — it grows with dimension. Without rescaling, large-magnitude inputs push the softmax into a saturated regime where one score dominates and gradients with respect to the others vanish. Setting $\sigma^2 = \sqrt{d}$ keeps the score variance at $O(1)$ independent of $d$, keeping the softmax in a well-behaved regime.
 
 ---
 
@@ -207,9 +207,9 @@ The full derivation in one view:
 $$
 \begin{aligned}
 & \underbrace{f(\boldsymbol{x}) = \sum_i \alpha_i(\boldsymbol{x}, \boldsymbol{x}_{1:n})\, y_i}_{\text{kernel regression}} \\[4pt]
-\xrightarrow{\text{Gaussian kernel}} \quad & \underbrace{\sum_i \operatorname{softmax}_i\!\left(-\tfrac{\beta^2}{2}\|\boldsymbol{x} - \boldsymbol{x}_i\|^2\right) y_i}_{\text{nonparametric attention}} \\[4pt]
+\xrightarrow{\text{Gaussian kernel}} \quad & \underbrace{\sum_i \operatorname{softmax}_i\!\left(-\tfrac{\|\boldsymbol{x} - \boldsymbol{x}_i\|^2}{2\sigma^2}\right) y_i}_{\text{nonparametric attention}} \\[4pt]
 \xrightarrow{\text{generalize similarity, rename}} \quad & \underbrace{\sum_i \operatorname{softmax}_i\!\left(a(\boldsymbol{q}, \boldsymbol{k}_i)\right) \boldsymbol{v}_i}_{\text{general attention}} \\[4pt]
-\xrightarrow{\text{expand, drop constants}} \quad & \underbrace{\operatorname{softmax}\!\left(\tfrac{Q K^\top}{\sqrt{d}}\right) V}_{\text{scaled dot-product}} \\[4pt]
+\xrightarrow{\text{expand, drop constants, set }\sigma^2=\sqrt{d}} \quad & \underbrace{\operatorname{softmax}\!\left(\tfrac{Q K^\top}{\sqrt{d}}\right) V}_{\text{scaled dot-product}} \\[4pt]
 \xrightarrow{\text{sequence attends to itself}} \quad & \underbrace{\boldsymbol{y}_i = \operatorname{Attn}(\boldsymbol{x}_i, \{(\boldsymbol{x}_j, \boldsymbol{x}_j)\}_j)}_{\text{self-attention (keys = values)}} \\[4pt]
 \xrightarrow{\text{learned projections}} \quad & \underbrace{\boldsymbol{y}_i = \operatorname{Attn}(W^{(q)} \boldsymbol{x}_i, \{(W^{(k)} \boldsymbol{x}_j, W^{(v)} \boldsymbol{x}_j)\}_j)}_{\text{Transformer self-attention}}
 \end{aligned}
