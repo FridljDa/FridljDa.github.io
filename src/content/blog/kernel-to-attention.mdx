@@ -99,7 +99,7 @@ $$
 \tag{9}
 $$
 
-This is mostly a rename: $\boldsymbol{k}_i = \boldsymbol{x}_i$ and $\boldsymbol{v}_i = y_i$. The split earns its keep in §6, where learned projections will let keys and values diverge.
+This is mostly a rename: $\boldsymbol{k}_i = \boldsymbol{x}_i$ and $\boldsymbol{v}_i = y_i$. The split earns its keep in §7, where learned projections will let keys and values diverge.
 
 ---
 
@@ -126,7 +126,13 @@ a(\boldsymbol{q}, \boldsymbol{k}_i) = \beta^2\, \boldsymbol{q}^\top \boldsymbol{
 \tag{12}
 $$
 
-This is the **dot-product attention score**. The scalar $\beta^2$ is just a constant; in practice it is set to $1/\sqrt{d}$, where $d$ is the dimension of the query and key vectors. The reason is statistical. Suppose the components of $\boldsymbol{q}$ and $\boldsymbol{k}_i$ are independent, with mean zero and unit variance. Each product term $q_\ell\, k_{i,\ell}$ is then also mean-zero, with
+This is the **dot-product attention score**. It tells us the *form* of the similarity — but not its magnitude. The scalar $\beta^2$ is still a free parameter; §5 determines its standard value.
+
+---
+
+## 5. Scaling: why divide by $\sqrt{d}$
+
+In practice $\beta^2 = 1/\sqrt{d}$, where $d$ is the dimension of the query and key vectors. The reason is statistical. Suppose the components of $\boldsymbol{q}$ and $\boldsymbol{k}_i$ are independent, with mean zero and unit variance. Each product term $q_\ell\, k_{i,\ell}$ is then also mean-zero, with
 
 $$
 \operatorname{Var}(q_\ell\, k_{i,\ell}) = \mathbb{E}[q_\ell^2]\, \mathbb{E}[k_{i,\ell}^2] = 1
@@ -151,7 +157,7 @@ This is **scaled dot-product attention** — the exact formula from "[Attention 
 
 ---
 
-## 5. Self-attention
+## 6. Self-attention
 
 So far we have been in the kernel-regression setting: each training point came with a scalar label $y_i$, and the value in (9) was $\boldsymbol{v}_i = y_i$. A Transformer processes something different — a sequence of tokens $\boldsymbol{x}_1, \ldots, \boldsymbol{x}_n$ with no labels attached. There are no $y_i$'s. Every position has to supply its own payload.
 
@@ -166,7 +172,7 @@ Each token $\boldsymbol{x}_i$ acts simultaneously as a query (asking "who is rel
 
 ---
 
-## 6. Making it parametric: learned projections
+## 7. Making it parametric: learned projections
 
 To let keys and values carry different information — and more broadly, to let the model learn *what* aspects of each token to match on and return — introduce three learned linear projections:
 
