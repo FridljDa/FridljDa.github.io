@@ -119,20 +119,20 @@ $$
 \tag{11}
 $$
 
-so adding an $i$-independent constant to every score leaves the weights unchanged. The $-\|\boldsymbol{q}\|^2/(2\sigma^2)$ term is exactly such a constant and drops out. If we additionally assume keys are unit-norm, the third term $-\|\boldsymbol{k}_i\|^2/(2\sigma^2)$ is also constant and drops out. What remains is
+so adding an $i$-independent constant to every score leaves the weights unchanged. The $-\|\boldsymbol{q}\|^2/(2\sigma^2)$ term is exactly such a constant and drops out. If we additionally assume keys are unit-norm, the third term $-\|\boldsymbol{k}_i\|^2/(2\sigma^2)$ is also constant and drops out. What remains is a softmax-equivalent score — call it $\tilde{a}$:
 
 $$
-a(\boldsymbol{q}, \boldsymbol{k}_i) = \frac{\boldsymbol{q}^\top \boldsymbol{k}_i}{\sigma^2}
+\tilde{a}(\boldsymbol{q}, \boldsymbol{k}_i) = \frac{\boldsymbol{q}^\top \boldsymbol{k}_i}{\sigma^2}
 \tag{12}
 $$
 
-This is the **dot-product attention score**. It tells us the *form* of the similarity — but not its magnitude. The bandwidth $\sigma$ is still a free parameter; [§5](#5-scaling-why-divide-by-sqrtd) determines its standard value.
+Because $\operatorname{softmax}_i(a(\boldsymbol{q}, \boldsymbol{k}_i)) = \operatorname{softmax}_i(\tilde{a}(\boldsymbol{q}, \boldsymbol{k}_i))$ for all $i$, we can replace $a$ with $\tilde{a}$ in (9) without changing any attention weight. This is the **dot-product attention score**. The bandwidth $\sigma$ is still a free parameter; [§5](#5-scaling-why-divide-by-sqrtd) determines its standard value.
 
 ---
 
 ## 5. Scaling: why divide by $\sqrt{d}$
 
-In practice $\sigma^2 = \sqrt{d}$, where $d$ is the dimension of the query and key vectors, so the score (12) becomes $\boldsymbol{q}^\top \boldsymbol{k}_i / \sqrt{d}$. The reason is statistical. Suppose the components of $\boldsymbol{q}$ and $\boldsymbol{k}_i$ are independent, with mean zero and unit variance. Each product term $q_\ell\, k_{i,\ell}$ is then also mean-zero, with
+In practice $\sigma^2 = \sqrt{d}$, where $d$ is the dimension of the query and key vectors, so the score (12) becomes $\tilde{a}(\boldsymbol{q}, \boldsymbol{k}_i) = \boldsymbol{q}^\top \boldsymbol{k}_i / \sqrt{d}$. The reason is statistical. Suppose the components of $\boldsymbol{q}$ and $\boldsymbol{k}_i$ are independent, with mean zero and unit variance. Each product term $q_\ell\, k_{i,\ell}$ is then also mean-zero, with
 
 $$
 \operatorname{Var}(q_\ell\, k_{i,\ell}) = \mathbb{E}[q_\ell^2]\, \mathbb{E}[k_{i,\ell}^2] = 1
@@ -150,7 +150,7 @@ So the raw dot product has standard deviation $\sqrt{d}$ — it grows with dimen
 
 ## 6. Matrix form
 
-We now have all three ingredients: a softmax (6), a dot-product score (12), and a $1/\sqrt{d}$ rescaling. Computing attention for each query one at a time would work, but the whole pipeline vectorizes cleanly: stack the $n$ queries, keys, and values as rows of matrices $Q, K, V$ — each of shape $n \times d$ — and the attention formula collapses to a single matrix expression:
+We now have all three ingredients: a softmax (6), a dot-product score $\tilde{a}$ (12), and a $1/\sqrt{d}$ rescaling. Computing attention for each query one at a time would work, but the whole pipeline vectorizes cleanly: stack the $n$ queries, keys, and values as rows of matrices $Q, K, V$ — each of shape $n \times d$ — and the attention formula collapses to a single matrix expression:
 
 $$
 \operatorname{Attn}(Q, K, V) = \operatorname{softmax}\!\left(\frac{Q K^\top}{\sqrt{d}}\right) V
