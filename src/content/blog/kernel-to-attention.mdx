@@ -99,7 +99,7 @@ $$
 \tag{9}
 $$
 
-This is mostly a rename: $\boldsymbol{k}_i = \boldsymbol{x}_i$ and $\boldsymbol{v}_i = y_i$. The split earns its keep in §5, where learned projections will let keys and values diverge.
+This is mostly a rename: $\boldsymbol{k}_i = \boldsymbol{x}_i$ and $\boldsymbol{v}_i = y_i$. The split earns its keep in §6, where learned projections will let keys and values diverge.
 
 ---
 
@@ -139,33 +139,40 @@ This is **scaled dot-product attention** — the exact formula from "[Attention 
 
 ---
 
-## 5. Making it parametric: learned projections
+## 5. Self-attention
 
-So far, queries, keys, and values are the raw inputs. But in a neural network we want to *learn* what aspects of the input to compare on and what aspects to return. Introduce three learned linear projections:
+So far we have been in the kernel-regression setting: each training point came with a scalar label $y_i$, and the value in (9) was $\boldsymbol{v}_i = y_i$. A Transformer processes something different — a sequence of tokens $\boldsymbol{x}_1, \ldots, \boldsymbol{x}_n$ with no labels attached. There are no $y_i$'s. Every position has to supply its own payload.
+
+The natural move is to let each token play all three roles. In **self-attention**, every position attends to every other position *in the same sequence*, using the tokens themselves for queries, keys, and values:
 
 $$
-\boldsymbol{q} = W^{(q)} \boldsymbol{x}_{\text{query}}, \quad \boldsymbol{k}_i = W^{(k)} \boldsymbol{x}_i, \quad \boldsymbol{v}_i = W^{(v)} \boldsymbol{x}_i
+\boldsymbol{y}_i = \operatorname{Attn}\!\left(\boldsymbol{x}_i,\; \{(\boldsymbol{x}_j, \boldsymbol{x}_j)\}_{j=1}^{n}\right)
 \tag{14}
 $$
 
-This is the step that turns nonparametric kernel regression into a *trained* attention mechanism. The matrices $W^{(q)}, W^{(k)}, W^{(v)}$ are learned end-to-end by backpropagation. It is also where the key/value split in §3 pays off: the same input $\boldsymbol{x}_i$ is projected through two different matrices, so the key (what a token is matched on) and value (what a token contributes) can carry genuinely different information.
+Each token $\boldsymbol{x}_i$ acts simultaneously as a query (asking "who is relevant to me?") and contributes a key and value (answering "here is what I offer to others"). This lets the model build **context-dependent representations**: the embedding of the word *it* can depend on whether the surrounding sentence is about an animal or a street. And because there are no recurrences, all $n$ outputs $\boldsymbol{y}_1, \ldots, \boldsymbol{y}_n$ can be computed in parallel — this is what makes Transformers so much faster to train than RNNs.
+
+But something has collapsed. The §3 table distinguished **keys** (what the query is compared against) from **values** (what gets averaged into the output), yet in (14) we have $\boldsymbol{k}_j = \boldsymbol{v}_j = \boldsymbol{x}_j$ — literally the same vector. A token must be matched on exactly the same information it contributes. That's the restriction §6 removes.
 
 ---
 
-## 6. Self-attention
+## 6. Making it parametric: learned projections
 
-The final step is the key trick of the Transformer: make the model attend **to itself**.
-
-In standard sequence-to-sequence attention, a decoder state queries an encoder's representations. In **self-attention**, every position in a sequence attends to every other position *in the same sequence*. For input tokens $\boldsymbol{x}_1, \ldots, \boldsymbol{x}_n$ and each $i$,
+To let keys and values carry different information — and more broadly, to let the model learn *what* aspects of each token to match on and return — introduce three learned linear projections:
 
 $$
-\boldsymbol{y}_i = \operatorname{Attn}\!\left(W^{(q)} \boldsymbol{x}_i,\; \left\{\left(W^{(k)} \boldsymbol{x}_j,\; W^{(v)} \boldsymbol{x}_j\right)\right\}_{j=1}^{n}\right)
+\boldsymbol{q} = W^{(q)} \boldsymbol{x}, \quad \boldsymbol{k} = W^{(k)} \boldsymbol{x}, \quad \boldsymbol{v} = W^{(v)} \boldsymbol{x}
 \tag{15}
 $$
 
-Each token $\boldsymbol{x}_i$ acts simultaneously as a query (asking "who is relevant to me?") and contributes a key and value (answering "here is what I offer to others"). This lets the model build **context-dependent representations**: the embedding of the word *it* can depend on whether the surrounding sentence is about an animal or a street.
+Each input $\boldsymbol{x}$ is passed through three different matrices before entering the attention formula. The matrices $W^{(q)}, W^{(k)}, W^{(v)}$ are learned end-to-end by backpropagation. Plugging (15) into (14) gives the full self-attention layer used in Transformers:
 
-Because there are no recurrences, all $n$ outputs $\boldsymbol{y}_1, \ldots, \boldsymbol{y}_n$ can be computed in parallel — this is what makes Transformers so much faster to train than RNNs.
+$$
+\boldsymbol{y}_i = \operatorname{Attn}\!\left(W^{(q)} \boldsymbol{x}_i,\; \left\{\left(W^{(k)} \boldsymbol{x}_j,\; W^{(v)} \boldsymbol{x}_j\right)\right\}_{j=1}^{n}\right)
+\tag{16}
+$$
+
+This is the step that turns nonparametric kernel regression into a *trained* attention mechanism. The key/value split from §3 now earns its keep: because $W^{(k)}$ and $W^{(v)}$ are independent matrices, a token can be matched on one aspect of itself and return another.
 
 ---
 
@@ -179,11 +186,12 @@ $$
 \xrightarrow{\text{Gaussian kernel}} \quad & \underbrace{\sum_i \operatorname{softmax}_i\!\left(-\tfrac{\beta^2}{2}\|\boldsymbol{x} - \boldsymbol{x}_i\|^2\right) y_i}_{\text{nonparametric attention}} \\[4pt]
 \xrightarrow{\text{generalize similarity, rename}} \quad & \underbrace{\sum_i \operatorname{softmax}_i\!\left(a(\boldsymbol{q}, \boldsymbol{k}_i)\right) \boldsymbol{v}_i}_{\text{general attention}} \\[4pt]
 \xrightarrow{\text{expand, drop constants}} \quad & \underbrace{\operatorname{softmax}\!\left(\tfrac{Q K^\top}{\sqrt{d}}\right) V}_{\text{scaled dot-product}} \\[4pt]
-\xrightarrow{\text{learned projections + self-query}} \quad & \underbrace{\boldsymbol{y}_i = \operatorname{Attn}(W^{(q)} \boldsymbol{x}_i, W^{(k)} X, W^{(v)} X)}_{\text{self-attention}}
+\xrightarrow{\text{sequence attends to itself}} \quad & \underbrace{\boldsymbol{y}_i = \operatorname{Attn}(\boldsymbol{x}_i, \{(\boldsymbol{x}_j, \boldsymbol{x}_j)\}_j)}_{\text{self-attention (keys = values)}} \\[4pt]
+\xrightarrow{\text{learned projections}} \quad & \underbrace{\boldsymbol{y}_i = \operatorname{Attn}(W^{(q)} \boldsymbol{x}_i, \{(W^{(k)} \boldsymbol{x}_j, W^{(v)} \boldsymbol{x}_j)\}_j)}_{\text{Transformer self-attention}}
 \end{aligned}
 $$
 
-Self-attention is not a mysterious black box. It is the natural result of applying a Gaussian similarity kernel, normalizing with softmax, generalizing the similarity, adding learned projections, and letting a sequence attend to itself. Every piece has a reason.
+Self-attention is not a mysterious black box. It is the natural result of applying a Gaussian similarity kernel, normalizing with softmax, generalizing the similarity, letting a sequence attend to itself, and adding learned projections to rescue the key/value distinction. Every piece has a reason.
 
 ---
 
