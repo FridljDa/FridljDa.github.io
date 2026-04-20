@@ -112,20 +112,27 @@ $$
 \tag{10}
 $$
 
-The first term $-\tfrac{\beta^2}{2}\|\boldsymbol{q}\|^2$ does not depend on $i$, so it is a constant offset inside the softmax and vanishes on normalization. If we additionally assume keys are unit-norm, the third term is also constant and drops out. What remains is
+The first term $-\tfrac{\beta^2}{2}\|\boldsymbol{q}\|^2$ does not depend on $i$. To see why such a term vanishes, note that for any constant $c$ independent of $i$,
+
+$$
+\operatorname{softmax}_i(s_1 + c, \ldots, s_n + c) = \frac{e^{s_i + c}}{\sum_j e^{s_j + c}} = \frac{e^c\, e^{s_i}}{e^c \sum_j e^{s_j}} = \operatorname{softmax}_i(s_1, \ldots, s_n)
+\tag{11}
+$$
+
+so adding an $i$-independent constant to every score leaves the weights unchanged. The $-\tfrac{\beta^2}{2}\|\boldsymbol{q}\|^2$ term is exactly such a constant and drops out. If we additionally assume keys are unit-norm, the third term $-\tfrac{\beta^2}{2}\|\boldsymbol{k}_i\|^2$ is also constant and drops out. What remains is
 
 $$
 a(\boldsymbol{q}, \boldsymbol{k}_i) = \beta^2\, \boldsymbol{q}^\top \boldsymbol{k}_i
-\tag{11}
+\tag{12}
 $$
 
 This is the **dot-product attention score**. The scalar $\beta^2$ is just a constant; in practice it is set to $1/\sqrt{d}$, where $d$ is the dimension of the query and key vectors. The reason for that specific choice is statistical: if the components of $\boldsymbol{q}$ and $\boldsymbol{k}_i$ are independent with unit variance, the dot product $\boldsymbol{q}^\top \boldsymbol{k}_i$ has variance $d$. Dividing by $\sqrt{d}$ keeps the score variance $O(1)$ as $d$ grows, which prevents the softmax from saturating.
 
-Stacking queries, keys, and values into matrices $Q$, $K$, $V$ (one row per item) and plugging (11) into (9) gives
+Stacking queries, keys, and values into matrices $Q$, $K$, $V$ (one row per item) and plugging (12) into (9) gives
 
 $$
 \operatorname{Attn}(Q, K, V) = \operatorname{softmax}\!\left(\frac{Q K^\top}{\sqrt{d}}\right) V
-\tag{12}
+\tag{13}
 $$
 
 This is **scaled dot-product attention** — the exact formula from "Attention Is All You Need" [Vaswani et al., 2017].
@@ -138,7 +145,7 @@ So far, queries, keys, and values are the raw inputs. But in a neural network we
 
 $$
 \boldsymbol{q} = W^{(q)} \boldsymbol{x}_{\text{query}}, \quad \boldsymbol{k}_i = W^{(k)} \boldsymbol{x}_i, \quad \boldsymbol{v}_i = W^{(v)} \boldsymbol{x}_i
-\tag{13}
+\tag{14}
 $$
 
 This is the step that turns nonparametric kernel regression into a *trained* attention mechanism. The matrices $W^{(q)}, W^{(k)}, W^{(v)}$ are learned end-to-end by backpropagation. It is also where the key/value split in §3 pays off: the same input $\boldsymbol{x}_i$ is projected through two different matrices, so the key (what a token is matched on) and value (what a token contributes) can carry genuinely different information.
@@ -153,7 +160,7 @@ In standard sequence-to-sequence attention, a decoder state queries an encoder's
 
 $$
 \boldsymbol{y}_i = \operatorname{Attn}\!\left(W^{(q)} \boldsymbol{x}_i,\; \left\{\left(W^{(k)} \boldsymbol{x}_j,\; W^{(v)} \boldsymbol{x}_j\right)\right\}_{j=1}^{n}\right)
-\tag{14}
+\tag{15}
 $$
 
 Each token $\boldsymbol{x}_i$ acts simultaneously as a query (asking "who is relevant to me?") and contributes a key and value (answering "here is what I offer to others"). This lets the model build **context-dependent representations**: the embedding of the word *it* can depend on whether the surrounding sentence is about an animal or a street.
