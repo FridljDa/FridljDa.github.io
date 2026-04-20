@@ -164,8 +164,6 @@ $$
 
 Each token $\boldsymbol{x}_i$ acts simultaneously as a query (asking "who is relevant to me?") and contributes a key and value (answering "here is what I offer to others"). This lets the model build **context-dependent representations**: the embedding of the word *it* can depend on whether the surrounding sentence is about an animal or a street. And because there are no recurrences, all $n$ outputs $\boldsymbol{y}_1, \ldots, \boldsymbol{y}_n$ can be computed in parallel — this is what makes Transformers so much faster to train than RNNs.
 
-But something has collapsed. The §3 table distinguished **keys** (what the query is compared against) from **values** (what gets averaged into the output), yet in (14) we have $\boldsymbol{k}_j = \boldsymbol{v}_j = \boldsymbol{x}_j$ — literally the same vector. A token must be matched on exactly the same information it contributes. That's the restriction §6 removes.
-
 ---
 
 ## 6. Making it parametric: learned projections
