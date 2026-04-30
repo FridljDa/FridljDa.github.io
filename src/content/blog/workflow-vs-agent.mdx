@@ -1,7 +1,7 @@
 ---
 title: "Agentic vs Workflow-based AI"
-pubDate: 2026-04-19
-updatedDate: 2026-04-19
+pubDate: 2026-04-19T00:00:00.000Z
+updatedDate: 2026-04-30T00:00:00.000Z
 tags:
   - AI
 description: "Workflow win over agents in business process automation."
@@ -137,7 +137,13 @@ flowchart TD
     O2 -- No --> OUT2([❌ Order not compliant,\nnotify Bob])
 ```
 
-Why does this work better than the agentic alternatives?
+### Verify the distribution before you design
+
+Why is this even tractable? Why isn't every Bob's request a unique snowflake? Because real business processes rarely are. If you took a sample of past procurement requests and asked an small LLM to bucket them into a small number of intent categories — laptops with specs, peripherals, software licenses, replacement orders, vendor onboarding — you'd typically find that the vast majority fall into a handful of buckets. The long tail is real, but the head of the distribution dominates.
+
+This isn't an assumption. It's something you verify empirically before designing the system: take a few hundred historical requests, cluster them, and look at the coverage. If 80% of your traffic falls into a dozen well-defined intents, the hybrid approach is on solid ground. If your distribution is genuinely flat — every request its own snowflake — you have a different problem, and probably need a different architecture. Skipping this check is how teams end up building agentic monoliths for tasks that turn out to be 90% structured.
+
+### Why this works better than the agentic alternatives
 
 **Use code where code is enough.** The Marketplace Search and Policy Lookup endpoints are unlikely to change often. Implementing a robust integration with exponential backoff, error handling, and retries is a one-time investment — and it'll be more reliable than an agent figuring out how to interact with them on the fly, every time.
 
@@ -145,6 +151,10 @@ Why does this work better than the agentic alternatives?
 
 **Don't ask an LLM to enforce rules it hasn't seen.** LLMs have seen code countless times in their training data. They have *not* seen your specific business requirements, procurement policies, or vendor contracts. A deterministic policy check is a hard `if` statement. It cannot be reasoned around, hallucinated, or skipped.
 
-**Auditability comes for free.** Every step after extraction is regular code. You can log, test, and trace it exactly like any other software. When something goes wrong — and it will — you know exactly where to look.
+**Iteration is targeted and predictable.** This is the reason that matters most once a system is in production. Real users will report problems: a request gets misinterpreted, a policy update changes the rules, a vendor adds a new product line. With a workflow, fixes are local. You change the extraction prompt, you add a branch in the policy code, you adjust an API call — and you know what will happen on the next request of that shape. With an agent, your tools for change are blunter. You can edit the system prompt, you can rephrase a policy document, but you're nudging behaviour, not specifying it. The first instinct when something breaks in an agentic system is to tweak the prompt and hope. Hoping doesn't scale, and it doesn't survive a code review either.
 
-This is the pattern I'd reach for first in any process automation task: use an LLM to bridge the gap between human language and structured data, then let code do the rest. For a deeper dive into how to implement this cleanly with PydanticAI, see [this post](https://danielfridljand.de/post/pydantic-ai-type-safe-hybrid-workflows).
+**Auditability comes for free.** Every step after extraction is regular code. You can log it, test it, and trace it exactly like any other software. When something does go wrong, you know exactly where to look.
+
+---
+
+This is the pattern I'd reach for first in any process automation task: verify that the input distribution is concentrated, use an LLM to bridge the gap between human language and structured data, and let code do the rest. For a deeper dive into how to implement this cleanly with PydanticAI, see [this post](https://danielfridljand.de/post/pydantic-ai-type-safe-hybrid-workflows).
