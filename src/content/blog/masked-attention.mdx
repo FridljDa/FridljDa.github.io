@@ -60,6 +60,8 @@ The mechanism is unchanged. Queries still come from $W^{(q)} \boldsymbol{x}$, ke
 
 The asymmetry is worth dwelling on. Position $i$ no longer sees positions $j > i$, but position $j$ (with $j > i$) still sees position $i$. The mask makes information flow strictly forward through the sequence. Each output $\boldsymbol{y}_i$ is now a weighted average over only its own past — exactly the constraint autoregressive training requires.
 
+![Causal-mask asymmetry: position 3 reads only 3 past positions, but is read by 6 current and future positions. Same matrix, same position, asymmetric reach.](/images/blog/masked-attention/causal_mask_asymmetry.png)
+
 Parallelism is preserved. All $n$ outputs are still computed in a single matrix multiplication, just with a triangular attention pattern instead of a full one. This is what lets decoder-only Transformers train at the same speed as bidirectional ones, despite the stricter information constraint.
 
 ---
