@@ -8,7 +8,7 @@ description: "Self-attention is the mechanism. BERT, GPT, and T5 are three diffe
 image: /images/blog/transformer-architectures/featured.png
 ---
 
-This is a short follow-up to [From Kernel Regression to Self-Attention](/post/kernel-to-attention) and [Masked Self-Attention](/post/masked-attention). The first post derived self-attention. The second added a causal mask. This one zooms out one level: self-attention is a *mechanism*, but BERT, GPT, and T5 are *architectures* built by stacking it. They all use self-attention. They differ in *how* they stack it.
+This is the third in a short series. The first ([From Kernel Regression to Self-Attention](/post/kernel-to-attention)) derived self-attention. The second ([Masks and Cross-Attention](/post/masks-and-cross-attention)) covered the two extensions every real Transformer uses — masks and cross-attention. This one zooms out one level: those mechanisms are *building blocks*, and BERT, GPT, and T5 are *architectures* built by stacking them in different ways.
 
 If you have ever wondered why the original Transformer paper had both an "encoder" and a "decoder," but BERT is called "encoder-only" and GPT is called "decoder-only" — this post is for you.
 
@@ -40,11 +40,7 @@ flowchart TD
     D3 --> OUT([Next target token\n"saß"])
 ```
 
-Three pieces are at work:
-
-- **Encoder self-attention** is bidirectional. Every position in the source sentence can attend to every other position. There is nothing to hide — the whole source sentence is visible at once.
-- **Decoder self-attention** is causal-masked. As the decoder generates the target, position $i$ can only attend to positions $1, \ldots, i$. This is exactly the mask from the [previous post](/post/masked-attention).
-- **Cross-attention** is the bridge between the two halves. Inside the decoder, queries come from the decoder itself, but keys and values come from the encoder's final output. This is what lets each target token attend to every source token — the mechanism by which "die Katze saß" gets aligned with "the cat sat."
+All three attention layers in the diagram are mechanisms covered in the [previous post](/post/masks-and-cross-attention): the encoder uses unmasked self-attention (every source position attends to every other), the decoder uses causal-masked self-attention (each target position attends only to its past), and the cross-attention layer inside each decoder block reads keys and values from the encoder's final output — letting each target token attend to every source token. What is new here is the *architecture*: how those mechanisms get composed into a working translation model.
 
 The encoder and decoder are each a stack of identical blocks. In the original paper, $N = 6$ for both.
 
@@ -88,7 +84,7 @@ flowchart TD
     D2 --> OUT([Next-token prediction])
 ```
 
-Notice what is *not* there: cross-attention. In the original Transformer, the decoder block had three sub-layers — masked self-attention, cross-attention to the encoder, and feed-forward. Without an encoder, there is nothing to cross-attend to, so the cross-attention layer is dropped entirely. What is left in each block is just masked self-attention and a feed-forward network.
+Notice what is *not* there: cross-attention. With no encoder, there is nothing to cross-attend to, so the cross-attention layer is dropped entirely. What is left in each block is just masked self-attention and a feed-forward network.
 
 This is what "decoder-only" means in practice. The name is slightly misleading: what made the original decoder a *decoder* was its cross-attention layer, and decoder-only models do not have it. A more honest name would be "causal-masked Transformer." But the name stuck because, like the original decoder, these models generate autoregressively — they emit tokens left to right, conditioning each on what has already been produced.
 
@@ -122,4 +118,4 @@ In all three, the underlying attention layer is the same scaled-dot-product self
 
 ---
 
-*Built on the notation in [From Kernel Regression to Self-Attention](/post/kernel-to-attention) and [Masked Self-Attention](/post/masked-attention). Original architecture: Vaswani et al., "[Attention Is All You Need](https://arxiv.org/abs/1706.03762)", NeurIPS 2017. BERT: Devlin et al., "[BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding](https://arxiv.org/abs/1810.04805)", 2018. T5: Raffel et al., "[Exploring the Limits of Transfer Learning with a Unified Text-to-Text Transformer](https://arxiv.org/abs/1910.10683)", 2019.*
+*Built on the notation in [From Kernel Regression to Self-Attention](/post/kernel-to-attention) and [Masks and Cross-Attention](/post/masks-and-cross-attention). Original architecture: Vaswani et al., "[Attention Is All You Need](https://arxiv.org/abs/1706.03762)", NeurIPS 2017. BERT: Devlin et al., "[BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding](https://arxiv.org/abs/1810.04805)", 2018. T5: Raffel et al., "[Exploring the Limits of Transfer Learning with a Unified Text-to-Text Transformer](https://arxiv.org/abs/1910.10683)", 2019.*
