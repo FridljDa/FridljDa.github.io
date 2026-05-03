@@ -108,7 +108,7 @@ cv:
         start_date: 2023-07
         end_date: 2023-12
         highlights:
-          - "Devised and implemented the statistical analysis in R, synthesized findings from 150 pertinent publications, and drove the manuscript from conceptualization to successful publication in Nature Medicine"
+          - "Devised and implemented the statistical analysis in R, synthesized findings from 150 pertinent publication, and drove the manuscript from conceptualization to successful publication in Nature Medicine"
           - "**Nature Medicine First Co-Author**: Led end-to-end statistical analysis resulting in first-author publication in Nature Medicine (2024), one of the world's top medical journals"
           - "**Causal Inference in Environmental Health**: Quantified specific contribution of air pollution (PM2.5) to mortality gap between racial and socioeconomic groups in United States, disentangling effects from confounders"
           - "**Big Data Engineering**: Curated and harmonized heterogeneous datasets including satellite-derived pollution estimates, census demographics, and death records across entire US (2000-2016)"
@@ -121,7 +121,7 @@ cv:
           - "**Interactive R Shiny Application**: Developed custom web application as analytical engine (not just presentation tool) allowing co-authors to explore 17-dimensional data interactively, visualizing non-linear relationships and detecting outliers"
           - "**High-Impact Finding**: Revealed that over 50% of age-adjusted all-cause mortality difference between Black and White populations in US is attributable to environmental factors, with profound policy implications"
           - "**Rigorous Peer Review Navigation**: Led manuscript through competitive 'Revise and Resubmit' cycle with strict two-month deadline, generating 15 new complex figures and additional robusticity checks to satisfy reviewers"
-          - "**Scientific Synthesis**: Synthesized findings from over 150 pertinent publications to ground statistical results in broader epidemiological context, demonstrating strong scientific communication skills"
+          - "**Scientific Synthesis**: Synthesized findings from over 150 pertinent publication to ground statistical results in broader epidemiological context, demonstrating strong scientific communication skills"
           - "**Manuscript Ownership**: Drove project from conceptualization to successful publication, writing initial manuscript and executing major revisions under tight deadlines"
           - "**Large-Scale Data Analysis**: Processed county-level data covering 3,000+ US counties over 16 years, demonstrating capability to handle massive public health datasets"
           - "**Collaboration with Domain Experts**: Worked closely with Pascal Geldsetzer and interdisciplinary team of epidemiologists, environmental scientists, and statisticians"
@@ -240,7 +240,7 @@ cv:
           - "**Interdisciplinary Expertise**: Designed assessments requiring fusion of mathematical precision with biological context, testing analytical capabilities at intersection of quantitative and life sciences"
           - "**Publisher Collaboration**: Worked with Springer Nature, world's leading academic publisher, ensuring content met rigorous quality and pedagogical standards"
           - "**Assessment Design**: Balanced theoretical understanding with practical application, creating problems testing both computational skills and conceptual comprehension"
-    publications:
+    publication:
       - title: "Disparities in air pollution attributable mortality in the US population by race, ethnicity and sociodemographic factors"
         authors:
           - Pascal Geldsetzer
@@ -256,7 +256,7 @@ cv:
         highlights:
           - "**Elite-Tier Publication Venue**: Published in *Nature Medicine* (Impact Factor: 50+, #1 in Biochemistry & Molecular Biology), ranking in the top 0.1% of all scientific journals globally—comparable to *Science* and *The Lancet*. Acceptance rate under 10%, demonstrating exceptional peer-review rigor"
           - "**Massive-Scale Data Science**: Analyzed entire US population over 26-year period (1990–2016), processing 63+ million death records across 3,000+ counties. Showcases advanced statistical modeling and geospatial analysis capabilities for quantifying complex demographic trends"
-          - "**Immediate Policy Impact**: Already referenced in CDC's Social Vulnerability Index (SVI) publications and environmental justice reports on petrochemical facility buildouts. Rapid academic uptake with citations in *Nature* journals and *The Lancet*, establishing work as foundational text for environmental health equity"
+          - "**Immediate Policy Impact**: Already referenced in CDC's Social Vulnerability Index (SVI) publication and environmental justice reports on petrochemical facility buildouts. Rapid academic uptake with citations in *Nature* journals and *The Lancet*, establishing work as foundational text for environmental health equity"
           - "**ESG & Corporate Relevance**: Key finding—racial disparities in air pollution mortality exceed income-based disparities—directly informs Environmental, Social, and Governance (ESG) strategies, public health policy, and corporate sustainability frameworks"
           - "**High-Impact Finding with Real-World Applications**: Research demonstrates immediate relevance for health tech, government affairs, environmental consulting, and sustainability roles by bridging rigorous quantitative analysis with actionable policy insights"
     projects:

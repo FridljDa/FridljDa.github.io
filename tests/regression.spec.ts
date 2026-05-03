@@ -167,12 +167,12 @@ test.describe('Regression Tests', () => {
   });
 
   test('should display publication about air pollution disparities', async ({ page }) => {
-    // Scroll to publications section
-    const publicationsSection = page.locator('#publications');
-    await publicationsSection.scrollIntoViewIfNeeded();
+    // Scroll to publication section
+    const publicationSection = page.locator('#publication');
+    await publicationSection.scrollIntoViewIfNeeded();
     
-    // Wait for publications to be visible
-    await expect(publicationsSection).toBeVisible();
+    // Wait for publication to be visible
+    await expect(publicationSection).toBeVisible();
     
     // Verify the specific publication title is visible
     const publicationTitle = 'Disparities in air pollution attributable mortality in the US population by race/ethnicity and sociodemographic factors';
@@ -182,16 +182,16 @@ test.describe('Regression Tests', () => {
     await expect(publication).toBeVisible();
     
     // Verify publication details are displayed
-    // Check for authors (should contain "Daniel Fridljand") - scope to publications section
-    const authors = publicationsSection.getByText('Daniel Fridljand', { exact: false });
+    // Check for authors (should contain "Daniel Fridljand") - scope to publication section
+    const authors = publicationSection.getByText('Daniel Fridljand', { exact: false });
     await expect(authors).toBeVisible();
     
-    // Check for publication date/info - scope to publications section
-    const publicationInfo = publicationsSection.getByText('Nature Medicine', { exact: false });
+    // Check for publication date/info - scope to publication section
+    const publicationInfo = publicationSection.getByText('Nature Medicine', { exact: false });
     await expect(publicationInfo).toBeVisible();
     
-    // Verify summary is present - scope to publications section
-    const summary = publicationsSection.getByText(/In the US between 2000 and 2011/i);
+    // Verify summary is present - scope to publication section
+    const summary = publicationSection.getByText(/In the US between 2000 and 2011/i);
     await expect(summary).toBeVisible();
   });
 
@@ -242,7 +242,7 @@ test.describe('Regression Tests', () => {
     // Verify markdown content includes expected sections
     expect(content).toMatch(/# Daniel Fridljand/i);
     expect(content).toMatch(/# Experience/i);
-    expect(content).toMatch(/# Publications/i);
+    expect(content).toMatch(/# Publication/i);
     expect(content).toMatch(/# Blog Posts/i);
     
     // Verify content type is markdown (check response headers)

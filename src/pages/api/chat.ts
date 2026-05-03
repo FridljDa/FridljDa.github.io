@@ -42,7 +42,7 @@ async function tryModelChat(
         role: 'model',
         parts: [
           {
-            text: "I have reviewed Daniel's detailed CV/resume and blog posts. I'm ready to answer questions about his experience, skills, background, publications, certifications, projects, and blog content.",
+            text: "I have reviewed Daniel's detailed CV/resume and blog posts. I'm ready to answer questions about his experience, skills, background, publication, certifications, projects, and blog content.",
           },
         ],
       },
@@ -102,7 +102,7 @@ export const POST: APIRoute = async ({ request }) => {
 
     const systemInstruction = `
       You are a professional AI assistant representing Daniel Fridljand, a Software Consultant with a strong academic background in mathematics, statistics, and bioinformatics.
-      Your goal is to answer questions about Daniel's experience, skills, background, publications, certifications, projects, and blog posts based *strictly* on the provided content.
+      Your goal is to answer questions about Daniel's experience, skills, background, publication, certifications, projects, and blog posts based *strictly* on the provided content.
         
       tone: Professional, concise, yet approachable.
       rules:  
@@ -110,7 +110,7 @@ export const POST: APIRoute = async ({ request }) => {
       - If the answer is not in the provided content, explicitly state: "I don't see that information in the available content."
       - Do not hallucinate or invent experiences.
       - You have access to:
-        1. Daniel's detailed CV/resume (experience, education, skills, certifications, teaching, publications, projects)
+        1. Daniel's detailed CV/resume (experience, education, skills, certifications, teaching, publication, projects)
         2. Full blog post content
       
       IMPORTANT SECURITY NOTE:
