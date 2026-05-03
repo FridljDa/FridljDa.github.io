@@ -1,0 +1,103 @@
+---
+title: "Masked Self-Attention: Constraining Information Flow"
+pubDate: 2026-05-03T00:00:00.000Z
+updatedDate: 2026-05-03T00:00:00.000Z
+tags:
+  - AI
+  - Math
+math: true
+image: /images/blog/masked-attention/featured.png
+---
+
+This post is a short follow-up to [From Kernel Regression to Self-Attention](/post/kernel-to-attention) — same notation, same setup. There we ended with full self-attention, where every position attends to every other position. That works for tasks where the whole input is observed at once. For autoregressive language modeling, it does not.
+
+This post explains why, and what to do about it.
+
+---
+
+## 1. The leakage problem
+
+A decoder-only language model is trained on next-token prediction: given tokens $\boldsymbol{x}_1, \ldots, \boldsymbol{x}_n$, it should predict $\boldsymbol{x}_{i+1}$ from the output $\boldsymbol{y}_i$ at position $i$, for every $i$.
+
+At inference time, this constraint is automatic — when generating token $i+1$, only tokens $1, \ldots, i$ exist. There is nothing to leak. At training time, the situation is different. The point of a Transformer is parallelism: we want to compute $\boldsymbol{y}_1, \ldots, \boldsymbol{y}_n$ in a single forward pass, with all targets visible. But equation (16) from the previous post says
+
+$$
+\boldsymbol{y}_i = \operatorname{Attn}\!\left(W^{(q)} \boldsymbol{x}_i,\; \left\{\left(W^{(k)} \boldsymbol{x}_j,\; W^{(v)} \boldsymbol{x}_j\right)\right\}_{j=1}^{n}\right)
+$$
+
+Position $i$ attends to *all* positions $j$, including those with $j > i$. The model can read the future and copy it into $\boldsymbol{y}_i$. Loss goes to zero; nothing has been learned.
+
+We need a way to keep the parallelism but block any flow from positions $j > i$ to position $i$.
+
+---
+
+## 2. The fix: $-\infty$ before softmax
+
+The mechanism is small. In the score for query $i$ against key $j$, replace $\tilde{a}(\boldsymbol{q}_i, \boldsymbol{k}_j)$ with $-\infty$ whenever $j > i$. After softmax, $e^{-\infty} = 0$, so those positions receive exactly zero attention weight. The remaining weights — over keys $1, \ldots, i$ — renormalize to sum to one.
+
+Concretely, this is achieved by adding a **mask matrix** $M \in \mathbb{R}^{n \times n}$ to the score matrix before softmax:
+
+$$
+M_{ij} = \begin{cases} 0 & \text{if } j \leq i \\ -\infty & \text{if } j > i \end{cases}
+$$
+
+Equation (13) from the previous post becomes
+
+$$
+\operatorname{Attn}_{\text{masked}}(Q, K, V) = \operatorname{softmax}\!\left(\frac{QK^\top}{\sqrt{d}} + M\right) V
+\tag{17}
+$$
+
+The softmax is applied row-wise. After masking, the attention matrix is lower-triangular: row $i$ has nonzero entries only in columns $1, \ldots, i$.
+
+In code, $-\infty$ is typically a large negative constant like $-10^9$, which is numerically equivalent for floating-point softmax.
+
+---
+
+## 3. What changes, what doesn't
+
+The mechanism is unchanged. Queries still come from $W^{(q)} \boldsymbol{x}$, keys from $W^{(k)} \boldsymbol{x}$, values from $W^{(v)} \boldsymbol{x}$; the dot-product score and the $\sqrt{d}$ rescaling are exactly as in [§5](/post/kernel-to-attention#5-scaling-why-divide-by-sqrtd) of the previous post. All that has changed is which scores survive the softmax.
+
+The asymmetry is worth dwelling on. Position $i$ no longer sees positions $j > i$, but position $j$ (with $j > i$) still sees position $i$. The mask makes information flow strictly forward through the sequence. Each output $\boldsymbol{y}_i$ is now a weighted average over only its own past — exactly the constraint autoregressive training requires.
+
+Parallelism is preserved. All $n$ outputs are still computed in a single matrix multiplication, just with a triangular attention pattern instead of a full one. This is what lets decoder-only Transformers train at the same speed as bidirectional ones, despite the stricter information constraint.
+
+---
+
+## 4. Padding masks
+
+A second, more mundane use of masking comes from batching. Real training batches contain sequences of different lengths. To pack them into a single tensor, shorter sequences are padded with a special token up to the length of the longest. These padding tokens carry no meaning and should not contribute to any output.
+
+The same trick handles them. Build a padding mask $M^{\text{pad}}$ where $M^{\text{pad}}_{ij} = -\infty$ whenever key $j$ is a padding token, and $0$ otherwise. Add it to the scores before softmax. In a decoder, both masks combine: $M^{\text{total}} = M^{\text{causal}} + M^{\text{pad}}$, which is still $-\infty$ wherever either is.
+
+---
+
+## 5. Encoder vs. decoder
+
+Not every model needs a causal mask. The choice depends on the task.
+
+| Model family         | Mask                  | Reason                                                          |
+|----------------------|-----------------------|-----------------------------------------------------------------|
+| BERT (encoder)       | Padding only          | Trained on masked-language-modeling; full context is allowed.   |
+| GPT (decoder)        | Causal + padding      | Trained on next-token prediction; the future must be hidden.    |
+| T5 (encoder–decoder) | Both, in their parts  | Encoder is bidirectional; decoder is causal.                    |
+
+The kernel-regression derivation in the previous post does not commit to any of these. It produces *self-attention* — the mechanism. Masking is a separate layer of constraint, applied on top, that determines what the mechanism is allowed to see.
+
+---
+
+## Summary
+
+Masked self-attention is one line on top of equation (13):
+
+$$
+\operatorname{Attn}_{\text{masked}}(Q, K, V) = \operatorname{softmax}\!\left(\frac{QK^\top}{\sqrt{d}} + M\right) V
+$$
+
+A causal mask sets entries above the diagonal to $-\infty$, blocking flow from future positions. A padding mask does the same for padding tokens. Both rely on the same identity: $e^{-\infty} = 0$, so the softmax assigns zero weight to whatever you mask out.
+
+The mechanism is unchanged. Masking only constrains information flow.
+
+---
+
+*Built on the notation and derivation in [From Kernel Regression to Self-Attention](/post/kernel-to-attention). Causal masking originates with Vaswani et al., "[Attention Is All You Need](https://arxiv.org/abs/1706.03762)", NeurIPS 2017, §3.2.3.*
