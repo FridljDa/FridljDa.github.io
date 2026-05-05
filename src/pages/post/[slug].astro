@@ -44,6 +44,7 @@ try {
 }
 
 const postUrl = `${SITE.url}/post/${slug}`;
+const postMarkdownUrl = `${SITE.url}/post/${slug}.md`;
 const postImage = post.data.image
   ? `${SITE.url}${post.data.image}`
   : `${SITE.url}/images/avatar.jpg`;
@@ -69,6 +70,7 @@ const githubEditUrl = `https://github.com/${SITE.github.owner}/${SITE.github.rep
   <script type="application/ld+json" set:html={JSON.stringify(articleSchema)} />
   
   {/* AI discoverability: Article-specific meta tags */}
+  <link rel="alternate" type="text/markdown" href={postMarkdownUrl} />
   <meta property="article:published_time" content={post.data.pubDate.toISOString()} />
   {post.data.updatedDate && (
     <meta property="article:modified_time" content={post.data.updatedDate.toISOString()} />
@@ -151,4 +153,3 @@ const githubEditUrl = `https://github.com/${SITE.github.owner}/${SITE.github.rep
     </div>
   </article>
 </Layout>
-
