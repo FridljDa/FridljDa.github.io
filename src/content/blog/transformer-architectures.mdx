@@ -12,41 +12,45 @@ This is the third in a short series. The first ([From Kernel Regression to Self-
 
 If you have ever wondered why the original Transformer paper had both an "encoder" and a "decoder," but BERT is called "encoder-only" and GPT is called "decoder-only" — this post is for you.
 
----
-
-## 1. The original Transformer
-
-The original Transformer ([Vaswani et al., 2017](https://arxiv.org/abs/1706.03762)) was built for machine translation. It has two halves: an *encoder* that reads the source sentence (English, say), and a *decoder* that generates the target sentence (German), one token at a time.
-
-![Original Transformer encoder-decoder architecture](/images/blog/transformer-architectures/transformer.png)
-
-All three attention layers in the diagram are mechanisms covered in the [previous post](/post/masks-and-cross-attention): the encoder uses unmasked self-attention (every source position attends to every other), the decoder uses causal-masked self-attention (each target position attends only to its past), and the cross-attention layer inside each decoder block reads keys and values from the encoder's final output — letting each target token attend to every source token. What is new here is the *architecture*: how those mechanisms get composed into a working translation model.
-
-The encoder and decoder are each a stack of identical blocks. In the original paper, $N = 6$ for both.
+Historically, the encoder–decoder came first and the others were carved out of it. Conceptually, it is easier to go the other way: start with the simplest stack and add one mechanism at a time. So we will build up from BERT to GPT to the original Transformer.
 
 ---
 
-## 2. Encoder-only: BERT and friends
+## 1. Encoder-only: BERT and friends
 
-If your task is *understanding* — sentence classification, named entity recognition, embedding generation — you do not need to generate text. You just need a contextualized representation of every input token. Drop the decoder; keep the encoder.
+The simplest Transformer architecture is a single stack of identical blocks, each containing self-attention and a feed-forward network. No mask, no cross-attention, no second stack.
 
 ![Encoder-only transformer architecture](/images/blog/transformer-architectures/encoder.png)
 
-This is BERT ([Devlin et al., 2018](https://arxiv.org/abs/1810.04805)) and its successors — RoBERTa, DeBERTa, ModernBERT. Without a decoder there is no autoregressive generation, so there is no need for a causal mask. Every position attends to every other position. Useful, since classifying a word benefits from seeing what comes after it as well as before.
+This is BERT ([Devlin et al., 2018](https://arxiv.org/abs/1810.04805)) and its successors — RoBERTa, DeBERTa, ModernBERT. Every position attends to every other position, in both directions. The output is a contextualized vector for each input token.
+
+Bidirectional attention is exactly what you want for *understanding* — sentence classification, named entity recognition, embedding generation. Classifying a word benefits from seeing what comes after it as well as before. There is no generation here; the model produces representations, not tokens.
 
 ---
 
-## 3. Decoder-only: GPT, Llama, Claude
+## 2. Decoder-only: GPT, Llama, Claude
 
-If your task is *open-ended generation* — chat, completion, code — you only need to produce tokens one at a time, each conditioned on the past. Keep the decoder side; drop the encoder.
+Now add one mechanism: a causal mask on the self-attention layer.
 
 ![Decoder-only transformer architecture](/images/blog/transformer-architectures/decoder.png)
 
-Notice what is *not* there: cross-attention. With no encoder, there is nothing to cross-attend to, so the cross-attention layer is dropped entirely. What is left in each block is just masked self-attention and a feed-forward network.
+The architecture is otherwise identical to encoder-only: one stack of blocks, each with self-attention and a feed-forward network. The only difference is that each position can now attend only to itself and earlier positions — the future is hidden.
 
-This is what "decoder-only" means in practice. The name is slightly misleading: what made the original decoder a *decoder* was its cross-attention layer, and decoder-only models do not have it. A more honest name would be "causal-masked Transformer." But the name stuck because, like the original decoder, these models generate autoregressively — they emit tokens left to right, conditioning each on what has already been produced.
+That single change unlocks *open-ended generation*. Because no position depends on future tokens, the model can be trained to predict the next token at every position in parallel, and at inference time it can emit one token at a time, feeding each output back as input. GPT, Llama, Mistral, and Claude are all built this way.
 
-GPT, Llama, Mistral, and Claude are all decoder-only. The architecture won because most useful tasks — coding, writing, conversation, reasoning — can be framed as next-token prediction, and decoder-only models scale cleanly without the encoder–decoder split.
+These models are called "decoder-only," for reasons that will make more sense in the next section. The name is a bit of a historical accident.
+
+---
+
+## 3. Encoder–decoder: the original Transformer
+
+The original Transformer ([Vaswani et al., 2017](https://arxiv.org/abs/1706.03762)) was built for machine translation, where you have a clearly distinct input (an English sentence) and output (its German translation). To handle that, it combines both of the stacks above and adds one more mechanism — cross-attention — to bridge them.
+
+![Original Transformer encoder-decoder architecture](/images/blog/transformer-architectures/transformer.png)
+
+The left stack is exactly the encoder-only architecture from §1: bidirectional self-attention over the source sentence. The right stack is almost the decoder-only architecture from §2: causal-masked self-attention over the target sentence so far. The new piece is the cross-attention layer inside each block of the right stack, which lets each target position attend to every source position by reading keys and values from the encoder's final output. In the original paper, both stacks have $N = 6$ blocks.
+
+This is also where the naming finally clicks. *That* cross-attention layer — the bridge from the right stack to the left — is what made the original decoder a decoder. The "decoder-only" models from §2 do not have it; with no encoder, there is nothing to cross-attend to. A more honest name would be "causal-masked Transformer," but "decoder-only" stuck because these models, like the original decoder, generate autoregressively — emitting tokens left to right, conditioning each on what has already been produced.
 
 ---
 
@@ -69,8 +73,8 @@ A practical note: encoder–decoder models like T5 ([Raffel et al., 2019](https:
 Self-attention is the *mechanism*. The three Transformer families are different ways to stack it.
 
 - **Encoder-only** uses bidirectional self-attention. Everything sees everything.
-- **Decoder-only** uses causal-masked self-attention. The future is hidden.
-- **Encoder–decoder** uses both, plus a cross-attention bridge from decoder to encoder.
+- **Decoder-only** adds a causal mask. The future is hidden.
+- **Encoder–decoder** adds a second stack and a cross-attention bridge between them.
 
 In all three, the underlying attention layer is the same scaled-dot-product self-attention from [the kernel regression derivation](/post/kernel-to-attention). The architectural differences are entirely about *which positions can see which* — controlled by masks and by which sequence each query reads from.
 
