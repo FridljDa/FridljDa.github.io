@@ -1,0 +1,21 @@
+# Daniel Fridljand
+
+> Personal website and technical blog by Daniel Fridljand.
+
+## Preferred machine-readable endpoints
+
+- Index: https://danielfridljand.de/index.md
+- Blog markdown pattern: https://danielfridljand.de/post/<slug>.md
+- Blog HTML pattern: https://danielfridljand.de/post/<slug>
+- Sitemap: https://danielfridljand.de/sitemap.xml
+
+## Notes for agents
+
+- Prefer markdown endpoints for extraction and summarization.
+- Use HTML endpoints when rendered media or interactive content context is needed.
+- Content language is primarily English.
+
+## License and usage
+
+- Unless otherwise noted, content is copyright Daniel Fridljand.
+- Quote with attribution and link to the canonical URL.

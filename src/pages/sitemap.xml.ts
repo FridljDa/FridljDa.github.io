@@ -21,11 +21,20 @@ export const GET: APIRoute = async () => {
     .sort((a: CollectionEntry<'blog'>, b: CollectionEntry<'blog'>) => b.data.pubDate.getTime() - a.data.pubDate.getTime())
     .map((post: CollectionEntry<'blog'>) => {
       const lastmod = post.data.updatedDate || post.data.pubDate;
+      const htmlUrl = `${SITE.url}/post/${post.id}`;
+      const markdownUrl = `${SITE.url}/post/${post.id}.md`;
+      const lastModified = lastmod.toISOString().split('T')[0];
       return `  <url>
-    <loc>${SITE.url}/post/${post.id}</loc>
-    <lastmod>${lastmod.toISOString().split('T')[0]}</lastmod>
+    <loc>${htmlUrl}</loc>
+    <lastmod>${lastModified}</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>${markdownUrl}</loc>
+    <lastmod>${lastModified}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
   </url>`;
     })
     .join('\n')}
@@ -37,4 +46,3 @@ export const GET: APIRoute = async () => {
     },
   });
 };
-
