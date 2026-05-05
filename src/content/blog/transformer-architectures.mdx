@@ -18,27 +18,7 @@ If you have ever wondered why the original Transformer paper had both an "encode
 
 The original Transformer ([Vaswani et al., 2017](https://arxiv.org/abs/1706.03762)) was built for machine translation. It has two halves: an *encoder* that reads the source sentence (English, say), and a *decoder* that generates the target sentence (German), one token at a time.
 
-```mermaid
-flowchart TD
-    SRC([Source tokens\nthe cat sat])
-    TGT([Target tokens so far\ndie Katze])
-
-    subgraph E ["Encoder block, stacked N times"]
-        E1[Self-attention\nbidirectional]
-        E1 --> E2[Feed-forward]
-    end
-
-    subgraph D ["Decoder block, stacked N times"]
-        D1[Self-attention\ncausal mask]
-        D1 --> D2[Cross-attention]
-        D2 --> D3[Feed-forward]
-    end
-
-    SRC --> E1
-    TGT --> D1
-    E -->|K, V to cross-attention| D
-    D3 --> OUT([Next target token\nsaß])
-```
+![Original Transformer encoder-decoder architecture](/images/blog/transformer-architectures/transformer.png)
 
 All three attention layers in the diagram are mechanisms covered in the [previous post](/post/masks-and-cross-attention): the encoder uses unmasked self-attention (every source position attends to every other), the decoder uses causal-masked self-attention (each target position attends only to its past), and the cross-attention layer inside each decoder block reads keys and values from the encoder's final output — letting each target token attend to every source token. What is new here is the *architecture*: how those mechanisms get composed into a working translation model.
 
@@ -50,18 +30,7 @@ The encoder and decoder are each a stack of identical blocks. In the original pa
 
 If your task is *understanding* — sentence classification, named entity recognition, embedding generation — you do not need to generate text. You just need a contextualized representation of every input token. Drop the decoder; keep the encoder.
 
-```mermaid
-flowchart TD
-    IN([Input tokens])
-
-    subgraph E ["Encoder block, stacked N times"]
-        E1[Self-attention\nbidirectional]
-        E1 --> E2[Feed-forward]
-    end
-
-    IN --> E1
-    E2 --> OUT([Contextualized representations,\none vector per token])
-```
+![Encoder-only transformer architecture](/images/blog/transformer-architectures/encoder.png)
 
 This is BERT ([Devlin et al., 2018](https://arxiv.org/abs/1810.04805)) and its successors — RoBERTa, DeBERTa, ModernBERT. Without a decoder there is no autoregressive generation, so there is no need for a causal mask. Every position attends to every other position. Useful, since classifying a word benefits from seeing what comes after it as well as before.
 
@@ -71,18 +40,7 @@ This is BERT ([Devlin et al., 2018](https://arxiv.org/abs/1810.04805)) and its s
 
 If your task is *open-ended generation* — chat, completion, code — you only need to produce tokens one at a time, each conditioned on the past. Keep the decoder side; drop the encoder.
 
-```mermaid
-flowchart TD
-    IN([Previous tokens])
-
-    subgraph D ["Decoder block, stacked N times"]
-        D1[Self-attention\ncausal mask]
-        D1 --> D2[Feed-forward]
-    end
-
-    IN --> D1
-    D2 --> OUT([Next-token prediction])
-```
+![Decoder-only transformer architecture](/images/blog/transformer-architectures/decoder.png)
 
 Notice what is *not* there: cross-attention. With no encoder, there is nothing to cross-attend to, so the cross-attention layer is dropped entirely. What is left in each block is just masked self-attention and a feed-forward network.
 
