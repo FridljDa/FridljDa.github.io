@@ -1,0 +1,58 @@
+---
+title: "On the Future of Pull Requests in the Age of Agentic Coding"
+pubDate: 2026-05-08T00:00:00.000Z
+updatedDate: 2026-05-08T00:00:00.000Z
+tags:
+  - AI
+  - Software Engineering
+  - Agentic Coding
+image: /images/blog/future-of-pull-requests/featured.png
+---
+
+Imagine the following setup:
+
+- You have a decent LLM.
+- You have a good agentic coding harness on top of it.
+- Every pull request that gets opened automatically triggers a review pass by AI agents. Those reviewers feed their comments back into the agentic harness, which iterates on the code — say, 30 rounds of back-and-forth — fixing clear mistakes and tightening obvious rough edges.
+- You have a solid test suite, type checks, linters, and the usual guardrails in place.
+
+None of this is hypothetical. Each of these pieces is technologically possible today, and repositories across the industry are actively being migrated toward exactly this kind of setup.
+
+One caveat to be honest about up front: whether the iterative loop actually closes reliably — whether the harness in fact catches the small stuff — is itself a frontier problem. Agents today still miss obvious bugs ten iterations in. The argument that follows is conditional on that gap closing. If you do not believe it ever will, none of what follows will apply.
+
+Even after all of that, you still need a human to approve the merge. But the point of that human review is no longer to catch typos, missing null checks, or a forgotten edge case in a helper function. Those are exactly the things the loop above already grinds down to zero. The remaining question is more abstract: does this change make sense? Is the architecture sound? Did the agent pick a path that locks us in somewhere we don't want to be locked in?
+
+## The current PR view is for a workflow we no longer have
+
+When you open a pull request on GitHub or Bitbucket today, you see a diff. You see lines of code. You can leave inline comments on those lines.
+
+That UI was designed for a world where a human wrote those lines and another human was the first set of careful eyes on them. In that world it makes sense for a reviewer to scrutinize each line: maybe there is an off-by-one, maybe a variable should be renamed, maybe this branch should also handle the empty case.
+
+But it is unfair — and not very useful — to expect a human reviewer to be the *first* careful reader of code in 2026. It does not scale, and it does not really match how the code got there in the first place. The diff is the output. The interesting object is the *process* that produced it.
+
+## Attach the conversation, not just the diff
+
+Peter Steinberger, the founder of OpenClaw, has been arguing publicly for a while that the right unit of review in the age of agentic coding is no longer the diff but the prompt that produced it — what he calls a "prompt request" rather than a pull request ([Lex Fridman interview](https://lexfridman.com/peter-steinberger-transcript/)).
+
+The direction is right. The unit is just slightly too small. A single prompt captures the developer's first attempt to articulate intent; it does not capture what actually happened during the work — the corrections, the tool failures, the plans the agent had to revise.
+
+There is also a second assumption hiding in Steinberger's framing: that the reviewer can just re-run the prompt themselves to see what falls out. That works for him because he is reviewing contributions to his own project from a setup with effectively unlimited compute. It does not generalize. The typical reviewer — a teammate inside a company, or an open-source maintainer triaging contributions — does not have that surplus over the author, and is reviewing far more PRs than any single author writes. Re-executing every prompt does not scale on the reviewer's side of the table.
+
+Here is the rough proposal.
+
+Attach the conversation history with the agentic coding harness to each commit. Every prompt, every tool call, every plan the agent considered and rejected, every test run and how the output changed the next step — all of it is an artifact you keep alongside the code.
+
+When the pull request is opened, a separate LLM agent reads those conversations across all the commits in the PR and produces a summary of the important decisions: which architectural choices were made, which alternatives were considered, which assumptions were taken on trust, which corners of the problem the agent never explored.
+
+The reviewer's job then becomes one of two things, depending on how deep they want to go:
+
+1. Read the high-level summary and judge whether the agent considered the right cases and made the right calls at the points where it had to choose.
+2. Drop into the underlying conversation history at any point where the summary is not convincing.
+
+You approve or reject based on the *reasoning trace*, not the diff.
+
+This is not entirely speculative. [Entire](https://entire.io/?referrer=luma) is building exactly this primitive: a CLI that hooks into your git workflow, captures the agent session on every push, and indexes those sessions alongside commits in the repo itself rather than in some external service. They support Claude Code, Cursor, Gemini CLI, OpenCode, GitHub Copilot CLI, and others. Their framing today is more about reading the history of *why* code was written a certain way — but the same plumbing is exactly what a PR review built around reasoning traces would sit on top of.
+
+One more thing worth being honest about: reasoning traces are not always faithful. ML research has repeatedly shown that an agent's chain of thought often does not reflect what actually drove its decisions — the trace is closer to plausible narrative than to a transcript of the underlying computation. So "approve based on the trace" is doing some work it cannot fully cash out today. The bet is that the *artifacts* in the trace — prompts, tool calls, test outputs, plans considered and discarded — are still informative enough for a reviewer to spot when the agent skipped something that mattered, even if its stated reasoning is partly post-hoc. That is a weaker claim than "the trace tells you what really happened," but it is the one this proposal actually rests on.
+
+The diff is not going away. Sometimes you really do want to look at the code. But it should stop being the thing the review starts from. The conversation should be.
