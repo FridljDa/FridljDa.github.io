@@ -49,6 +49,8 @@ You approve or reject based on the *reasoning trace*, not the diff.
 
 ### Already being built
 
-This is not entirely speculative. [Entire](https://entire.io/?referrer=luma) is building exactly this primitive: a CLI that hooks into your git workflow, captures the agent session on every push, and indexes those sessions alongside commits in the repo itself rather than in some external service. They support Claude Code, Cursor, Gemini CLI, OpenCode, GitHub Copilot CLI, and others. Their framing today is more about reading the history of *why* code was written a certain way — but the same plumbing is exactly what a PR review built around reasoning traces would sit on top of.
+This is not entirely speculative. I am borrowing the concrete shape of the idea from Thomas Dohmke, founder and CEO of [Entire](https://entire.io/), who explained it at the ["Beyond SaaS: The Agent-Native Future of Software"](https://luma.com/ux5dhzw5?tk=d6E4Eo) event in Munich.
+
+Entire is building the missing primitive: a CLI that hooks into your git workflow, captures the agent session on every push, and indexes those sessions alongside commits in the repo itself rather than in some external service. They support Claude Code, Cursor, Gemini CLI, OpenCode, GitHub Copilot CLI, and others. Entire frames this today as a way to read the history of *why* code was written a certain way. But the same plumbing is exactly what a PR review built around reasoning traces would sit on top of.
 
 The diff is not going away. Sometimes you really do want to look at the code. But it should stop being the thing the review starts from. The conversation should be.
