@@ -20,7 +20,7 @@ None of this is hypothetical. Each of these pieces is technologically possible t
 
 One caveat to be honest about up front: whether the iterative loop actually closes reliably — whether the harness in fact catches the small stuff — is itself a frontier problem. Agents today still miss obvious bugs ten iterations in. The argument that follows is conditional on that gap closing. If you do not believe it ever will, none of what follows will apply.
 
-Even after all of that, you still need a human to approve the merge. But the point of that human review is no longer to catch typos, missing null checks, or a forgotten edge case in a helper function. Those are exactly the things the loop above already grinds down to zero. The remaining question is more abstract: does this change make sense? Is the architecture sound? Did the agent pick a path that locks us in somewhere we don't want to be locked in?
+Even with all of that, you still need a human to merge. But the merge is no longer about inspecting code. It is about trust — that this change belongs in the codebase, that the architecture is sound, that the agent did not pick a path you cannot walk back from.
 
 ## The current PR view is for a workflow we no longer have
 
@@ -28,11 +28,13 @@ GitHub's PR view is a diff with inline comments. That UI was built for a world w
 
 ## Attach the conversation, not just the diff
 
+### Steinberger's "prompt request"
+
 Peter Steinberger, the founder of OpenClaw, has been arguing publicly for a while that the right unit of review in the age of agentic coding is no longer the diff but the prompt that produced it — what he calls a "prompt request" rather than a pull request ([Lex Fridman interview](https://lexfridman.com/peter-steinberger-transcript/)).
 
 The direction is right, but it assumes the reviewer can simply re-run the prompt themselves. That works for Steinberger because he is reviewing contributions to his own project from a setup with effectively unlimited compute. It does not generalize. A teammate inside a company, or an open-source maintainer triaging contributions, rarely has that surplus over the author — and is reviewing far more PRs than any single author writes.
 
-Here is the rough proposal.
+### The proposal
 
 Attach the conversation history with the agentic coding harness to each commit. Every prompt, every tool call, every plan the agent considered and rejected, every test run and how the output changed the next step — all of it is an artifact you keep alongside the code.
 
@@ -45,8 +47,8 @@ The reviewer's job then becomes one of two things, depending on how deep they wa
 
 You approve or reject based on the *reasoning trace*, not the diff.
 
-This is not entirely speculative. [Entire](https://entire.io/?referrer=luma) is building exactly this primitive: a CLI that hooks into your git workflow, captures the agent session on every push, and indexes those sessions alongside commits in the repo itself rather than in some external service. They support Claude Code, Cursor, Gemini CLI, OpenCode, GitHub Copilot CLI, and others. Their framing today is more about reading the history of *why* code was written a certain way — but the same plumbing is exactly what a PR review built around reasoning traces would sit on top of.
+### Already being built
 
-One more thing worth being honest about: reasoning traces are not always faithful. ML research has repeatedly shown that an agent's chain of thought often does not reflect what actually drove its decisions — the trace is closer to plausible narrative than to a transcript of the underlying computation. So "approve based on the trace" is doing some work it cannot fully cash out today. The bet is that the *artifacts* in the trace — prompts, tool calls, test outputs, plans considered and discarded — are still informative enough for a reviewer to spot when the agent skipped something that mattered, even if its stated reasoning is partly post-hoc. That is a weaker claim than "the trace tells you what really happened," but it is the one this proposal actually rests on.
+This is not entirely speculative. [Entire](https://entire.io/?referrer=luma) is building exactly this primitive: a CLI that hooks into your git workflow, captures the agent session on every push, and indexes those sessions alongside commits in the repo itself rather than in some external service. They support Claude Code, Cursor, Gemini CLI, OpenCode, GitHub Copilot CLI, and others. Their framing today is more about reading the history of *why* code was written a certain way — but the same plumbing is exactly what a PR review built around reasoning traces would sit on top of.
 
 The diff is not going away. Sometimes you really do want to look at the code. But it should stop being the thing the review starts from. The conversation should be.
