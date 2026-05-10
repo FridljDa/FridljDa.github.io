@@ -9,7 +9,7 @@ tags:
 image: /images/blog/future-of-pull-requests/featured.png
 ---
 
-I recently attended a talk by Thomas Dohmke, former CEO of GitHub, founder and CEO of [Entire](https://entire.io/), at the ["Beyond SaaS: The Agent-Native Future of Software"](https://luma.com/ux5dhzw5?tk=d6E4Eo) event in Munich. One point he raised stuck with me, and because I have not seen it publicly documented elsewhere, I want to describe and build on it here.
+Several people have been arguing publicly that pull request review breaks down when an agent wrote the code. Thomas Dohmke makes the case when pitching Entire. Peter Steinberger has been pushing a "prompt request" framing. CodeRabbit has weighed in on the prompt-vs-PR debate. Most of this discussion either argues that a new primitive is needed (without specifying the UX) or proposes reviewing the prompt upstream of code generation. This post is about the third option: what the downstream review surface should look like once the agent transcript is part of it.
 
 Imagine the following setup:
 
