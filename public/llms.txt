@@ -5,12 +5,14 @@
 ## Preferred machine-readable endpoints
 
 - Index: https://danielfridljand.de/index.md
+- CV YAML: https://danielfridljand.de/uploads/cv.yaml
 - Blog markdown pattern: https://danielfridljand.de/post/<slug>.md
 - Blog HTML pattern: https://danielfridljand.de/post/<slug>
 - Sitemap: https://danielfridljand.de/sitemap.xml
 
 ## Notes for agents
 
+- The CV YAML endpoint is the canonical machine-readable resume representation.
 - Prefer markdown endpoints for extraction and summarization.
 - Use HTML endpoints when rendered media or interactive content context is needed.
 - Content language is primarily English.
