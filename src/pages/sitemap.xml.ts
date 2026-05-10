@@ -5,6 +5,8 @@ import { SITE } from '../data/site';
 
 export const GET: APIRoute = async () => {
   const blogPosts = await getCollection('blog');
+  const today = new Date().toISOString().split('T')[0];
+  const cvYamlUrl = `${SITE.url}/uploads/cv.yaml`;
   
   // Generate sitemap XML
   const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
@@ -12,9 +14,16 @@ export const GET: APIRoute = async () => {
   <!-- AI discoverability: Home page -->
   <url>
     <loc>${SITE.url}</loc>
-    <lastmod>${new Date().toISOString().split('T')[0]}</lastmod>
+    <lastmod>${today}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
+  </url>
+  <!-- AI discoverability: Machine-readable CV -->
+  <url>
+    <loc>${cvYamlUrl}</loc>
+    <lastmod>${today}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
   </url>
   <!-- AI discoverability: Blog posts -->
   ${blogPosts
