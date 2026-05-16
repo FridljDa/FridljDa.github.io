@@ -94,7 +94,7 @@ We use a few patterns consistently across groups:
 | Automatic alphanumeric variants | `ABCO1234` is stored as `[ABCO1234, ABC01234]` to handle 0/O, 1/I, 5/S confusions |
 | Bias toward false positives | Easier to filter spurious matches downstream than to recover lost signal |
 
-The last one is worth dwelling on. Throughout this pipeline we would rather over-extract than under-extract: the fetch step is built to assume that some of what came out of extraction is wrong, and to handle that with scoring rather than by trusting any single field.
+Throughout this pipeline we would rather over-extract than under-extract: the fetch step is built to assume that some of what came out of extraction is wrong, and to handle that with scoring rather than by trusting any single field.
 
 For our running example, after extraction we have something like:
 
