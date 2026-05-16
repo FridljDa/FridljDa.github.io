@@ -19,11 +19,14 @@ The pipeline has four steps, run as a DAG:
 flowchart LR
     INPUT([Customer message<br/>+ attachments])
     INPUT --> S1[🤖 Intent recognition]
-    S1 --> S2[🤖 Information extraction]
+    INPUT --> S2[🤖 Information extraction]
     S2 --> S3[⚙️ Fetch]
+    S1 --> S4[Plan generation]
     S3 --> S4[Plan generation]
     S4 --> OUT([Reply + tool calls])
 ```
+
+Intent recognition and information extraction have no data dependency on each other, so they run in parallel. Fetch depends only on extraction, and plan generation pulls together the intent and the fetched records.
 
 We will trace one message through all four steps. The running example throughout this post is:
 
@@ -72,7 +75,7 @@ For our running example, the parent intent comes out as **account access** and t
 
 ## Step 2: Information extraction
 
-Once we know the intent, we extract the structured information the downstream steps will need.
+In parallel with intent recognition, we extract the structured information the downstream steps will need.
 
 We organise extracted fields into **groups** — small clusters of related fields that get pulled out together in a single LLM call. One group per call, but groups run in parallel. For our running example, the relevant groups are a `Personen` group (names) and a `Konto` group (account identifiers, branch). Each group has its own Pydantic output model and its own prompt, with Pydantic AI handling validation and retry on the typed output — see [the Pydantic AI post](https://danielfridljand.de/post/pydantic-ai-type-safe-hybrid-workflows) for how that wiring works.
 
