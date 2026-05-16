@@ -152,7 +152,7 @@ For our running example, suppose the queries return the following hits (simplifi
 
 If no record had cleared the threshold, fetch would have returned an empty result, and the plan step would handle that explicitly — typically by asking the customer for more information.
 
-The whole step is plain code. There is no LLM call here at all. It is also expressible in entity-resolution terms (a simplified probabilistic record linkage), but the mental model that matters in practice is just: fan out, sum weighted hits, threshold.
+The whole step is plain code. There is no LLM call here at all.
 
 ---
 
