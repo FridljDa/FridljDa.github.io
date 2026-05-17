@@ -1,0 +1,149 @@
+---
+title: "The Self-Improvement Loop I'm Not Building Yet"
+description: "I built a tight improvement loop for a production support automation, with a coding agent that implements fixes I direct it at. Removing myself from the middle of that loop is tempting and probably premature. A look at what the literature does and doesn't say."
+date: 2026-05-17
+draft: true
+---
+
+# The Self-Improvement Loop I'm Not Building Yet
+
+In [Architecture of a First-Level Support Automation](https://danielfridljand.de/post/first-level-support-automation) I described a four-step pipeline for handling customer support messages. That post was about the architecture. This one is about how the system gets better over time, and specifically about a piece of that loop I keep being tempted to automate and keep deciding not to.
+
+The tempting question is: can the system improve itself from stakeholder feedback, without me in the middle? My current answer is no, not yet, and not for the reasons I expected. The reasons are interesting enough that I want to write them down.
+
+A note on framing before I start. The pipeline in that post happens to use LLMs in some steps. But the improvement loop I am discussing here is not really about LLMs. It is about whether a deterministic workflow system — code with branches, weights, prompts, and templates that a human maintains — can be modified by an agent based on stakeholder rejection feedback. The architecture I have could in principle be [almost fully deterministic](https://danielfridljand.de/post/workflow-vs-agent#3-the-hybrid-approach-extraction-agent--code-workflow); the LLM calls in steps 1, 2 and the "other" leaves are doing concrete classification and extraction work, not improving the system itself. The self-improvement question is the same either way: can software automatically modify itself based on a stream of rejections and natural-language complaints from non-engineer stakeholders?
+
+---
+
+
+## [The loop I actually have](#the-loop-i-actually-have)
+
+The deployment was constrained: no expensive integration into the ticketing system, so we ran it as a shadow deployment. Customers reach out, the ticketing system creates a ticket, the human support staff manually copy-pastes the conversation history and attachments into a small interface, the pipeline produces a proposed reply and tool calls, and the support agent either accepts the suggestion or rejects it with a comment.
+
+That gives me a stream of (ticket, proposed plan, rejection comment) tuples. The improvement loop on top of it looks like this:
+
+1. I monitor the rejected tickets and read the support-staff comments.
+2. For each rejection I think we should fix, I add my own comment with what I think the correct fix is — sometimes the recipe is clear (extend an "other" intent into a new sub-intent, adjust a fetch weight, add a plan-tree branch), sometimes not. For the clear ones I increasingly use a small skill that proposes the fix-hint from the rejection.
+3. I tag those tickets with something like *fix clear, has to be implemented*.
+4. I point my coding agent at the tagged tickets and it implements the fixes against the pipeline code.
+
+The whole thing is held together by the fact that every step of the pipeline is independently evaluable — see the evals section of the support-automation post. A fix on the extraction group has its own eval. A new plan-tree leaf gets a unit test. The coding agent's PR only lands if those don't regress.
+
+This works. It is much faster than me writing all the fixes myself, and it concentrates my attention on the parts that need judgment — reading the rejections and deciding what the fix should look like.
+
+---
+
+
+## [The tempting next step](#the-tempting-next-step)
+
+The obvious extension is to remove me from the middle. Concretely:
+
+- Observe the rejected ticket and the support-staff comment automatically.
+- Have an LLM read the comment and produce the *fix-hint* that I would have written.
+- Hand that to the coding agent, which implements it as today.
+- Possibly land the PR automatically if all the per-step evals pass.
+
+If this worked end-to-end, the system would scale linearly with rejection volume rather than with my attention. That is the promise. It is also where I get nervous.
+
+---
+
+
+## [Why I am framing this as a software question, not an AI question](#why-i-am-framing-this-as-a-software-question-not-an-ai-question)
+
+The "agent reads a comment and writes a fix" framing makes this sound like an AI capability question. I think the more honest framing is older and broader: **can a software system modify itself based on free-text feedback from non-engineer stakeholders?**
+
+Before LLMs, the answer was obviously no, and we had a whole organisational apparatus for handling it: bug reports, triage meetings, product managers translating customer complaints into specifications, tech leads deciding which ones to take. That apparatus exists because the translation from "this thing the system did was wrong" to "this is the line of code that should change" is hard and judgment-laden. The question now is whether an LLM-plus-coding-agent stack can collapse that apparatus into a loop.
+
+The LLM is the mechanism. The hard problem is the same one product managers solve.
+
+---
+
+
+## [What evidence I could find that it can work](#what-evidence-i-could-find-that-it-can-work)
+
+The closest thing in the published literature to my setup is Airbnb's [Agent-in-the-Loop](https://arxiv.org/abs/2510.06674) paper from late 2025. They run a continuous improvement pipeline for an LLM-based customer support system, in production, with around 40 US-based agents over more than 5,000 cases. Annotations from those agents feed back into model retraining. Their headline numbers are real: retrieval recall@75 up 11.7%, precision@8 up 14.8%, generation helpfulness up 8.4%, agent adoption up 4.5%, with retraining cycles compressed from months to weeks.
+
+That sounds like exactly what I want. It is not. Three differences matter.
+
+First, AITL collects **structured** annotations (pairwise preferences, adoption rationales, knowledge-relevance scores, missing-knowledge identification) through a custom UI, not free-text rejection comments. The signal is much narrower than what my support staff write.
+
+Second, the thing that gets updated is **model weights**, via preference optimisation (ORPO) on retrieval, ranking, and generation models. Nothing in the deterministic plan tree or the fetch weights moves. My pipeline does not have model weights to update — the LLMs in it are off-the-shelf, and the parts that would actually need to change in response to a rejection are code.
+
+Third, even with structured annotations and a tight pipeline, they keep humans in two places: real-time annotation of missing knowledge (which they find specifically benefits from immediate human attention, +12pp agreement over delayed) and verification of annotation quality. The system is not closed.
+
+So AITL is evidence that a feedback flywheel for a customer-support LLM system can produce measurable production gains. It is not evidence that the specific translation step I am asking about — free-text rejection comment to code change — works without a human in it.
+
+There is also a body of more speculative work suggesting that natural-language critique can drive improvement when the critique is good. The [Critique-GRPO](https://arxiv.org/abs/2506.03106) paper argues, with some theoretical backing, that granular natural-language feedback enables learning trajectories unreachable from scalar reward alone. Read carefully, this is an argument *for* the value of the fix-hint comments I write — and against assuming raw rejection signal is enough on its own. The [Critique-Guided Improvement](https://arxiv.org/abs/2503.16024) paper finds that even small specifically-trained critic models surpass GPT-4 in feedback quality, which again is an argument that producing good critiques is a non-trivial job in its own right.
+
+---
+
+
+## [What evidence I could find that it will not work](#what-evidence-i-could-find-that-it-will-not-work)
+
+The most directly relevant negative result is [Uncovering Systematic Failures of LLMs in Verifying Code Against Natural Language Specifications](https://arxiv.org/abs/2508.12358) from August 2025. They test whether LLMs can reliably judge whether code satisfies a natural-language requirement, which is roughly the cognitive step my proposed automation would have to perform on every rejection. They find frequent misclassification of correct code as failing to meet requirements, and — uncomfortably — that more elaborate prompting with explanations and proposed corrections makes the misjudgment rate higher, not lower. This is the closest thing to a direct experiment on the step I am worried about, and the result is negative.
+
+The classical reference here is [Large Language Models Cannot Self-Correct Reasoning Yet](https://arxiv.org/abs/2310.01798) (Huang et al., ICLR 2024). The paper specifically studies *intrinsic* self-correction — refining outputs without external feedback — and finds that performance often degrades after a self-correction step. This is not exactly my situation, because in my loop the external feedback is real: the support staff comment is genuine signal from outside the model. But the deeper finding that the paper articulates, and that the [2024 critical survey](https://arxiv.org/abs/2406.01297) develops further, is that LLMs anchor on their initial outputs in a way that vague external prompting does not break. A rejection like "this isn't right, the customer wanted X" is the kind of vague external signal that does not, on the published evidence, reliably break the anchor.
+
+The [µFiX paper](https://arxiv.org/abs/2309.16120) and follow-on work on feedback-based code repair add a complementary observation: feedback-driven prompting needs to start from reasonably-good code, with reasonably-specific error messages, to converge. Vague feedback applied to mediocre code tends to ratchet sideways rather than improve. My pipeline code is not mediocre, but the feedback from support staff is exactly the kind of free-text complaint that the paper warns against trying to act on directly.
+
+The synthesis of these papers, taken seriously, is that the translation from a vague rejection to a specific code change is exactly the step where current systems systematically fail. Critique-GRPO and CGI then tell us the way out — produce highly granular, actionable critiques — but observe that this requires a specifically engineered critic. Out-of-the-box LLM-as-critic is not reliable.
+
+---
+
+
+## [What I could not find](#what-i-could-not-find)
+
+I want to be explicit about the limits of what I read, because the temptation when sketching a literature review like this is to give the impression of a settled question. It is not settled.
+
+I could not find a published study that runs exactly the loop I am considering, end-to-end, with measured production outcomes. That is: customer interacts with system, stakeholder rejects with free-text comment, LLM translates that comment into a code-change specification for a workflow system, coding agent implements the change, system updates over many iterations with measurable effect on downstream quality. The closest piece is AITL, and as discussed it is materially different in three ways.
+
+There are partial pieces that come close. There is production-scale work on observing coding-agent trajectories and intervening live ([Wink](https://arxiv.org/abs/2602.17037)). There are research-scale demonstrations of agents editing their own codebase against benchmarks ([A Self-Improving Coding Agent](https://arxiv.org/abs/2504.15228)). There is the OpenAI cookbook on self-evolving agents. None of these closes the specific loop on a deterministic workflow system, on real stakeholder feedback, with measured improvement.
+
+It is entirely possible that frontier labs and large companies have run this loop internally and not published. It is also possible nobody has, because in the cases where it would work the result is unsurprising and in the cases where it would not work the result is embarrassing.
+
+What this means for me, practically, is that if I built it I would be in roughly uncharted territory empirically. The components have evidence. The composition does not. I should not assume the composition inherits the optimism of the best component.
+
+---
+
+
+## [The two roles I am playing, separately](#the-two-roles-i-am-playing-separately)
+
+A useful exercise has been to ask: what am I, the human, actually doing in this loop? There are two roles, and they have different prospects for automation.
+
+**Role one: translation.** Reading a rejection comment, sometimes a short cryptic one, and turning it into a fix-hint that a coding agent can act on. This is the role the 2508.12358 paper directly suggests current models fail at. It is also, per Critique-GRPO, the role where the *granularity* of the resulting fix-hint determines whether the downstream coding agent can converge at all. My fix-hints, when I write them carefully, are doing real load-bearing work — they take a complaint and turn it into a specification. Replacing me here means replacing the step the literature flags as the bottleneck.
+
+**Role two: gatekeeping.** Deciding which rejections are worth fixing and which are not. This is not really a capability question. It is a judgment question that pulls in things the pipeline does not see: which leaves of the plan tree are stable enough to safely touch right now, which rejections are one-offs that will not generalise, which fixes are politically expensive even if technically correct, whether the customer was right, whether the support agent was right. None of the papers I read attempts to automate this. AITL's own future-work section gestures at "active sampling for high-uncertainty cases" — that is uncertainty-based prioritisation of *which tickets to annotate*, not which fixes to commit.
+
+I think the gatekeeping role is the harder one to automate, and it is also the one that gets less attention because it sounds less like a research problem and more like a product-management problem. That is probably because it is a product-management problem.
+
+---
+
+
+## [A decision frame](#a-decision-frame)
+
+The question I actually have to answer is whether to spend a week or two building a v0 of the automated loop. I think the honest decision frame looks like this:
+
+| Signal | Direction |
+| --- | --- |
+| My fix-hint comments are becoming formulaic enough that I could write a rubric | Try it |
+| The cost of a wrong auto-merged fix is low (good evals, low-stakes leaves) | Try it |
+| I have a stretch of unstructured time to run an experiment without production pressure | Try it |
+| Frontier model capability on natural-language-to-code-judgment crosses some threshold I can retest | Re-evaluate |
+| The fix-hints I write involve genuinely novel analysis each time | Don't try it |
+| The cost of a wrong auto-merged fix is high (real customers, brittle leaves) | Don't try it |
+| My time is currently scarce | Don't try it |
+
+For me right now, the second column is winning. The pipeline is a real production system serving real customers, the cost of a regression is non-trivial, my fix-hints are not yet formulaic (precisely because the early phase of operating a system like this is where the interesting structure is still being discovered), and my time is committed elsewhere.
+
+What I would actually do at the margin, instead of building the automated loop, is improve the two pieces of it that I do today. Make the per-group eval suites tighter, so the coding agent has stronger guardrails. Build the rubric I would need before I would trust the automation — even if I never automate, having an explicit, written-down recipe for how I translate rejection comments into fix-hints would speed up the manual loop and make the eventual automation cheaper if I ever take it on.
+
+---
+
+
+## [Closing](#closing)
+
+The [Agentic vs Workflow-based AI](https://danielfridljand.de/post/workflow-vs-agent) post argues that an LLM should do only what only an LLM can do, and that everything else should be deterministic code. The same logic applies recursively to the improvement *process* on top of the system, not just the system itself. Right now, the step from "vague stakeholder rejection" to "specific code change" is the place where the published evidence says LLMs fail systematically, and where my own experience says judgment is doing most of the work. So that is the step where a human belongs.
+
+The architecture of the system itself trends toward less LLM dependence over time, as "other" leaves get promoted into hardcoded ones. I think the architecture of the improvement loop trends the same way: toward more explicit rubrics, tighter per-step evals, and a clearer picture of what makes a fix-hint actionable. When that rubric is good enough to hand off, automation gets cheap. Until then, attempting to automate it is reinventing the product-manager role with worse tooling.
+
+I will revisit this in six months.
