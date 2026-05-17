@@ -1,6 +1,6 @@
 import { BIOGRAPHY } from '../data/site';
 import { EXPERIENCE } from '../data/experience';
-import { PUBLICATIONS } from '../data/publications';
+import { PUBLICATION } from '../data/publication';
 import type { CollectionEntry } from 'astro:content';
 import { readBlogPostFile, extractMarkdownContent } from './content-reader';
 import { logger } from './logger';
@@ -59,15 +59,15 @@ ${exp.description}`;
 ${experiences.join('\n\n')}`;
 }
 
-export function publicationsToMarkdown(): string {
-  const publications = PUBLICATIONS.map((pub) => {
+export function publicationToMarkdown(): string {
+  const publication = PUBLICATION.map((pub) => {
     const parts: string[] = [`## ${pub.title}`];
 
     if (pub.authors) {
       parts.push(`**Authors:** ${pub.authors.join(', ')}`);
     }
-    if (pub.publicationShort) {
-      parts.push(`**Journal:** ${pub.publicationShort}`);
+    if (pub.publicationhort) {
+      parts.push(`**Journal:** ${pub.publicationhort}`);
     }
     if (pub.date) {
       parts.push(`**Date:** ${pub.date}`);
@@ -88,9 +88,9 @@ export function publicationsToMarkdown(): string {
     return parts.join('\n\n');
   });
 
-  return `# Publications
+  return `# Publication
 
-${publications.join('\n\n')}`;
+${publication.join('\n\n')}`;
 }
 
 export function blogPostToMarkdownSummary(
@@ -139,7 +139,7 @@ ${biographyToMarkdown()}
 ${experienceToMarkdown()}
 ---
 
-${publicationsToMarkdown()}
+${publicationToMarkdown()}
 ---
 
 # Blog Posts

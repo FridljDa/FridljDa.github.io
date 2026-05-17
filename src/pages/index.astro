@@ -6,7 +6,7 @@ import BlogPostsSection from '../components/BlogPostsSection';
 import PublicationCard from '../components/PublicationCard.astro';
 import ViewAsMarkdown from '../components/ViewAsMarkdown';
 import { getCollection } from 'astro:content';
-import { PUBLICATIONS } from '../data/publications';
+import { PUBLICATION } from '../data/publication';
 import { SITE } from '../data/site';
 import { generateHomePageMarkdown } from '../utils/markdown-generator';
 import {
@@ -83,14 +83,14 @@ const detailedPersonSchema = generateDetailedPersonSchema();
 
   <Experience />
 
-  <section id="publications" class="py-16 bg-surface-alt scroll-mt-20">
+  <section id="publication" class="py-16 bg-surface-alt scroll-mt-20">
     <div class="container mx-auto px-4">
       <div class="max-w-4xl mx-auto">
         <h2 class="text-3xl font-bold mb-8 text-heading text-mobile-center">
-          <a href="#publications" class="heading-link" aria-label="Link to Publications section">Publications</a>
+          <a href="#publication" class="heading-link" aria-label="Link to Publication section">Publication</a>
         </h2>
         <div class="space-y-6">
-          {PUBLICATIONS.map((pub) => (
+          {PUBLICATION.map((pub) => (
             <PublicationCard publication={pub} />
           ))}
         </div>

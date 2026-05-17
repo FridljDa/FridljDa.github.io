@@ -21,7 +21,7 @@ In this post, I'll walk through three interesting technical features I implement
 
 ## 1. AI Chat Interface Implementation
 
-The chat interface is one of the most interactive features of the site. It allows visitors to ask questions about my experience, skills, publications, and blog posts, with responses powered by Google's Gemini API.
+The chat interface is one of the most interactive features of the site. It allows visitors to ask questions about my experience, skills, publication, and blog posts, with responses powered by Google's Gemini API.
 
 ### Architecture Overview
 
@@ -129,7 +129,7 @@ The server uses Gemini's `sendMessageStream()` method, which returns an async it
 
 The chat system is context-aware, meaning it has access to all the content on the website. The context is generated from two sources:
 
-1. **Home page content** - Biography, experience, publications, and blog post summaries
+1. **Home page content** - Biography, experience, publication, and blog post summaries
 2. **Full blog post content** - Complete markdown from all blog posts
 
 ```typescript
@@ -191,7 +191,7 @@ The core markdown generation logic lives in `src/utils/markdown-generator.ts`. T
 
 - `biographyToMarkdown()` - Converts biography data to markdown
 - `experienceToMarkdown()` - Converts experience entries to markdown
-- `publicationsToMarkdown()` - Converts publications to markdown
+- `publicationToMarkdown()` - Converts publication to markdown
 - `blogPostToMarkdownSummary()` - Creates summaries of blog posts
 - `generateHomePageMarkdown()` - Combines all sections into a single document
 - `getBlogPostRawMarkdown()` - Reads and reconstructs full blog post markdown
@@ -207,7 +207,7 @@ export function generateHomePageMarkdown(blogPosts: CollectionEntry<'blog'>[]): 
   markdown += `---\n\n`;
   markdown += experienceToMarkdown();
   markdown += `---\n\n`;
-  markdown += publicationsToMarkdown();
+  markdown += publicationToMarkdown();
   markdown += `---\n\n`;
   markdown += `# Blog Posts\n\n`;
   

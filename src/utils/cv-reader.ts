@@ -139,10 +139,10 @@ export function cvYamlToMarkdown(): string {
     }
   }
 
-  const publications = sections.publications;
-  if (Array.isArray(publications) && publications.length > 0) {
-    out.push('## Publications');
-    for (const entry of publications as CvEntry[]) {
+  const publication = sections.publication;
+  if (Array.isArray(publication) && publication.length > 0) {
+    out.push('## Publication');
+    for (const entry of publication as CvEntry[]) {
       out.push(formatEntryBlock(entry, 'publication'));
       out.push('');
     }
