@@ -10,7 +10,8 @@ cv:
       username: FridljDa
   sections:
     summary:
-      - "Software consultant at TNG focused on applied AI engineering, currently embedded as the sole AI engineer on a production agentic support-automation system (Claude, Temporal, MCP, DSPy) at an enterprise customer. Track record of ramping into a new technical and stakeholder domain every 6–12 months and shipping — across cinema-ticketing SaaS, supply-chain platform modernisation, computational oncology (ETH Zürich), environmental epidemiology (Stanford School of Medicine; *Nature Medicine* first co-author, 2024), and statistical genomics (EMBL). M.Sc. Mathematics with full marks (Heidelberg + Yale exchange scholar)."
+      - "Software consultant at TNG focused on applied AI engineering, currently embedded as the sole AI engineer on a production agentic support-automation system
+      at an enterprise customer. Track record of ramping into a new technical and stakeholder domain every 6–12 months and shipping — across cinema-ticketing SaaS, supply-chain platform modernisation, computational oncology (ETH Zürich), environmental epidemiology (Stanford School of Medicine; *Nature Medicine* first co-author, 2024), and statistical genomics (EMBL). M.Sc. Mathematics with full marks (Heidelberg + Yale exchange scholar)."
     software_development_experience:
       - company: TNG Technology Consulting
         position: Software Consultant - Applied AI
