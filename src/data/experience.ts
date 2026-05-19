@@ -17,10 +17,19 @@ export const EXPERIENCE: ExperienceItem[] = [
     companyLogo: 'tng_logo.svg',
     location: 'Munich, Germany',
     dateStart: '2025-12-01',
-    description: `* Architected a production-grade LLM-powered document validation system, integrating a three-stage cleaning pipeline and semantic text splitting for parallelized processing.
-* Designed an AI-powered customer support automation system (PoC) handling 2000+ tickets with 20 distinct intent categories, bridging natural language understanding with deterministic business logic.
-* Deployed solutions on Kubernetes with CI/CD pipelines, ensuring high availability and scalability for enterprise clients.
-* Tech Stack: Python, Streamlit, Docker, Kubernetes, PydanticAI, DSPy, Snakemake.`,
+    description: `* **AI-Powered Email to Order Parsing (May 2026 – present)**: Designing a field-centric email-processing pipeline that resolves customer, site, and service-order data from inbound emails, attachments, and external business-system context before order creation. Built a FastAPI ingestion service and Streamlit review dashboard with ranked candidate values and human-in-the-loop overrides for ambiguous cases. Integrated attachment-aware LLM processing with multimodal fallbacks — text extraction from structured files, vision-capable paths for scanned PDFs and images, and runtime service-catalog classification.
+* **AI Customer Support Automation (Dec 2025 – Apr 2026, live in production)**: Sole AI engineer owning end-to-end delivery for a cinema-ticketing SaaS enterprise customer — from discovery and architecture through live production rollout in April 2026.
+* <details><summary>Production results and architecture</summary>
+  <ul>
+  <li><b>Live in production:</b> 175 unique B2C support tickets processed during a two-week live observation window, reviewed by 9 customer-side support staff and the TNG implementation lead. <b>Approval rate 72.9% strict / 81.3% content-supported</b> on model-relevant tickets (n=144); <b>79.6% / 88.6%</b> when the decisive context is fully accessible to the system.</li>
+  <li><b>Customer-trust signals:</b> daily ticket volume scaled 5x (4–7 → 14–36 tickets/workday) following an internal CEO showcase, with approval mix stable across the volume increase; operator-error rate fell from ~25% to under 10% as staff converged on correct tool usage.</li>
+  <li><b>Architecture:</b> hybrid deterministic + agentic resolution workflow over 19 customer-intent categories, with Temporal for durable orchestration, human-in-the-loop approval via Signals, and DSPy/GEPA prompt optimization. Independently designed 20+ REST endpoints (OpenAPI 3.1) following Hexagonal Architecture.</li>
+  <li><b>Evaluation infrastructure:</b> production evaluation suite in Langfuse — 6 evaluation types, 8 score metrics, a 14-label outcome taxonomy, and LLM-as-judge semantic evaluation — driving 13+ feature improvements directly from live reviewer feedback.</li>
+  <li><b>Data engineering:</b> reproducible 22-stage Snakemake pipeline (Microsoft Presidio PII detection, balanced sampling, automated LLM labeling) with separate censored/uncensored data paths for GDPR compliance.</li>
+  <li><b>Stakeholder engagement:</b> embedded on-site with weekly working sessions with the head of support and monthly executive reviews with the parent holding's CEO.</li>
+  </ul>
+  </details>
+* **Tech Stack**: Python, FastAPI, Streamlit, PydanticAI, Temporal, Langfuse, Snakemake, Microsoft Presidio, Docker, DSPy (with GEPA), MCP.`,
   },
   {
     title: 'Software Consultant - Enterprise Modernization',
@@ -30,14 +39,13 @@ export const EXPERIENCE: ExperienceItem[] = [
     location: 'Munich, Germany',
     dateStart: '2024-12-01',
     dateEnd: '2025-12-01',
-    description: `* Modernizing and developing a supply chain management application within an international development team
-* Selected by the team to participate in Program Increment (PI) planning sessions, contributing to strategic planning and cross-team coordination
-* Maintaining up CI pipelines based on Jenkins, particularly the OWASP scan
-* Driving initiatives to address developer pain points across teams, reducing artifactory pipeline runtime from 8 hours to 30 seconds, minimizing wait times for feature developers using new libraries
-* Creating synergies between feature teams working on different applications
-* Navigating complex client projects with diverse stakeholder teams and legacy system constraints
-* Full-stack development using Java 17, JBoss, Spring, Oracle DB, Gradle, JUnit, Docker, Podman, Jenkins, React, and TypeScript
-* Co-organizing and contributing to the internal "AI Tool of the Week" blog series, providing weekly summaries of AI advancements including AI-assisted coding, agentic workflows, and multi-modal processing tools`,
+    description: `* Member of the platform team modernizing a mission-critical global supply-chain application (Java 8 → 17, JBoss → WildFly) in a multi-year transformation program.
+* Shipped a [JFrog Artifactory](https://jfrog.com/artifactory/) proxy in 3 days after the work had been repeatedly postponed due to overestimated effort — reduced a recurring CI pipeline runtime from 8 hours to 30 seconds and continues to save developers ~1–2 hours per person per week.
+* Established DevSecOps governance: integrated [OWASP Dependency-Check](https://owasp.org/www-project-dependency-check/) into the Jenkins CI pipeline and built Grafana dashboards for CVE monitoring, enabling proactive risk visibility for stakeholders.
+* Migrated an internal virus-scanning service from SOAP to REST with Keycloak authentication; architected fully containerized dev/build environments using Docker and Podman (daemonless, rootless).
+* Selected for Program Increment (PI) planning sessions in a multinational distributed Scrum team under SAFe, contributing to strategic planning and cross-team coordination.
+* Co-organized the internal "AI Tool of the Week" blog series, providing weekly summaries of AI advancements including agentic workflows, AI-assisted coding, and multi-modal processing tools.
+* **Tech Stack**: TypeScript, React, Java 17, Spring Framework, JBoss/WildFly, Oracle DB, Gradle, JUnit, Docker, Podman, Jenkins, SonarQube, JFrog Artifactory, Prometheus, Grafana.`,
   },
   {
     title: 'Research Assistant',
