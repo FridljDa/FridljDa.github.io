@@ -79,6 +79,27 @@ In parallel with intent recognition, we extract the structured information the d
 
 We organise extracted fields into **groups** — small clusters of related fields that get pulled out together in a single LLM call. One group per call, but groups run in parallel. For our running example, the relevant groups are a `Personen` group (names) and a `Konto` group (account identifiers, branch). Each group has its own Pydantic output model and its own prompt, with Pydantic AI handling validation and retry on the typed output — see [the Pydantic AI post](https://danielfridljand.de/post/pydantic-ai-type-safe-hybrid-workflows) for how that wiring works.
 
+```mermaid
+flowchart TD
+    MSG([Customer message])
+
+    MSG --> P_AGENT
+    MSG --> K_AGENT
+
+    subgraph personen["Personen group · 1 LLM call"]
+        P_AGENT["🤖 Agent<br/>Personen prompt<br/>output_type: PersonenOutput"]
+        P_AGENT --> P_FIELDS["Vorname · Nachname"]
+    end
+
+    subgraph konto["Konto group · 1 LLM call"]
+        K_AGENT["🤖 Agent<br/>Konto prompt<br/>output_type: KontoOutput"]
+        K_AGENT --> K_FIELDS["Kontonummer · Filiale"]
+    end
+
+    P_FIELDS --> OUT([Extracted info])
+    K_FIELDS --> OUT
+```
+
 Grouping matters for two reasons.
 
 **Field interactions live inside a group.** Take the input "Ich bin Kunde bei der Sparkasse Nürnberg." A naive per-field extraction asks "what is the location?" and "what is the shop name?" independently. Depending on the model, you can get `location=Nürnberg, shop_name=Sparkasse` (information lost) or `location=Nürnberg, shop_name=Sparkasse Nürnberg` (information duplicated). With a group, you can specify in one prompt how the related fields should agree.
