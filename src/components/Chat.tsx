@@ -130,7 +130,7 @@ function ChatContent() {
     return (
       <button
         onClick={toggleMinimize}
-        className="fixed bottom-4 right-4 w-14 h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg z-[1000] flex items-center justify-center transition-all hover:scale-110"
+        className="btn-focus-ring fixed bottom-4 right-4 w-14 h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg z-[1000] flex items-center justify-center transition-all hover:scale-110"
         aria-label="Open chat"
       >
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
@@ -146,7 +146,7 @@ function ChatContent() {
         <h3 className="font-semibold text-sm">AI Chat</h3>
         <button
           onClick={toggleMinimize}
-          className="p-1 hover:bg-blue-700 rounded transition-colors"
+          className="btn-focus-ring p-1 hover:bg-blue-700 rounded transition-colors"
           aria-label="Minimize chat"
         >
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
@@ -171,7 +171,7 @@ function ChatContent() {
           <button
             type="button"
             onClick={acceptConsent}
-            className="self-start px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors"
+            className="btn-focus-ring self-start px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors"
             data-testid="chat-consent-accept"
           >
             I understand
@@ -217,7 +217,7 @@ function ChatContent() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder="Ask about skills, experience..."
-                className="flex-1 px-4 py-2 border border-input rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-surface-elevated text-heading placeholder-text-subtle"
+                className="flex-1 px-4 py-2 border border-input rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-transparent transition-all bg-surface-elevated text-heading placeholder-text-subtle"
                 disabled={isLoading}
                 aria-invalid={error ? true : undefined}
                 aria-describedby={error ? 'chat-error' : undefined}
@@ -226,7 +226,7 @@ function ChatContent() {
                 type="submit"
                 disabled={isLoading || !input.trim()}
                 aria-label="Send message"
-                className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white rounded-full w-10 h-10 flex items-center justify-center transition-colors shadow-sm"
+                className="btn-focus-ring bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white rounded-full w-10 h-10 flex items-center justify-center transition-colors shadow-sm"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
                   <path d="M3.478 2.405a.75.75 0 00-.926.94l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.405z" />

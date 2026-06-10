@@ -304,5 +304,9 @@
   .items-mobile-center {
     @apply items-center md:items-start;
   }
+
+  .btn-focus-ring {
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-gray-900;
+  }
 }
 

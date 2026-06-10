@@ -61,4 +61,11 @@ test.describe('Accessibility', () => {
     await expect(page.locator('#main-content')).toBeAttached();
     await expect(skipLink).toHaveAttribute('href', '#main-content');
   });
+
+  test('should apply focus ring class to theme toggle', async ({ page }) => {
+    await page.goto('/');
+    const themeToggle = page.getByRole('button', { name: 'Toggle dark mode' });
+    await themeToggle.focus();
+    await expect(themeToggle).toHaveClass(/btn-focus-ring/);
+  });
 });

@@ -355,6 +355,22 @@ test.describe('Regression Tests', () => {
     expect(headers['strict-transport-security']).toContain('max-age');
     expect(headers['x-content-type-options']).toBe('nosniff');
     expect(headers['content-security-policy']).toContain("frame-ancestors 'none'");
+    expect(headers['cache-control']).toContain('max-age=0');
+    expect(headers['cache-control']).toContain('must-revalidate');
+  });
+
+  test('should preserve immutable cache headers on fingerprinted assets', async ({ request }) => {
+    const projectName = test.info().project.name;
+    test.skip(projectName === 'iPhone 13' || projectName === 'iPad Pro' || projectName === 'Pixel 5', 'Server-side functionality, only needs desktop testing');
+
+    const homeResponse = await request.get('/');
+    const homeHtml = await homeResponse.text();
+    const assetMatch = homeHtml.match(/\/_astro\/[^"']+\.css/);
+    expect(assetMatch).not.toBeNull();
+
+    const assetResponse = await request.get(assetMatch![0]);
+    expect(assetResponse.status()).toBe(200);
+    expect(assetResponse.headers()['cache-control']).toContain('immutable');
   });
 
   test('should show branded 404 page for unknown routes', async ({ request }) => {
