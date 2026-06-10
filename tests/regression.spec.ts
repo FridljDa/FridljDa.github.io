@@ -19,19 +19,15 @@ test.describe('Regression Tests', () => {
   });
 
   test('should navigate to posts section when clicking on Posts link', async ({ page }) => {
-    // Skip on mobile devices where navigation links are hidden
-    const projectName = test.info().project.name;
-    test.skip(projectName === 'iPhone 13' || projectName === 'Pixel 5', 'Navigation links hidden on mobile');
-    
-    // Wait for page to load
     await page.waitForLoadState('domcontentloaded');
-    
-    // Find the "Posts" navigation link in the header (not the section heading)
-    const postsLink = page.getByRole('navigation').getByRole('link', { name: /Posts/i });
-    await expect(postsLink).toBeVisible();
-    
-    // Click on the Posts link
-    await postsLink.click();
+
+    const menuButton = page.getByRole('button', { name: /Open menu/i });
+    if (await menuButton.isVisible()) {
+      await menuButton.click();
+      await page.locator('#mobile-nav-menu').getByRole('link', { name: 'Posts', exact: true }).click();
+    } else {
+      await page.getByRole('navigation').getByRole('link', { name: 'Posts', exact: true }).click();
+    }
     
     // Wait for posts section to be in viewport (replaces arbitrary timeout)
     const postsSection = page.locator('#posts');
@@ -370,6 +366,50 @@ test.describe('Regression Tests', () => {
     const body = await response.text();
     expect(body).toContain('Back to home');
     expect(body).toContain('Browse posts');
+  });
+
+  test('should show branded 500 page for server errors', async ({ request }) => {
+    const projectName = test.info().project.name;
+    test.skip(projectName === 'iPhone 13' || projectName === 'iPad Pro' || projectName === 'Pixel 5', 'Server-side functionality, only needs desktop testing');
+
+    const response = await request.get('/dev/trigger-500');
+    expect(response.status()).toBe(500);
+    const body = await response.text();
+    expect(body).toContain('Back to home');
+    expect(body).toContain('Browse posts');
+  });
+
+  test('should show mobile nav menu with keyboard accessibility', async ({ page }) => {
+    const projectName = test.info().project.name;
+    test.skip(projectName !== 'iPhone 13' && projectName !== 'Pixel 5', 'Mobile-only navigation test');
+
+    await page.waitForLoadState('domcontentloaded');
+
+    const menuButton = page.locator('#mobile-nav-toggle');
+    await expect(menuButton).toBeVisible();
+    await expect(menuButton).toHaveAttribute('aria-expanded', 'false');
+    await expect(menuButton).toHaveAttribute('aria-label', 'Open menu');
+
+    const desktopNav = page.locator('nav ul.hidden.md\\:flex');
+    await expect(desktopNav).toBeHidden();
+
+    await menuButton.focus();
+    await page.keyboard.press('Enter');
+    await expect(menuButton).toHaveAttribute('aria-expanded', 'true');
+    await expect(menuButton).toHaveAttribute('aria-label', 'Close menu');
+    await expect(page.locator('#mobile-nav-menu')).toBeVisible();
+
+    await page.keyboard.press('Escape');
+    await expect(menuButton).toHaveAttribute('aria-expanded', 'false');
+    await expect(page.locator('#mobile-nav-menu')).toBeHidden();
+    await expect(menuButton).toBeFocused();
+
+    await menuButton.click();
+    await page.locator('#mobile-nav-menu').getByRole('link', { name: 'Posts', exact: true }).click();
+
+    const postsSection = page.locator('#posts');
+    await expect(postsSection).toBeVisible();
+    await expect(postsSection).toBeInViewport();
   });
 
   test('should have Suggest changes link on blog post page', async ({ page }) => {

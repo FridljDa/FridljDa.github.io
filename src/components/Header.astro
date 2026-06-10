@@ -10,12 +10,12 @@ const navItems = [
 ---
 
 <header class="sticky top-0 z-50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-b border-surface">
-  <nav class="container mx-auto px-4 py-4">
+  <nav class="container mx-auto px-4 py-4" aria-label="Main navigation">
     <div class="flex items-center justify-between">
       <a href="/" class="text-xl font-bold text-heading">
         {SITE.title}
       </a>
-      <div class="flex items-center gap-6">
+      <div class="flex items-center gap-2 md:gap-6">
         <ul class="hidden md:flex items-center gap-6">
           {navItems.map((item) => (
             <li>
@@ -29,7 +29,37 @@ const navItems = [
           ))}
         </ul>
         <button
+          id="mobile-nav-toggle"
+          type="button"
+          class="md:hidden p-2 rounded-lg text-body hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+          aria-expanded="false"
+          aria-controls="mobile-nav-menu"
+          aria-label="Open menu"
+        >
+          <svg
+            id="mobile-nav-open-icon"
+            class="w-5 h-5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+          </svg>
+          <svg
+            id="mobile-nav-close-icon"
+            class="hidden w-5 h-5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+        <button
           id="theme-toggle"
+          type="button"
           class="p-2 rounded-lg text-body hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
           aria-label="Toggle dark mode"
         >
@@ -38,6 +68,7 @@ const navItems = [
             class="hidden w-5 h-5"
             fill="currentColor"
             viewBox="0 0 20 20"
+            aria-hidden="true"
           >
             <path
               d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"
@@ -48,6 +79,7 @@ const navItems = [
             class="hidden w-5 h-5"
             fill="currentColor"
             viewBox="0 0 20 20"
+            aria-hidden="true"
           >
             <path
               d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"
@@ -58,6 +90,22 @@ const navItems = [
         </button>
       </div>
     </div>
+    <ul
+      id="mobile-nav-menu"
+      class="hidden md:hidden mt-4 pt-4 border-t border-surface bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm"
+      role="list"
+    >
+      {navItems.map((item) => (
+        <li>
+          <a
+            href={item.href}
+            class="block py-3 text-body text-link hover:underline transition-colors"
+          >
+            {item.label}
+          </a>
+        </li>
+      ))}
+    </ul>
   </nav>
 </header>
 
@@ -79,6 +127,78 @@ const navItems = [
       themeToggleLightIcon?.classList.toggle('hidden');
       document.documentElement.classList.toggle('dark');
     });
+
+    const mobileNavToggle = document.getElementById('mobile-nav-toggle');
+    const mobileNavMenu = document.getElementById('mobile-nav-menu');
+    const mobileNavOpenIcon = document.getElementById('mobile-nav-open-icon');
+    const mobileNavCloseIcon = document.getElementById('mobile-nav-close-icon');
+    const desktopMediaQuery = window.matchMedia('(min-width: 768px)');
+
+    function isMenuOpen() {
+      return mobileNavToggle?.getAttribute('aria-expanded') === 'true';
+    }
+
+    function setMenuOpen(open) {
+      if (!mobileNavToggle || !mobileNavMenu) return;
+
+      mobileNavToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+      mobileNavToggle.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
+      mobileNavMenu.classList.toggle('hidden', !open);
+      mobileNavOpenIcon?.classList.toggle('hidden', open);
+      mobileNavCloseIcon?.classList.toggle('hidden', !open);
+    }
+
+    function closeMenu(returnFocus) {
+      if (!isMenuOpen()) return;
+      setMenuOpen(false);
+      if (returnFocus) {
+        mobileNavToggle?.focus();
+      }
+    }
+
+    function openMenu() {
+      setMenuOpen(true);
+      const firstLink = mobileNavMenu?.querySelector('a');
+      firstLink?.focus();
+    }
+
+    mobileNavToggle?.addEventListener('click', function () {
+      if (isMenuOpen()) {
+        closeMenu(true);
+      } else {
+        openMenu();
+      }
+    });
+
+    mobileNavMenu?.querySelectorAll('a').forEach(function (link) {
+      link.addEventListener('click', function () {
+        closeMenu(false);
+      });
+    });
+
+    document.addEventListener('keydown', function (event) {
+      if (event.key === 'Escape' && isMenuOpen()) {
+        event.preventDefault();
+        closeMenu(true);
+      }
+    });
+
+    document.addEventListener('click', function (event) {
+      if (!isMenuOpen()) return;
+      const target = event.target;
+      if (
+        target instanceof Node &&
+        !mobileNavToggle?.contains(target) &&
+        !mobileNavMenu?.contains(target)
+      ) {
+        closeMenu(false);
+      }
+    });
+
+    desktopMediaQuery.addEventListener('change', function (event) {
+      if (event.matches) {
+        closeMenu(false);
+      }
+    });
   })();
 </script>
-
