@@ -19,7 +19,7 @@
     "test:mobile:headed": "playwright test --headed --project=\"iPhone 13\" --project=\"iPad Pro\" --project=\"Pixel 5\""
   },
   "dependencies": {
-    "@astrojs/mdx": "^4.3.13",
+    "@astrojs/mdx": "^6.0.3",
     "@astrojs/node": "^10.1.2",
     "@astrojs/react": "^5.0.4",
     "@google/generative-ai": "^0.24.1",
