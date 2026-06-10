@@ -17,6 +17,7 @@ import { METADATA_SEPARATOR } from '../../utils/constants';
 import ClockIcon from '../../components/ClockIcon.astro';
 import MermaidInit from '../../components/MermaidInit';
 import OptimizedImage from '../../components/OptimizedImage.astro';
+import { POST_HERO_IMAGE } from '../../utils/optimized-images';
 
 const slug = Astro.params.slug;
 if (!slug) {
@@ -127,8 +128,8 @@ const githubEditUrl = `https://github.com/${SITE.github.owner}/${SITE.github.rep
             <OptimizedImage
               src={post.data.image}
               alt={post.data.title}
-              widths={[640, 960, 1280]}
-              sizes="(max-width: 1024px) 100vw, 896px"
+              widths={[...POST_HERO_IMAGE.widths]}
+              sizes={POST_HERO_IMAGE.sizes}
               class="w-full rounded-lg"
               loading="eager"
             />

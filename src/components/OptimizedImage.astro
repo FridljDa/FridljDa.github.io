@@ -1,6 +1,6 @@
 ---
 import { Image } from 'astro:assets';
-import { getImageMetadata } from '../utils/optimized-images';
+import { getImageMetadata, IMAGE_QUALITY } from '../utils/optimized-images';
 
 interface Props {
   src: string;
@@ -11,6 +11,7 @@ interface Props {
   sizes?: string;
   width?: number;
   height?: number;
+  quality?: number;
 }
 
 const {
@@ -18,10 +19,11 @@ const {
   alt,
   class: className,
   loading = 'lazy',
-  widths = [400, 800, 1200],
+  widths = [400, 800, 1200, 1600],
   sizes = '100vw',
   width,
   height,
+  quality = IMAGE_QUALITY,
 } = Astro.props;
 
 const metadata = getImageMetadata(src);
@@ -39,6 +41,7 @@ const metadata = getImageMetadata(src);
       width={width}
       height={height}
       format="webp"
+      quality={quality}
       inferSize={width === undefined || height === undefined}
     />
   ) : (

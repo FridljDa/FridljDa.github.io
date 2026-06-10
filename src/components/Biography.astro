@@ -1,6 +1,7 @@
 ---
 import { Image } from 'astro:assets';
 import avatar from '../assets/images/avatar.jpg';
+import { IMAGE_QUALITY } from '../utils/optimized-images';
 import { BIOGRAPHY } from '../data/site';
 import ViewAsMarkdown from './ViewAsMarkdown';
 
@@ -29,9 +30,10 @@ const { markdownHref } = Astro.props;
             alt={BIOGRAPHY.name}
             width={192}
             height={192}
-            widths={[192, 384]}
+            widths={[192, 384, 576]}
             sizes="192px"
             format="webp"
+            quality={IMAGE_QUALITY}
             class="w-48 h-48 rounded-full object-cover border-4 border-surface"
           />
         </div>

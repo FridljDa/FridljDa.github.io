@@ -6,6 +6,7 @@ import { METADATA_SEPARATOR } from '../utils/constants';
 export interface OptimizedImageData {
   src: string;
   srcSet: string;
+  sizes: string;
   width: number;
   height: number;
 }
@@ -170,6 +171,7 @@ function BlogPostCard({ post, onTagClick, selectedTags }: BlogPostCardProps) {
           <img
             src={post.optimizedImage.src}
             srcSet={post.optimizedImage.srcSet}
+            sizes={post.optimizedImage.sizes}
             width={post.optimizedImage.width}
             height={post.optimizedImage.height}
             alt={post.title}

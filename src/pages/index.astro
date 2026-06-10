@@ -15,7 +15,7 @@ import {
 } from '../utils/schema';
 import { calculateReadingTime } from '../utils/reading-time';
 import { readBlogPostFile, extractMarkdownContent } from '../utils/content-reader';
-import { getOptimizedImageData } from '../utils/optimized-images';
+import { BLOG_CARD_IMAGE, getOptimizedImageData } from '../utils/optimized-images';
 
 const blogPosts = (await getCollection('blog')).sort(
   (a, b) => b.data.pubDate.getTime() - a.data.pubDate.getTime()
@@ -40,10 +40,7 @@ const blogPostsWithReadingTime = await Promise.all(
 const postsForComponent = await Promise.all(
   blogPostsWithReadingTime.map(async ({ post, readingTime }) => {
     const optimizedImage = post.data.image
-      ? await getOptimizedImageData(post.data.image, {
-          widths: [400, 800, 1200],
-          sizes: '(max-width: 768px) 100vw, 400px',
-        })
+      ? await getOptimizedImageData(post.data.image, BLOG_CARD_IMAGE)
       : undefined;
 
     return {
