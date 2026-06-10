@@ -32,7 +32,7 @@ The site will be available at `http://localhost:4321`.
 
 ## Features
 
-- **Server-Side Rendering (SSR)** - Built with Astro 5.x SSR mode
+- **Server-Side Rendering (SSR)** - Built with Astro 6.x SSR mode
 - **AI Chat** - Interactive chat powered by Google Gemini API
 - **Blog** - MDX-based blog posts with math support (KaTeX)
 - **Responsive Design** - Built with Tailwind CSS

@@ -21,7 +21,7 @@
   "dependencies": {
     "@astrojs/mdx": "^6.0.3",
     "@astrojs/node": "^10.1.2",
-    "@astrojs/react": "^5.0.4",
+    "@astrojs/react": "^5.0.7",
     "@google/generative-ai": "^0.24.1",
     "@tailwindcss/typography": "^0.5.19",
     "astro": "^6.4.5",
