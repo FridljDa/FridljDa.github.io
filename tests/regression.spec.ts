@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import type { Locator } from '@playwright/test';
+import { expandChatAndAcceptConsent } from './helpers/chat';
 
 /**
  * Helper function to get the "View as Markdown" button from an article element.
@@ -76,53 +77,28 @@ test.describe('Regression Tests', () => {
   });
 
   test('should have chat widget present on the page', async ({ page }) => {
-    // Wait for the page and chat widget to load
     await page.waitForLoadState('domcontentloaded');
     await page.waitForLoadState('networkidle');
-    
-    // Check if chat is minimized (mobile devices auto-minimize)
-    const minimizedButton = page.locator('button[aria-label="Open chat"]');
-    const isMinimized = await minimizedButton.isVisible().catch(() => false);
-    
-    if (isMinimized) {
-      // Chat is minimized, click to expand
-      await minimizedButton.click();
-      // Wait for chat widget to expand - wait for the form to appear
-      const chatForm = page.locator('[data-testid="chat-form"]');
-      await expect(chatForm).toBeVisible({ timeout: 5000 });
-    }
-    
-    // Wait for chat input to be visible (replaces arbitrary timeout)
-    const chatInput = page.locator('input[placeholder*="Ask about skills"]');
+    await expandChatAndAcceptConsent(page);
+
+    const chatForm = page.locator('[data-testid="chat-form"]');
+    await expect(chatForm).toBeVisible({ timeout: 5000 });
+
+    const chatInput = page.locator('#chat-input');
     await expect(chatInput).toBeVisible({ timeout: 10000 });
-    
-    // Verify chat widget container is present
+
     const chatContainer = page.locator('div').filter({ hasText: /Ask me anything about Daniel/i }).or(
-      page.locator('form').filter({ has: page.locator('input[placeholder*="Ask about skills"]') })
+      page.locator('form').filter({ has: page.locator('#chat-input') })
     );
     await expect(chatContainer.first()).toBeAttached();
   });
 
   test('should interact with chat widget and get response', async ({ page }) => {
-    // Wait for the page and chat widget to load
     await page.waitForLoadState('domcontentloaded');
     await page.waitForLoadState('networkidle');
-    
-    // Check if chat is minimized (mobile devices auto-minimize)
-    const minimizedButton = page.locator('button[aria-label="Open chat"]');
-    const isMinimized = await minimizedButton.isVisible().catch(() => false);
-    
-    if (isMinimized) {
-      // Chat is minimized, click to expand
-      await minimizedButton.click();
-      // Wait for chat widget to expand - wait for the form to appear
-      const chatForm = page.locator('form').filter({ has: page.locator('input[placeholder*="Ask about skills"]') });
-      await expect(chatForm).toBeVisible({ timeout: 5000 });
-    }
-    
-    // Wait for chat input to be visible and enabled (replaces arbitrary timeout)
-    const chatInput = page.locator('input[placeholder*="Ask about skills"]');
-    await expect(chatInput).toBeVisible({ timeout: 10000 });
+    await expandChatAndAcceptConsent(page);
+
+    const chatInput = page.locator('#chat-input');
     await expect(chatInput).toBeEnabled({ timeout: 5000 });
     
     // Type a question - use pressSequentially() to trigger React onChange events properly
@@ -371,6 +347,29 @@ test.describe('Regression Tests', () => {
     // Try to access a non-existent blog post markdown
     const response = await page.goto('/post/non-existent-post.md');
     expect(response?.status()).toBe(404);
+  });
+
+  test('should include security headers', async ({ request }) => {
+    const projectName = test.info().project.name;
+    test.skip(projectName === 'iPhone 13' || projectName === 'iPad Pro' || projectName === 'Pixel 5', 'Server-side functionality, only needs desktop testing');
+
+    const response = await request.get('/');
+    expect(response.status()).toBe(200);
+    const headers = response.headers();
+    expect(headers['strict-transport-security']).toContain('max-age');
+    expect(headers['x-content-type-options']).toBe('nosniff');
+    expect(headers['content-security-policy']).toContain("frame-ancestors 'none'");
+  });
+
+  test('should show branded 404 page for unknown routes', async ({ request }) => {
+    const projectName = test.info().project.name;
+    test.skip(projectName === 'iPhone 13' || projectName === 'iPad Pro' || projectName === 'Pixel 5', 'Server-side functionality, only needs desktop testing');
+
+    const response = await request.get('/nonexistent-page-xyz-audit');
+    expect(response.status()).toBe(404);
+    const body = await response.text();
+    expect(body).toContain('Back to home');
+    expect(body).toContain('Browse posts');
   });
 
   test('should have Suggest changes link on blog post page', async ({ page }) => {

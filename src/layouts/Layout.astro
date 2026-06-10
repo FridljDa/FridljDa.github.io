@@ -76,8 +76,14 @@ const websiteSchema = generateWebsiteSchema();
     />
   </head>
   <body class="min-h-screen flex flex-col">
+    <a
+      href="#main-content"
+      class="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[2000] focus:px-4 focus:py-2 focus:bg-white focus:text-black focus:rounded focus:shadow-lg dark:focus:bg-gray-900 dark:focus:text-white"
+    >
+      Skip to main content
+    </a>
     <Header />
-    <main class="flex-grow">
+    <main id="main-content" class="flex-grow">
       <slot />
     </main>
     <Footer />
