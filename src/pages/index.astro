@@ -15,8 +15,6 @@ import {
 } from '../utils/schema';
 import { calculateReadingTime } from '../utils/reading-time';
 import { readBlogPostFile, extractMarkdownContent } from '../utils/content-reader';
-import { BLOG_CARD_IMAGE, getOptimizedImageData } from '../utils/optimized-images';
-
 const blogPosts = (await getCollection('blog')).sort(
   (a, b) => b.data.pubDate.getTime() - a.data.pubDate.getTime()
 );
@@ -37,25 +35,16 @@ const blogPostsWithReadingTime = await Promise.all(
 );
 
 // Transform posts for BlogPostsSection component
-const postsForComponent = await Promise.all(
-  blogPostsWithReadingTime.map(async ({ post, readingTime }) => {
-    const optimizedImage = post.data.image
-      ? await getOptimizedImageData(post.data.image, BLOG_CARD_IMAGE)
-      : undefined;
-
-    return {
-      id: post.id,
-      title: post.data.title,
-      description: post.data.description,
-      pubDate: post.data.pubDate.toISOString(),
-      slug: post.id,
-      image: post.data.image,
-      optimizedImage: optimizedImage ?? undefined,
-      tags: post.data.tags,
-      readingTime,
-    };
-  })
-);
+const postsForComponent = blogPostsWithReadingTime.map(({ post, readingTime }) => ({
+  id: post.id,
+  title: post.data.title,
+  description: post.data.description,
+  pubDate: post.data.pubDate.toISOString(),
+  slug: post.id,
+  image: post.data.image,
+  tags: post.data.tags,
+  readingTime,
+}));
 
 const homePageMarkdown = generateHomePageMarkdown(blogPosts);
 const collectionPageSchema = generateCollectionPageSchema();

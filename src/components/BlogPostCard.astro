@@ -3,8 +3,6 @@ import { formatDateWithDay } from '../utils/date';
 import { formatReadingTime } from '../utils/reading-time';
 import { METADATA_SEPARATOR } from '../utils/constants';
 import ClockIcon from './ClockIcon.astro';
-import OptimizedImage from './OptimizedImage.astro';
-import { BLOG_CARD_IMAGE } from '../utils/optimized-images';
 
 interface Props {
   title: string;
@@ -24,11 +22,9 @@ const { title, description, pubDate, slug, image, tags = [], readingTime } = Ast
   class="block bg-surface rounded-lg shadow-sm border border-surface hover:shadow-md transition-shadow overflow-hidden group"
 >
   {image && (
-    <OptimizedImage
+    <img
       src={image}
       alt={title}
-      widths={[...BLOG_CARD_IMAGE.widths]}
-      sizes={BLOG_CARD_IMAGE.sizes}
       class="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
       loading="lazy"
     />

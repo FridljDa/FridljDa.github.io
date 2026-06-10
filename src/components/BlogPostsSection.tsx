@@ -3,14 +3,6 @@ import { formatDateWithDay } from '../utils/date';
 import { formatReadingTime } from '../utils/reading-time';
 import { METADATA_SEPARATOR } from '../utils/constants';
 
-export interface OptimizedImageData {
-  src: string;
-  srcSet: string;
-  sizes: string;
-  width: number;
-  height: number;
-}
-
 export interface BlogPost {
   id: string;
   title: string;
@@ -18,7 +10,6 @@ export interface BlogPost {
   pubDate: string; // ISO string
   slug: string;
   image?: string;
-  optimizedImage?: OptimizedImageData;
   tags?: string[];
   readingTime?: number;
 }
@@ -167,25 +158,14 @@ function BlogPostCard({ post, onTagClick, selectedTags }: BlogPostCardProps) {
   return (
     <div className="bg-surface rounded-lg shadow-sm border border-surface hover:shadow-md transition-shadow overflow-hidden group">
       <a href={`/post/${post.slug}`} className="block">
-        {post.optimizedImage ? (
-          <img
-            src={post.optimizedImage.src}
-            srcSet={post.optimizedImage.srcSet}
-            sizes={post.optimizedImage.sizes}
-            width={post.optimizedImage.width}
-            height={post.optimizedImage.height}
-            alt={post.title}
-            className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
-            loading="lazy"
-          />
-        ) : post.image ? (
+        {post.image && (
           <img
             src={post.image}
             alt={post.title}
             className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
             loading="lazy"
           />
-        ) : null}
+        )}
       </a>
       <div className="p-6">
         <div className="flex items-center gap-2 mb-2 justify-mobile-center flex-wrap">
