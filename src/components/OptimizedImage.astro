@@ -1,0 +1,54 @@
+---
+import { Image } from 'astro:assets';
+import { getImageMetadata } from '../utils/optimized-images';
+
+interface Props {
+  src: string;
+  alt: string;
+  class?: string;
+  loading?: 'lazy' | 'eager';
+  widths?: number[];
+  sizes?: string;
+  width?: number;
+  height?: number;
+}
+
+const {
+  src,
+  alt,
+  class: className,
+  loading = 'lazy',
+  widths = [400, 800, 1200],
+  sizes = '100vw',
+  width,
+  height,
+} = Astro.props;
+
+const metadata = getImageMetadata(src);
+---
+
+{
+  metadata ? (
+    <Image
+      src={metadata}
+      alt={alt}
+      class={className}
+      loading={loading}
+      widths={widths}
+      sizes={sizes}
+      width={width}
+      height={height}
+      format="webp"
+      inferSize={width === undefined || height === undefined}
+    />
+  ) : (
+    <img
+      src={src}
+      alt={alt}
+      class={className}
+      loading={loading}
+      width={width}
+      height={height}
+    />
+  )
+}

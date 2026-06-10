@@ -1,4 +1,6 @@
 ---
+import { Image } from 'astro:assets';
+import avatar from '../assets/images/avatar.jpg';
 import { BIOGRAPHY } from '../data/site';
 import ViewAsMarkdown from './ViewAsMarkdown';
 
@@ -22,9 +24,14 @@ const { markdownHref } = Astro.props;
       </div>
       <div class="flex flex-col md:flex-row gap-8 items-mobile-center">
         <div class="flex-shrink-0 mx-mobile-auto">
-          <img
-            src="/images/avatar.jpg"
+          <Image
+            src={avatar}
             alt={BIOGRAPHY.name}
+            width={192}
+            height={192}
+            widths={[192, 384]}
+            sizes="192px"
+            format="webp"
             class="w-48 h-48 rounded-full object-cover border-4 border-surface"
           />
         </div>

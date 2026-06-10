@@ -23,7 +23,10 @@ function ChatContent() {
   }, []);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const behavior = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      ? 'auto'
+      : 'smooth';
+    messagesEndRef.current?.scrollIntoView({ behavior });
   };
 
   useEffect(() => {
