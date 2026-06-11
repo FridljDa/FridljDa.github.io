@@ -6,7 +6,7 @@ tags:
   - AI
   - Customer Support
   - Architecture
-description: "The four-step pipeline we landed on after iterating in production: a DAG of intents, grouped extraction, weighted-scoring fetch, and a mostly-hardcoded planner with an explicit LLM fallback."
+description: "The four-step pipeline we landed on after iterating in production: a rooted DAG of intents, grouped extraction, weighted-scoring fetch, and a mostly-hardcoded planner with an explicit LLM fallback."
 image: /images/blog/first-level-support-automation/featured.png
 ---
 
@@ -41,7 +41,7 @@ This message is realistic in three useful ways. The intent is slightly ambiguous
 
 The job here is to classify the message into one of a small set of intents — cheaply enough that the downstream pipeline can branch on it.
 
-We classify against a **DAG of intents, biased toward depth 2**. The root has a handful of broad parent intents ("account access", "payments", "card services", …) plus an explicit **"other"** parent. Most parents have a few sub-intents underneath, again plus an "other" within that parent. We run this as two LLM calls: first the parent intent, then — given the parent — the sub-intent from a constrained list. Both calls are simple `Agent` invocations with no tools and a typed `output_type`; see [Type-Safe Hybrid Workflows with Pydantic AI](https://danielfridljand.de/post/pydantic-ai-type-safe-hybrid-workflows) for the mechanics.
+We classify against a **rooted DAG of intents — a single entry point, biased toward depth 2**. The root has a handful of broad parent intents ("account access", "payments", "card services", …) plus an explicit **"other"** parent. Most parents have a few sub-intents underneath, again plus an "other" within that parent. We run this as two LLM calls: first the parent intent, then — given the parent — the sub-intent from a constrained list. Both calls are simple `Agent` invocations with no tools and a typed `output_type`; see [Type-Safe Hybrid Workflows with Pydantic AI](https://danielfridljand.de/post/pydantic-ai-type-safe-hybrid-workflows) for the mechanics.
 
 ```mermaid
 flowchart TD
