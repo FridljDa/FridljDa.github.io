@@ -1,11 +1,12 @@
 ---
 title: "Architecture of a First-Level Support Automation"
 pubDate: 2026-05-16T00:00:00.000Z
+updatedDate: 2026-06-11T00:00:00.000Z
 tags:
   - AI
   - Customer Support
   - Architecture
-description: "The four-step pipeline we landed on after iterating in production: typed intent, grouped extraction, weighted-scoring fetch, and a mostly-hardcoded planner with an explicit LLM fallback."
+description: "The four-step pipeline we landed on after iterating in production: a DAG of intents, grouped extraction, weighted-scoring fetch, and a mostly-hardcoded planner with an explicit LLM fallback."
 image: /images/blog/first-level-support-automation/featured.png
 ---
 
@@ -40,7 +41,7 @@ This message is realistic in three useful ways. The intent is slightly ambiguous
 
 The job here is to classify the message into one of a small set of intents — cheaply enough that the downstream pipeline can branch on it.
 
-We use a depth-2 tree of intents. The root has a handful of broad parent intents ("account access", "payments", "card services", …) plus an explicit **"other"** parent. Each parent has a few sub-intents underneath, again plus an "other" within that parent. We run this as two LLM calls: first the parent intent, then — given the parent — the sub-intent from a constrained list. Both calls are simple `Agent` invocations with no tools and a typed `output_type`; see [Type-Safe Hybrid Workflows with Pydantic AI](https://danielfridljand.de/post/pydantic-ai-type-safe-hybrid-workflows) for the mechanics.
+We classify against a **DAG of intents, biased toward depth 2**. The root has a handful of broad parent intents ("account access", "payments", "card services", …) plus an explicit **"other"** parent. Most parents have a few sub-intents underneath, again plus an "other" within that parent. We run this as two LLM calls: first the parent intent, then — given the parent — the sub-intent from a constrained list. Both calls are simple `Agent` invocations with no tools and a typed `output_type`; see [Type-Safe Hybrid Workflows with Pydantic AI](https://danielfridljand.de/post/pydantic-ai-type-safe-hybrid-workflows) for the mechanics.
 
 ```mermaid
 flowchart TD
@@ -52,24 +53,34 @@ flowchart TD
 
     P1 --> P1A[Login problem]
     P1 --> P1B[Password reset]
-    P1 --> P1C[Account locked]
+    P1 --> LOCKED[Account locked]
     P1 --> P1OT[Other]
+
+    P3 --> P3A[Card blocked]
+    P3 --> LOCKED
+    P3 --> P3OT[Other]
 
     style POT stroke-dasharray: 4 4
     style P1OT stroke-dasharray: 4 4
+    style P3OT stroke-dasharray: 4 4
+    style LOCKED fill:#dbeafe,stroke:#2563eb,stroke-width:2px
 ```
+
+Two of those edges are worth staring at: **Account locked** is a child of *both* **Account access** and **Card services**, and **Payments** has no children drawn at all. Those are the two structural choices that make this a DAG rather than a tree.
 
 A few things worth pulling out.
 
+**Depth 2 is a bias, not a rule.** Some parent intents are already specific enough to act on — they resolve at depth 1, and the second call either returns a trivial "no further breakdown" sub-intent or is skipped entirely (Payments, above, is one such parent in the diagram). Others, in rare cases, earn a third level. We default to depth 2 because it is the sweet spot — deeper structure pushes you toward over-classification and harder labeling, flatter structure makes a single call do too much — but we do not force every branch to bottom out at exactly two levels. The depth is whatever a branch needs, with two as the gravitational center.
+
+**A sub-intent can live under more than one parent — which is why it is a DAG, not a tree.** The same handling leaf is frequently reachable from different first-level intents. A customer who locked themselves out by mistyping their online-banking password lands on **account access → account locked**; a customer who triggered the same lockout by entering the wrong card PIN at an ATM arrives via **card services → account locked**. Different first-level intent, different path, *same leaf* — once you are there, the unlock handling is identical. In a strict tree you would have to duplicate that leaf under both parents and keep the two copies in sync as the unlock flow evolves. Modelling intents as a DAG lets the paths converge on one shared leaf, so everything downstream branches on the leaf you reached, not on the route you took to get there.
+
 **The "other" category at every level is the point, not an afterthought.** No matter how carefully you enumerate intents at design time, customer requests do not respect your taxonomy. By modelling "other" explicitly, we make our coverage gap visible: every message that lands in an "other" bucket is a candidate for becoming its own intent in a future iteration cycle. It also gives us a clean place to route the more agentic, less structured downstream handling, as we will see in the plan step.
 
-**Two LLM calls, not one big classifier.** The sub-intents are different for each parent. Asking the model to choose from a flat list of every sub-intent across every parent works worse in practice — the model gets confused between sibling categories from unrelated parents — and the typed contract (a `Literal` of the right sub-intents for the chosen parent) is harder to express. Two narrow calls with constrained output types beat one wide call.
-
-**A tree of arbitrary depth would be more general — but in practice exactly two levels was the sweet spot.** Deeper trees push you toward over-classification and harder labeling; flat lists make the model do too much work in one shot.
+**Two LLM calls, not one big classifier.** The reachable sub-intents differ by parent. Asking the model to choose from a flat list of every sub-intent across every parent works worse in practice — the model gets confused between sibling categories from unrelated parents — and the typed contract (a `Literal` of the sub-intents reachable from the chosen parent) is harder to express. Two narrow calls with constrained output types beat one wide call. The shared-leaf case costs nothing here: a sub-intent that sits under two parents simply appears in both parents' `Literal`s.
 
 **This is the cleanest eval target in the whole pipeline.** A labeled set of historical conversations with their correct (parent, sub) labels gives you precision/recall numbers you can move. We will return to this in the evals section.
 
-For our running example, the parent intent comes out as **account access** and the sub-intent as **account locked** (with some probability mass on **login problem**).
+For our running example, the parent intent comes out as **account access** and the sub-intent as **account locked** (with some probability mass on **login problem**) — the very same `account locked` leaf a card-PIN lockout would have reached from the other side of the DAG.
 
 ---
 
@@ -182,6 +193,8 @@ The whole step is plain code. There is no LLM call here at all. The mental model
 We now have an intent, a sub-intent, extracted information, fetched records, and metadata about the fetch (how many candidates, top score, etc.). The plan step turns this into a concrete response and a set of tool calls.
 
 **For most of the tree, the plan is hardcoded.** A deep decision tree branches on the inputs and lands on a leaf with a pre-written message template (filled with variables) plus any tool calls. This is where the actual business logic of customer support lives — the tribal knowledge about which combinations of intent and state should get which response. Growing this tree is the central activity of operating the system over time, and it is the same kind of work as growing any business workflow: deterministic branches added one by one as patterns emerge in real traffic. The case for keeping this part of the system in code rather than handing it to an agent is made at length in [Agentic vs Workflow-based AI](https://danielfridljand.de/post/workflow-vs-agent).
+
+Because intent classification already collapses multiple paths onto a shared leaf (Step 1), the planner branches on the sub-intent it landed on, not on which parent got it there — the `account locked` leaf is handled the same whether the customer came in via account access or card services.
 
 ```mermaid
 flowchart TD
