@@ -190,32 +190,36 @@ The whole step is plain code. There is no LLM call here at all. The mental model
 
 ## Step 4: Plan generation
 
-We now have an intent, a sub-intent, extracted information, fetched records, and metadata about the fetch (how many candidates, top score, etc.). The plan step turns this into a concrete response and a set of tool calls.
+Plan generation starts from a **fully resolved leaf of the intent DAG** plus the extracted information, the fetched records, and metadata about the fetch (how many candidates, top score, etc.). The intent question is already answered — that happened in Step 1 — so the plan step does not re-classify anything. It turns the leaf and the data into a concrete response and a set of tool calls.
 
-**For most of the tree, the plan is hardcoded.** A deep decision tree branches on the inputs and lands on a leaf with a pre-written message template (filled with variables) plus any tool calls. This is where the actual business logic of customer support lives — the tribal knowledge about which combinations of intent and state should get which response. Growing this tree is the central activity of operating the system over time, and it is the same kind of work as growing any business workflow: deterministic branches added one by one as patterns emerge in real traffic. The case for keeping this part of the system in code rather than handing it to an agent is made at length in [Agentic vs Workflow-based AI](https://danielfridljand.de/post/workflow-vs-agent).
+**Dispatching on the leaf is a lookup, not a decision.** Because the leaf was already resolved upstream, the planner indexes straight into the plan registered for that leaf; it never re-asks "which intent is this?". And because intent classification already collapsed any converging paths onto one shared leaf (Step 1), the dispatch never has to care which parent the customer came in through — the `account_locked` leaf has exactly one plan, whether the lockout started from account access or from a card PIN.
 
-Because intent classification already collapses multiple paths onto a shared leaf (Step 1), the planner branches on the sub-intent it landed on, not on which parent got it there — the `account locked` leaf is handled the same whether the customer came in via account access or card services.
+**Inside a leaf's plan, almost every branch is a question about the fetched data.** Each leaf carries a small decision tree, but the leaf has fixed the *intent*, so what is left to decide is purely a function of what we found: did fetch return an account? one candidate or several? is it flagged? Those answers route to a pre-written message template (filled with variables) plus any tool calls. This is where the actual business logic of customer support lives — the tribal knowledge about which combinations of state should get which response. Growing these per-leaf plans is the central activity of operating the system over time, and it is the same kind of work as growing any business workflow: deterministic branches added one by one as patterns emerge in real traffic. The case for keeping this part of the system in code rather than handing it to an agent is made at length in [Agentic vs Workflow-based AI](https://danielfridljand.de/post/workflow-vs-agent).
 
 ```mermaid
 flowchart TD
-    ROOT([Intent + data])
-    ROOT --> B1{Sub-intent?}
-    B1 -- account_locked --> B2{Account<br/>found?}
-    B2 -- yes --> L1[Template:<br/>unlock instructions]
-    B2 -- no --> L2[Template:<br/>request account info]
-    B1 -- login_problem --> B3{Recent<br/>password reset?}
-    B3 -- yes --> L3[Template:<br/>reset link reminder]
-    B3 -- no --> L4[Template:<br/>password reset flow]
-    B1 -- other --> L5[🤖 LLM-generated plan]
+    ROOT(["Resolved intent leaf<br/>+ fetched data"])
+    ROOT --> DISP{{Dispatch on leaf}}
+    DISP -- "other leaves" --> L5[🤖 LLM-generated plan]
+    DISP -- "account_locked" --> B1{Account<br/>found?}
+    B1 -- no --> L2[Template:<br/>request account info]
+    B1 -- yes --> B2{One<br/>candidate?}
+    B2 -- no --> L6[Template:<br/>disambiguate account]
+    B2 -- yes --> B3{Fraud<br/>flag set?}
+    B3 -- yes --> L7[Template + tool:<br/>escalate to security]
+    B3 -- no --> L1[Template:<br/>unlock instructions]
 
+    style DISP fill:#ede9fe,stroke:#7c3aed
     style L5 fill:#ffe4b5,stroke:#d97706,stroke-width:2px
 ```
 
-**The leaves under "other" branches are the exception.** When the intent fell into one of the "other" buckets at intent classification, we do not have a hardcoded plan — by construction, we have not seen enough of these to write one. Those leaves use an LLM agent with access to the fetched data and a constrained set of tools to propose a plan. Only those leaves are LLM-driven; the rest of the tree is deterministic. The amber leaf in the diagram above is the only one that calls an LLM at planning time.
+The hexagon is a keyed lookup on the already-known leaf, not a re-classification. Everything below the `account_locked` edge is a question about the fetched data — found, count, flags — landing on a template plus any tool calls.
+
+**The "other" leaves are the exception.** When the message resolved to one of the "other" leaves at intent classification, we do not have a hardcoded plan — by construction, we have not seen enough of these to write one. Those leaves use an LLM agent with access to the fetched data and a constrained set of tools to propose a plan. Only those leaves are LLM-driven; every other leaf's plan is deterministic. The amber node in the diagram above is the only one that calls an LLM at planning time.
 
 Every "other"-driven LLM plan is a candidate for being promoted to a hardcoded leaf once the pattern is clear enough. That promotion loop — observe, label, generalise, hardcode — is how the system gets less LLM-dependent over time, not more.
 
-For our running example, the path is: parent = `account_access` → sub = `account_locked` → `account_found = yes` → the "unlock instructions" template, parametrised with the matched account.
+For our running example, the resolved leaf is `account_locked`. Dispatch hands off to its plan, which then asks only fetched-data questions: account found? — yes, `acc_001`; one candidate? — yes, it was the sole record above threshold in Step 3; fraud flag set? — no. That lands on the "unlock instructions" template, parametrised with the matched account.
 
 For high-stakes actions — anything touching money, account access, or external systems with side effects — the generated plan is reviewed by a human before execution. The orchestration for that (durable waits, signals, deterministic recovery across restarts) is covered in [Temporal for Human-in-the-Loop](https://danielfridljand.de/post/temporal-human-in-the-loop).
 
