@@ -1,6 +1,6 @@
 export const SITE = {
   title: 'Daniel Fridljand',
-  description: 'Software Consultant with a strong academic background in mathematics, statistics, and bioinformatics',
+  description: 'Software consultant focused on applied AI engineering, with a research background in computational oncology, environmental epidemiology, and statistical genomics',
   url: 'https://danielfridljand.de',
   github: {
     owner: 'FridljDa',
@@ -16,20 +16,25 @@ export const BIOGRAPHY = {
     name: 'TNG Technology Consulting',
     url: 'https://www.tngtech.com/en/',
   },
-  bio: 'I am a driven software consultant with a strong academic background in mathematics, statistics, and bioinformatics. My passion for machine learning, software development, and statistics has led me to work on projects across diverse domains, including public health, genetics, and oncology. With three years of scientific software development experience and a first-author publication in a high-impact journal, I\'m committed to leveraging computational skills to solve real-world challenges.',
+  bio: 'Software consultant at TNG focused on applied AI engineering, currently embedded as the sole AI engineer on a production agentic support-automation system (Claude, Temporal, MCP, DSPy) at an enterprise customer. Research background spanning ETH Zürich (computational oncology), Stanford School of Medicine (first co-author in Nature Medicine, 2024), and EMBL (statistical genomics). M.Sc. Mathematics with full marks; Yale exchange scholar.',
   interests: [
-    'Statistics',
+    'Applied AI',
     'Machine Learning',
     'Software Development',
   ],
   education: [
     {
-      course: 'Msc in Mathematics',
+      course: 'M.Sc. in Mathematics',
       institution: 'University of Heidelberg',
       year: 2023,
     },
     {
-      course: 'BSc in Mathematics',
+      course: 'Exchange Scholar in Applied Mathematics',
+      institution: 'Yale University',
+      year: 2023,
+    },
+    {
+      course: 'B.Sc. in Mathematics',
       institution: 'University of Heidelberg',
       year: 2020,
     },
