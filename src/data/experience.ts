@@ -17,7 +17,7 @@ export const EXPERIENCE: ExperienceItem[] = [
     companyLogo: 'tng_logo.svg',
     location: 'Munich, Germany',
     dateStart: '2025-12-01',
-    description: `* **EuroAgent — Secure Desktop AI Agent (Jun 2026 – present)**: Core developer on a privacy-first desktop AI agent application combining a Tauri/React frontend with a Rust backend; full-stack contributions across a Bun/Rust monorepo covering the desktop UI, agent runtime, and secure auditable LLM tool execution.
+    description: `* **Secure Desktop AI Agent (Jun 2026 – present)**: Core developer on a privacy-first desktop AI agent application combining a Tauri/React frontend with a Rust backend; full-stack contributions across a Bun/Rust monorepo covering the desktop UI, agent runtime, and secure auditable LLM tool execution.
 * **LLM-Powered Document Validation System (May–Jun 2026)**: Core developer in a 3-person team for a production-grade automated proposal review service, co-developing complex .docx document processing with automated comment insertion.
 * **AI-Powered Email to Order Parsing (Apr–May 2026)**: Designed a field-centric email-processing pipeline with FastAPI ingestion and Streamlit review dashboard; attachment-aware LLM processing with multimodal fallbacks for scanned PDFs, plus parallel candidate-resolution combining sender lookup, text extraction, and external address search.
 * **AI Customer Support Automation (Dec 2025 – Apr 2026, live in production)**: Sole AI engineer end-to-end on a cinema-ticketing SaaS — **770+ live B2C tickets** processed with **86.6% strict / 88.9% content-supported approval**; daily volume scaled 5x post-CEO showcase; 13+ feature improvements driven from live reviewer feedback.
