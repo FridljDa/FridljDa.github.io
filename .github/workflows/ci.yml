@@ -31,7 +31,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Extract Node.js version from package.json
         id: node_version
@@ -58,7 +58,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Extract Node.js version from package.json
         id: node_version
@@ -97,7 +97,7 @@ jobs:
     timeout-minutes: 20
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Extract Node.js version from package.json
         id: node_version
@@ -179,7 +179,7 @@ jobs:
     if: github.event_name == 'workflow_dispatch' && github.event.inputs.test_production == 'true'
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Extract Node.js version from package.json
         id: node_version
