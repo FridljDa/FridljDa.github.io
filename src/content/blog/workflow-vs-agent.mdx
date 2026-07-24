@@ -1,10 +1,10 @@
 ---
 title: "Agentic vs Workflow-based AI"
 pubDate: 2026-04-19T00:00:00.000Z
-updatedDate: 2026-04-30T00:00:00.000Z
+updatedDate: 2026-07-24T00:00:00.000Z
 tags:
   - AI
-description: "Workflow win over agents in business process automation."
+description: "Start with an agent to discover the workflow; move stable, high-consequence paths into code."
 image: /images/blog/workflow-vs-agent/featured.png
 ---
 
@@ -29,12 +29,16 @@ Bob from OilVentures sends the following request to his procurement department:
 >
 > I am working in the finance department. Can you please find the best options for me and make the purchase?
 
+OilVentures, AwesomeMarketplace, Bob, and the request are all fictional.
+
 The procurement department handles requests like this regularly and wants to automate it. Two constraints are relevant:
 
 - **AwesomeMarketplace** (their vendor) requires brand, model, chip, RAM, and storage to filter products.
 - **OilVentures policy** caps laptop spend at **$3,000** for the finance department.
 
 We'll look at three ways to automate this.
+
+Across the diagrams, the notation is consistent: **🤖 Agent** means an autonomous component that chooses actions and uses tools; **🧠 LLM-assisted step** means a constrained model call with a defined output; **⚙️ Code step** means deterministic application logic; and **🔌 External tool/API** means a dependency outside the workflow.
 
 ---
 
@@ -44,17 +48,29 @@ A single Procurement Agent gets access to all three tools — marketplace search
 
 ```mermaid
 flowchart TD
-    INPUT([Bob's Laptop Request])
-    INPUT --> A1[🤖 Procurement Agent\nreasoning loop]
+    INPUT(["Bob's laptop request"])
+    A1["🤖 Agent<br/>procurement reasoning and tool use"]
+    T1["🔌 External tool/API<br/>marketplace search"]
+    T2["🔌 External tool/API<br/>company policy"]
+    T3["🔌 External tool/API<br/>order placement"]
+    OUT1(["Order placed<br/>notify Bob"])
+    OUT2(["Order rejected<br/>notify Bob"])
 
-    A1 -- Search products --> A3[🔍 AwesomeMarketplace\nSearch Tool]
-    A1 -- Check policy --> A4[📋 Company Policy\nTool]
-    A1 -- Place order --> A5[🛒 AwesomeMarketplace\nOrder Tool]
-    A1 -- Not compliant --> OUT2([❌ Order not compliant,\nnotify Bob])
+    INPUT -->|"request"| A1
+    A1 -->|"search products"| T1
+    T1 -->|"product results"| A1
+    A1 -->|"check policy"| T2
+    T2 -->|"policy data"| A1
+    A1 -->|"place order"| T3
+    T3 --> OUT1
+    A1 -->|"not compliant"| OUT2
 
-    A3 -- Results --> A1
-    A4 -- Policy data --> A1
-    A5 --> OUT1([✅ Order placed,\nnotify Bob])
+    classDef agent fill:#f3e8ff,stroke:#7c3aed,stroke-width:2px
+    classDef tool fill:#fef3c7,stroke:#d97706,stroke-width:2px
+    classDef terminal fill:#f8fafc,stroke:#64748b,stroke-width:1.5px
+    class A1 agent
+    class T1,T2,T3 tool
+    class INPUT,OUT1,OUT2 terminal
 ```
 
 This looks elegant, but it has a serious problem: there is no guarantee the agent will check the policy *before* placing the order. It might. It might not. And if it places a non-compliant order, you only find out after the fact. Unlike coding tasks — where a failed test is cheap and reversible — a wrongly submitted purchase order has real consequences. As the ServiceNow CEO [put it](https://open.spotify.com/episode/11xeL3QCAF77z1vxOp0am0?si=fc70f33f0dd64ab4): people forgive other people for making mistakes. They don't forgive software.
@@ -67,94 +83,104 @@ Rather than one agent doing everything, we give each task its own dedicated agen
 
 ```mermaid
 flowchart TD
-    INPUT([Bob's Laptop Request])
+    INPUT(["Bob's laptop request"])
+    A1["🤖 Agent<br/>search products"]
+    A2["🤖 Agent<br/>retrieve policy"]
+    A3["🤖 Agent<br/>select and order"]
+    T1["🔌 External tool/API<br/>marketplace search"]
+    T2["🔌 External tool/API<br/>company policy"]
+    D1{"Within the<br/>$3,000 cap?"}
+    T3["🔌 External tool/API<br/>order placement"]
+    OUT1(["Order placed<br/>notify Bob"])
+    OUT2(["Order rejected<br/>notify Bob"])
 
-    INPUT -->|code handoff| A1
-    INPUT -->|code handoff| A2
+    INPUT -->|"request"| A1
+    INPUT -->|"department"| A2
+    A1 -->|"query"| T1
+    T1 -->|"ranked options"| A1
+    A2 -->|"lookup"| T2
+    T2 -->|"budget cap"| A2
+    A1 -->|"options"| A3
+    A2 -->|"policy"| A3
+    A3 --> D1
+    D1 -->|"yes"| T3
+    D1 -->|"no"| OUT2
+    T3 --> OUT1
 
-    subgraph A1 ["🤖 Search Agent"]
-        S1[Parse specs & query] -- Search --> T1[🔍 AwesomeMarketplace\nSearch Tool]
-        T1 -- Ranked options --> S1
-    end
-
-    subgraph A2 ["🤖 Policy Agent"]
-        P1[Retrieve budget cap] -- Lookup --> T2[📋 Company Policy\nTool]
-        T2 -- Budget cap $3,000 --> P1
-    end
-
-    A1 -->|code handoff| A3
-    A2 -->|code handoff| A3
-
-    subgraph A3 ["🤖 Order Agent"]
-        O1[Check best match against budget]
-        O1 --> O2{Price within\n$3,000 cap?}
-        O2 -- Yes --> T3[🛒 AwesomeMarketplace\nOrder Tool]
-    end
-
-    T3 --> OUT1([✅ Order placed,\nnotify Bob])
-    O2 -- No --> OUT2([❌ Order not compliant,\nnotify Bob])
+    classDef agent fill:#f3e8ff,stroke:#7c3aed,stroke-width:2px
+    classDef tool fill:#fef3c7,stroke:#d97706,stroke-width:2px
+    classDef decision fill:#fff7ed,stroke:#ea580c,stroke-width:2px
+    classDef terminal fill:#f8fafc,stroke:#64748b,stroke-width:1.5px
+    class A1,A2,A3 agent
+    class T1,T2,T3 tool
+    class D1 decision
+    class INPUT,OUT1,OUT2 terminal
 ```
 
-This is better. Each agent has a narrow, well-defined job, and code controls the sequencing — so we know the policy check always happens before the order. But three LLM calls for what is largely a structured task still feels like overkill. The Search and Policy agents are essentially doing retrieval with a thin reasoning wrapper. We're paying the cost of LLM unpredictability where we don't need to.
+This is better. Each agent has a narrow, well-defined job, and code controls the sequencing — so we know the policy check always happens before the order. But three agent invocations for what is largely a structured task still feels like overkill. The Search and Policy agents are essentially doing retrieval with a thin reasoning wrapper. We're paying the cost of LLM unpredictability where we don't need to.
 
 ---
 
-## 3. The hybrid approach: extraction agent + code workflow
+## 3. The hybrid approach: LLM-assisted extraction + code workflow
 
 The key insight is that there is only *one* genuinely hard part of Bob's request: parsing his free-text message into a structured spec the marketplace API can consume. Everything after that — the search, the policy check, the order — can be handled deterministically by regular code.
 
 ```mermaid
 flowchart TD
-    INPUT([Bob's Laptop Request])
+    INPUT(["Bob's laptop request"])
+    L1["🧠 LLM-assisted step<br/>extract structured specification"]
+    C1["⚙️ Code step<br/>search exact product filters"]
+    C2["⚙️ Code step<br/>retrieve department budget"]
+    T1["🔌 External tool/API<br/>marketplace search"]
+    T2["🔌 External tool/API<br/>policy store"]
+    C3["⚙️ Code step<br/>select best match"]
+    D1{"Within the<br/>$3,000 cap?"}
+    T3["🔌 External tool/API<br/>order placement"]
+    OUT1(["Order placed<br/>notify Bob"])
+    OUT2(["Order rejected<br/>notify Bob"])
 
-    INPUT -->|code handoff| A1
+    INPUT -->|"free-text request"| L1
+    L1 -->|"product specification"| C1
+    L1 -->|"department"| C2
+    C1 -->|"query"| T1
+    T1 -->|"product results"| C3
+    C2 -->|"lookup"| T2
+    T2 -->|"budget cap"| C3
+    C3 --> D1
+    D1 -->|"yes"| T3
+    D1 -->|"no"| OUT2
+    T3 --> OUT1
 
-    subgraph A1 ["🤖 Extraction Agent  —  only LLM step"]
-        E1[Parse unstructured request]
-        E1 --> E2[Structured spec\nbrand, model, chip, RAM, storage]
-    end
-
-    A1 -->|code handoff| W1
-    A1 -->|code handoff| W2
-
-    subgraph W1 ["⚙️ Marketplace Search"]
-        S1[Query AwesomeMarketplace\nwith exact spec filters]
-    end
-
-    subgraph W2 ["⚙️ Policy Lookup"]
-        P1[Read Finance dept.\nbudget cap from policy DB]
-    end
-
-    W1 -->|code handoff| W3
-    W2 -->|code handoff| W3
-
-    subgraph W3 ["⚙️ Order Placement"]
-        O1[Check best match against budget]
-        O1 --> O2{Price within\n$3,000 cap?}
-    end
-
-    O2 -- Yes --> OUT1([✅ Order placed,\nnotify Bob])
-    O2 -- No --> OUT2([❌ Order not compliant,\nnotify Bob])
+    classDef llm fill:#dbeafe,stroke:#2563eb,stroke-width:2px
+    classDef code fill:#dcfce7,stroke:#16a34a,stroke-width:2px
+    classDef tool fill:#fef3c7,stroke:#d97706,stroke-width:2px
+    classDef decision fill:#fff7ed,stroke:#ea580c,stroke-width:2px
+    classDef terminal fill:#f8fafc,stroke:#64748b,stroke-width:1.5px
+    class L1 llm
+    class C1,C2,C3 code
+    class T1,T2,T3 tool
+    class D1 decision
+    class INPUT,OUT1,OUT2 terminal
 ```
 
-### Verify the distribution before you design
+For this bounded process, the hybrid is the best fit. Product search, budget lookup, and ordering have explicit rules and a small state space. Code makes those rules reliable and auditable; the LLM only bridges human language and structured data.
 
-Why is this even tractable? Why isn't every Bob's request a unique snowflake? Because real business processes rarely are. If you took a sample of past procurement requests and asked an small LLM to bucket them into a small number of intent categories — laptops with specs, peripherals, software licenses, replacement orders, vendor onboarding — you'd typically find that the vast majority fall into a handful of buckets. The long tail is real, but the head of the distribution dominates.
+### What the example hides
 
-This isn't an assumption. It's something you verify empirically before designing the system: take a few hundred historical requests, cluster them, and look at the coverage. If 80% of your traffic falls into a dozen well-defined intents, the hybrid approach is on solid ground. If your distribution is genuinely flat — every request its own snowflake — you have a different problem, and probably need a different architecture. Skipping this check is how teams end up building agentic monoliths for tasks that turn out to be 90% structured.
+Our production support system was less tidy. We used an AI-assisted, iterative process to label and analyse roughly 2,300 historical tickets. Most of the volume fell into a handful of broad customer intents, which initially supported the same workflow-first conclusion.
 
-### Why this works better than the agentic alternatives
+But a concentrated top level did not produce a small workflow. To respond precisely, each broad category had to be split into increasingly specific [sub-intents](/post/first-level-support-automation#step-1-intent-recognition). Reaching an intent leaf was only the beginning: it then combined with the possible [fetch results](/post/first-level-support-automation#step-3-fetch) and customer states. The resulting [plan-generation tree](/post/first-level-support-automation#step-4-plan-generation) became enormous. Every iteration improved known paths, but production kept revealing unseen combinations and more specific intents.
 
-**Use code where code is enough.** The Marketplace Search and Policy Lookup endpoints are unlikely to change often. Implementing a robust integration with exponential backoff, error handling, and retries is a one-time investment — and it'll be more reliable than an agent figuring out how to interact with them on the fly, every time.
+We also tried a more agentic planner. The client relied on about twenty established message templates and expected the system to follow them closely. Given that requirement, deterministic template selection was more reliable than prompt-tuning an LLM to reproduce fixed wording.
 
-**Scope the LLM to what only an LLM can do.** Extracting structured information from unstructured text is a well-defined task. You can build targeted evals, iterate on prompts, use a cheaper model — or even swap the LLM out for a Named Entity Recognition model if your input vocabulary is bounded enough. None of that is possible when the LLM is entangled with search, policy, and ordering logic.
+That comparison did not give the agent a fair chance, though. The workflow encoded knowledge extracted from the historical tickets, while the agent could not search those tickets at all. It was expected to handle the long tail without access to the organisation's accumulated examples.
 
-**Don't ask an LLM to enforce rules it hasn't seen.** LLMs have seen code countless times in their training data. They have *not* seen your specific business requirements, procurement policies, or vendor contracts. A deterministic policy check is a hard `if` statement. It cannot be reasoned around, hallucinated, or skipped.
+### What I would do differently
 
-**Iteration is targeted and predictable.** This is the reason that matters most once a system is in production. Real users will report problems: a request gets misinterpreted, a policy update changes the rules, a vendor adds a new product line. With a workflow, fixes are local. You change the extraction prompt, you add a branch in the policy code, you adjust an API call — and you know what will happen on the next request of that shape. With an agent, your tools for change are blunter. You can edit the system prompt, you can rephrase a policy document, but you're nudging behaviour, not specifying it. The first instinct when something breaks in an agentic system is to tweak the prompt and hope. Hoping doesn't scale, and it doesn't survive a code review either.
+For a process that is not yet well understood, I would now start more agentically. I would give the agent a privacy-safe way to search resolved historical tickets, retrieve relevant examples and templates, and use deterministic business tools.
 
-**Auditability comes for free.** Every step after extraction is regular code. You can log it, test it, and trace it exactly like any other software. When something does go wrong, you know exactly where to look.
+Templates would be examples unless their exact wording was mandatory. Legal language, policy checks, escalation rules, permissions, and irreversible actions would remain constrained by code; the agent could adapt everything else to the case. I would evaluate correctness, policy compliance, tool use, and resolution quality rather than superficial template conformity.
 
----
+Then I would use production evidence to decide what to hardcode. Frequent paths and high-consequence decisions would move into workflows; the long tail would remain agentic. This matches the progression described in Will Larson's [Building internal agents](https://lethain.com/agents-series/) series: start with LLM-driven workflows, then introduce code when reliability, speed, or cost requires it.
 
-This is the pattern I'd reach for first in any process automation task: verify that the input distribution is concentrated, use an LLM to bridge the gap between human language and structured data, and let code do the rest. For a deeper dive into how to implement this cleanly with PydanticAI, see [this post](https://danielfridljand.de/post/pydantic-ai-type-safe-hybrid-workflows).
+Obvious invariants belong in code from day one. For everything else, the choice is not simply agent versus workflow; it is which should come first.

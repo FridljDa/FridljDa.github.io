@@ -14,26 +14,48 @@ How do you actually automate first-level customer support without the system col
 
 The system takes a customer message — email, chat, whatever — and produces two things: a reply (possibly with attachments) and any tool calls needed to resolve the request (invalidate a voucher, file a reimbursement ticket, escalate to a human). Inbound attachments are normalised by a preprocessing layer before anything else runs.
 
+Across the diagrams, the notation is consistent: **🤖 Agent** means an autonomous component that chooses actions and uses tools; **🧠 LLM-assisted step** means a constrained model call with a defined output; **⚙️ Code step** means deterministic application logic; and **🔌 External tool/API** means a dependency outside the workflow.
+
 The pipeline has four steps, run as a DAG:
 
 ```mermaid
-flowchart LR
-    INPUT([Customer message<br/>+ attachments])
-    INPUT --> S1[🤖 Intent recognition]
-    INPUT --> S2[🤖 Information extraction]
-    S2 --> S3[⚙️ Fetch]
-    S1 --> S4[Plan generation]
-    S3 --> S4[Plan generation]
-    S4 --> OUT([Reply + tool calls])
+flowchart TD
+    INPUT(["Customer message<br/>+ attachments"])
+    L1["🧠 LLM-assisted step<br/>intent recognition"]
+    L2["🧠 LLM-assisted step<br/>information extraction"]
+    C1["⚙️ Code step<br/>fetch and score records"]
+    C2["⚙️ Code step<br/>dispatch and plan generation"]
+    A1["🤖 Agent<br/>fallback for an 'other' intent"]
+    OUT(["Reply + tool calls"])
+
+    INPUT -->|"message"| L1
+    INPUT -->|"message"| L2
+    L2 -->|"structured fields"| C1
+    L1 -->|"resolved intent leaf"| C2
+    C1 -->|"candidate records"| C2
+    C2 -->|"known leaf"| OUT
+    C2 -.->|"'other' leaf"| A1
+    A1 -->|"proposed plan"| OUT
+
+    classDef agent fill:#f3e8ff,stroke:#7c3aed,stroke-width:2px
+    classDef llm fill:#dbeafe,stroke:#2563eb,stroke-width:2px
+    classDef code fill:#dcfce7,stroke:#16a34a,stroke-width:2px
+    classDef terminal fill:#f8fafc,stroke:#64748b,stroke-width:1.5px
+    class A1 agent
+    class L1,L2 llm
+    class C1,C2 code
+    class INPUT,OUT terminal
 ```
 
-Intent recognition and information extraction have no data dependency on each other, so they run in parallel. Fetch depends only on extraction, and plan generation pulls together the intent and the fetched records.
+Intent recognition and information extraction have no data dependency on each other, so they run in parallel. Fetch depends only on extraction. Plan generation combines the resolved intent leaf with the fetched records: known leaves follow deterministic code, while an "other" leaf uses the fallback agent.
 
 We will trace one message through all four steps. The running example throughout this post is:
 
-> *Ich bin Kunde bei der Sparkasse Nürnberg, mein Name ist Max Müller, meine Partnerin Angelika Müller, Kontonummer ABCO1234. Wir kommen nicht mehr in unser Konto rein.*
+> *I bank with Northstar Bank's Riverton branch. My name is Alex Carter, and my partner is Jamie Carter. Our account number is NSBO1234. We can no longer access the account.*
 
-This message is realistic in three useful ways. The intent is slightly ambiguous (login problem? account locked? something else?). There are two people named and we do not yet know whose account is meant. And the account number contains the classic OCR-or-typing ambiguity between `0` and `O` — `ABCO1234` could be `ABC01234`.
+Northstar Bank, its Riverton branch, the people, and the account details are all fictional.
+
+This message is realistic in three useful ways. The intent is slightly ambiguous (login problem? account locked? something else?). There are two people named and we do not yet know whose account is meant. And the account number contains the classic OCR-or-typing ambiguity between `0` and `O` — `NSBO1234` could be `NSB01234`.
 
 ---
 
@@ -41,29 +63,31 @@ This message is realistic in three useful ways. The intent is slightly ambiguous
 
 The job here is to classify the message into one of a small set of intents — cheaply enough that the downstream pipeline can branch on it.
 
-We classify against a **rooted DAG of intents — a single entry point, biased toward depth 2**. The root has a handful of broad parent intents ("account access", "payments", "card services", …) plus an explicit **"other"** parent. Most parents have a few sub-intents underneath, again plus an "other" within that parent. We run this as two LLM calls: first the parent intent, then — given the parent — the sub-intent from a constrained list. Both calls are simple `Agent` invocations with no tools and a typed `output_type`; see [Type-Safe Hybrid Workflows with Pydantic AI](https://danielfridljand.de/post/pydantic-ai-type-safe-hybrid-workflows) for the mechanics.
+We classify against a **rooted DAG of intents — a single entry point, biased toward depth 2**. The root has a handful of broad parent intents ("account access", "payments", "card services", …) plus an explicit **"other"** parent. Most parents have a few sub-intents underneath, again plus an "other" within that parent. We run this as two LLM-assisted steps: first the parent intent, then — given the parent — the sub-intent from a constrained list. Pydantic AI exposes each call through its `Agent` class, but architecturally these are constrained LLM-assisted steps: they have no tools or open-ended reasoning loop and return a typed `output_type`. See [Type-Safe Hybrid Workflows with Pydantic AI](https://danielfridljand.de/post/pydantic-ai-type-safe-hybrid-workflows) for the mechanics.
 
 ```mermaid
 flowchart TD
-    R([Message])
-    R --> P1[Account access]
-    R --> P2[Payments]
-    R --> P3[Card services]
-    R --> POT[Other]
+    R(["Customer message"])
+    R --> P1["Account access"]
+    R --> P2["Payments"]
+    R --> P3["Card services"]
+    R --> POT["Other"]
 
-    P1 --> P1A[Login problem]
-    P1 --> P1B[Password reset]
-    P1 --> LOCKED[Account locked]
-    P1 --> P1OT[Other]
+    P1 --> P1A["Login problem"]
+    P1 --> P1B["Password reset"]
+    P1 --> LOCKED["Account locked"]
+    P1 --> P1OT["Other"]
 
-    P3 --> P3A[Card blocked]
+    P3 --> P3A["Card blocked"]
     P3 --> LOCKED
-    P3 --> P3OT[Other]
+    P3 --> P3OT["Other"]
 
-    style POT stroke-dasharray: 4 4
-    style P1OT stroke-dasharray: 4 4
-    style P3OT stroke-dasharray: 4 4
-    style LOCKED fill:#dbeafe,stroke:#2563eb,stroke-width:2px
+    classDef intent fill:#f8fafc,stroke:#64748b,stroke-width:1.5px
+    classDef selected fill:#dbeafe,stroke:#2563eb,stroke-width:2px
+    classDef fallback fill:#fff7ed,stroke:#ea580c,stroke-width:2px,stroke-dasharray:4 4
+    class R,P1,P2,P3,P1A,P1B,P3A intent
+    class LOCKED selected
+    class POT,P1OT,P3OT fallback
 ```
 
 Two of those edges are worth staring at: **Account locked** is a child of *both* **Account access** and **Card services**, and **Payments** has no children drawn at all. Those are the two structural choices that make this a DAG rather than a tree.
@@ -76,7 +100,7 @@ A few things worth pulling out.
 
 **The "other" category at every level is the point, not an afterthought.** No matter how carefully you enumerate intents at design time, customer requests do not respect your taxonomy. By modelling "other" explicitly, we make our coverage gap visible: every message that lands in an "other" bucket is a candidate for becoming its own intent in a future iteration cycle. It also gives us a clean place to route the more agentic, less structured downstream handling, as we will see in the plan step.
 
-**Two LLM calls, not one big classifier.** The reachable sub-intents differ by parent. Asking the model to choose from a flat list of every sub-intent across every parent works worse in practice — the model gets confused between sibling categories from unrelated parents — and the typed contract (a `Literal` of the sub-intents reachable from the chosen parent) is harder to express. Two narrow calls with constrained output types beat one wide call. The shared-leaf case costs nothing here: a sub-intent that sits under two parents simply appears in both parents' `Literal`s.
+**Two LLM-assisted steps, not one wide classifier.** The reachable sub-intents differ by parent. Asking the model to choose from a flat list of every sub-intent across every parent works worse in practice — the model gets confused between sibling categories from unrelated parents — and the typed contract (a `Literal` of the sub-intents reachable from the chosen parent) is harder to express. Two narrow calls with constrained output types beat one wide call. The shared-leaf case costs nothing here: a sub-intent that sits under two parents simply appears in both parents' `Literal`s.
 
 **This is the cleanest eval target in the whole pipeline.** A labeled set of historical conversations with their correct (parent, sub) labels gives you precision/recall numbers you can move. We will return to this in the evals section.
 
@@ -88,32 +112,38 @@ For our running example, the parent intent comes out as **account access** and t
 
 In parallel with intent recognition, we extract the structured information the downstream steps will need.
 
-We organise extracted fields into **groups** — small clusters of related fields that get pulled out together in a single LLM call. One group per call, but groups run in parallel. For our running example, the relevant groups are a `Personen` group (names) and a `Konto` group (account identifiers, branch). Each group has its own Pydantic output model and its own prompt, with Pydantic AI handling validation and retry on the typed output — see [the Pydantic AI post](https://danielfridljand.de/post/pydantic-ai-type-safe-hybrid-workflows) for how that wiring works.
+We organise extracted fields into **groups** — small clusters of related fields that get pulled out together in a single LLM-assisted step. One group per step, but the groups run in parallel. For our running example, the relevant groups are `People` (names) and `Account` (account identifiers and branch). Each group has its own Pydantic output model and prompt, with Pydantic AI handling validation and retries on the typed output — see [the Pydantic AI post](https://danielfridljand.de/post/pydantic-ai-type-safe-hybrid-workflows) for how that wiring works.
 
 ```mermaid
 flowchart TD
-    MSG([Customer message])
+    MSG(["Customer message"])
 
-    MSG --> P_AGENT
-    MSG --> K_AGENT
-
-    subgraph personen["Personen group · 1 LLM call"]
-        P_AGENT["🤖 Agent<br/>Personen prompt<br/>output_type: PersonenOutput"]
-        P_AGENT --> P_FIELDS["Vorname · Nachname"]
+    subgraph people["People group"]
+        P_STEP["🧠 LLM-assisted step<br/>People prompt<br/>output: PeopleOutput"]
+        P_FIELDS["Given name · Family name"]
+        P_STEP -->|"typed fields"| P_FIELDS
     end
 
-    subgraph konto["Konto group · 1 LLM call"]
-        K_AGENT["🤖 Agent<br/>Konto prompt<br/>output_type: KontoOutput"]
-        K_AGENT --> K_FIELDS["Kontonummer · Filiale"]
+    subgraph account["Account group"]
+        A_STEP["🧠 LLM-assisted step<br/>Account prompt<br/>output: AccountOutput"]
+        A_FIELDS["Account number · Branch"]
+        A_STEP -->|"typed fields"| A_FIELDS
     end
 
-    P_FIELDS --> OUT([Extracted info])
-    K_FIELDS --> OUT
+    MSG -->|"message"| P_STEP
+    MSG -->|"message"| A_STEP
+    P_FIELDS --> OUT(["Extracted information"])
+    A_FIELDS --> OUT
+
+    classDef llm fill:#dbeafe,stroke:#2563eb,stroke-width:2px
+    classDef data fill:#f8fafc,stroke:#64748b,stroke-width:1.5px
+    class P_STEP,A_STEP llm
+    class MSG,P_FIELDS,A_FIELDS,OUT data
 ```
 
 Grouping matters for two reasons.
 
-**Field interactions live inside a group.** Take the input "Ich bin Kunde bei der Sparkasse Nürnberg." A naive per-field extraction asks "what is the location?" and "what is the shop name?" independently. Depending on the model, you can get `location=Nürnberg, shop_name=Sparkasse` (information lost) or `location=Nürnberg, shop_name=Sparkasse Nürnberg` (information duplicated). With a group, you can specify in one prompt how the related fields should agree.
+**Field interactions live inside a group.** Take the phrase "Northstar Bank's Riverton branch." A naive per-field extraction asks for the bank and branch independently. Depending on the model, you can get `bank=Northstar Bank, branch=Riverton` or duplicate the location in both fields. With a group, one prompt can specify how the related fields should be partitioned and kept consistent.
 
 **Groups are independent eval targets.** Each group has its own labeled dataset and its own metrics. When extraction quality regresses, you know which group regressed — and you can swap its model, tune its prompt, or even replace it with a small NER model — without touching anything else.
 
@@ -130,8 +160,8 @@ Throughout this pipeline we would rather over-extract than under-extract: the fe
 
 For our running example, after extraction we have something like:
 
-- `Personen`: `Vorname: [Max, Angelika]`, `Nachname: [Müller]`
-- `Konto`: `Kontonummer: [ABCO1234, ABC01234]`, `Filiale: [Sparkasse Nürnberg]`
+- `People`: `Given name: [Alex, Jamie]`, `Family name: [Carter]`
+- `Account`: `Account number: [NSBO1234, NSB01234]`, `Branch: [Riverton]`
 
 ---
 
@@ -143,48 +173,54 @@ The approach is a **weighted-scoring fan-out**. For each extracted field, we iss
 
 ```mermaid
 flowchart TD
-    EX([Extracted info])
-    EX --> Q1["/account?Vorname=Max"]
-    EX --> Q2["/account?Vorname=Angelika"]
-    EX --> Q3["/account?Nachname=Müller"]
-    EX --> Q4["/account?Filiale=Sparkasse Nürnberg"]
-    EX --> Q5["/account?Kontonummer=ABCO1234"]
-    EX --> Q6["/account?Kontonummer=ABC01234"]
+    EX(["Extracted information"])
+    Q1["🔌 External tool/API<br/>given_name=Alex<br/>given_name=Jamie"]
+    Q2["🔌 External tool/API<br/>family_name=Carter<br/>branch=Riverton"]
+    Q3["🔌 External tool/API<br/>account_number=NSBO1234<br/>account_number=NSB01234"]
+    C1["⚙️ Code step<br/>merge by primary ID<br/>and sum signal strengths"]
+    C2["⚙️ Code step<br/>keep the maximum score<br/>above the threshold"]
+    OUT(["Candidate records"])
 
-    Q1 --> M[Merge by primary ID<br/>sum signal strengths]
-    Q2 --> M
-    Q3 --> M
-    Q4 --> M
-    Q5 --> M
-    Q6 --> M
+    EX -->|"parallel queries"| Q1
+    EX -->|"parallel queries"| Q2
+    EX -->|"parallel queries"| Q3
+    Q1 -->|"candidate hits"| C1
+    Q2 -->|"candidate hits"| C1
+    Q3 -->|"candidate hits"| C1
+    C1 -->|"scored records"| C2
+    C2 --> OUT
 
-    M --> F[Filter: score ≥ threshold<br/>and score == max]
-    F --> OUT([Candidate records])
+    classDef code fill:#dcfce7,stroke:#16a34a,stroke-width:2px
+    classDef tool fill:#fef3c7,stroke:#d97706,stroke-width:2px
+    classDef terminal fill:#f8fafc,stroke:#64748b,stroke-width:1.5px
+    class C1,C2 code
+    class Q1,Q2,Q3 tool
+    class EX,OUT terminal
 ```
 
 The signal-strength weights are assigned per field, based on how discriminating that field is. A first name on its own picks out thousands of customers; an account number picks out one (or none):
 
 | Field | Weight |
 |---|---|
-| Vorname | 1 |
-| Nachname | 2 |
-| Filiale | 2 |
-| Kontonummer | 5 |
+| Given name | 1 |
+| Family name | 2 |
+| Branch | 2 |
+| Account number | 5 |
 
 For our running example, suppose the queries return the following hits (simplified):
 
 | Record ID | Matched on | Score |
 |---|---|---|
-| `acc_001` | Vorname=Max, Nachname=Müller, Filiale=Sparkasse Nürnberg, Kontonummer=ABC01234 | 1 + 2 + 2 + 5 = **10** |
-| `acc_017` | Vorname=Angelika, Nachname=Müller | 1 + 2 = 3 |
-| `acc_204` | Nachname=Müller | 2 |
-| `acc_388` | Vorname=Max | 1 |
+| `acc_001` | Given name=Alex, Family name=Carter, Branch=Riverton, Account number=NSB01234 | 1 + 2 + 2 + 5 = **10** |
+| `acc_017` | Given name=Jamie, Family name=Carter | 1 + 2 = 3 |
+| `acc_204` | Family name=Carter | 2 |
+| `acc_388` | Given name=Alex | 1 |
 
-`acc_001` dominates: it matched all four discriminating fields, including the strong one. It is the only record at the max score and above threshold, so it is what we pass on. Note that the `0`/`O` variant we generated during extraction is what made the Kontonummer hit possible — the customer wrote `ABCO1234`, the actual account number is `ABC01234`, and the variant trick bridged the gap.
+`acc_001` dominates: it matched all four discriminating fields, including the strong one. It is the only record at the maximum score and above the threshold, so it is what we pass on. The `0`/`O` variant generated during extraction made the account-number hit possible: the customer wrote `NSBO1234`, the actual account number is `NSB01234`, and the variant bridged the gap.
 
 If no record had cleared the threshold, fetch would have returned an empty result, and the plan step would handle that explicitly — typically by asking the customer for more information.
 
-The whole step is plain code. There is no LLM call here at all. The mental model that matters in practice is just: fan out, sum weighted hits, threshold.
+The whole step is plain code. There is no LLM-assisted step here at all. The mental model that matters in practice is just: fan out, sum weighted hits, threshold.
 
 ---
 
@@ -199,25 +235,41 @@ Plan generation starts from a **fully resolved leaf of the intent DAG** plus the
 ```mermaid
 flowchart TD
     ROOT(["Resolved intent leaf<br/>+ fetched data"])
-    ROOT --> DISP{{Dispatch on leaf}}
-    DISP -- "other leaves" --> L5[🤖 LLM-generated plan]
-    DISP -- "account_locked" --> B1{Account<br/>found?}
-    B1 -- no --> L2[Template:<br/>request account info]
-    B1 -- yes --> B2{One<br/>candidate?}
-    B2 -- no --> L6[Template:<br/>disambiguate account]
-    B2 -- yes --> B3{Fraud<br/>flag set?}
-    B3 -- yes --> L7[Template + tool:<br/>escalate to security]
-    B3 -- no --> L1[Template:<br/>unlock instructions]
+    C1["⚙️ Code step<br/>dispatch on resolved leaf"]
+    A1["🤖 Agent<br/>propose fallback plan"]
+    D1{"Account<br/>found?"}
+    D2{"Exactly one<br/>candidate?"}
+    D3{"Fraud flag<br/>set?"}
+    C2["⚙️ Code step<br/>request account information"]
+    C3["⚙️ Code step<br/>request account disambiguation"]
+    C4["⚙️ Code step<br/>send unlock instructions"]
+    C5["⚙️ Code step<br/>escalate to security"]
 
-    style DISP fill:#ede9fe,stroke:#7c3aed
-    style L5 fill:#ffe4b5,stroke:#d97706,stroke-width:2px
+    ROOT --> C1
+    C1 -.->|"'other' leaf"| A1
+    C1 -->|"account_locked"| D1
+    D1 -->|"no"| C2
+    D1 -->|"yes"| D2
+    D2 -->|"no"| C3
+    D2 -->|"yes"| D3
+    D3 -->|"no"| C4
+    D3 -->|"yes"| C5
+
+    classDef agent fill:#f3e8ff,stroke:#7c3aed,stroke-width:2px
+    classDef code fill:#dcfce7,stroke:#16a34a,stroke-width:2px
+    classDef decision fill:#fff7ed,stroke:#ea580c,stroke-width:2px
+    classDef terminal fill:#f8fafc,stroke:#64748b,stroke-width:1.5px
+    class A1 agent
+    class C1,C2,C3,C4,C5 code
+    class D1,D2,D3 decision
+    class ROOT terminal
 ```
 
-The hexagon is a keyed lookup on the already-known leaf, not a re-classification. Everything below the `account_locked` edge is a question about the fetched data — found, count, flags — landing on a template plus any tool calls.
+The green dispatch node is a keyed lookup on the already-known leaf, not a re-classification. Everything below the `account_locked` edge is a question about the fetched data — found, count, flags — landing on a deterministic template plus any tool calls.
 
-**The "other" leaves are the exception.** When the message resolved to one of the "other" leaves at intent classification, we do not have a hardcoded plan — by construction, we have not seen enough of these to write one. Those leaves use an LLM agent with access to the fetched data and a constrained set of tools to propose a plan. Only those leaves are LLM-driven; every other leaf's plan is deterministic. The amber node in the diagram above is the only one that calls an LLM at planning time.
+**The "other" leaves are the exception.** When the message resolves to one of the "other" leaves during intent recognition, we do not have a hardcoded plan — by construction, we have not seen enough examples to write one. Those leaves use the purple fallback agent, which can inspect the fetched data and use a constrained tool set to propose a plan. It is the only autonomous agent in the pipeline; every known leaf follows deterministic code.
 
-Every "other"-driven LLM plan is a candidate for being promoted to a hardcoded leaf once the pattern is clear enough. That promotion loop — observe, label, generalise, hardcode — is how the system gets less LLM-dependent over time, not more.
+Every plan produced by the fallback agent is a candidate for being promoted to a hardcoded leaf once the pattern is clear enough. That promotion loop — observe, label, generalise, hardcode — is how the system gets less LLM-dependent over time, not more.
 
 For our running example, the resolved leaf is `account_locked`. Dispatch hands off to its plan, which then asks only fetched-data questions: account found? — yes, `acc_001`; one candidate? — yes, it was the sole record above threshold in Step 3; fraud flag set? — no. That lands on the "unlock instructions" template, parametrised with the matched account.
 
@@ -244,4 +296,4 @@ A useful side effect of the "other" buckets is that they are a self-curating que
 
 The pattern, summarised: decompose into typed steps, use LLMs only where they earn their place, model coverage gaps explicitly with "other" buckets, and bias every step toward making the next one's job tractable. What is worth saying is that, taken together, they produce a system you can actually evolve in production — one where regressions are localizable, evals are sharp, and the long tail is a queue you work through, not a fire you fight.
 
-Two natural extensions from here. The first is human-in-the-loop approval for high-stakes plans, which is exactly the territory of [Temporal for Human-in-the-Loop](https://danielfridljand.de/post/temporal-human-in-the-loop) — durable waits, signals, and deterministic recovery across restarts. The second is the question of whether the same decomposition works for adjacent problems: triage in operations, intake in legal, claims processing in insurance. The shapes look similar, and the central move — separating the "what" (an LLM picks a typed plan) from the "do" (code executes it) — is general.
+Two natural extensions from here. The first is human-in-the-loop approval for high-stakes plans, which is exactly the territory of [Temporal for Human-in-the-Loop](https://danielfridljand.de/post/temporal-human-in-the-loop) — durable waits, signals, and deterministic recovery across restarts. The second is the question of whether the same decomposition works for adjacent problems: triage in operations, intake in legal, claims processing in insurance. The shapes look similar, and the central move — using typed LLM-assisted steps for interpretation while keeping execution in code — is general.

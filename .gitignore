@@ -25,7 +25,14 @@ pnpm-debug.log*
 
 # OS-specific files
 .DS_Store
+.AppleDouble
+.LSOverride
+._*
+Icon?
 Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
 
 # Editor and IDE settings
 .vscode/
@@ -38,6 +45,12 @@ tmp/
 temp/
 *.tmp
 .tmp/
+*~
+
+# Python caches
+__pycache__/
+*.py[cod]
+.pytest_cache/
 
 # Script output
 scripts/cursor-model-blog/output/
@@ -53,10 +66,8 @@ scripts/cursor-model-blog/output/
 .turbo/
 .eslintcache
 .pnpm-store
-.DS_Store
 
 # Playwright test results
 test-results/
 playwright-report/
 playwright/.cache/
-.DS_Store
