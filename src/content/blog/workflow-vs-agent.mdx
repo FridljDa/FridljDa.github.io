@@ -55,6 +55,12 @@ flowchart LR
 
 ---
 
+## We looked at the data
+
+Before building anything, we labelled and clustered roughly 2,300 past tickets with an AI-assisted, iterative process: about 80% fell into a dozen intents — account access, payments, card services, disputes. The long tail was real, but the head of the distribution dominated — and that concentration is what makes automating this worthwhile at all. (If yours is flat, with every ticket its own snowflake, you have a different problem and probably need a different architecture.)
+
+---
+
 ## 1. The fully agentic approach
 
 The first design we considered was a single Support Agent with every tool — account lookup, the security-flag check, and the two actions (send unlock instructions, escalate to security) — writing the customer's reply itself.
@@ -92,15 +98,9 @@ There is a second, quieter failure mode. The agent composes each reply from scra
 
 ---
 
-## We looked at the data
-
-Before building anything, we labelled and clustered roughly 2,300 past tickets with an AI-assisted, iterative process: about 80% fell into a dozen intents — account access, payments, card services, disputes. The long tail was real, but the head of the distribution dominated, and that is what makes a workflow worth building. (If yours is flat, with every ticket its own snowflake, you have a different problem and probably need a different architecture.)
-
----
-
 ## 2. The workflow approach
 
-Given that structure, we kept code in charge of the sequencing and reserved the LLM for the *one* genuinely hard part of Alex's message: interpreting it — recognising that this is an *account-locked* request and pulling out the identifier (the account number, or the name and branch). Everything after that — the lookup, the flag check, the reply — is deterministic, so code runs the steps in a fixed order and the flag check always happens before any unlock instructions go out.
+To fix both problems, we kept code in charge of the sequencing and reserved the LLM for the *one* genuinely hard part of Alex's message: interpreting it — recognising that this is an *account-locked* request and pulling out the identifier (the account number, or the name and branch). Everything after that — the lookup, the flag check, the reply — is deterministic, so code runs the steps in a fixed order and the flag check always happens before any unlock instructions go out.
 
 ```mermaid
 flowchart TD
@@ -156,14 +156,14 @@ We built the full [four-step pipeline](/post/first-level-support-automation) and
 We largely automated the resulting [external feedback loop](https://www.deeplearning.ai/the-batch/issue-359) into code changes:
 
 1. Experts graded a batch of shadow responses and left free-text feedback.
-2. An agent turned each piece of feedback into a fix — usually a new DAG branch.
+2. An agent turned each piece of feedback into a fix — usually a new branch in the tree.
 3. It added the case to an eval set and re-ran the whole suite.
 
 ## But the problem wasn't bounded
 
-None of that changed the fundamental problem: it wasn't *bounded*. A handful of recurring intents really did account for most of the volume — but a *true* workflow needs a deterministic mapping from customer intent plus [fetched data](/post/first-level-support-automation#step-3-fetch) to a helpful reply. Making that mapping precise enough forced us to split each broad intent into ever finer [sub-intents](/post/first-level-support-automation#step-1-intent-recognition), then combine each leaf with the customer's state — so the [plan-generation tree](/post/first-level-support-automation#step-4-plan-generation) grew without end, and production kept surfacing paths we hadn't hardcoded. The tail is where support actually lives.
+None of that changed the fundamental problem: it wasn't *bounded*. A handful of recurring intents really did account for most of the volume — but a *true* workflow needs a deterministic mapping from customer intent plus [fetched data](/post/first-level-support-automation#step-3-fetch) to a helpful reply. Making that mapping precise enough forced us to split each broad intent into ever finer [sub-intents](/post/first-level-support-automation#step-1-intent-recognition), then combine each leaf with the customer's state — so the [plan-generation tree](/post/first-level-support-automation#step-4-plan-generation) grew without end, and production kept surfacing paths we hadn't hardcoded.
 
-All the loop did against that tail was extend a hand-coded tree one newly-seen path at a time. Every branch was added *after* production surprised me, so I was always a step behind.
+All the loop did was extend a hand-coded tree one newly-seen path at a time. Every branch was added *after* production surprised me, so I was always a step behind.
 
 There's an echo of Rich Sutton's [*The Bitter Lesson*](http://www.incompleteideas.net/IncIdeas/BitterLesson.html) here: hand-encoded human knowledge — our intent tree — tends to lose over time to general methods that scale with compute, and as models get cheaper and better that trade only tilts further toward the agent.
 
@@ -234,8 +234,8 @@ The dashed edge is the whole point: code paths are grown *out of* proven agent b
 
 The agentic approach has real caveats, though:
 
-- **Privacy and security are hard to get right.** To be useful on the long tail, the agent needs to draw on historical tickets — which are full of personal data. An agent that retrieves and reasons over them is a far larger exposure surface than a fixed DAG.
-- **The agent doesn't inherently know how to resolve anything.** Neither I, nor OpenAI, nor Anthropic know how Alex Carter gets back into her account — that knowledge lives inside the bank, not in the model's training data, so the agent doesn't know it either. The obvious remedy is to give it the resolved historical tickets to ground its answers. But those tickets are full of conflicting and low-quality resolutions; in the workflow, the DAG was a single, curated source of truth.
+- **Privacy and security are hard to get right.** To be useful on the long tail, the agent needs to draw on historical tickets — which are full of personal data. An agent that retrieves and reasons over them is a far larger exposure surface than a fixed tree.
+- **The agent doesn't inherently know how to resolve anything.** Neither I, nor OpenAI, nor Anthropic know how Alex Carter gets back into her account — that knowledge lives inside the bank, not in the model's training data, so the agent doesn't know it either. The obvious remedy is to give it the resolved historical tickets to ground its answers. But those tickets are full of conflicting and low-quality resolutions; in the workflow, the tree was a single, curated source of truth.
 
 So the honest verdict is inconclusive.
 
