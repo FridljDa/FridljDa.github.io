@@ -228,10 +228,10 @@ flowchart TD
 
 The dashed edge is the whole point: code paths are grown *out of* proven agent behaviour, not assumed up front.
 
-To make the agent good on the long tail, I would give it access to the resolved historical tickets to ground its answers. I'm genuinely unsure that would work, with two caveats:
+The agentic approach has real caveats, though:
 
-- **Privacy and security are hard to get right.** Those tickets are full of personal data, and an agent that retrieves and reasons over them is a far larger exposure surface than a fixed DAG.
-- **The tickets are stale.** Leaning on them might nudge the agent toward outdated answers rather than better ones.
+- **Privacy and security are hard to get right.** To be useful on the long tail, the agent needs to draw on historical tickets — which are full of personal data. An agent that retrieves and reasons over them is a far larger exposure surface than a fixed DAG.
+- **The agent doesn't inherently know how to resolve anything.** Neither I, nor OpenAI, nor Anthropic know how Alex Carter gets back into her account — that knowledge lives inside the bank, not in the model's training data, so the agent doesn't know it either. The obvious remedy is to give it the resolved historical tickets to ground its answers. But those tickets are full of conflicting and low-quality resolutions; in the workflow, the DAG was a single, curated source of truth.
 
 So the honest verdict is inconclusive.
 
