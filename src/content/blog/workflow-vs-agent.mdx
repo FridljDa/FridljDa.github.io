@@ -1,5 +1,5 @@
 ---
-title: "Agentic vs Workflow-based AI"
+title: "Start With an Agent, Harden Into a Workflow"
 pubDate: 2026-04-19T00:00:00.000Z
 updatedDate: 2026-07-24T00:00:00.000Z
 tags:
@@ -203,7 +203,33 @@ And notice what my nice loop was actually doing against that tail: using an agen
 
 ## I didn't give the agent a fair chance
 
-We did try a more agentic planner for a while. But the client had about twenty established message templates and complained when responses didn't match them, so we spent our effort prompt-tuning the agent to reproduce fixed wording — a deterministic job an agent is badly suited to. Judged on template conformity, the workflow won easily.
+Eventually I stopped trying to out-run the tail. The workflow just wasn't expressive enough, so I reached for agentic paths — an agent to handle the `other` leaves the tree couldn't ([the fallback in the plan-generation step](/post/first-level-support-automation#step-4-plan-generation)):
+
+```mermaid
+flowchart TD
+    INPUT(["Customer request"])
+    D{"Known intent leaf?"}
+    C["⚙️ Code step<br/>hardcoded plan"]
+    A["🤖 Agent<br/>fallback for 'other' leaves"]
+    OUT(["Response + tool calls"])
+
+    INPUT --> D
+    D -->|"known leaf"| C
+    D -.->|"'other'"| A
+    C --> OUT
+    A --> OUT
+
+    classDef agent fill:#f3e8ff,stroke:#7c3aed,stroke-width:2px
+    classDef code fill:#dcfce7,stroke:#16a34a,stroke-width:2px
+    classDef decision fill:#fff7ed,stroke:#ea580c,stroke-width:2px
+    classDef terminal fill:#f8fafc,stroke:#64748b,stroke-width:1.5px
+    class A agent
+    class C code
+    class D decision
+    class INPUT,OUT terminal
+```
+
+Code was the default; the agent was the dashed exception, reached only when no hardcoded leaf matched. But I let it handle only the scraps the code hadn't reached yet, and even there I never gave it a fair shot. The client had about twenty established message templates and complained when responses didn't match them, so we spent our effort prompt-tuning the agent to reproduce fixed wording — a deterministic job an agent is badly suited to, and by that measure the workflow won easily.
 
 That comparison was unfair to the agent in two ways, though I didn't see it clearly at the time. First, the workflow had a built-in head start: we had constructed its intent tree by analysing thousands of historical tickets, so all of that knowledge was already baked into the code — while the agent was never given access to those tickets to search. Second, we judged the agent on the wrong thing: whether its reply matched one of the fixed templates, not whether it actually resolved the customer's problem. An agent that wrote a clearer, more helpful answer in its own words would still "lose", simply because it didn't reproduce the template. In short, we asked the agent to be a worse workflow instead of letting it be a better agent.
 
@@ -219,14 +245,14 @@ I would give the agentic planner a real chance before growing the workflow. And 
 
 The hard constraints would still live in code — legal language, policy checks, escalation rules, permissions, anything irreversible — with the agent free to adapt everything else, and judged on whether it resolved the customer's problem rather than on template conformity.
 
-Then I would let production evidence decide what to freeze. Frequent paths and high-consequence actions move into workflows; the long tail stays agentic. This is the progression in Will Larson's [Building internal agents](https://lethain.com/agents-series/) series, and it inverts the order I actually followed.
+Then I would let production evidence decide what to freeze. A path moves into a workflow only when it shows up often *and* the agent handles it unreliably, or when it is high-consequence; the rest of the long tail stays agentic. This is the progression in Will Larson's [Building internal agents](https://lethain.com/agents-series/) series, and it inverts the order I actually followed.
 
-Our system already had both kinds of path — deterministic branches and an agentic fallback for the `other` leaves ([see the plan-generation step](/post/first-level-support-automation#step-4-plan-generation)). We just assembled them in the wrong order: code first, with the agent bolted on for whatever the code didn't cover. Inverted, the runtime routes to the agent by default and to code only for the paths production has proven worth hardening:
+The pieces were all there; I just had them in the wrong order. Inverted, the same two path types swap roles — the agent handles requests by default, and a deterministic path takes over only where production has proven a frequent path too unstable to leave to the agent:
 
 ```mermaid
 flowchart TD
     INPUT(["Customer request"])
-    D{"Path proven frequent<br/>or high-consequence?"}
+    D{"Frequent + unstable,<br/>or high-consequence?"}
     C["⚙️ Code step<br/>hardened workflow"]
     A["🤖 Agent<br/>search tickets, use tools,<br/>adapt the response"]
     OUT(["Response + tool calls"])
