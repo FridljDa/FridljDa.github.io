@@ -135,7 +135,7 @@ flowchart TD
     class INPUT,OUT1,OUT2 terminal
 ```
 
-For this one intent, the hybrid was the clear fit. The lookup, the flag rule, and the two replies have explicit logic and a small state space. Code makes those rules reliable and auditable — and because code selects the reply, the response matches our established template by construction. The LLM only bridges human language and structured data.
+For this one intent, the workflow was the clear fit. The lookup, the flag rule, and the two replies have explicit logic and a small state space. Code makes those rules reliable and auditable — and because code selects the reply, the response matches our established template by construction. The LLM only bridges human language and structured data.
 
 ### Why workflows win for a bounded problem
 
@@ -151,19 +151,23 @@ These advantages are real, and for a bounded intent like this one they are decis
 
 ## Growing the workflow with a feedback loop
 
-Our production system was messier than a single locked-account ticket, but it started the same way. We did also try a more agentic planner for a while, but its replies kept drifting from those twenty templates and the client noticed — reproducing fixed wording is a deterministic job a workflow does far more reliably. Judged on template conformity, the workflow won easily, so we committed to it and built the [four-step pipeline](/post/first-level-support-automation).
+We built the full [four-step pipeline](/post/first-level-support-automation) and ran it in a setup that made iteration cheap. The system went live in **shadow deployment** — its responses were graded by subject-matter experts but never shown to customers — so a wrong answer had almost no blast radius.
 
-Then we ran it in a setup that made iteration cheap. The system went live in **shadow deployment** — its responses were graded by subject-matter experts but never shown to customers — so a wrong answer had almost no blast radius. That handed me cheap, reversible retries and a graded feedback signal.
+We largely automated the resulting [external feedback loop](https://www.deeplearning.ai/the-batch/issue-359) into code changes:
 
-But the loop we actually had was not the tight agentic loop coding enjoys; it was an [external feedback loop](https://www.deeplearning.ai/the-batch/issue-359). Production surfaced the cases, experts graded them, and I fed the fixes back in — usually a new DAG branch, added to an eval set and re-run against the whole suite. The trouble is that an external feedback loop is inherently slow: the expert grades arrived days later, so each turn took days, not the seconds-to-minutes a coding agent gets.
+1. Experts graded a batch of shadow responses and left free-text feedback.
+2. An agent turned each piece of feedback into a fix — usually a new DAG branch.
+3. It added the case to an eval set and re-ran the whole suite.
 
 ## But the problem wasn't bounded
 
-And even that slow loop was fighting a losing battle. The mass really was there: a handful of recurring customer intents accounted for most of the volume. But a *true* workflow needs a deterministic mapping from customer intent plus [fetched data](/post/first-level-support-automation#step-3-fetch) to a helpful response — and to make that mapping precise enough to actually help each customer, we were forced to keep dividing each broad intent into ever more specific [sub-intents](/post/first-level-support-automation#step-1-intent-recognition), then sub-sub-intents. And reaching an intent leaf was only the beginning: each leaf combined with the customer's state, and the resulting [plan-generation tree](/post/first-level-support-automation#step-4-plan-generation) grew enormous. Production kept surfacing paths we hadn't seen: still-more-specific intents, unseen DAG combinations. The head of the distribution was concentrated; the tail was deep — and the tail is where support actually lives.
+None of that changed the fundamental problem: it wasn't *bounded*. A handful of recurring intents really did account for most of the volume — but a *true* workflow needs a deterministic mapping from customer intent plus [fetched data](/post/first-level-support-automation#step-3-fetch) to a helpful reply. Making that mapping precise enough forced us to split each broad intent into ever finer [sub-intents](/post/first-level-support-automation#step-1-intent-recognition), then combine each leaf with the customer's state — so the [plan-generation tree](/post/first-level-support-automation#step-4-plan-generation) grew without end, and production kept surfacing paths we hadn't hardcoded. The tail is where support actually lives.
 
-And notice what that nice loop was actually doing against that tail: using an agent to *extend a hand-coded tree*, one newly-seen path at a time. It made the workflow maintainable; it did not make the problem bounded. Every fix was reactive — a branch added *after* production surfaced a path I hadn't anticipated — so I was always one step behind, growing the tree forever without ever catching up.
+All the loop did against that tail was extend a hand-coded tree one newly-seen path at a time. Every branch was added *after* production surprised me, so I was always a step behind.
 
 There's an echo of Rich Sutton's [*The Bitter Lesson*](http://www.incompleteideas.net/IncIdeas/BitterLesson.html) here: hand-encoded human knowledge — our intent tree — tends to lose over time to general methods that scale with compute, and as models get cheaper and better that trade only tilts further toward the agent.
+
+## Bolting an agent onto the tree
 
 Eventually the workflow just wasn't expressive enough, so I bolted an agent onto the tree as a fallback for the `other` leaves it couldn't cover ([the fallback in the plan-generation step](/post/first-level-support-automation#step-4-plan-generation)):
 
@@ -195,7 +199,7 @@ Code was the default; the agent was the dashed exception, reached only when no h
 
 ## I didn't give the agent a fair chance
 
-Looking back, I never really gave the agent a fair chance — not as that bolted-on fallback, and not in the earlier head-to-head that made us pick the workflow in the first place. That comparison was unfair to the agent, though I didn't see it clearly at the time: I optimised for what the client *said* he wanted instead of what he needed. He wanted responses that matched his templates; what he needed was a system that resolves his end-customers' issues — and those are not the same thing. An agent that wrote a clearer, more helpful answer in its own words still "lost", purely for departing from the template. Part of the job is to give a client what they need, not what they ask for, and here I delivered the latter. In short, we asked the agent to be a worse workflow instead of letting it be a better agent.
+Looking back, I never really gave the agent a fair chance — not as that bolted-on fallback, and not in the earlier head-to-head that made us pick the workflow. I optimised for what the client *said* he wanted, not what he needed: he wanted replies that matched his templates; what he needed was a system that resolves his end-customers' issues. So an agent that wrote a clearer, more helpful answer in its own words still "lost", purely for departing from the template. In short, we asked the agent to be a worse workflow instead of letting it be a better agent.
 
 ## What I would do differently
 
@@ -235,4 +239,4 @@ The agentic approach has real caveats, though:
 
 So the honest verdict is inconclusive.
 
-The workflow wasn't a mistake — it worked, and it delivered real value. But if I did it again, I'd start from the agent and let production tell me which paths to freeze, not the other way round.
+None of this makes the workflow a mistake — it shipped, it worked, and for the head of the distribution it still would. What I'd change is where I start: hand the agent the first pass, then let production — not my up-front guesses — decide which paths are worth freezing into code. The tail is where support actually lives, and it's exactly where a hand-drawn tree runs out of branches.
