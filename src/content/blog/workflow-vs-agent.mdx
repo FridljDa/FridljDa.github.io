@@ -1,10 +1,10 @@
 ---
-title: "Start With an Agent, Harden Into a Workflow"
+title: "I Built a Workflow. Next Time I'd Start With an Agent."
 pubDate: 2026-04-19T00:00:00.000Z
 updatedDate: 2026-07-24T00:00:00.000Z
 tags:
   - AI
-description: "Start with an agent to discover the workflow; move stable, high-consequence paths into code."
+description: "How I automated first-level support with a workflow, why the long tail broke it, and what I'd try differently next time."
 image: /images/blog/workflow-vs-agent/featured.png
 ---
 
@@ -14,9 +14,9 @@ What makes coding agents so effective is a combination of three things. First, s
 
 But this combination — abundant training data, automated feedback, and cheap retries — is specific to code. Most business tasks don't have any of it. There is no compiler for procurement policy. LLMs haven't seen your internal approval chains or vendor contracts during training. And placing a wrong order isn't something you can just undo and retry.
 
-That difference is why, for business automation, my instinct has been to lean on workflows and keep the LLM on a short leash. The first half of this post makes that case with a small, clean example. The second half complicates it: in a real project I followed exactly that instinct, built the workflow, and now suspect it was the wrong default — the problem had far more combinations than any tree I could hardcode. The honest lesson turned out to be less about agents *versus* workflows than about which one you reach for first.
+That difference is why, for business automation, my instinct has been to lean on workflows and keep the LLM on a short leash. The first half of this post makes that case with a small, concrete example. The second half complicates it: in a real project I followed exactly that instinct, built the workflow, and hit its limits — the problem had far more combinations than any tree I could hardcode. This is less a verdict on agents *versus* workflows than a story about which one I reached for first, and what I'd try instead next time.
 
-Let's start with the clean example.
+Let's start with the example.
 
 ---
 
@@ -187,9 +187,13 @@ Once the distribution checks out, code earns its place at almost every step:
 
 These advantages are real, and for a bounded process like Bob's they are decisive. The trouble starts when the process is not as bounded as the toy example makes it look.
 
-## Growing the workflow with an agentic loop
+## Choosing the workflow
 
-Our production support system was messier than Bob's laptop order, but it started the same way. We labelled and analysed roughly 2,300 historical tickets with an AI-assisted, iterative process, and the distribution behaved exactly as the theory predicts: most of the volume fell into a handful of broad customer intents. That green light sent us down the workflow-first path, and we built the [four-step pipeline](/post/first-level-support-automation).
+Our production support system was messier than Bob's laptop order, but it started the same way. We labelled and analysed roughly 2,300 historical tickets with an AI-assisted, iterative process, and the distribution behaved exactly as the theory predicts: most of the volume fell into a handful of broad customer intents. That looked like a green light for the workflow.
+
+We did also try a more agentic planner for a while. But the client relied on about twenty established message templates and complained whenever a response didn't match them — and reproducing fixed wording is a deterministic job a workflow does far more reliably than an agent. Judged on template conformity, the workflow won easily, so we committed to it and built the [four-step pipeline](/post/first-level-support-automation).
+
+## Growing the workflow with an agentic loop
 
 Then we ran it in a way that, in hindsight, recreated the very conditions the intro says business problems lack. The system went live in **shadow deployment** — its responses were graded by subject-matter experts but never shown to customers — so a wrong answer had almost no blast radius. That handed me two of the three ingredients coding agents rely on: cheap, reversible retries and an automated signal.
 
@@ -201,9 +205,7 @@ That sense of convergence was an illusion. The mass really was there: a handful 
 
 And notice what my nice loop was actually doing against that tail: using an agent to *extend a hand-coded tree*, one newly-seen path at a time. It made the workflow maintainable; it did not make the problem bounded. Every fix was reactive — a branch added *after* production surfaced a path I hadn't anticipated — so I was always one step behind, growing the tree forever without ever catching up.
 
-## I didn't give the agent a fair chance
-
-Eventually I stopped trying to out-run the tail. The workflow just wasn't expressive enough, so I reached for agentic paths — an agent to handle the `other` leaves the tree couldn't ([the fallback in the plan-generation step](/post/first-level-support-automation#step-4-plan-generation)):
+Eventually the workflow just wasn't expressive enough, so I bolted an agent onto the tree as a fallback for the `other` leaves it couldn't cover ([the fallback in the plan-generation step](/post/first-level-support-automation#step-4-plan-generation)):
 
 ```mermaid
 flowchart TD
@@ -229,9 +231,11 @@ flowchart TD
     class INPUT,OUT terminal
 ```
 
-Code was the default; the agent was the dashed exception, reached only when no hardcoded leaf matched. But I let it handle only the scraps the code hadn't reached yet, and even there I never gave it a fair shot. The client had about twenty established message templates and complained when responses didn't match them, so we spent our effort prompt-tuning the agent to reproduce fixed wording — a deterministic job an agent is badly suited to, and by that measure the workflow won easily.
+Code was the default; the agent was the dashed exception, reached only when no hardcoded leaf matched — and I let it handle only the scraps the code hadn't reached yet.
 
-That comparison was unfair to the agent in two ways, though I didn't see it clearly at the time. First, the workflow had a built-in head start: we had constructed its intent tree by analysing thousands of historical tickets, so all of that knowledge was already baked into the code — while the agent was never given access to those tickets to search. Second, we judged the agent on the wrong thing: whether its reply matched one of the fixed templates, not whether it actually resolved the customer's problem. An agent that wrote a clearer, more helpful answer in its own words would still "lose", simply because it didn't reproduce the template. In short, we asked the agent to be a worse workflow instead of letting it be a better agent.
+## I didn't give the agent a fair chance
+
+Looking back, I never really gave the agent a fair chance — not as that bolted-on fallback, and not in the earlier head-to-head that made us pick the workflow in the first place. That comparison was unfair to the agent in two ways, though I didn't see it clearly at the time. First, the workflow had a built-in head start: we had constructed its intent tree by analysing thousands of historical tickets, so all of that knowledge was already baked into the code — while the agent was never given access to those tickets to search. Second, and worse, I optimised for what the client *said* he wanted instead of what he needed. He wanted responses that matched his templates; what he needed was a system that resolves his end-customers' issues — and those are not the same thing. An agent that wrote a clearer, more helpful answer in its own words still "lost", purely for departing from the template. Part of the job is to give a client what they need, not what they ask for, and here I delivered the latter. In short, we asked the agent to be a worse workflow instead of letting it be a better agent.
 
 ## The bitter lesson
 
@@ -276,4 +280,6 @@ flowchart TD
 
 The dashed edge is the whole point: code paths are grown *out of* proven agent behaviour, not assumed up front.
 
-So the honest version of this post is not "workflows beat agents". It is about sequencing. Use an agent to explore the uncertain space and let it show you the real distribution of the work. Then turn the repeated and high-consequence paths — and only those — into code.
+I should be honest about how much I don't actually know here. I can't claim the agent would have resolved more customer issues — it might have matched the workflow, or done worse on exactly the long tail where I'm assuming it would help. And letting it search resolved tickets is one sentence to write and a hard system to build safely: those tickets are full of personal data, so an agent retrieving and reasoning over them is a far larger security and privacy surface than a fixed DAG. Even the template constraint I resented had real business reasons behind it.
+
+So this isn't "workflows lost" or "I did it wrong". It's one project, one client, one set of constraints, and the workflow I built delivered real value. What changed is my default: next time I'd give the agent a real, well-instrumented chance to show me the shape of the problem first, and harden into code only the paths that prove frequent, high-consequence, or too unstable to leave to it. Whether that beats starting with the workflow, I genuinely don't know yet — but I'd rather find out from evidence than assume it from a tree I drew up front.
