@@ -165,28 +165,46 @@ flowchart TD
 
 For this bounded process, the hybrid is the best fit. Product search, budget lookup, and ordering have explicit rules and a small state space. Code makes those rules reliable and auditable; the LLM only bridges human language and structured data.
 
-### Why workflows still matter
+### Verify the distribution before you design
 
-The production lesson below does not invalidate the advantages of workflows. Once an integration or business rule is understood, code can enforce sequencing, retries, and error handling every time. A policy check becomes a hard condition rather than behaviour a model might skip. Deterministic steps are also faster, cheaper, and easier to test and audit.
+Why is this even tractable? Why isn't every request like Bob's a unique snowflake? Because real business processes rarely are. Take a sample of past procurement requests, ask a small LLM to bucket them into a few intent categories — laptops with specs, peripherals, software licences, replacement orders, vendor onboarding — and the vast majority usually fall into a handful of buckets. The long tail is real, but the head of the distribution dominates.
 
-Scoping the LLM to a narrow task makes evaluation and iteration more precise. When something breaks, you can change the extraction prompt, one branch, or one API call instead of nudging the entire system's behaviour. That predictability is especially valuable for high-consequence actions.
+This isn't an assumption; it's something you verify empirically before designing the system. Cluster a few hundred historical requests and look at the coverage. If 80% of your traffic falls into a dozen well-defined intents, the hybrid approach is on solid ground. If your distribution is genuinely flat — every request its own snowflake — you have a different problem, and probably need a different architecture. Skipping this check is how teams end up building agentic monoliths for tasks that turn out to be 90% structured.
+
+### Why workflows win here
+
+Once the distribution checks out, code earns its place at almost every step:
+
+- **Use code where code is enough.** The marketplace search and policy lookup rarely change. A robust integration — exponential backoff, error handling, retries — is a one-time investment, and it will be more reliable than an agent figuring out how to call them on the fly, every time.
+- **Scope the LLM to what only an LLM can do.** Extracting a structured spec from free text is a well-defined task. You can build targeted evals, iterate on the prompt, drop to a cheaper model — or swap the LLM for a Named Entity Recognition model if your vocabulary is bounded enough. None of that is possible once the LLM is entangled with search, policy, and ordering.
+- **Don't ask an LLM to enforce rules it hasn't seen.** Models have seen countless lines of code in training. They have *not* seen your procurement policy or vendor contracts. A budget cap is a hard `if` statement. It cannot be reasoned around, hallucinated, or skipped.
+- **Iteration is targeted and predictable.** When a request is misread or a policy changes, the fix is local: edit the extraction prompt, add a branch, adjust one API call — and you know what the next request of that shape will do. With an agent, your tools are blunter. You edit a system prompt and hope. Hoping doesn't scale, and it doesn't survive a code review.
+- **Auditability comes for free.** Every step after extraction is ordinary code. You can log it, test it, and trace it exactly like any other software. When something goes wrong, you know where to look.
+
+These advantages are real, and for a bounded process like Bob's they are decisive. The trouble starts when the process is not as bounded as the toy example makes it look.
 
 ### What the example hides
 
-Our production support system was less tidy. We used an AI-assisted, iterative process to label and analyse roughly 2,300 historical tickets. Most of the volume fell into a handful of broad customer intents, which initially supported the same workflow-first conclusion.
+Our production support system was messier than Bob's laptop order. We labelled and analysed roughly 2,300 historical tickets with an AI-assisted, iterative process, and the distribution behaved exactly as the theory predicts: most of the volume fell into a handful of broad customer intents. That looked like a green light for the workflow-first approach.
 
-But a concentrated top level did not produce a small workflow. To respond precisely, each broad category had to be split into increasingly specific [sub-intents](/post/first-level-support-automation#step-1-intent-recognition). Reaching an intent leaf was only the beginning: it then combined with the possible [fetch results](/post/first-level-support-automation#step-3-fetch) and customer states. The resulting [plan-generation tree](/post/first-level-support-automation#step-4-plan-generation) became enormous. Every iteration improved known paths, but production kept revealing unseen combinations and more specific intents.
+But a concentrated top level did not produce a small workflow. To respond precisely, each broad intent had to be split into ever more specific [sub-intents](/post/first-level-support-automation#step-1-intent-recognition). Reaching an intent leaf was only the beginning: it then combined with the possible [fetch results](/post/first-level-support-automation#step-3-fetch) and the customer's state, and the resulting [plan-generation tree](/post/first-level-support-automation#step-4-plan-generation) grew enormous. Every iteration improved the paths we knew about, and production kept surfacing paths we didn't: new sub-sub-intents, unseen DAG combinations. The head of the distribution was concentrated; the tail was deep — and the tail is where support actually lives.
 
-We also tried a more agentic planner. The client relied on about twenty established message templates and expected the system to follow them closely. Given that requirement, deterministic template selection was more reliable than prompt-tuning an LLM to reproduce fixed wording.
+We did try a more agentic planner for a while. But the client had about twenty established message templates and complained when responses didn't match them, so we spent our effort prompt-tuning the agent to reproduce fixed wording — a deterministic job an agent is badly suited to. Judged on template conformity, the workflow won easily.
 
-That comparison did not give the agent a fair chance. The workflow encoded knowledge extracted from the historical tickets, while the agent could not search those tickets at all. We also evaluated it primarily on template conformity rather than whether a more flexible response could resolve the customer's problem better.
+That comparison was unfair to the agent in two ways, though I didn't see it clearly at the time. First, the workflow had a built-in head start: we had constructed its intent tree by analysing thousands of historical tickets, so all of that knowledge was already baked into the code — while the agent was never given access to those tickets to search. Second, we judged the agent on the wrong thing: whether its reply matched one of the fixed templates, not whether it actually resolved the customer's problem. An agent that wrote a clearer, more helpful answer in its own words would still "lose", simply because it didn't reproduce the template. In short, we asked the agent to be a worse workflow instead of letting it be a better agent.
+
+### The bitter lesson
+
+Rich Sutton's [*The Bitter Lesson*](http://www.incompleteideas.net/IncIdeas/BitterLesson.html) (2019) argues that, across the history of AI, general methods that scale with computation — search and learning — keep beating systems that carefully encode human knowledge. The hand-built structure feels good and wins in the short run; the general method wins as compute grows.
+
+Our enormous intent-and-plan tree is exactly the kind of hand-encoded human knowledge Sutton warns about. Every hardcoded branch was a bet that we could enumerate the world faster than the world could surprise us — and on the long tail, we kept losing that bet. The agentic alternative, given the ability to search resolved tickets and reason over them, is the general method: it leverages retrieval and model capability instead of our hand-drawn DAG. As models get cheaper and better, that side of the trade keeps getting stronger. Betting everything on the tree may have been betting against the trend.
 
 ### What I would do differently
 
-In this project, I would give the agentic planner a much better chance before expanding the workflow. I would give it a privacy-safe way to search resolved historical tickets, retrieve relevant examples and templates, and use deterministic business tools. That might have produced a better business outcome on the long tail, even if the responses departed more often from familiar templates.
+I would give the agentic planner a real chance before growing the workflow. Concretely: a privacy-safe way to search resolved historical tickets, retrieval of relevant examples and templates, and deterministic business tools it can call. Templates would be examples to draw on, not wording to reproduce — mandatory only where exact wording is legally required. On the long tail, that might well have produced better outcomes even when the replies drifted from the familiar templates.
 
-Templates would be examples unless their exact wording was mandatory. Legal language, policy checks, escalation rules, permissions, and irreversible actions would remain constrained by code; the agent could adapt everything else to the case. I would evaluate correctness, policy compliance, tool use, and resolution quality rather than superficial template conformity.
+The hard constraints would still live in code: legal language, policy checks, escalation rules, permissions, and anything irreversible. The agent adapts everything else to the case. And I would evaluate what actually matters — correctness, policy compliance, tool use, resolution quality — rather than superficial template conformity.
 
-Then I would use production evidence to decide what to hardcode. Frequent paths and high-consequence decisions would move into workflows; the long tail would remain agentic. This matches the progression described in Will Larson's [Building internal agents](https://lethain.com/agents-series/) series: start with LLM-driven workflows, then introduce code when reliability, speed, or cost requires it.
+Then I would let production evidence decide what to freeze. Frequent paths and high-consequence actions move into workflows; the long tail stays agentic. This is the progression in Will Larson's [Building internal agents](https://lethain.com/agents-series/) series, and it inverts the order I actually followed: start with the agent to discover the shape of the problem, then harden the parts that have stopped surprising you into code.
 
-This is not an argument against workflows. It is an argument about sequencing: use an agent to explore the uncertain space, then turn repeated and high-consequence paths into code.
+So the honest version of this post is not "workflows beat agents". It is about sequencing. Use an agent to explore the uncertain space and let it show you the real distribution of the work. Then turn the repeated and high-consequence paths — and only those — into code.
