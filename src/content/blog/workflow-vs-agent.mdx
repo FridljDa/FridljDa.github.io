@@ -12,7 +12,11 @@ Progress in frontier AI models has allowed coding agents to tackle ever more com
 
 What makes coding agents so effective is a combination of three things. First, software is largely composed of patterns LLMs have seen countless times during training — syntax, idioms, libraries, algorithms. Second, code gives you *automated evaluation for free*. You run it, and you get a compiler error, a failing test, or a stack trace. The agent doesn't need to know whether it's right — the environment tells it. Third, and most importantly, agents can iterate cheaply. A bad attempt costs a few seconds of compute and nothing irreversible happens. In many benchmarks, coding agents are given nothing but terminal access — like [tbench](https://www.tbench.ai/) — and are left to try things, observe results, and loop until the task is done. That tight feedback loop is what allows them to crack problems that would have seemed out of reach just a year ago.
 
-But this combination — abundant training data, automated feedback, and cheap retries — is specific to code. Most business tasks don't have any of it. There is no compiler for procurement policy. LLMs haven't seen your internal approval chains or vendor contracts during training. And placing a wrong order isn't something you can just undo and retry. To understand what this means in practice, let's walk through a concrete example.
+But this combination — abundant training data, automated feedback, and cheap retries — is specific to code. Most business tasks don't have any of it. There is no compiler for procurement policy. LLMs haven't seen your internal approval chains or vendor contracts during training. And placing a wrong order isn't something you can just undo and retry.
+
+That difference is why, for business automation, my instinct has been to lean on workflows and keep the LLM on a short leash. The first half of this post makes that case with a small, clean example. The second half complicates it: in a real project I followed exactly that instinct, built the workflow, and now suspect it was the wrong default — the problem had far more combinations than any tree I could hardcode. The honest lesson turned out to be less about agents *versus* workflows than about which one you reach for first.
+
+Let's start with the clean example.
 
 ---
 
@@ -183,25 +187,31 @@ Once the distribution checks out, code earns its place at almost every step:
 
 These advantages are real, and for a bounded process like Bob's they are decisive. The trouble starts when the process is not as bounded as the toy example makes it look.
 
-### What the example hides
+## My real problem wasn't bounded
 
 Our production support system was messier than Bob's laptop order. We labelled and analysed roughly 2,300 historical tickets with an AI-assisted, iterative process, and the distribution behaved exactly as the theory predicts: most of the volume fell into a handful of broad customer intents. That looked like a green light for the workflow-first approach.
 
 But a concentrated top level did not produce a small workflow. To respond precisely, each broad intent had to be split into ever more specific [sub-intents](/post/first-level-support-automation#step-1-intent-recognition). Reaching an intent leaf was only the beginning: it then combined with the possible [fetch results](/post/first-level-support-automation#step-3-fetch) and the customer's state, and the resulting [plan-generation tree](/post/first-level-support-automation#step-4-plan-generation) grew enormous. Every iteration improved the paths we knew about, and production kept surfacing paths we didn't: new sub-sub-intents, unseen DAG combinations. The head of the distribution was concentrated; the tail was deep — and the tail is where support actually lives.
 
+The loop I built to keep up was, ironically, the very thing the intro says business problems lack. We ran the system in shadow deployment — its responses were graded by subject-matter experts but never shown to customers — so a wrong answer had almost no blast radius. That gave me the two ingredients coding agents rely on: cheap, reversible retries and an automated signal. On top of it I ran an agentic loop that pulled the experts' free-text feedback, implemented the fix (usually a new DAG branch), added the case to an eval set, and re-ran the whole suite against it. Building the workflow had itself become an ideal task for an agent.
+
+But notice what that loop was actually doing: using an agent to *extend a hand-coded tree*, one newly-seen path at a time. It made the workflow maintainable; it did not make the problem bounded. Every fix was reactive — a branch added *after* production surfaced a path I hadn't anticipated — so I was always one step behind the long tail, growing the tree forever without ever catching up.
+
+## I didn't give the agent a fair chance
+
 We did try a more agentic planner for a while. But the client had about twenty established message templates and complained when responses didn't match them, so we spent our effort prompt-tuning the agent to reproduce fixed wording — a deterministic job an agent is badly suited to. Judged on template conformity, the workflow won easily.
 
 That comparison was unfair to the agent in two ways, though I didn't see it clearly at the time. First, the workflow had a built-in head start: we had constructed its intent tree by analysing thousands of historical tickets, so all of that knowledge was already baked into the code — while the agent was never given access to those tickets to search. Second, we judged the agent on the wrong thing: whether its reply matched one of the fixed templates, not whether it actually resolved the customer's problem. An agent that wrote a clearer, more helpful answer in its own words would still "lose", simply because it didn't reproduce the template. In short, we asked the agent to be a worse workflow instead of letting it be a better agent.
 
-### The bitter lesson
+## The bitter lesson
 
 Rich Sutton's [*The Bitter Lesson*](http://www.incompleteideas.net/IncIdeas/BitterLesson.html) (2019) argues that, across the history of AI, general methods that scale with computation — search and learning — keep beating systems that carefully encode human knowledge. The hand-built structure feels good and wins in the short run; the general method wins as compute grows.
 
 Our enormous intent-and-plan tree is exactly the kind of hand-encoded human knowledge Sutton warns about. Every hardcoded branch was a bet that we could enumerate the world faster than the world could surprise us — and on the long tail, we kept losing that bet. The agentic alternative, given the ability to search resolved tickets and reason over them, is the general method: it leverages retrieval and model capability instead of our hand-drawn DAG. As models get cheaper and better, that side of the trade keeps getting stronger. Betting everything on the tree may have been betting against the trend.
 
-### What I would do differently
+## What I would do differently
 
-I would give the agentic planner a real chance before growing the workflow. Concretely: a privacy-safe way to search resolved historical tickets, retrieval of relevant examples and templates, and deterministic business tools it can call. Templates would be examples to draw on, not wording to reproduce — mandatory only where exact wording is legally required. On the long tail, that might well have produced better outcomes even when the replies drifted from the familiar templates.
+I would give the agentic planner a real chance before growing the workflow. And I already had the perfect harness for it: the shadow deployment and eval loop I used to grow the DAG would let an agent explore just as safely — small blast radius, graded feedback, cheap retries. Instead of pointing that loop at extending a tree, I would point it at an agent. Concretely: a privacy-safe way to search resolved historical tickets, retrieval of relevant examples and templates, and deterministic business tools it can call. Templates would be examples to draw on, not wording to reproduce — mandatory only where exact wording is legally required. On the long tail, that might well have produced better outcomes even when the replies drifted from the familiar templates.
 
 The hard constraints would still live in code: legal language, policy checks, escalation rules, permissions, and anything irreversible. The agent adapts everything else to the case. And I would evaluate what actually matters — correctness, policy compliance, tool use, resolution quality — rather than superficial template conformity.
 
