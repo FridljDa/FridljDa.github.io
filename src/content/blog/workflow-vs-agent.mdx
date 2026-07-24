@@ -12,9 +12,9 @@ Progress in frontier AI models has allowed coding agents to tackle ever more com
 
 What makes coding agents so effective is a combination of three things. First, software is largely composed of patterns LLMs have seen countless times during training — syntax, idioms, libraries, algorithms. Second, code gives you *automated evaluation for free*. You run it, and you get a compiler error, a failing test, or a stack trace. The agent doesn't need to know whether it's right — the environment tells it. Third, and most importantly, agents can iterate cheaply. A bad attempt costs a few seconds of compute and nothing irreversible happens. In many benchmarks, coding agents are given nothing but terminal access — like [tbench](https://www.tbench.ai/) — and are left to try things, observe results, and loop until the task is done. That tight feedback loop is what allows them to crack problems that would have seemed out of reach just a year ago.
 
-But this combination — abundant training data, automated feedback, and cheap retries — is specific to code. Most business tasks don't have any of it. There is no compiler for procurement policy. LLMs haven't seen your internal approval chains or vendor contracts during training. And placing a wrong order isn't something you can just undo and retry.
+But this combination — abundant training data, automated feedback, and cheap retries — is specific to code. Most business tasks don't have any of it. There is no compiler for your bank's security policy. LLMs haven't seen your internal escalation rules or customer records during training. And handing account access to the wrong person isn't something you can just undo and retry.
 
-That difference is why, for business automation, my instinct has been to lean on workflows and keep the LLM on a short leash. The first half of this post makes that case with a small, concrete example. The second half complicates it: in a real project I followed exactly that instinct, built the workflow, and hit its limits — the problem had far more combinations than any tree I could hardcode. This is less a verdict on agents *versus* workflows than a story about which one I reached for first, and what I'd try instead next time.
+That difference is why, for business automation, my instinct has been to lean on workflows and keep the LLM on a short leash. The first half of this post walks through one clean slice of a support-automation project I worked on and makes that case. The second half complicates it: across the full system I followed exactly that instinct, built the workflow, and hit its limits — the problem had far more combinations than any tree I could hardcode.
 
 Let's start with the example.
 
@@ -22,104 +22,106 @@ Let's start with the example.
 
 ## The scenario
 
-Bob from OilVentures sends the following request to his procurement department:
+*It's a real project; I've changed most of the identifying details.*
 
-> I need a new laptop for my work. I would like:
-> - MacBook Pro
-> - M4 Max Chip
-> - 16 inch
-> - 32GB RAM
-> - 1TB Storage
->
-> I am working in the finance department. Can you please find the best options for me and make the purchase?
+Customers wrote in to our first-level support team at Northstar Bank with messages like this:
 
-The procurement department handles requests like this regularly and wants to automate it. Two constraints are relevant:
+> Hi, I'm Alex Carter and I bank with your Riverton branch. My account number is NSB01234 and I can't get in any more — it keeps saying the account is locked. Can you help me get back in?
 
-- **AwesomeMarketplace** (their vendor) requires brand, model, chip, RAM, and storage to filter products.
-- **OilVentures policy** caps laptop spend at **$3,000** for the finance department.
+We handled messages like this all day and wanted to automate the reply. Three things mattered:
 
-We'll look at two ways to automate this.
+- **The core-banking system** looks up an account by number (or by name and branch) and returns its status, including any security flags.
+- **Bank policy:** if an account carries a fraud or security flag, we must *not* send self-service unlock instructions — we escalate to the security team.
+- **We had about twenty reply templates** we'd used for years, including a standard "how to unlock your account" message, and replies were expected to match them.
 
----
-
-## 1. The fully agentic approach
-
-A single Procurement Agent gets access to all three tools — marketplace search, company policy, and order placement — and figures out the rest on its own.
+We looked at two ways to automate it. The diagrams share one notation:
 
 ```mermaid
-flowchart TD
-    subgraph LEGEND["Legend"]
-        direction TB
-        LA["🤖 Agent<br/>chooses actions, uses tools"]
-        LL["🧠 LLM-assisted step<br/>constrained model call"]
-        LC["⚙️ Code step<br/>deterministic logic"]
-        LT["🔌 External tool/API<br/>outside dependency"]
-    end
-
-    INPUT(["Bob's laptop request"])
-    A1["🤖 Agent<br/>procurement reasoning and tool use"]
-    T1["🔌 External tool/API<br/>marketplace search"]
-    T2["🔌 External tool/API<br/>company policy"]
-    T3["🔌 External tool/API<br/>order placement"]
-    OUT1(["Order placed<br/>notify Bob"])
-    OUT2(["Order rejected<br/>notify Bob"])
-
-    INPUT -->|"request"| A1
-    A1 -->|"search products"| T1
-    T1 -->|"product results"| A1
-    A1 -->|"check policy"| T2
-    T2 -->|"policy data"| A1
-    A1 -->|"place order"| T3
-    T3 --> OUT1
-    A1 -->|"not compliant"| OUT2
+flowchart LR
+    LA["🤖 Agent<br/>chooses actions, uses tools"]
+    LL["🧠 LLM-assisted step<br/>constrained model call"]
+    LC["⚙️ Code step<br/>deterministic logic"]
+    LT["🔌 External tool/API<br/>outside dependency"]
 
     classDef agent fill:#f3e8ff,stroke:#7c3aed,stroke-width:2px
     classDef llm fill:#dbeafe,stroke:#2563eb,stroke-width:2px
     classDef code fill:#dcfce7,stroke:#16a34a,stroke-width:2px
     classDef tool fill:#fef3c7,stroke:#d97706,stroke-width:2px
-    classDef terminal fill:#f8fafc,stroke:#64748b,stroke-width:1.5px
     class LA agent
     class LL llm
     class LC code
     class LT tool
+```
+
+---
+
+## 1. The fully agentic approach
+
+The first design we considered was a single Support Agent with every tool — account lookup, the security-flag check, and the two actions (send unlock instructions, escalate to security) — writing the customer's reply itself.
+
+```mermaid
+flowchart TD
+    INPUT(["Alex's locked-account message"])
+    A1["🤖 Agent<br/>support reasoning and tool use"]
+    T1["🔌 External tool/API<br/>account lookup"]
+    T2["🔌 External tool/API<br/>security-flag check"]
+    T3["🔌 External tool/API<br/>send reply / take action"]
+    OUT1(["Unlock instructions sent"])
+    OUT2(["Escalated to security"])
+
+    INPUT -->|"message"| A1
+    A1 -->|"look up account"| T1
+    T1 -->|"account record"| A1
+    A1 -->|"check flags"| T2
+    T2 -->|"flag status"| A1
+    A1 -->|"send unlock steps"| T3
+    T3 --> OUT1
+    A1 -->|"flagged: escalate"| OUT2
+
+    classDef agent fill:#f3e8ff,stroke:#7c3aed,stroke-width:2px
+    classDef tool fill:#fef3c7,stroke:#d97706,stroke-width:2px
+    classDef terminal fill:#f8fafc,stroke:#64748b,stroke-width:1.5px
     class A1 agent
     class T1,T2,T3 tool
     class INPUT,OUT1,OUT2 terminal
 ```
 
-This looks elegant, but it has a serious problem: there is no guarantee the agent will check the policy *before* placing the order. It might. It might not. And if it places a non-compliant order, you only find out after the fact. Unlike coding tasks — where a failed test is cheap and reversible — a wrongly submitted purchase order has real consequences. As the ServiceNow CEO [put it](https://open.spotify.com/episode/11xeL3QCAF77z1vxOp0am0?si=fc70f33f0dd64ab4): people forgive other people for making mistakes. They don't forgive software.
+This looks elegant, but it has a serious problem: there is no guarantee the agent checks the security flag *before* sending unlock instructions. It might. It might not. And if it walks a flagged, compromised account through getting back in, you only find out after the fact. Unlike coding tasks — where a failed test is cheap and reversible — handing account access to the wrong person has real consequences.
+
+There is a second, quieter failure mode. The agent composes each reply from scratch, so its wording drifts from the twenty templates we'd used for years. Even when the underlying action is right, a message that doesn't match the established template draws complaints. As the ServiceNow CEO [put it](https://open.spotify.com/episode/11xeL3QCAF77z1vxOp0am0?si=fc70f33f0dd64ab4): people forgive other people for making mistakes. They don't forgive software.
 
 ---
 
-## 2. The hybrid approach
+## We looked at the data
 
-The fix is to let code own the sequencing and reserve the LLM for the *one* genuinely hard part of Bob's request: parsing his free-text message into a structured spec the marketplace API can consume. Everything after that — the search, the policy check, the order — can be handled deterministically by regular code, which runs the steps in a fixed order so the policy check always happens before the order.
+Before building anything, we clustered a few hundred past tickets: about 80% fell into a dozen intents — account access, payments, card services, disputes. The long tail was real, but the head of the distribution dominated, and that is what makes a workflow worth building. (If yours is flat, with every ticket its own snowflake, you have a different problem and probably need a different architecture.)
+
+---
+
+## 2. The workflow approach
+
+Given that structure, we kept code in charge of the sequencing and reserved the LLM for the *one* genuinely hard part of Alex's message: interpreting it — recognising that this is an *account-locked* request and pulling out the identifier (the account number, or the name and branch). Everything after that — the lookup, the flag check, the reply — is deterministic, so code runs the steps in a fixed order and the flag check always happens before any unlock instructions go out.
 
 ```mermaid
 flowchart TD
-    INPUT(["Bob's laptop request"])
-    L1["🧠 LLM-assisted step<br/>extract structured specification"]
-    C1["⚙️ Code step<br/>search exact product filters"]
-    C2["⚙️ Code step<br/>retrieve department budget"]
-    T1["🔌 External tool/API<br/>marketplace search"]
-    T2["🔌 External tool/API<br/>policy store"]
-    C3["⚙️ Code step<br/>select best match"]
-    D1{"Within the<br/>$3,000 cap?"}
-    T3["🔌 External tool/API<br/>order placement"]
-    OUT1(["Order placed<br/>notify Bob"])
-    OUT2(["Order rejected<br/>notify Bob"])
+    INPUT(["Alex's locked-account message"])
+    L1["🧠 LLM-assisted step<br/>recognise intent + extract identifier"]
+    C1["⚙️ Code step<br/>look up the account"]
+    T1["🔌 External tool/API<br/>core-banking system"]
+    D1{"Security flag<br/>set?"}
+    C2["⚙️ Code step<br/>send 'unlock instructions' template"]
+    C3["⚙️ Code step<br/>escalate to security team"]
+    OUT1(["Unlock instructions sent"])
+    OUT2(["Escalated to security"])
 
-    INPUT -->|"free-text request"| L1
-    L1 -->|"product specification"| C1
-    L1 -->|"department"| C2
+    INPUT -->|"message"| L1
+    L1 -->|"account_locked + identifier"| C1
     C1 -->|"query"| T1
-    T1 -->|"product results"| C3
-    C2 -->|"lookup"| T2
-    T2 -->|"budget cap"| C3
-    C3 --> D1
-    D1 -->|"yes"| T3
-    D1 -->|"no"| OUT2
-    T3 --> OUT1
+    T1 -->|"account record + flags"| D1
+    D1 -->|"no"| C2
+    D1 -->|"yes"| C3
+    C2 --> OUT1
+    C3 --> OUT2
 
     classDef llm fill:#dbeafe,stroke:#2563eb,stroke-width:2px
     classDef code fill:#dcfce7,stroke:#16a34a,stroke-width:2px
@@ -128,36 +130,30 @@ flowchart TD
     classDef terminal fill:#f8fafc,stroke:#64748b,stroke-width:1.5px
     class L1 llm
     class C1,C2,C3 code
-    class T1,T2,T3 tool
+    class T1 tool
     class D1 decision
     class INPUT,OUT1,OUT2 terminal
 ```
 
-For this bounded process, the hybrid is the best fit. Product search, budget lookup, and ordering have explicit rules and a small state space. Code makes those rules reliable and auditable; the LLM only bridges human language and structured data.
-
-### Verify the distribution before you design
-
-Why isn't every request like Bob's a unique snowflake? Because real business processes rarely are. Take a sample of past procurement requests, ask a small LLM to bucket them into a few intent categories — laptops with specs, peripherals, software licences, replacement orders, vendor onboarding — and the vast majority usually fall into a handful of buckets. The long tail is real, but the head of the distribution dominates.
-
-This isn't an assumption; it's something you verify empirically before designing the system. Cluster a few hundred historical requests and look at the coverage. If 80% of your traffic falls into a dozen well-defined intents, the hybrid approach is on solid ground. If your distribution is genuinely flat — every request its own snowflake — you have a different problem, and probably need a different architecture. Skipping this check is how teams end up building agentic monoliths for tasks that turn out to be 90% structured.
+For this one intent, the hybrid was the clear fit. The lookup, the flag rule, and the two replies have explicit logic and a small state space. Code makes those rules reliable and auditable — and because code selects the reply, the response matches our established template by construction. The LLM only bridges human language and structured data.
 
 ### Why workflows win for a bounded problem
 
 Once the distribution checks out, code earns its place at almost every step:
 
-- **Use code where code is enough.** The marketplace search and policy lookup rarely change. A robust integration — exponential backoff, error handling, retries — is a one-time investment, and it will be more reliable than an agent figuring out how to call them on the fly, every time.
-- **Scope the LLM to what only an LLM can do.** Extracting a structured spec from free text is a well-defined task. You can build targeted evals, iterate on the prompt, drop to a cheaper model — or swap the LLM for a Named Entity Recognition model if your vocabulary is bounded enough. None of that is possible once the LLM is entangled with search, policy, and ordering.
-- **Don't ask an LLM to enforce rules it hasn't seen.** Models have seen countless lines of code in training. They have *not* seen your procurement policy or vendor contracts. A budget cap is a hard `if` statement. It cannot be reasoned around, hallucinated, or skipped.
-- **Iteration is targeted and predictable.** When a request is misread or a policy changes, the fix is local: edit the extraction prompt, add a branch, adjust one API call — and you know what the next request of that shape will do. With an agent, your only tool is a system-prompt edit, and you can't predict what it does to the cases that already worked.
-- **Auditability comes for free.** Every step after extraction is ordinary code. You can log it, test it, and trace it exactly like any other software.
+- **Use code where code is enough.** The account lookup and flag check rarely change. A robust integration — exponential backoff, error handling, retries — is a one-time investment, and it will be more reliable than an agent figuring out how to call them on the fly, every time.
+- **Scope the LLM to what only an LLM can do.** Recognising the intent and extracting an identifier from free text is a well-defined task. You can build targeted evals, iterate on the prompt, drop to a cheaper model — or swap the LLM for a Named Entity Recognition model if your vocabulary is bounded enough. None of that is possible once the LLM is entangled with lookup, policy, and messaging.
+- **Don't ask an LLM to enforce rules it hasn't seen.** Models have seen countless lines of code in training. They have *not* seen your bank's security policy. "Escalate a flagged account instead of unlocking it" is a hard `if` statement — it cannot be reasoned around, hallucinated, or skipped. And because the reply is a fixed template, it matches the established wording every time.
+- **Iteration is targeted and predictable.** When a message is misread or a policy changes, the fix is local: edit the extraction prompt, add a branch, adjust one API call — and you know what the next message of that shape will do. With an agent, your only tool is a system-prompt edit, and you can't predict what it does to the cases that already worked.
+- **Auditability comes for free.** Every step after interpretation is ordinary code. You can log it, test it, and trace it exactly like any other software.
 
-These advantages are real, and for a bounded process like Bob's they are decisive. The trouble starts when the process is not as bounded as the toy example makes it look.
+These advantages are real, and for a bounded intent like this one they are decisive. The trouble starts when the process is not as bounded as a single locked-account ticket makes it look.
 
 ## Choosing the workflow
 
-Our production support system was messier than Bob's laptop order, but it started the same way. We labelled and analysed roughly 2,300 historical tickets with an AI-assisted, iterative process, and the distribution behaved exactly as the theory predicts: most of the volume fell into a handful of broad customer intents. That looked like a green light for the workflow.
+Our production support system was messier than a single locked-account ticket, but it started the same way. We labelled and analysed roughly 2,300 historical tickets with an AI-assisted, iterative process, and the distribution behaved exactly as the theory predicts: most of the volume fell into a handful of broad customer intents. That looked like a green light for the workflow.
 
-We did also try a more agentic planner for a while. But the client relied on about twenty established message templates and complained whenever a response didn't match them — and reproducing fixed wording is a deterministic job a workflow does far more reliably than an agent. Judged on template conformity, the workflow won easily, so we committed to it and built the [four-step pipeline](/post/first-level-support-automation).
+We did also try a more agentic planner for a while, but its replies kept drifting from those twenty templates and the client noticed — reproducing fixed wording is a deterministic job a workflow does far more reliably. Judged on template conformity, the workflow won easily, so we committed to it and built the [four-step pipeline](/post/first-level-support-automation).
 
 ## Growing the workflow with an agentic loop
 
@@ -201,13 +197,7 @@ Code was the default; the agent was the dashed exception, reached only when no h
 
 ## I didn't give the agent a fair chance
 
-Looking back, I never really gave the agent a fair chance — not as that bolted-on fallback, and not in the earlier head-to-head that made us pick the workflow in the first place. That comparison was unfair to the agent in two ways, though I didn't see it clearly at the time. First, the workflow had a built-in head start: we had constructed its intent tree by analysing thousands of historical tickets, so all of that knowledge was already baked into the code — while the agent was never given access to those tickets to search. Second, and worse, I optimised for what the client *said* he wanted instead of what he needed. He wanted responses that matched his templates; what he needed was a system that resolves his end-customers' issues — and those are not the same thing. An agent that wrote a clearer, more helpful answer in its own words still "lost", purely for departing from the template. Part of the job is to give a client what they need, not what they ask for, and here I delivered the latter. In short, we asked the agent to be a worse workflow instead of letting it be a better agent.
-
-## The bitter lesson
-
-Rich Sutton's [*The Bitter Lesson*](http://www.incompleteideas.net/IncIdeas/BitterLesson.html) (2019) argues that, across the history of AI, general methods that scale with computation — search and learning — keep beating systems that carefully encode human knowledge. The hand-built structure feels good and wins in the short run; the general method wins as compute grows.
-
-Our enormous intent-and-plan tree is exactly the kind of hand-encoded human knowledge Sutton warns about. Every hardcoded branch was a bet that we could enumerate the world faster than the world could surprise us — and on the long tail, we kept losing that bet. The agentic alternative, given the ability to search resolved tickets and reason over them, is the general method: it leverages retrieval and model capability instead of our hand-drawn DAG. As models get cheaper and better, that side of the trade keeps getting stronger. Betting everything on the tree may have been betting against the trend.
+Looking back, I never really gave the agent a fair chance — not as that bolted-on fallback, and not in the earlier head-to-head that made us pick the workflow in the first place. That comparison was unfair to the agent, though I didn't see it clearly at the time: I optimised for what the client *said* he wanted instead of what he needed. He wanted responses that matched his templates; what he needed was a system that resolves his end-customers' issues — and those are not the same thing. An agent that wrote a clearer, more helpful answer in its own words still "lost", purely for departing from the template. Part of the job is to give a client what they need, not what they ask for, and here I delivered the latter. In short, we asked the agent to be a worse workflow instead of letting it be a better agent.
 
 ## What I would do differently
 
@@ -240,6 +230,13 @@ flowchart TD
 
 The dashed edge is the whole point: code paths are grown *out of* proven agent behaviour, not assumed up front.
 
-To make the agent good on the long tail, I would give it access to the resolved historical tickets to ground its answers. I'm genuinely unsure that would work, for two reasons. First, privacy and security are very hard to get right: those tickets are full of personal data, and an agent that retrieves and reasons over them is a far larger exposure surface than a fixed DAG. Second, the tickets are stale — leaning on them might nudge the agent toward outdated answers rather than better ones. So the honest verdict is inconclusive.
+To make the agent good on the long tail, I would give it access to the resolved historical tickets to ground its answers. I'm genuinely unsure that would work, with two caveats:
+
+- **Privacy and security are hard to get right.** Those tickets are full of personal data, and an agent that retrieves and reasons over them is a far larger exposure surface than a fixed DAG.
+- **The tickets are stale.** Leaning on them might nudge the agent toward outdated answers rather than better ones.
+
+So the honest verdict is inconclusive.
+
+There's an echo of Rich Sutton's [*The Bitter Lesson*](http://www.incompleteideas.net/IncIdeas/BitterLesson.html) here: hand-encoded human knowledge — our intent tree — tends to lose over time to general methods that scale with compute, and as models get cheaper and better that trade only tilts further toward the agent.
 
 The workflow wasn't a mistake — it worked, and it delivered real value. But if I did it again, I'd start from the agent and let production tell me which paths to freeze, not the other way round.
