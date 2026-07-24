@@ -125,7 +125,7 @@ This is better. Each agent has a narrow, well-defined job, and code controls the
 
 ---
 
-## 3. The hybrid approach: LLM-assisted extraction + code workflow
+## 3. The hybrid approach
 
 The key insight is that there is only *one* genuinely hard part of Bob's request: parsing his free-text message into a structured spec the marketplace API can consume. Everything after that — the search, the policy check, the order — can be handled deterministically by regular code.
 
@@ -175,7 +175,7 @@ Why is this even tractable? Why isn't every request like Bob's a unique snowflak
 
 This isn't an assumption; it's something you verify empirically before designing the system. Cluster a few hundred historical requests and look at the coverage. If 80% of your traffic falls into a dozen well-defined intents, the hybrid approach is on solid ground. If your distribution is genuinely flat — every request its own snowflake — you have a different problem, and probably need a different architecture. Skipping this check is how teams end up building agentic monoliths for tasks that turn out to be 90% structured.
 
-### Why workflows win here
+### Why workflows win for a bounded problem
 
 Once the distribution checks out, code earns its place at almost every step:
 
@@ -187,15 +187,19 @@ Once the distribution checks out, code earns its place at almost every step:
 
 These advantages are real, and for a bounded process like Bob's they are decisive. The trouble starts when the process is not as bounded as the toy example makes it look.
 
-## My real problem wasn't bounded
+## Growing the workflow with an agentic loop
 
-Our production support system was messier than Bob's laptop order. We labelled and analysed roughly 2,300 historical tickets with an AI-assisted, iterative process, and the distribution behaved exactly as the theory predicts: most of the volume fell into a handful of broad customer intents. That looked like a green light for the workflow-first approach.
+Our production support system was messier than Bob's laptop order, but it started the same way. We labelled and analysed roughly 2,300 historical tickets with an AI-assisted, iterative process, and the distribution behaved exactly as the theory predicts: most of the volume fell into a handful of broad customer intents. That green light sent us down the workflow-first path, and we built the [four-step pipeline](/post/first-level-support-automation).
 
-But a concentrated top level did not produce a small workflow. To respond precisely, each broad intent had to be split into ever more specific [sub-intents](/post/first-level-support-automation#step-1-intent-recognition). Reaching an intent leaf was only the beginning: it then combined with the possible [fetch results](/post/first-level-support-automation#step-3-fetch) and the customer's state, and the resulting [plan-generation tree](/post/first-level-support-automation#step-4-plan-generation) grew enormous. Every iteration improved the paths we knew about, and production kept surfacing paths we didn't: new sub-sub-intents, unseen DAG combinations. The head of the distribution was concentrated; the tail was deep — and the tail is where support actually lives.
+Then we ran it in a way that, in hindsight, recreated the very conditions the intro says business problems lack. The system went live in **shadow deployment** — its responses were graded by subject-matter experts but never shown to customers — so a wrong answer had almost no blast radius. That handed me two of the three ingredients coding agents rely on: cheap, reversible retries and an automated signal.
 
-The loop I built to keep up was, ironically, the very thing the intro says business problems lack. We ran the system in shadow deployment — its responses were graded by subject-matter experts but never shown to customers — so a wrong answer had almost no blast radius. That gave me the two ingredients coding agents rely on: cheap, reversible retries and an automated signal. On top of it I ran an agentic loop that pulled the experts' free-text feedback, implemented the fix (usually a new DAG branch), added the case to an eval set, and re-ran the whole suite against it. Building the workflow had itself become an ideal task for an agent.
+On top of that I ran an [agentic loop](https://www.deeplearning.ai/the-batch/issue-359) — an instance of what Andrew Ng calls the *agentic coding loop*. It pulled the experts' free-text feedback, implemented the fix (usually a new DAG branch), added the case to an eval set, and re-ran the whole suite against it. Building the workflow had itself become an ideal task for an agent, and for a while it felt like the system was converging.
 
-But notice what that loop was actually doing: using an agent to *extend a hand-coded tree*, one newly-seen path at a time. It made the workflow maintainable; it did not make the problem bounded. Every fix was reactive — a branch added *after* production surfaced a path I hadn't anticipated — so I was always one step behind the long tail, growing the tree forever without ever catching up.
+## But the problem wasn't bounded
+
+That sense of convergence was an illusion. A concentrated top level did not mean simple handling: to give each customer a genuinely helpful, adequate response, each broad intent had to be split into ever more specific [sub-intents](/post/first-level-support-automation#step-1-intent-recognition). Reaching an intent leaf was only the beginning: it then combined with the possible [fetch results](/post/first-level-support-automation#step-3-fetch) and the customer's state, and the resulting [plan-generation tree](/post/first-level-support-automation#step-4-plan-generation) grew enormous. Production kept surfacing paths we hadn't seen: new sub-sub-intents, unseen DAG combinations. The head of the distribution was concentrated; the tail was deep — and the tail is where support actually lives.
+
+And notice what my nice loop was actually doing against that tail: using an agent to *extend a hand-coded tree*, one newly-seen path at a time. It made the workflow maintainable; it did not make the problem bounded. Every fix was reactive — a branch added *after* production surfaced a path I hadn't anticipated — so I was always one step behind, growing the tree forever without ever catching up.
 
 ## I didn't give the agent a fair chance
 
@@ -211,10 +215,39 @@ Our enormous intent-and-plan tree is exactly the kind of hand-encoded human know
 
 ## What I would do differently
 
-I would give the agentic planner a real chance before growing the workflow. And I already had the perfect harness for it: the shadow deployment and eval loop I used to grow the DAG would let an agent explore just as safely — small blast radius, graded feedback, cheap retries. Instead of pointing that loop at extending a tree, I would point it at an agent. Concretely: a privacy-safe way to search resolved historical tickets, retrieval of relevant examples and templates, and deterministic business tools it can call. Templates would be examples to draw on, not wording to reproduce — mandatory only where exact wording is legally required. On the long tail, that might well have produced better outcomes even when the replies drifted from the familiar templates.
+I would give the agentic planner a real chance before growing the workflow. And I already had the perfect harness for it: the shadow deployment and eval loop I used to grow the DAG would let an agent explore just as safely — small blast radius, graded feedback, cheap retries. Instead of pointing that loop at extending a tree, I would point it at an agent. Concretely: a privacy-safe way to search resolved historical tickets, retrieval of relevant examples and templates, and deterministic business tools it can call. Templates would be examples to draw on, not wording to reproduce. On the long tail, that might well have produced better outcomes even when the replies drifted from the familiar templates.
 
-The hard constraints would still live in code: legal language, policy checks, escalation rules, permissions, and anything irreversible. The agent adapts everything else to the case. And I would evaluate what actually matters — correctness, policy compliance, tool use, resolution quality — rather than superficial template conformity.
+The hard constraints would still live in code — legal language, policy checks, escalation rules, permissions, anything irreversible — with the agent free to adapt everything else, and judged on whether it resolved the customer's problem rather than on template conformity.
 
-Then I would let production evidence decide what to freeze. Frequent paths and high-consequence actions move into workflows; the long tail stays agentic. This is the progression in Will Larson's [Building internal agents](https://lethain.com/agents-series/) series, and it inverts the order I actually followed: start with the agent to discover the shape of the problem, then harden the parts that have stopped surprising you into code.
+Then I would let production evidence decide what to freeze. Frequent paths and high-consequence actions move into workflows; the long tail stays agentic. This is the progression in Will Larson's [Building internal agents](https://lethain.com/agents-series/) series, and it inverts the order I actually followed.
+
+Our system already had both kinds of path — deterministic branches and an agentic fallback for the `other` leaves ([see the plan-generation step](/post/first-level-support-automation#step-4-plan-generation)). We just assembled them in the wrong order: code first, with the agent bolted on for whatever the code didn't cover. Inverted, the runtime routes to the agent by default and to code only for the paths production has proven worth hardening:
+
+```mermaid
+flowchart TD
+    INPUT(["Customer request"])
+    D{"Path proven frequent<br/>or high-consequence?"}
+    C["⚙️ Code step<br/>hardened workflow"]
+    A["🤖 Agent<br/>search tickets, use tools,<br/>adapt the response"]
+    OUT(["Response + tool calls"])
+
+    INPUT --> D
+    D -->|"yes"| C
+    D -->|"no: long tail"| A
+    C --> OUT
+    A --> OUT
+    A -.->|"production evidence promotes<br/>proven paths into code"| C
+
+    classDef agent fill:#f3e8ff,stroke:#7c3aed,stroke-width:2px
+    classDef code fill:#dcfce7,stroke:#16a34a,stroke-width:2px
+    classDef decision fill:#fff7ed,stroke:#ea580c,stroke-width:2px
+    classDef terminal fill:#f8fafc,stroke:#64748b,stroke-width:1.5px
+    class A agent
+    class C code
+    class D decision
+    class INPUT,OUT terminal
+```
+
+The dashed edge is the whole point: code paths are grown *out of* proven agent behaviour, not assumed up front.
 
 So the honest version of this post is not "workflows beat agents". It is about sequencing. Use an agent to explore the uncertain space and let it show you the real distribution of the work. Then turn the repeated and high-consequence paths — and only those — into code.
