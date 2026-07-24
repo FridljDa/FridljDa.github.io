@@ -8,7 +8,7 @@ description: "Start with an agent to discover the workflow; move stable, high-co
 image: /images/blog/workflow-vs-agent/featured.png
 ---
 
-Progress in frontier AI models has allowed coding agents to tackle ever more complex and long-running tasks. Benchmarks are saturating fast, and the trajectory is genuinely impressive.
+Progress in frontier AI models has allowed coding agents to tackle ever more complex and long-running tasks, and benchmarks are saturating fast.
 
 What makes coding agents so effective is a combination of three things. First, software is largely composed of patterns LLMs have seen countless times during training — syntax, idioms, libraries, algorithms. Second, code gives you *automated evaluation for free*. You run it, and you get a compiler error, a failing test, or a stack trace. The agent doesn't need to know whether it's right — the environment tells it. Third, and most importantly, agents can iterate cheaply. A bad attempt costs a few seconds of compute and nothing irreversible happens. In many benchmarks, coding agents are given nothing but terminal access — like [tbench](https://www.tbench.ai/) — and are left to try things, observe results, and loop until the task is done. That tight feedback loop is what allows them to crack problems that would have seemed out of reach just a year ago.
 
@@ -171,7 +171,7 @@ For this bounded process, the hybrid is the best fit. Product search, budget loo
 
 ### Verify the distribution before you design
 
-Why is this even tractable? Why isn't every request like Bob's a unique snowflake? Because real business processes rarely are. Take a sample of past procurement requests, ask a small LLM to bucket them into a few intent categories — laptops with specs, peripherals, software licences, replacement orders, vendor onboarding — and the vast majority usually fall into a handful of buckets. The long tail is real, but the head of the distribution dominates.
+Why isn't every request like Bob's a unique snowflake? Because real business processes rarely are. Take a sample of past procurement requests, ask a small LLM to bucket them into a few intent categories — laptops with specs, peripherals, software licences, replacement orders, vendor onboarding — and the vast majority usually fall into a handful of buckets. The long tail is real, but the head of the distribution dominates.
 
 This isn't an assumption; it's something you verify empirically before designing the system. Cluster a few hundred historical requests and look at the coverage. If 80% of your traffic falls into a dozen well-defined intents, the hybrid approach is on solid ground. If your distribution is genuinely flat — every request its own snowflake — you have a different problem, and probably need a different architecture. Skipping this check is how teams end up building agentic monoliths for tasks that turn out to be 90% structured.
 
@@ -182,8 +182,8 @@ Once the distribution checks out, code earns its place at almost every step:
 - **Use code where code is enough.** The marketplace search and policy lookup rarely change. A robust integration — exponential backoff, error handling, retries — is a one-time investment, and it will be more reliable than an agent figuring out how to call them on the fly, every time.
 - **Scope the LLM to what only an LLM can do.** Extracting a structured spec from free text is a well-defined task. You can build targeted evals, iterate on the prompt, drop to a cheaper model — or swap the LLM for a Named Entity Recognition model if your vocabulary is bounded enough. None of that is possible once the LLM is entangled with search, policy, and ordering.
 - **Don't ask an LLM to enforce rules it hasn't seen.** Models have seen countless lines of code in training. They have *not* seen your procurement policy or vendor contracts. A budget cap is a hard `if` statement. It cannot be reasoned around, hallucinated, or skipped.
-- **Iteration is targeted and predictable.** When a request is misread or a policy changes, the fix is local: edit the extraction prompt, add a branch, adjust one API call — and you know what the next request of that shape will do. With an agent, your tools are blunter. You edit a system prompt and hope. Hoping doesn't scale, and it doesn't survive a code review.
-- **Auditability comes for free.** Every step after extraction is ordinary code. You can log it, test it, and trace it exactly like any other software. When something goes wrong, you know where to look.
+- **Iteration is targeted and predictable.** When a request is misread or a policy changes, the fix is local: edit the extraction prompt, add a branch, adjust one API call — and you know what the next request of that shape will do. With an agent, your only tool is a system-prompt edit, and you can't predict what it does to the cases that already worked.
+- **Auditability comes for free.** Every step after extraction is ordinary code. You can log it, test it, and trace it exactly like any other software.
 
 These advantages are real, and for a bounded process like Bob's they are decisive. The trouble starts when the process is not as bounded as the toy example makes it look.
 
