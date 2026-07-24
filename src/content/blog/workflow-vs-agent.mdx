@@ -165,6 +165,12 @@ flowchart TD
 
 For this bounded process, the hybrid is the best fit. Product search, budget lookup, and ordering have explicit rules and a small state space. Code makes those rules reliable and auditable; the LLM only bridges human language and structured data.
 
+### Why workflows still matter
+
+The production lesson below does not invalidate the advantages of workflows. Once an integration or business rule is understood, code can enforce sequencing, retries, and error handling every time. A policy check becomes a hard condition rather than behaviour a model might skip. Deterministic steps are also faster, cheaper, and easier to test and audit.
+
+Scoping the LLM to a narrow task makes evaluation and iteration more precise. When something breaks, you can change the extraction prompt, one branch, or one API call instead of nudging the entire system's behaviour. That predictability is especially valuable for high-consequence actions.
+
 ### What the example hides
 
 Our production support system was less tidy. We used an AI-assisted, iterative process to label and analyse roughly 2,300 historical tickets. Most of the volume fell into a handful of broad customer intents, which initially supported the same workflow-first conclusion.
@@ -173,14 +179,14 @@ But a concentrated top level did not produce a small workflow. To respond precis
 
 We also tried a more agentic planner. The client relied on about twenty established message templates and expected the system to follow them closely. Given that requirement, deterministic template selection was more reliable than prompt-tuning an LLM to reproduce fixed wording.
 
-That comparison did not give the agent a fair chance, though. The workflow encoded knowledge extracted from the historical tickets, while the agent could not search those tickets at all. It was expected to handle the long tail without access to the organisation's accumulated examples.
+That comparison did not give the agent a fair chance. The workflow encoded knowledge extracted from the historical tickets, while the agent could not search those tickets at all. We also evaluated it primarily on template conformity rather than whether a more flexible response could resolve the customer's problem better.
 
 ### What I would do differently
 
-For a process that is not yet well understood, I would now start more agentically. I would give the agent a privacy-safe way to search resolved historical tickets, retrieve relevant examples and templates, and use deterministic business tools.
+In this project, I would give the agentic planner a much better chance before expanding the workflow. I would give it a privacy-safe way to search resolved historical tickets, retrieve relevant examples and templates, and use deterministic business tools. That might have produced a better business outcome on the long tail, even if the responses departed more often from familiar templates.
 
 Templates would be examples unless their exact wording was mandatory. Legal language, policy checks, escalation rules, permissions, and irreversible actions would remain constrained by code; the agent could adapt everything else to the case. I would evaluate correctness, policy compliance, tool use, and resolution quality rather than superficial template conformity.
 
 Then I would use production evidence to decide what to hardcode. Frequent paths and high-consequence decisions would move into workflows; the long tail would remain agentic. This matches the progression described in Will Larson's [Building internal agents](https://lethain.com/agents-series/) series: start with LLM-driven workflows, then introduce code when reliability, speed, or cost requires it.
 
-Obvious invariants belong in code from day one. For everything else, the choice is not simply agent versus workflow; it is which should come first.
+This is not an argument against workflows. It is an argument about sequencing: use an agent to explore the uncertain space, then turn repeated and high-consequence paths into code.

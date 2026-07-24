@@ -1,7 +1,7 @@
 ---
 title: "Architecture of a First-Level Support Automation"
 pubDate: 2026-05-16T00:00:00.000Z
-updatedDate: 2026-06-11T00:00:00.000Z
+updatedDate: 2026-07-24T00:00:00.000Z
 tags:
   - AI
   - Customer Support
@@ -10,11 +10,11 @@ description: "The four-step pipeline we landed on after iterating in production:
 image: /images/blog/first-level-support-automation/featured.png
 ---
 
-How do you actually automate first-level customer support without the system collapsing into one big agent that nobody can debug? This post describes the architecture we landed on after iterating on a customer support system we built in production. It is a worked instance of the philosophy from [Agentic vs Workflow-based AI](https://danielfridljand.de/post/workflow-vs-agent): decompose the problem, let an LLM do only what only an LLM can do, and put code everywhere else.
+How do you automate first-level customer support without building one big, opaque agent? This post presents the architecture we reached in production: decompose the problem, let LLMs handle interpretation, and keep everything else in code. It is a worked example of [Agentic vs Workflow-based AI](https://danielfridljand.de/post/workflow-vs-agent).
 
-The system takes a customer message — email, chat, whatever — and produces two things: a reply (possibly with attachments) and any tool calls needed to resolve the request (invalidate a voucher, file a reimbursement ticket, escalate to a human). Inbound attachments are normalised by a preprocessing layer before anything else runs.
+The system turns a customer message into a reply, possibly with attachments, and any required tool calls: invalidating a voucher, filing a reimbursement ticket, or escalating to a human. A preprocessing layer first normalises inbound attachments.
 
-Across the diagrams, the notation is consistent: **🤖 Agent** means an autonomous component that chooses actions and uses tools; **🧠 LLM-assisted step** means a constrained model call with a defined output; **⚙️ Code step** means deterministic application logic; and **🔌 External tool/API** means a dependency outside the workflow.
+In the diagrams, **🤖 Agent** is autonomous, **🧠 LLM-assisted step** is a constrained model call, **⚙️ Code step** is deterministic logic, and **🔌 External tool/API** is an external dependency.
 
 The pipeline has four steps, run as a DAG:
 
@@ -47,23 +47,19 @@ flowchart TD
     class INPUT,OUT terminal
 ```
 
-Intent recognition and information extraction have no data dependency on each other, so they run in parallel. Fetch depends only on extraction. Plan generation combines the resolved intent leaf with the fetched records: known leaves follow deterministic code, while an "other" leaf uses the fallback agent.
+Intent recognition and extraction run in parallel. Fetch uses the extracted fields; plan generation combines its results with the resolved intent. Known intents follow code, while an "other" intent uses the fallback agent.
 
-We will trace one message through all four steps. The running example throughout this post is:
+We will trace this message through all four steps:
 
 > *I bank with Northstar Bank's Riverton branch. My name is Alex Carter, and my partner is Jamie Carter. Our account number is NSBO1234. We can no longer access the account.*
 
-Northstar Bank, its Riverton branch, the people, and the account details are all fictional.
-
-This message is realistic in three useful ways. The intent is slightly ambiguous (login problem? account locked? something else?). There are two people named and we do not yet know whose account is meant. And the account number contains the classic OCR-or-typing ambiguity between `0` and `O` — `NSBO1234` could be `NSB01234`.
+All details are fictional. The example contains three common complications: an ambiguous intent, two named people, and a `0`/`O` ambiguity in the account number (`NSBO1234` or `NSB01234`).
 
 ---
 
 ## Step 1: Intent recognition
 
-The job here is to classify the message into one of a small set of intents — cheaply enough that the downstream pipeline can branch on it.
-
-We classify against a **rooted DAG of intents — a single entry point, biased toward depth 2**. The root has a handful of broad parent intents ("account access", "payments", "card services", …) plus an explicit **"other"** parent. Most parents have a few sub-intents underneath, again plus an "other" within that parent. We run this as two LLM-assisted steps: first the parent intent, then — given the parent — the sub-intent from a constrained list. Pydantic AI exposes each call through its `Agent` class, but architecturally these are constrained LLM-assisted steps: they have no tools or open-ended reasoning loop and return a typed `output_type`. See [Type-Safe Hybrid Workflows with Pydantic AI](https://danielfridljand.de/post/pydantic-ai-type-safe-hybrid-workflows) for the mechanics.
+We classify the message against a **rooted DAG of intents, biased toward depth 2**. The root contains broad intents ("account access", "payments", "card services", …) and an explicit "other"; most parents contain a few sub-intents and another "other". One constrained LLM call selects the parent, then another selects among its children. These Pydantic AI `Agent` calls have no tools or open-ended loop and return typed outputs. [Type-Safe Hybrid Workflows with Pydantic AI](https://danielfridljand.de/post/pydantic-ai-type-safe-hybrid-workflows) covers the mechanics.
 
 ```mermaid
 flowchart TD
@@ -90,29 +86,23 @@ flowchart TD
     class POT,P1OT,P3OT fallback
 ```
 
-Two of those edges are worth staring at: **Account locked** is a child of *both* **Account access** and **Card services**, and **Payments** has no children drawn at all. Those are the two structural choices that make this a DAG rather than a tree.
+**Depth 2 is a bias, not a rule.** Specific parents can resolve at depth 1; rare branches may need a third level. Two is usually deep enough to keep each classification narrow without over-classifying or making labels harder to maintain.
 
-A few things worth pulling out.
+**Shared leaves make this a DAG, not a tree.** **Account locked** belongs under both **Account access** and **Card services**. Once either path reaches that leaf, handling is identical. A tree would duplicate the unlock flow; a DAG keeps one plan and makes downstream logic depend on the leaf, not the route.
 
-**Depth 2 is a bias, not a rule.** Some parent intents are already specific enough to act on — they resolve at depth 1, and the second call either returns a trivial "no further breakdown" sub-intent or is skipped entirely (Payments, above, is one such parent in the diagram). Others, in rare cases, earn a third level. We default to depth 2 because it is the sweet spot — deeper structure pushes you toward over-classification and harder labeling, flatter structure makes a single call do too much — but we do not force every branch to bottom out at exactly two levels. The depth is whatever a branch needs, with two as the gravitational center.
+**"Other" makes coverage gaps explicit.** Requests outside the taxonomy land in a visible queue for future intents and route cleanly to less structured handling.
 
-**A sub-intent can live under more than one parent — which is why it is a DAG, not a tree.** The same handling leaf is frequently reachable from different first-level intents. A customer who locked themselves out by mistyping their online-banking password lands on **account access → account locked**; a customer who triggered the same lockout by entering the wrong card PIN at an ATM arrives via **card services → account locked**. Different first-level intent, different path, *same leaf* — once you are there, the unlock handling is identical. In a strict tree you would have to duplicate that leaf under both parents and keep the two copies in sync as the unlock flow evolves. Modelling intents as a DAG lets the paths converge on one shared leaf, so everything downstream branches on the leaf you reached, not on the route you took to get there.
+**Two narrow calls beat one wide classifier.** Each parent exposes only its reachable children as a typed `Literal`, avoiding confusion between unrelated categories. Shared leaves simply appear in more than one parent's options.
 
-**The "other" category at every level is the point, not an afterthought.** No matter how carefully you enumerate intents at design time, customer requests do not respect your taxonomy. By modelling "other" explicitly, we make our coverage gap visible: every message that lands in an "other" bucket is a candidate for becoming its own intent in a future iteration cycle. It also gives us a clean place to route the more agentic, less structured downstream handling, as we will see in the plan step.
+Intent recognition is also the pipeline's cleanest eval target: labeled conversations yield precision, recall, and a confusion matrix.
 
-**Two LLM-assisted steps, not one wide classifier.** The reachable sub-intents differ by parent. Asking the model to choose from a flat list of every sub-intent across every parent works worse in practice — the model gets confused between sibling categories from unrelated parents — and the typed contract (a `Literal` of the sub-intents reachable from the chosen parent) is harder to express. Two narrow calls with constrained output types beat one wide call. The shared-leaf case costs nothing here: a sub-intent that sits under two parents simply appears in both parents' `Literal`s.
-
-**This is the cleanest eval target in the whole pipeline.** A labeled set of historical conversations with their correct (parent, sub) labels gives you precision/recall numbers you can move. We will return to this in the evals section.
-
-For our running example, the parent intent comes out as **account access** and the sub-intent as **account locked** (with some probability mass on **login problem**) — the very same `account locked` leaf a card-PIN lockout would have reached from the other side of the DAG.
+Our example resolves to **account access → account locked**, the same leaf a card-PIN lockout could reach through **card services**.
 
 ---
 
 ## Step 2: Information extraction
 
-In parallel with intent recognition, we extract the structured information the downstream steps will need.
-
-We organise extracted fields into **groups** — small clusters of related fields that get pulled out together in a single LLM-assisted step. One group per step, but the groups run in parallel. For our running example, the relevant groups are `People` (names) and `Account` (account identifiers and branch). Each group has its own Pydantic output model and prompt, with Pydantic AI handling validation and retries on the typed output — see [the Pydantic AI post](https://danielfridljand.de/post/pydantic-ai-type-safe-hybrid-workflows) for how that wiring works.
+In parallel with intent recognition, separate LLM-assisted steps extract **groups** of related fields. Our example uses `People` (names) and `Account` (identifiers and branch). Each group has its own prompt and Pydantic output model, including validation and retries. [The Pydantic AI post](https://danielfridljand.de/post/pydantic-ai-type-safe-hybrid-workflows) shows the wiring.
 
 ```mermaid
 flowchart TD
@@ -141,24 +131,22 @@ flowchart TD
     class MSG,P_FIELDS,A_FIELDS,OUT data
 ```
 
-Grouping matters for two reasons.
+**Groups preserve field relationships.** A single prompt can partition "Northstar Bank's Riverton branch" consistently instead of extracting the bank and branch independently and duplicating or losing information.
 
-**Field interactions live inside a group.** Take the phrase "Northstar Bank's Riverton branch." A naive per-field extraction asks for the bank and branch independently. Depending on the model, you can get `bank=Northstar Bank, branch=Riverton` or duplicate the location in both fields. With a group, one prompt can specify how the related fields should be partitioned and kept consistent.
+**Groups are independent eval targets.** A regression is isolated to one dataset and component, which can be tuned, moved to another model, or replaced with NER without affecting the rest.
 
-**Groups are independent eval targets.** Each group has its own labeled dataset and its own metrics. When extraction quality regresses, you know which group regressed — and you can swap its model, tune its prompt, or even replace it with a small NER model — without touching anything else.
-
-We use a few patterns consistently across groups:
+Across groups, we use the same patterns:
 
 | Pattern | Why |
 |---|---|
 | All fields optional | Customers rarely include everything; we extract what is there |
 | List-valued where ambiguous | If two emails are mentioned, both get returned; downstream disambiguates |
-| Automatic alphanumeric variants | `ABCO1234` is stored as `[ABCO1234, ABC01234]` to handle 0/O, 1/I, 5/S confusions |
+| Automatic alphanumeric variants | `NSBO1234` is stored as `[NSBO1234, NSB01234]` to handle 0/O, 1/I, 5/S confusions |
 | Bias toward false positives | Easier to filter spurious matches downstream than to recover lost signal |
 
-Throughout this pipeline we would rather over-extract than under-extract: the fetch step is built to assume that some of what came out of extraction is wrong, and to handle that with scoring rather than by trusting any single field.
+We deliberately over-extract: fetch treats every field as fallible and scores the combined evidence.
 
-For our running example, after extraction we have something like:
+The example yields:
 
 - `People`: `Given name: [Alex, Jamie]`, `Family name: [Carter]`
 - `Account`: `Account number: [NSBO1234, NSB01234]`, `Branch: [Riverton]`
@@ -167,9 +155,7 @@ For our running example, after extraction we have something like:
 
 ## Step 3: Fetch
 
-Now we look things up. This step is where extraction's false-positive bias gets paid for: we run the extracted information through API endpoints, score the results, and keep the high-scoring matches.
-
-The approach is a **weighted-scoring fan-out**. For each extracted field, we issue a parallel query to the relevant API endpoint. Each query returns a list of candidate records. We then merge those candidate lists by primary ID, summing a per-field signal-strength weight for every hit. Strong matches accumulate score from multiple fields; weak or spurious extractions contribute little.
+Fetch uses a **weighted-scoring fan-out** to absorb extraction's false positives. Each field triggers a parallel API query; candidate lists are merged by primary ID, adding a field-specific weight for every hit. Strong records accumulate evidence while spurious fields contribute little.
 
 ```mermaid
 flowchart TD
@@ -198,7 +184,7 @@ flowchart TD
     class EX,OUT terminal
 ```
 
-The signal-strength weights are assigned per field, based on how discriminating that field is. A first name on its own picks out thousands of customers; an account number picks out one (or none):
+Weights reflect how discriminating each field is: a first name matches many customers, while an account number matches one or none.
 
 | Field | Weight |
 |---|---|
@@ -207,7 +193,7 @@ The signal-strength weights are assigned per field, based on how discriminating 
 | Branch | 2 |
 | Account number | 5 |
 
-For our running example, suppose the queries return the following hits (simplified):
+The example produces these simplified hits:
 
 | Record ID | Matched on | Score |
 |---|---|---|
@@ -216,21 +202,17 @@ For our running example, suppose the queries return the following hits (simplifi
 | `acc_204` | Family name=Carter | 2 |
 | `acc_388` | Given name=Alex | 1 |
 
-`acc_001` dominates: it matched all four discriminating fields, including the strong one. It is the only record at the maximum score and above the threshold, so it is what we pass on. The `0`/`O` variant generated during extraction made the account-number hit possible: the customer wrote `NSBO1234`, the actual account number is `NSB01234`, and the variant bridged the gap.
+`acc_001` is the sole maximum above the threshold, so it wins. Its account-number hit comes from the generated `0`/`O` variant: the customer wrote `NSBO1234`, while the record contains `NSB01234`.
 
-If no record had cleared the threshold, fetch would have returned an empty result, and the plan step would handle that explicitly — typically by asking the customer for more information.
-
-The whole step is plain code. There is no LLM-assisted step here at all. The mental model that matters in practice is just: fan out, sum weighted hits, threshold.
+If nothing clears the threshold, fetch returns no record and the plan can request more information. This step is plain code: fan out, sum weighted hits, threshold.
 
 ---
 
 ## Step 4: Plan generation
 
-Plan generation starts from a **fully resolved leaf of the intent DAG** plus the extracted information, the fetched records, and metadata about the fetch (how many candidates, top score, etc.). The intent question is already answered — that happened in Step 1 — so the plan step does not re-classify anything. It turns the leaf and the data into a concrete response and a set of tool calls.
+Plan generation receives the **resolved intent leaf**, extracted fields, fetched records, and fetch metadata. Dispatch is therefore a keyed lookup, not another classification: converging paths share one plan, so `account_locked` behaves the same whether reached through account access or card services.
 
-**Dispatching on the leaf is a lookup, not a decision.** Because the leaf was already resolved upstream, the planner indexes straight into the plan registered for that leaf; it never re-asks "which intent is this?". And because intent classification already collapsed any converging paths onto one shared leaf (Step 1), the dispatch never has to care which parent the customer came in through — the `account_locked` leaf has exactly one plan, whether the lockout started from account access or from a card PIN.
-
-**Inside a leaf's plan, almost every branch is a question about the fetched data.** Each leaf carries a small decision tree, but the leaf has fixed the *intent*, so what is left to decide is purely a function of what we found: did fetch return an account? one candidate or several? is it flagged? Those answers route to a pre-written message template (filled with variables) plus any tool calls. This is where the actual business logic of customer support lives — the tribal knowledge about which combinations of state should get which response. Growing these per-leaf plans is the central activity of operating the system over time, and it is the same kind of work as growing any business workflow: deterministic branches added one by one as patterns emerge in real traffic. The case for keeping this part of the system in code rather than handing it to an agent is made at length in [Agentic vs Workflow-based AI](https://danielfridljand.de/post/workflow-vs-agent).
+Each known leaf owns a small decision tree over the fetched data: was a record found, is there one candidate, is it flagged? Branches end in a pre-written template plus any tool calls. These trees encode the business logic and grow as patterns emerge. [Agentic vs Workflow-based AI](https://danielfridljand.de/post/workflow-vs-agent) explains why we keep them in code.
 
 ```mermaid
 flowchart TD
@@ -265,35 +247,27 @@ flowchart TD
     class ROOT terminal
 ```
 
-The green dispatch node is a keyed lookup on the already-known leaf, not a re-classification. Everything below the `account_locked` edge is a question about the fetched data — found, count, flags — landing on a deterministic template plus any tool calls.
+**"Other" leaves are the exception.** With no hardcoded plan, the pipeline's only autonomous agent inspects the fetched data and proposes one using constrained tools. Repeated patterns are promoted to hardcoded leaves through an observe, label, generalise, hardcode loop, reducing LLM dependence over time.
 
-**The "other" leaves are the exception.** When the message resolves to one of the "other" leaves during intent recognition, we do not have a hardcoded plan — by construction, we have not seen enough examples to write one. Those leaves use the purple fallback agent, which can inspect the fetched data and use a constrained tool set to propose a plan. It is the only autonomous agent in the pipeline; every known leaf follows deterministic code.
+Our `account_locked` example finds one unflagged record, `acc_001`, and lands on the parametrised "unlock instructions" template.
 
-Every plan produced by the fallback agent is a candidate for being promoted to a hardcoded leaf once the pattern is clear enough. That promotion loop — observe, label, generalise, hardcode — is how the system gets less LLM-dependent over time, not more.
-
-For our running example, the resolved leaf is `account_locked`. Dispatch hands off to its plan, which then asks only fetched-data questions: account found? — yes, `acc_001`; one candidate? — yes, it was the sole record above threshold in Step 3; fraud flag set? — no. That lands on the "unlock instructions" template, parametrised with the matched account.
-
-For high-stakes actions — anything touching money, account access, or external systems with side effects — the generated plan is reviewed by a human before execution. The orchestration for that (durable waits, signals, deterministic recovery across restarts) is covered in [Temporal for Human-in-the-Loop](https://danielfridljand.de/post/temporal-human-in-the-loop).
+Plans involving money, account access, or side effects require human review. [Temporal for Human-in-the-Loop](https://danielfridljand.de/post/temporal-human-in-the-loop) covers durable waits, signals, and recovery across restarts.
 
 ---
 
 ## Why decomposing pays off: evals
 
-The thing that makes this architecture sustainable in production is that every step is independently evaluable.
+Each step has its own evaluation:
 
-- **Intent.** Labeled set of conversations and their correct (parent, sub) intents. Precision, recall, confusion matrix. When a class regresses, you see it the same day.
-- **Extraction.** One eval suite per group. Field-level precision and recall against labeled ground truth. False-positive rate is allowed to be non-zero — it is the design.
-- **Fetch.** Deterministic, so the eval is integration-test shaped. Given an extraction output and a fixed fixture of API responses, does the right record come out on top? When weights or thresholds change, you re-run the suite and check.
-- **Plan.** For hardcoded leaves, ordinary unit tests. For the LLM-fallback leaves under "other", a golden-set eval on a labeled sample of "other"-routed conversations.
+- **Intent:** precision, recall, and a confusion matrix over labeled parent/sub-intents.
+- **Extraction:** field-level precision and recall for each group, allowing the intended false-positive bias.
+- **Fetch:** integration tests over extracted fields, fixed API responses, weights, and thresholds.
+- **Plan:** unit tests for known leaves; a labeled golden set for fallback plans.
 
-Contrast this with a single end-to-end agent that takes the message and produces the response. The only eval you have there is end-to-end quality — "did the customer get a good answer?" — and when it regresses, you have no idea which part broke. You are stuck staring at prompts and hoping. Decomposed pipelines turn one mushy evaluation into four sharp ones, and that is what lets you keep improving the system in production without breaking what already worked.
-
-A useful side effect of the "other" buckets is that they are a self-curating queue of training data for future iteration. Every message that lands in an "other" leaf is a candidate for becoming a new intent, a new extraction group, or a new hardcoded plan branch. The system tells you where to dig.
+A monolithic agent offers only end-to-end quality, making regressions hard to locate. Decomposition isolates them. Meanwhile, "other" buckets form a self-curating queue for new intents, extraction groups, or hardcoded branches.
 
 ---
 
 ## Closing
 
-The pattern, summarised: decompose into typed steps, use LLMs only where they earn their place, model coverage gaps explicitly with "other" buckets, and bias every step toward making the next one's job tractable. What is worth saying is that, taken together, they produce a system you can actually evolve in production — one where regressions are localizable, evals are sharp, and the long tail is a queue you work through, not a fire you fight.
-
-Two natural extensions from here. The first is human-in-the-loop approval for high-stakes plans, which is exactly the territory of [Temporal for Human-in-the-Loop](https://danielfridljand.de/post/temporal-human-in-the-loop) — durable waits, signals, and deterministic recovery across restarts. The second is the question of whether the same decomposition works for adjacent problems: triage in operations, intake in legal, claims processing in insurance. The shapes look similar, and the central move — using typed LLM-assisted steps for interpretation while keeping execution in code — is general.
+Decompose into typed steps, reserve LLMs for interpretation, encode known execution in code, and make coverage gaps explicit with "other". The result is an evolvable system where regressions are easy to locate and the long tail is manageable. The same pattern extends naturally to operations triage, legal intake, and insurance claims.
