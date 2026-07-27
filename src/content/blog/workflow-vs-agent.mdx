@@ -10,23 +10,28 @@ image: /images/blog/workflow-vs-agent/featured.png
 
 Progress in frontier AI models has allowed coding agents to tackle ever more complex and long-running tasks, and benchmarks are saturating fast.
 
-What makes coding agents so effective is a combination of three things. First, software is largely composed of patterns LLMs have seen countless times during training — syntax, idioms, libraries, algorithms. Second, code gives you *automated evaluation for free*. You run it, and you get a compiler error, a failing test, or a stack trace. The agent doesn't need to know whether it's right — the environment tells it. Third, and most importantly, agents can iterate cheaply. A bad attempt costs a few seconds of compute and nothing irreversible happens. In many benchmarks, coding agents are given nothing but terminal access — like [tbench](https://www.tbench.ai/) — and are left to try things, observe results, and loop until the task is done. That tight [agentic loop](https://www.deeplearning.ai/the-batch/issue-359) is what allows them to crack problems that would have seemed out of reach just a year ago.
+What makes coding agents so effective is a combination of three things:
+1. Software is largely composed of patterns LLMs have seen countless times during training — syntax, idioms, libraries
+2. The [agentic loop](https://www.deeplearning.ai/the-batch/issue-359) can provide tight feedback loop. Looping based on results from test, linters, compilation error, the agent can deal with a large range of problems without human intervention.
+3. These iterations are often cheap.
 
-But this combination — abundant training data, automated feedback, and cheap retries — is specific to code. Most business tasks don't have any of it. There is no compiler for your bank's security policy. LLMs haven't seen your internal escalation rules or customer records during training. And handing account access to the wrong person isn't something you can just undo and retry.
+In many benchmarks, coding agents are given nothing but terminal access — like [tbench](https://www.tbench.ai/) — and are left to try things, observe results, and loop until the task is done. This is the extreme agentic approach.
+But this combination is specific to code. Let's consider the following automation task:
+
+Customers wrote in to our first-level support team at Northstar Bank with messages like this:
+
+> Hi, I'm Alex Carter and I bank with your Riverton branch. My account number is NSB01234 and I can't get in any more — it keeps saying the account is locked. Can you help me get back in?
+
+1. LLMs haven't seen your internal escalation rules or customer records during training.
+2. The AI system does not have feedback readily available from a compiler or test suite.
+3. Handing account access to the wrong person is very expensive.
 
 That difference is why, for business automation, my instinct has been to lean on workflows and keep the LLM on a short leash. The first half of this post walks through one clean slice of a support-automation project I worked on and makes that case. The second half complicates it: across the full system I followed exactly that instinct, built the workflow, and hit its limits — the problem had far more combinations than any tree I could hardcode.
-
-Let's start with the example.
 
 ---
 
 ## The scenario
 
-*It's a real project; I've changed most of the identifying details.*
-
-Customers wrote in to our first-level support team at Northstar Bank with messages like this:
-
-> Hi, I'm Alex Carter and I bank with your Riverton branch. My account number is NSB01234 and I can't get in any more — it keeps saying the account is locked. Can you help me get back in?
 
 We handled messages like this all day and wanted to automate the reply. Three things mattered:
 
