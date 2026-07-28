@@ -287,6 +287,7 @@ This relates to https://openai.com/index/harness-engineering/.
 
 Ours arrived late and I wrote all of it: a database of graded responses and a Streamlit app on top for the experts. The Streamlit part I'd write again — subject-matter experts need one narrow screen, not a trace explorer. What I'd drop is everything behind it: Langfuse's annotation queues as the backend, review UI as a thin client on its API.
 
+### Bottom line
 None of this makes the workflow a mistake. It hit the number we promised, it was auditable, and for the head of the distribution it would still be my choice.
 What I'd change is where I start: hand the agent the first pass, then let production — not my up-front guesses — decide which paths are worth freezing into code.
 The tail is where support actually lives, and it's exactly where a hand-drawn tree runs out of branches.
