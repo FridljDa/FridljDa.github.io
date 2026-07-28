@@ -185,14 +185,7 @@ The mapping we were trying to write down is this:
 
 > *(customer message, current state of that customer's records)* → *applicable business rule* → *reply*
 
-Put that way, it's clearly not a list of cases but a product. Making the intent side precise enough forced us to split each broad intent into ever finer [sub-intents](/post/first-level-support-automation#step-1-intent-recognition) — and every leaf then had to be crossed with whatever the core-banking system happened to say about that customer: account found or not, one match or several, flagged or clean, in arrears, joint account, already escalated last week. Each combination can select a different rule, and the rule is what determines the reply. So the [plan-generation tree](/post/first-level-support-automation#step-4-plan-generation) grew without end, and we kept encountering situations that simply weren't represented in the graph at that point in time.
-
-We could sample one axis of that product and not the other. The ticket archive preserved thousands of real customer messages, but not the state of the records at the moment each was written — the core-banking system stores *current* state, not a history of it. So there was no way to replay a past ticket against the state it was actually written against.
-
-Our eval suite ran on mocked state that we could change on demand, so constructing a case was cheap: any combination we wanted, in minutes. But only the combinations we thought to want. Mocks confirm that the tree does what you intended for the situations you imagined; they say nothing about which situations actually occur, or how often. That ground truth only ever arrived from shadow deployment, one surprise at a time.
-
-All the loop did was extend a hand-coded tree one newly-seen path at a time. Every branch was added *after* production surprised us, so we were always a step behind.
-
+cla
 There's an echo of Rich Sutton's [*The Bitter Lesson*](http://www.incompleteideas.net/IncIdeas/BitterLesson.html) here: hand-encoded human knowledge — our intent tree — tends to lose over time to general methods that scale with compute,
 and as models get cheaper and better that trade only tilts further toward the agent.
 
