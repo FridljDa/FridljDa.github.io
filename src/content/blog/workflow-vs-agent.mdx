@@ -158,6 +158,11 @@ Once the distribution checks out, code earns its place at almost every step:
 We built the full [four-step pipeline](/post/first-level-support-automation) and ran it in a setup that made iteration cheap. The system went live in **shadow deployment** —
 its responses were graded by subject-matter experts but never shown to customers — so a wrong answer had almost no blast radius.
 
+We only switched it on once the system looked good enough on historic tickets, and that gate was weaker than it sounds.
+We could replay the customer messages, but not the state of the bank's records at the time each ticket was written.
+So every offline run fetched today's data and was graded against a reply a human had written months ago against data we could no longer see.
+It was the best proxy we had, and it was a poor one.
+
 We had a tight process to translate [external feedback loop](https://www.deeplearning.ai/the-batch/issue-359) into code changes:
 
 1. Subject-matter experts graded a batch of shadow responses and left free-text feedback.
@@ -223,6 +228,8 @@ Looking back, I never really gave the agent a fair chance — not as that bolted
 
 ## What I would do differently
 
+### Start with the agent
+
 A workflow with an agent bolted onto a few paths still wasn't flexible enough to express every customer inquiry and state. Next time I would invert the order and try the approach from Will Larson's [Building internal agents](https://lethain.com/agents-series/) series: start with the agent. A path graduates into a workflow only once it shows up often and the agent handles it unreliably — or when the action is irreversible enough that you don't want a model deciding it:
 
 ```mermaid
@@ -256,6 +263,28 @@ The agentic approach has real caveats, though:
 
 - **Privacy and security are hard to get right.** To be useful on the long tail, the agent needs to draw on historical tickets — which are full of personal data. An agent that retrieves and reasons over them is a far larger exposure surface than a fixed tree.
 - **The agent doesn't shrink the problem, it just defers it.** It faces the same product of message and state, and it has to land on the same business rule; all it changes is that nobody has to enumerate the cases in advance. That is a real advantage — enumerating them was exactly where we hit the wall — but it isn't the same as being right more often. Neither I, nor OpenAI, nor Anthropic know how Alex Carter gets back into her account: that knowledge lives inside the bank, not in the training data. The obvious remedy is to ground the agent in resolved historical tickets, but those are full of conflicting, low-quality resolutions — where the tree, for all its gaps, was a single curated source of truth.
+
+### Get into shadow deployment sooner
+
+The first change buys the second one. An agent with a set of tools is much less to build than a tree of intents, plans and templates —
+there is nothing to enumerate before it produces its first reply — so starting agentic is also the shortest path to having *something* in front of graders.
+
+We treated shadow deployment as something the system had to earn: it went live once the offline numbers on historic tickets looked acceptable.
+That has it backwards. The offline number was the unreliable one — graded without the records the original human agent actually saw — while shadow deployment
+was the only setting where the pipeline ran against real state and was judged on the thing that mattered. Next time it goes up as soon as the system can
+produce any reply at all, however bad. Nothing reaches a customer, so an embarrassing first week costs reviewer time and nothing else.
+
+### Invest in the external feedback loop, and don't build it yourself
+
+Shadow deploying early moves the bottleneck onto the feedback loop, and that is where I would spend the effort I previously spent growing the tree.
+Look again at the three conditions from the top of this post: a coding agent gets its feedback for free from the compiler and the test suite.
+A support system gets none unless you build it. The external loop *is* the missing compiler, and it deserves the same care as the pipeline it grades —
+more so under an agent-first design, where production evidence is the only thing that tells you which paths are worth freezing into code.
+
+Ours worked, but it arrived late and I built all of it myself: a database holding the shadow responses and their grades, and a Streamlit app on top for the experts to work in.
+None of that was a differentiator. Next time I would take [Langfuse's annotation queues](https://langfuse.com/docs/evaluation/evaluation-methods/annotation-queues) as the backend —
+responses land in a queue, scores and free-text comments attach to them there, and everything reads back out over the API — and put an existing annotation tool in front of it rather than writing my own.
+That would have got us to the first graded batch weeks earlier, and given the subject-matter experts a better interface than the one I had time to write.
 
 None of this makes the workflow a mistake. It hit the number we promised, it was auditable, and for the head of the distribution it would still be my choice.
 What I'd change is where I start: hand the agent the first pass, then let production — not my up-front guesses — decide which paths are worth freezing into code.
