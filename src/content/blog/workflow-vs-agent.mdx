@@ -18,6 +18,8 @@ What makes coding agents so effective is a combination of three things:
 In many benchmarks, coding agents are given nothing but terminal access — like [tbench](https://www.tbench.ai/) — and are left to try things, observe results, and loop until the task is done. This is the extreme agentic approach.
 But this combination is specific to code. Let's consider the following automation task:
 
+*The project below is real; the client, the domain and this running example are not.*
+
 Customers wrote in to our first-level support team at Northstar Bank with messages like this:
 
 > Hi, I'm Alex Carter and I bank with your Riverton branch. My account number is NSB01234 and I can't get in any more — it keeps saying the account is locked. Can you help me get back in?
@@ -28,7 +30,9 @@ Point for point, none of the three conditions holds:
 2. The AI system has no feedback readily available from a compiler or test suite.
 3. Handing account access to the wrong person is very expensive.
 
-That difference is why, for business automation, my instinct has been to lean on workflows and keep the LLM on a short leash. The first half of this post walks through one clean slice of a support-automation project I worked on and makes that case. The second half complicates it: across the full system I followed exactly that instinct, built the workflow, and hit its limits — the problem had far more combinations than any tree I could hardcode.
+Every project like this starts with one decision: how much of the work does the model do, and how much does code do? It gets made early, and it shapes everything downstream: what you can test, what you can guarantee, what you can change later. It is also not a refactor to reverse. It's a rewrite.
+
+Given the three points above, my instinct for business automation has been to lean on workflows and keep the LLM on a short leash. The first half of this post walks through one clean slice of a support-automation project I worked on and makes that case. The second half complicates it: across the full system I followed exactly that instinct, built the workflow, and hit its limits — the problem had far more combinations than any tree I could hardcode.
 
 ---
 
@@ -176,6 +180,10 @@ The mapping we were trying to write down is this:
 
 Put that way, it's clearly not a list of cases but a product. Making the intent side precise enough forced us to split each broad intent into ever finer [sub-intents](/post/first-level-support-automation#step-1-intent-recognition) — and every leaf then had to be crossed with whatever the core-banking system happened to say about that customer: account found or not, one match or several, flagged or clean, in arrears, joint account, already escalated last week. Each combination can select a different rule, and the rule is what determines the reply. So the [plan-generation tree](/post/first-level-support-automation#step-4-plan-generation) grew without end, and we kept encountering situations that simply weren't represented in the graph at that point in time.
 
+We could sample one axis of that product and not the other. The ticket archive preserved thousands of real customer messages, but not the state of the records at the moment each was written — the core-banking system stores *current* state, not a history of it. So there was no way to replay a past ticket against the state it was actually written against.
+
+Our eval suite ran on mocked state that we could change on demand, so constructing a case was cheap: any combination we wanted, in minutes. But only the combinations we thought to want. Mocks confirm that the tree does what you intended for the situations you imagined; they say nothing about which situations actually occur, or how often. That ground truth only ever arrived from shadow deployment, one surprise at a time.
+
 All the loop did was extend a hand-coded tree one newly-seen path at a time. Every branch was added *after* production surprised us, so we were always a step behind.
 
 There's an echo of Rich Sutton's [*The Bitter Lesson*](http://www.incompleteideas.net/IncIdeas/BitterLesson.html) here: hand-encoded human knowledge — our intent tree — tends to lose over time to general methods that scale with compute,
@@ -255,5 +263,3 @@ The agentic approach has real caveats, though:
 And the agent doesn't shrink the space. It faces the same product of message and state, and it has to land on the same business rule; all it changes is that nobody has to enumerate the space in advance. That is a real advantage — enumerating it was exactly where we hit the wall — but it isn't the same as being right more often.
 
 None of this makes the workflow a mistake. It hit the number we promised, it was auditable, and for the head of the distribution it would still be my choice. What I'd change is where I start: hand the agent the first pass, then let production — not my up-front guesses — decide which paths are worth freezing into code. The tail is where support actually lives, and it's exactly where a hand-drawn tree runs out of branches.
-
-*Client, domain and running example in this post have been changed.*
