@@ -28,10 +28,6 @@ Customers wrote in to our first-level support team at Northstar Bank with messag
 
 That difference is why, for business automation, my instinct has been to lean on workflows and keep the LLM on a short leash. The first half of this post walks through one clean slice of a support-automation project I worked on and makes that case. The second half complicates it: across the full system I followed exactly that instinct, built the workflow, and hit its limits — the problem had far more combinations than any tree I could hardcode.
 
-## We looked at the data
-
-Before building anything, we labelled and clustered roughly 2,300 past tickets with an AI-assisted, iterative process: about 80% fell into a dozen intents — account access, payments, card services, disputes. The long tail was real, but the head of the distribution dominated — and that concentration is what makes automating this worthwhile at all. (If yours is flat, with every ticket its own snowflake, you have a different problem and probably need a different architecture.)
-
 ---
 
 ## 1. The fully agentic approach
@@ -89,6 +85,11 @@ As the ServiceNow CEO [put it](https://open.spotify.com/episode/11xeL3QCAF77z1vx
 In a project of mine, there was a different problems: Stakeholders complained that the agent's replies didn't match the established message templates.
 We did try to fix that with prompt engineering, but asking an LLM to be deterministic seems like defying its nature.
 ---
+
+### We looked at the data
+
+We labelled and clustered roughly 2,300 past tickets with an AI-assisted, iterative process: about 80% fell into a dozen intents — account access, payments, card services, disputes.
+The long tail was real, but the head of the distribution dominated. This encouraged us to try a workflow approach.
 
 ## 2. The workflow approach
 
