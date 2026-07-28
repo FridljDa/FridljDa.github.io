@@ -224,7 +224,10 @@ and it only ever got the scraps the code hadn't reached yet.
 
 ## I didn't give the agent a fair chance
 
-Looking back, I never really gave the agent a fair chance — not as that bolted-on fallback, and not in the earlier head-to-head that made us pick the workflow. I optimised for what the client *said* he wanted, not what he needed: he wanted replies that matched his templates; what he needed was a system that resolves his end-customers' issues. So an agent that wrote a clearer, more helpful answer in its own words still "lost", purely for departing from the template. In short, we asked the agent to be a worse workflow instead of letting it be a better agent.
+Looking back, I never really gave the agent a fair chance — not as that bolted-on fallback, and not in the earlier head-to-head that made us pick the workflow.
+I optimised for what the client *said* he wanted, not what he needed: he wanted replies that matched his templates;
+what he needed was a system that resolves his end-customers' issues. So an agent that wrote a clearer, more helpful answer in its own words still "lost",
+purely for departing from the template. In short, we asked the agent to be a worse workflow instead of letting it be a better agent.
 
 ## What I would do differently
 
@@ -266,13 +269,12 @@ The agentic approach has real caveats, though:
 
 ### Get into shadow deployment sooner
 
-The first change buys the second one. An agent with a set of tools is much less to build than a tree of intents, plans and templates —
-there is nothing to enumerate before it produces its first reply — so starting agentic is also the shortest path to having *something* in front of graders.
+The first change buys the second one. An agent with a set of tools is much less to build than a tree of intents, plans and templates
+— so starting agentic is also the shortest path to having *something* in front of graders.
 
-We treated shadow deployment as something the system had to earn: it went live once the offline numbers on historic tickets looked acceptable.
+The shadow deployment went live once the offline numbers on historic tickets looked acceptable.
 That has it backwards. The offline number was the unreliable one — graded without the records the original human agent actually saw — while shadow deployment
-was the only setting where the pipeline ran against real state and was judged on the thing that mattered. Next time it goes up as soon as the system can
-produce any reply at all, however bad. Nothing reaches a customer, so an embarrassing first week costs reviewer time and nothing else.
+was the only setting where the pipeline ran against real state and was judged on the thing that mattered.
 
 ### Invest in the external feedback loop, and don't build it yourself
 
@@ -280,6 +282,8 @@ Shadow deploying early moves the bottleneck onto the feedback loop, and that is 
 Look again at the three conditions from the top of this post: a coding agent gets its feedback for free from the compiler and the test suite.
 A support system gets none unless you build it. The external loop *is* the missing compiler, and it deserves the same care as the pipeline it grades —
 more so under an agent-first design, where production evidence is the only thing that tells you which paths are worth freezing into code.
+
+This relates to https://openai.com/index/harness-engineering/.
 
 Ours arrived late and I wrote all of it: a database of graded responses and a Streamlit app on top for the experts. The Streamlit part I'd write again — subject-matter experts need one narrow screen, not a trace explorer. What I'd drop is everything behind it: Langfuse's annotation queues as the backend, review UI as a thin client on its API.
 
