@@ -30,9 +30,12 @@ Point for point, none of the three conditions holds:
 2. The AI system has no feedback readily available from a compiler or test suite.
 3. Handing account access to the wrong person is very expensive.
 
-Every project like this starts with one decision: how much of the work does the model do, and how much does code do? It gets made early, and it shapes everything downstream: what you can test, what you can guarantee, what you can change later. It is also not a refactor to reverse. It's a rewrite.
+Every project like this starts with one decision: how much of the work does the model do, and how much does code do? It gets made early, and it shapes everything downstream.
 
-Given the three points above, my instinct for business automation has been to lean on workflows and keep the LLM on a short leash. The first half of this post walks through one clean slice of a support-automation project I worked on and makes that case. The second half complicates it: across the full system I followed exactly that instinct, built the workflow, and hit its limits — the problem had far more combinations than any tree I could hardcode.
+Given the three points above, my instinct for business automation has been to lean on workflows and keep the LLM on a short leash.
+The first half of this post walks through one clean slice of a support-automation project I worked on and makes that case.
+The second half complicates it: across the full system I followed exactly that instinct, built the workflow, and hit its limits —
+the problem had far more combinations than any tree I could hardcode.
 
 ---
 
@@ -85,16 +88,16 @@ flowchart LR
     class LT tool
 ```
 
-This looks elegant, but nothing in it guarantees that the agent checks the security flag *before* sending unlock instructions. That would be an expensive mistake, and a system that decides the order of its own safety checks in free text is exposed to prompt injection.
+This looks elegant, but nothing in it guarantees that the agent checks the security flag *before* sending unlock instructions.
+That would be an expensive mistake, and a system that decides the order of its own safety checks in free text is exposed to prompt injection.
 As the ServiceNow CEO [put it](https://open.spotify.com/episode/11xeL3QCAF77z1vxOp0am0?si=fc70f33f0dd64ab4): people forgive other people for making mistakes. They don't forgive software.
 
-That objection is weaker than it looks, though, and it's worth being precise about why. Ordering constraints don't have to live in the prompt: the unlock tool can refuse to execute unless a flag check for that account ran first. Enforcement belongs in the tool layer, not in the model's reasoning. We didn't build it that way — the first of several places where I judged the agent on a design I never gave it.
-
-Our more immediate problem was a different one: stakeholders complained that the agent's replies didn't match the established message templates. We tried to fix that with prompt engineering, but asking an LLM to be reliably deterministic works against its nature.
+Our more immediate problem was a different one: stakeholders complained that the agent's replies didn't match the established message templates.
+We tried to fix that with prompt engineering, but asking an LLM to be reliably deterministic works against its nature.
 
 ## We looked at the data
 
-We labelled and clustered roughly 2,300 past tickets with an AI-assisted, iterative process: about four in five fell into a dozen intents — account access, payments, card services, disputes.
+We labelled and clustered roughly 2,300 past tickets with an AI-assisted, iterative process: about four in five fell into a handful of intents — account access, payments, card services, disputes.
 The long tail was real, but the head of the distribution dominated. This encouraged us to try a workflow approach.
 
 ## The workflow approach
@@ -165,9 +168,13 @@ We largely automated the resulting [external feedback loop](https://www.deeplear
 
 ## 80% was both the target and the problem
 
-We reached an approval rate of 80% on shadow tickets: subject-matter experts judged four out of five generated responses good enough to send. That was the ballpark we had promised the client, and on paper it was a success.
+We reached an approval rate of 80% on shadow tickets: subject-matter experts judged four out of five generated responses good enough to send.
+That was the ballpark we had promised the client, and on paper it was a success.
 
-It did not translate into the cost reduction the client's private-equity owner was underwriting. An 80% approval rate is not an 80% reduction in support effort, because nobody can tell in advance *which* fifth is wrong — so a human still reads all of them. The remaining 20% isn't a residue to be mopped up later; it sets the staffing level. Getting to a number that changes the org chart means grinding down that last fifth, and that is precisely where the workflow was weakest.
+It did not translate into the cost reduction the client's private-equity owner was underwriting.
+An 80% approval rate is not an 80% reduction in support effort, because nobody can tell in advance *which* fifth is wrong — so a human still reads all of them.
+The remaining 20% isn't a residue to be mopped up later; it sets the staffing level.
+Getting to a number that changes the org chart means grinding down that last fifth, and that is precisely where the workflow was weakest.
 
 ## The problem wasn't bounded
 
