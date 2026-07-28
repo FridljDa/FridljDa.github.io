@@ -281,10 +281,7 @@ Look again at the three conditions from the top of this post: a coding agent get
 A support system gets none unless you build it. The external loop *is* the missing compiler, and it deserves the same care as the pipeline it grades —
 more so under an agent-first design, where production evidence is the only thing that tells you which paths are worth freezing into code.
 
-Ours worked, but it arrived late and I built all of it myself: a database holding the shadow responses and their grades, and a Streamlit app on top for the experts to work in.
-None of that was a differentiator. Next time I would take [Langfuse's annotation queues](https://langfuse.com/docs/evaluation/evaluation-methods/annotation-queues) as the backend —
-responses land in a queue, scores and free-text comments attach to them there, and everything reads back out over the API — and put an existing annotation tool in front of it rather than writing my own.
-That would have got us to the first graded batch weeks earlier, and given the subject-matter experts a better interface than the one I had time to write.
+Ours arrived late and I wrote all of it: a database of graded responses and a Streamlit app on top for the experts. The Streamlit part I'd write again — subject-matter experts need one narrow screen, not a trace explorer. What I'd drop is everything behind it: Langfuse's annotation queues as the backend, review UI as a thin client on its API.
 
 None of this makes the workflow a mistake. It hit the number we promised, it was auditable, and for the head of the distribution it would still be my choice.
 What I'd change is where I start: hand the agent the first pass, then let production — not my up-front guesses — decide which paths are worth freezing into code.
