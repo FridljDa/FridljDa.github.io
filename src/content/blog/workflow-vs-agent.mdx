@@ -143,17 +143,20 @@ Once the distribution checks out, code earns its place at almost every step:
 - **Iteration is targeted and predictable.** When a message is misread or a policy changes, the fix is local: edit the extraction prompt, add a branch, adjust one API call — and you know what the next message of that shape will do. With an agent, your only tool is a system-prompt edit, and you can't predict what it does to the cases that already worked.
 - **Auditability comes for free.** Every step after interpretation is ordinary code. You can log it, test it, and trace it exactly like any other software.
 
-These advantages are real, and for a bounded intent like this one they are decisive. The trouble starts when the process is not as bounded as a single locked-account ticket makes it look.
+These advantages are real, and for a bounded intent like this one they are decisive.
+The trouble starts when the process is not as bounded as a single locked-account ticket makes it look.
 
 ## Growing the workflow with a feedback loop
 
-We built the full [four-step pipeline](/post/first-level-support-automation) and ran it in a setup that made iteration cheap. The system went live in **shadow deployment** — its responses were graded by subject-matter experts but never shown to customers — so a wrong answer had almost no blast radius.
+We built the full [four-step pipeline](/post/first-level-support-automation) and ran it in a setup that made iteration cheap. The system went live in **shadow deployment** —
+its responses were graded by subject-matter experts but never shown to customers — so a wrong answer had almost no blast radius.
 
 We largely automated the resulting [external feedback loop](https://www.deeplearning.ai/the-batch/issue-359) into code changes:
 
 1. Experts graded a batch of shadow responses and left free-text feedback.
-2. An agent turned each piece of feedback into a fix — usually a new branch in the tree.
-3. It added the case to an eval set and re-ran the whole suite.
+2. I added a comment on what the solution should look like from a technical perspective.
+3. An agent turned each piece of feedback into a fix — usually a new branch in the tree.
+4. It added the case to an eval set and re-ran the whole suite.
 
 ## But the problem wasn't bounded
 
