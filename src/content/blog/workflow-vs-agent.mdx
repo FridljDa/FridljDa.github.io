@@ -28,38 +28,6 @@ Customers wrote in to our first-level support team at Northstar Bank with messag
 
 That difference is why, for business automation, my instinct has been to lean on workflows and keep the LLM on a short leash. The first half of this post walks through one clean slice of a support-automation project I worked on and makes that case. The second half complicates it: across the full system I followed exactly that instinct, built the workflow, and hit its limits — the problem had far more combinations than any tree I could hardcode.
 
----
-
-## The scenario
-
-
-We handled messages like this all day and wanted to automate the reply. Three things mattered:
-
-- **The core-banking system** looks up an account by number (or by name and branch) and returns its status, including any security flags.
-- **Bank policy:** if an account carries a fraud or security flag, we must *not* send self-service unlock instructions — we escalate to the security team.
-- **We had about twenty reply templates** we'd used for years, including a standard "how to unlock your account" message, and replies were expected to match them.
-
-We looked at two ways to automate it. The diagrams share one notation:
-
-```mermaid
-flowchart LR
-    LA["🤖 Agent<br/>chooses actions, uses tools"]
-    LL["🧠 LLM-assisted step<br/>constrained model call"]
-    LC["⚙️ Code step<br/>deterministic logic"]
-    LT["🔌 External tool/API<br/>outside dependency"]
-
-    classDef agent fill:#f3e8ff,stroke:#7c3aed,stroke-width:2px
-    classDef llm fill:#dbeafe,stroke:#2563eb,stroke-width:2px
-    classDef code fill:#dcfce7,stroke:#16a34a,stroke-width:2px
-    classDef tool fill:#fef3c7,stroke:#d97706,stroke-width:2px
-    class LA agent
-    class LL llm
-    class LC code
-    class LT tool
-```
-
----
-
 ## We looked at the data
 
 Before building anything, we labelled and clustered roughly 2,300 past tickets with an AI-assisted, iterative process: about 80% fell into a dozen intents — account access, payments, card services, disputes. The long tail was real, but the head of the distribution dominated — and that concentration is what makes automating this worthwhile at all. (If yours is flat, with every ticket its own snowflake, you have a different problem and probably need a different architecture.)
@@ -97,15 +65,35 @@ flowchart TD
     class INPUT,OUT1,OUT2 terminal
 ```
 
-This looks elegant, but it has a serious problem: there is no guarantee the agent checks the security flag *before* sending unlock instructions. It might. It might not. And if it walks a flagged, compromised account through getting back in, you only find out after the fact. Unlike coding tasks — where a failed test is cheap and reversible — handing account access to the wrong person has real consequences.
+The legend:
+```mermaid
+flowchart LR
+    LA["🤖 Agent<br/>chooses actions, uses tools"]
+    LL["🧠 LLM-assisted step<br/>constrained model call"]
+    LC["⚙️ Code step<br/>deterministic logic"]
+    LT["🔌 External tool/API<br/>outside dependency"]
 
-There is a second, quieter failure mode. The agent composes each reply from scratch, so its wording drifts from the twenty templates we'd used for years. Even when the underlying action is right, a message that doesn't match the established template draws complaints. As the ServiceNow CEO [put it](https://open.spotify.com/episode/11xeL3QCAF77z1vxOp0am0?si=fc70f33f0dd64ab4): people forgive other people for making mistakes. They don't forgive software.
+    classDef agent fill:#f3e8ff,stroke:#7c3aed,stroke-width:2px
+    classDef llm fill:#dbeafe,stroke:#2563eb,stroke-width:2px
+    classDef code fill:#dcfce7,stroke:#16a34a,stroke-width:2px
+    classDef tool fill:#fef3c7,stroke:#d97706,stroke-width:2px
+    class LA agent
+    class LL llm
+    class LC code
+    class LT tool
+```
 
+This looks elegant, but it has a serious problem: There is no guarantee the agent checks the security flag *before* sending unlock instructions. This would be an expensive mistake and this system would be vulnerable to prompt injection.
+As the ServiceNow CEO [put it](https://open.spotify.com/episode/11xeL3QCAF77z1vxOp0am0?si=fc70f33f0dd64ab4): people forgive other people for making mistakes. They don't forgive software.
+
+In a project of mine, there was a different problems: Stakeholders complained that the agent's replies didn't match the established message templates.
+We did try to fix that with prompt engineering, but asking an LLM to be deterministic seems like defying its nature.
 ---
 
 ## 2. The workflow approach
 
-To fix both problems, we kept code in charge of the sequencing and reserved the LLM for the *one* genuinely hard part of Alex's message: interpreting it — recognising that this is an *account-locked* request and pulling out the identifier (the account number, or the name and branch). Everything after that — the lookup, the flag check, the reply — is deterministic, so code runs the steps in a fixed order and the flag check always happens before any unlock instructions go out.
+To fix both problems, we kept code in charge of the sequencing and reserved the LLM for the *one* genuinely hard part of Alex's message: interpreting it — recognising that this is an *account-locked* request and pulling out the identifier (the account number, or the name and branch).
+Everything after that — the lookup, the flag check, the reply — is deterministic, so code runs the steps in a fixed order and the flag check always happens before any unlock instructions go out.
 
 ```mermaid
 flowchart TD
@@ -140,7 +128,9 @@ flowchart TD
     class INPUT,OUT1,OUT2 terminal
 ```
 
-For this one intent, the workflow was the clear fit. The lookup, the flag rule, and the two replies have explicit logic and a small state space. Code makes those rules reliable and auditable — and because code selects the reply, the response matches our established template by construction. The LLM only bridges human language and structured data.
+For this one intent, the workflow was the clear fit. The lookup, the flag rule, and the two replies have explicit logic and a small state space.
+Code makes those rules reliable and auditable — and because code selects the reply, the response matches our established template by construction.
+The LLM only bridges human language and structured data.
 
 ### Why workflows win for a bounded problem
 
