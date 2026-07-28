@@ -1,5 +1,5 @@
 ---
-title: "I Built a Workflow. Next Time I'd Start With an Agent."
+title: "The Missing Compiler: Automating First-Level Support"
 pubDate: 2026-04-19T00:00:00.000Z
 updatedDate: 2026-07-28T00:00:00.000Z
 tags:
@@ -290,3 +290,10 @@ Langfuse's annotation queues as the backend, with a thin custom frontend on its 
 None of this makes the workflow a mistake. It hit the number we promised, it was auditable, and for the head of the distribution it would still be my choice.
 What I'd change is where I start: hand the agent the first pass, then let production — not my up-front guesses — decide which paths are worth freezing into code.
 The tail is where support actually lives, and it's exactly where a hand-drawn tree runs out of branches.
+
+Whether that would have moved the needle, I don't know. I never ran the counterfactual, and the caveats don't disappear when you flip the default:
+the agent still has to land on the same internal business rule, still has to be grounded in historical tickets that contradict each other,
+and the privacy surface only grows. It's entirely plausible I'd have hit a wall in the same place, just sooner and with less to show for it.
+
+So read this as a project report, not a recommendation. The one part I'd defend without hedging is that workflow-vs-agent is an empirical question
+about your problem, and I ran most of this project without the instrument that could have answered it. Build that first, whichever side you start on.
