@@ -18,8 +18,6 @@ What makes coding agents so effective is a combination of three things:
 In many benchmarks, coding agents are given nothing but terminal access — like [tbench](https://www.tbench.ai/) — and are left to try things, observe results, and loop until the task is done. This is the extreme agentic approach.
 But this combination is specific to code. Let's consider the following automation task:
 
-*The project below is real; the client, the domain and this running example are not.*
-
 Customers wrote in to our first-level support team at Northstar Bank with messages like this:
 
 > Hi, I'm Alex Carter and I bank with your Riverton branch. My account number is NSB01234 and I can't get in any more — it keeps saying the account is locked. Can you help me get back in?
@@ -30,12 +28,15 @@ Point for point, none of the three conditions holds:
 2. The AI system has no feedback readily available from a compiler or test suite.
 3. Handing account access to the wrong person is very expensive.
 
-Every project like this starts with one decision: how much of the work does the model do, and how much does code do? It gets made early, and it shapes everything downstream.
+Every project like this starts with one decision: how much of the work does the model do, and how much does code do? It gets made early, and it shapes a lot downstream.
 
 Given the three points above, my instinct for business automation has been to lean on workflows and keep the LLM on a short leash.
 The first half of this post walks through one clean slice of a support-automation project I worked on and makes that case.
 The second half complicates it: across the full system I followed exactly that instinct, built the workflow, and hit its limits —
-the problem had far more combinations than any tree I could hardcode.
+the problem had far more combinations than any tree I could hardcode. The bottom line is inconclusive.
+I hope this project write up helps you find your balance between agentic and workflow approaches in your own work.
+
+The running example is based on a real project, but the details have been changed to protect the client's privacy.
 
 ---
 
