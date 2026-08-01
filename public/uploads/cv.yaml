@@ -1,8 +1,8 @@
 cv:
   name: Daniel Fridljand
-  photo: ../images/fridljand_daniel.jpg
-  location: Munich, Germany
+  photo: ../../images/fridljand_daniel.jpg
   website: https://danielfridljand.de
+  email: daniel.fridljand@gmail.com
   social_networks:
     - network: LinkedIn
       username: daniel-fridljand
@@ -10,104 +10,60 @@ cv:
       username: FridljDa
   sections:
     summary:
-      - "Software consultant at TNG focused on applied AI engineering, currently embedded as the sole AI engineer on a production agentic support-automation system (Claude, Temporal, MCP, DSPy) at an enterprise customer. Research background spanning ETH Zürich (computational oncology), Stanford School of Medicine (first co-author in *Nature Medicine*, 2024), and EMBL (statistical genomics). M.Sc. Mathematics with full marks; Yale exchange scholar."
+      - "AI engineer building production systems in Python and Rust. Ramping into a new technical and stakeholder domain within months. Proudest work to date is an agentic customer-support system I took from discovery to live production as the sole engineer — automating ~87% of B2C traffic since April 2026."
     software_development_experience:
       - company: TNG Technology Consulting
         position: Software Consultant - Applied AI
         location: Munich, Germany
         start_date: 2025-12
         end_date: present
+        summary: "Building and owning production AI systems for enterprise clients, from customer discovery through live operation."
         highlights:
-          - "**Secure Desktop AI Agent (Jun 2026 – present)**: Core developer on a privacy-first desktop AI agent (Tauri/React frontend, Rust backend); full-stack contributions across the desktop UI, agent runtime, and secure auditable LLM tool execution."
-          - "**LLM-Powered Document Validation System (May–Jun 2026)**: Core developer in a 3-person team for a production-grade automated proposal review service with .docx processing and automated comment insertion."
-          - "**Email-to-Order Parsing (Apr–May 2026)**: Designed a field-centric email-processing pipeline with FastAPI ingestion, Streamlit review dashboard, and attachment-aware multimodal LLM processing (vision fallbacks for scanned PDFs) with parallel candidate resolution."
-          - "**Customer Support Automation (Dec 2025 – Apr 2026, live in production)**: Sole AI engineer end-to-end on a cinema-ticketing SaaS — **770+ live B2C tickets** at **86.6% strict / 88.9% content-supported approval**; daily volume scaled 5x after CEO showcase; 13+ feature improvements from live reviewer feedback."
-          - "Architected a hybrid deterministic + agentic resolution workflow over 19 customer-intent categories using **Temporal** for durable orchestration with human-in-the-loop approval via Signals, and **DSPy/GEPA** for prompt optimization."
-          - "Built a production evaluation suite in **Langfuse** (6 evaluation types, 8 score metrics, 14-label outcome taxonomy, LLM-as-judge) and a reproducible 22-stage **Snakemake** pipeline with GDPR-compliant Microsoft Presidio PII detection."
-          - "Tech: Python, FastAPI, Streamlit, PydanticAI, Temporal, Langfuse, Snakemake, Docker, DSPy, MCP, Tauri, React, Rust."
+          - "Architected a hybrid AI-system: deterministic paths for the recurring-intent majority, agentic fallback for the long tail. Shadow-deployed so every response was staff-reviewed before customer contact."
+          - "Built an AI-assisted improvement loop: reviewer feedback became shipped code changes, each gated against a growing Langfuse eval suite. "
+          - "Leading development of a privacy-first desktop AI agent (Tauri/React frontend, Rust backend) that lets non-technical staff run agentic workflows over sensitive local files. Hardened for a month until it survived an adversarial 15 person red-team, then rolled out to the internal department."
+          - "Shipped an automated privacy-sensitive review service to Kubernetes. Used by partners to validate customer offers."
       - company: TNG Technology Consulting
         position: Software Consultant - Enterprise Modernization
         location: Munich, Germany
         start_date: 2024-12
         end_date: 2025-12
+        summary: "Platform engineer on a multi-team program modernizing a global supply-chain application."
         highlights:
-          - "Modernized a mission-critical global supply-chain application (Java 8 → 17, JBoss → WildFly) as part of the platform team in a multi-year transformation program."
-          - "Shipped a JFrog Artifactory proxy in 3 days, reducing a recurring CI pipeline runtime from 8 hours to 30 seconds — saving developers ~1–2 hours per week each."
-          - "Established DevSecOps governance: OWASP scans in CI, Grafana CVE dashboards, and SOAP→REST migration with Keycloak; architected daemonless Docker/Podman build environments."
+          - "Deployed a JFrog Artifactory proxy in three days after the work had been repeatedly postponed as too costly, cutting a recurring CI step from eight hours to 30 seconds — saving each developer ~1–2 hours a week."
+          - "Added OWASP dependency scanning to the Jenkins pipeline and built Grafana dashboards over Prometheus metrics, giving stakeholders visibility of CVE reduction throughout the migration."
     data_science_experience:
-      - company: ETH Zürich - Department of Biosystems Science and Engineering
-        position: Research Data Analyst - Computational Oncology
-        location: Basel, Switzerland
-        start_date: 2024-02
-        end_date: 2024-09
-        highlights:
-          - "Developed novel Bayesian non-parametric methods (Hierarchical Dirichlet Process) for mutational signature estimation, extended to incorporate phylogenetic tree structures."
-          - "Analyzed single-cell whole-exome sequencing data from the Tumor Profiler Study (187 cells, 10 melanoma tumors), identifying eight latent mutational signatures."
-          - "Implemented hierarchical dependency structures in R where signature distributions for child phylogenetic nodes are drawn from parent distributions, enforcing biological inheritance."
       - company: Stanford University School of Medicine
         position: Research Data Analyst - Environmental Epidemiology
         location: Palo Alto, USA
         start_date: 2023-07
         end_date: 2023-12
+        summary: "Statistical analysis and data tooling for a national study of air pollution and mortality inequality."
         highlights:
-          - "**Nature Medicine (2024)**: Led the statistical analysis as first co-author, quantifying air pollution's contribution to racial and socioeconomic mortality disparities in the US."
-          - "Engineered a big-data pipeline harmonizing 63+ million death records, satellite pollution estimates, and census demographics across 3,000+ US counties (1990–2016)."
-          - "Implemented confounder-adjusted causal inference (DAGs, propensity scoring), revealing >50% of the Black–White all-cause mortality difference is attributable to environmental factors."
-          - "Built an R Shiny analytical application used directly by epidemiologists and policy researchers to explore 17-dimensional data."
+          - "Led the statistical analysis as co-first author of a [*Nature Medicine* paper](https://www.nature.com/articles/s41591-024-03117-0) (2024), which found that over half the Black–White age-adjusted mortality gap in the US is attributable to fine-particulate air pollution."
+          - "Built a reproducible pipeline integrating 63M+ death records with pollution estimates and demographic data; open-sourced the analysis code and interactive R Shiny explorer."
       - company: European Molecular Biology Laboratory (EMBL)
         position: Research Data Analyst - Statistical Genomics (Master's Thesis)
         location: Heidelberg, Germany
         start_date: 2021-10
         end_date: 2022-05
+        summary: "Research on multiple-testing methods for large-scale genomics."
         highlights:
-          - "Developed **IHW-Forest**, a novel multiple-testing method using Random Forests for hypothesis weighting, increasing discovery power by >30% on 16 billion genetic association tests."
-          - "Optimized core splitting and weighting logic in C++ via Rcpp for high-performance processing of large-scale genomic data."
-          - "Presented at seven scientific events including Yale University and a competitively selected oral contribution at DAGStat 2022."
+          - "Developed IHW-Forest, a random-forest hypothesis-weighting method with its splitting and weighting logic written in C++ via Rcpp — it recovered over 30% more discoveries than standard corrections."
     education:
       - institution: University of Heidelberg
-        area: M.Sc. Mathematics (Top of Class)
+        area: Mathematics
         degree: M.Sc.
         location: Heidelberg, Germany
         start_date: 2020-10
         end_date: 2023-05
         highlights:
-          - "Grade: 1.0 (summa cum laude). Focus: ML, High-Dimensional Statistics, Probability Theory."
-          - "Yale Exchange Scholar (2022–23, Honors): Deep Learning; Geometric & Topological ML (Prof. Krishnaswamy); Differentiable Manifolds."
-          - "Master's Thesis (Grade 1.0) at EMBL: 'Better multiple Testing: Using multivariate co-data for hypothesis weighting'."
-    publications:
-      - title: "Disparities in air pollution attributable mortality in the US population by race, ethnicity and sociodemographic factors"
-        authors:
-          - Pascal Geldsetzer
-          - "***Daniel Fridljand***"
-          - Mathew V. Kiang
-          - Eran Bendavid
-          - Sam Heft-Neal
-          - Marshall Burke
-          - et al.
-        journal: Nature Medicine
-        date: 2024-07
-        url: https://www.nature.com/articles/s41591-024-03117-0
-    projects:
-      - name: "Data Mining Hackathon - Core Demand Prediction (TUM.ai x Unite)"
-        date: 2026-03
-        location: Online
-        highlights:
-          - "**3rd in Level 2** (net €423K) and **5th in Level 1** (net €1.33M) with a two-stage LightGBM model (recurrence classifier + spend regressor) combined via an expected-utility objective."
-          - "Engineered 200+ features and a reproducible Snakemake pipeline with automated portal submission via Playwright."
-      - name: "Agent Olympics Hackathon Munich 2026"
-        date: 2026-01
-        location: Munich
-        highlights:
-          - "Engineered a white-hat voice agent executing automated prompt-injection attacks across email, SMS, and WhatsApp, with automated OSINT-driven persona profiling."
+          - "Grade: 1.0. Exchange studies at Yale and Hebrew University of Jerusalem."
     skills:
-      - label: Programming
-        details: "Python (pandas, FastAPI, PyTorch, PydanticAI, DSPy), R (tidyverse, Shiny, Rcpp, Bioconductor), Java 17 (Spring), TypeScript/React, C++, SQL."
-      - label: Applied AI
-        details: "Agentic systems, LLM orchestration (PydanticAI, DSPy, MCP), LLM evaluation (Langfuse), prompt engineering, Causal Inference, Bayesian Non-parametrics."
-      - label: Infrastructure
-        details: "Docker, Podman, Kubernetes, CI/CD (Jenkins, GitHub Actions), AWS, Temporal, Snakemake, Prometheus, Grafana."
-      - label: Languages
-        details: "English (C2), German (Native), Russian (Native)."
+      - label: Stack
+        details: "Python (PydanticAI, Temporal, FastAPI), Rust, Java, TypeScript/React, C++"
+      - label: Systems and delivery
+        details: "Kubernetes, ArgoCD, Jenkins, Grafana/Prometheus, ELK, Temporal, Langfuse"
 design:
   theme: sb2nov
   page:
@@ -116,7 +72,7 @@ design:
     bottom_margin: 1.5cm
     left_margin: 1.5cm
     right_margin: 1.5cm
-    show_footer: true
+    show_footer: false
     show_top_note: true
   colors:
     body: rgb(0, 0, 0)
@@ -206,5 +162,5 @@ design:
 locale:
   language: english
 settings:
-  current_date: '2026-05-19'
+  current_date: '2026-07-29'
   bold_keywords: []
