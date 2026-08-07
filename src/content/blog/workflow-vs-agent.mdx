@@ -110,7 +110,8 @@ Everything after that — the lookup, the flag check, the reply — is determini
 ```mermaid
 flowchart TD
     INPUT(["Alex's locked-account message"])
-    L1["🧠 LLM-assisted step<br/>recognise intent + extract identifier"]
+    L1["🧠 LLM-assisted step<br/>recognise intent"]
+    L2["🧠 LLM-assisted step<br/>extract identifier"]
     C1["⚙️ Code step<br/>look up the account"]
     T1["🔌 External tool/API<br/>core-banking system"]
     D1{"Security flag<br/>set?"}
@@ -120,7 +121,9 @@ flowchart TD
     OUT2(["Escalated to security"])
 
     INPUT -->|"message"| L1
-    L1 -->|"account_locked + identifier"| C1
+    INPUT -->|"message"| L2
+    L1 -->|"account_locked"| C1
+    L2 -->|"identifier"| C1
     C1 -->|"query"| T1
     T1 -->|"account record + flags"| D1
     D1 -->|"no"| C2
@@ -133,7 +136,7 @@ flowchart TD
     classDef tool fill:#fef3c7,stroke:#d97706,stroke-width:2px
     classDef decision fill:#fff7ed,stroke:#ea580c,stroke-width:2px
     classDef terminal fill:#f8fafc,stroke:#64748b,stroke-width:1.5px
-    class L1 llm
+    class L1,L2 llm
     class C1,C2,C3 code
     class T1 tool
     class D1 decision
