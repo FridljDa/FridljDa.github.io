@@ -319,12 +319,11 @@ was the only setting where the pipeline ran against real state and was judged on
 
 ### Invest in the external feedback loop, and don't build it yourself
 
-Shadow deploying early moves the bottleneck onto the feedback loop, and that is where I would spend the effort I previously spent growing the tree.
 Look again at the three conditions from the top of this post: a coding agent gets its feedback for free from the compiler and the test suite.
 A support system gets none unless you build it. The external loop *is* the missing compiler, and under an agent-first design it's the only thing
 that tells you which paths are worth freezing into code. Related reading: [harness engineering](https://openai.com/index/harness-engineering/).
 
-Ours arrived late, and I built all of it. The narrow Streamlit screen for the subject-matter experts I'd write again; everything behind it I'd drop.
+Don't build the whole loop yourself. A narrow review screen for the subject-matter experts is worth writing; the machinery behind it isn't.
 Langfuse's annotation queues as the backend, with a thin custom frontend on its API, would have been the better trade. That deserves a post of its own.
 
 Workflow-vs-agent is an empirical question. Build the instrument that can answer it first, whichever side you start on.
