@@ -161,16 +161,13 @@ Once the distribution checks out, code earns its place at almost every step:
 We built the full [four-step pipeline](/post/first-level-support-automation) and ran it in a setup that made iteration cheap. The system went live in **shadow deployment** —
 its responses were graded by subject-matter experts but never shown to customers — so a wrong answer had almost no blast radius.
 
-We only switched it on once the system looked good enough on historic tickets, and that gate was weaker than it sounds.
-We could replay the customer messages, but not the state of the bank's records at the time each ticket was written.
-So every offline run fetched today's data and was graded against a reply a human had written months ago against data we could no longer see.
-It was the best proxy we had, and it was a poor one.
+We only switched it on once the system looked good enough on historic tickets. We could replay the customer messages, but not the state of the bank's records at the time each ticket was written, so every offline run fetched today's data and graded it against a reply written months earlier.
 
 We had a tight process to translate [external feedback loop](https://www.deeplearning.ai/the-batch/issue-359) into code changes:
 
 1. Subject-matter experts graded a batch of shadow responses and left free-text feedback.
 2. I added a comment on what the solution should look like from a technical perspective.
-3. An agent turned each piece of feedback into a fix — usually a new branch in the tree.
+3. Cursor turned each piece of feedback into a fix — usually a new branch in the tree.
 4. It added the case to an eval set and re-ran the whole suite.
 
 ## 80% was both the target and the problem
@@ -188,8 +185,51 @@ but a *true* workflow needs a deterministic mapping from customer intent plus [f
 
 The mapping we were trying to write down is this:
 
-> *(customer message, current state of that customer's records)* → *applicable business rule* → *reply*
+```mermaid
+flowchart LR
+    subgraph M["Customer messages"]
+        M1["Locked account"]
+        M2["Missing payment"]
+        M3["Change of details"]
+        MX["…many more"]
+    end
 
+    subgraph S["Possible record states"]
+        S1["Verified, no flags"]
+        S2["Security flag"]
+        S3["Account closed"]
+        SX["…many more"]
+    end
+
+    PRODUCT["Every message shape ×<br/>every record state"]
+
+    C1["Case 1"]
+    C2["Case 2"]
+    C3["Case 3"]
+    CN["… case N × M"]
+
+    RULES["Each case needs the right<br/>business rule and reply"]
+
+    M --> PRODUCT
+    S --> PRODUCT
+    PRODUCT --> C1
+    PRODUCT --> C2
+    PRODUCT --> C3
+    PRODUCT --> CN
+    C1 --> RULES
+    C2 --> RULES
+    C3 --> RULES
+    CN --> RULES
+
+    classDef input fill:#f8fafc,stroke:#64748b,stroke-width:1.5px
+    classDef explosion fill:#fee2e2,stroke:#dc2626,stroke-width:2px
+    classDef case fill:#fff7ed,stroke:#ea580c,stroke-width:1.5px
+    classDef rule fill:#dcfce7,stroke:#16a34a,stroke-width:2px
+    class M1,M2,M3,MX,S1,S2,S3,SX input
+    class PRODUCT explosion
+    class C1,C2,C3,CN case
+    class RULES rule
+```
 
 There's an echo of Rich Sutton's [*The Bitter Lesson*](http://www.incompleteideas.net/IncIdeas/BitterLesson.html) here: hand-encoded human knowledge — our intent tree — tends to lose over time to general methods that scale with compute,
 and as models get cheaper and better that trade only tilts further toward the agent.
@@ -225,12 +265,12 @@ flowchart TD
 Code was the default; the agent was the dashed exception, reached only when no hardcoded leaf matched —
 and it only ever got the scraps the code hadn't reached yet.
 
-## I didn't give the agent a fair chance
+## Asking the agent to be a worse workflow
 
 Looking back, I never really gave the agent a fair chance — not as that bolted-on fallback, and not in the earlier head-to-head that made us pick the workflow.
 I optimised for what the client *said* he wanted, not what he needed: he wanted replies that matched his templates;
 what he needed was a system that resolves his end-customers' issues. So an agent that wrote a clearer, more helpful answer in its own words still "lost",
-purely for departing from the template. In short, we asked the agent to be a worse workflow instead of letting it be a better agent.
+purely for departing from the template.
 
 ## What I would do differently
 
