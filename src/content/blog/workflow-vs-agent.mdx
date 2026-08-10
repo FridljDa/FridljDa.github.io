@@ -12,8 +12,8 @@ image: /images/blog/workflow-vs-agent/featured.png
 
 ## TL;DR
 Automating manual workflows with LLMs is [widely piloted and rarely scaled](https://www.mckinsey.com/capabilities/quantumblack/our-insights/the-state-of-ai). This post is a report from one first-level support automation project.
-Two takeaways. Invest in the external feedback loop early: coding agents get theirs for free, support systems don't. That loop is the missing compiler, the only thing that tells you whether the system actually works.
-And workflow versus agent is an empirical question, not a matter of instinct: I picked a side from first principles, hit its limits, and never built the instrument that could have told me whether the other side was better.
+Two takeaways. Invest in the external feedback loop early to develop in a data-driven way.
+And workflow versus agent is an empirical question: In this project I hit its limit.
 
 ## Intro
 Progress in frontier AI models has allowed coding agents to tackle ever more complex and long-running tasks, fast enough that benchmarks keep needing to be replaced: [SWE-bench Verified](https://www.swebench.com/verified.html) is close to saturated.
@@ -293,5 +293,3 @@ that tells you which paths are worth freezing into code. Related reading: [harne
 
 Don't build the whole loop yourself. A narrow review screen for the subject-matter experts is worth writing; the machinery behind it isn't.
 Langfuse's annotation queues as the backend, with a thin custom frontend on its API, would have been the better trade. That deserves a post of its own.
-
-Workflow-vs-agent is an empirical question. Build the instrument that can answer it first, whichever side you start on.
