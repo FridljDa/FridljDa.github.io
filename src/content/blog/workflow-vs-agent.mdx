@@ -13,7 +13,7 @@ image: /images/blog/workflow-vs-agent/featured.png
 ## TL;DR
 Automating manual workflows with LLMs is [widely piloted and rarely scaled](https://www.mckinsey.com/capabilities/quantumblack/our-insights/the-state-of-ai). This post is a report from one first-level support automation project.
 Two takeaways. Invest in the external feedback loop early: it is the only thing that tells you whether the system actually works.
-And workflow versus agent is an empirical question, not a matter of instinct: I picked a side from first principles, the problem disagreed, and I still cannot say whether the agent would have won.
+And workflow versus agent is an empirical question, not a matter of instinct: I picked a side from first principles, and the problem disagreed.
 
 ## Intro
 Progress in frontier AI models has allowed coding agents to tackle ever more complex and long-running tasks, fast enough that benchmarks keep needing to be replaced: [SWE-bench Verified](https://www.swebench.com/verified.html) is close to saturated.
@@ -23,7 +23,7 @@ What makes coding agents so effective is a combination of three things:
 2. The [agentic loop](https://www.deeplearning.ai/the-batch/issue-359) provides a tight feedback loop. Looping on results from tests, linters and compiler errors, the agent can handle a wide range of problems without human intervention.
 3. These iterations are cheap.
 
-In many benchmarks, coding agents are given nothing but terminal access, like [tbench](https://www.tbench.ai/), and are left to try things, observe results, and loop until the task is done. This is the extreme agentic approach.
+In benchmarks like [tbench](https://www.tbench.ai/), coding agents are given nothing but terminal access and left to try things, observe results, and loop until the task is done.
 But this combination is specific to code. Let's consider the following automation task:
 
 Customers wrote in to our first-level support team at Northstar Bank with messages like this:
@@ -39,10 +39,8 @@ Point for point, none of the three conditions holds:
 Every project like this starts with one decision: how much of the work does the model do, and how much does code do? It gets made early, and it shapes a lot downstream.
 
 Given the three points above, my instinct for business automation has been to lean on workflows and keep the LLM on a short leash.
-The first half of this post walks through one clean slice of a support-automation project I worked on and makes that case.
-The second half complicates it: across the full system I followed exactly that instinct, built the workflow, and hit its limits.
-The problem had far more combinations than any tree I could hardcode.
-I hope this project write up helps you find your balance between agentic and workflow approaches in your own work.
+This post is what happened when I followed that instinct on a support-automation project: I built the workflow, and I hit its limits.
+I hope the write up helps you find your own balance between agentic and workflow approaches.
 
 The running example is based on a real project, but the details have been changed to protect the client's privacy.
 
@@ -105,12 +103,10 @@ As the ServiceNow CEO [put it](https://open.spotify.com/episode/11xeL3QCAF77z1vx
 Our more immediate problem was a different one: stakeholders complained that the agent's replies didn't match the established message templates.
 We tried to fix that with prompt engineering, but asking an LLM to be reliably deterministic works against its nature.
 
-## The distribution had a fat head
+## The workflow approach
 
 We labelled and clustered roughly 2,300 past tickets with an AI-assisted, iterative process. A handful of intents accounted for the large majority of them.
-The long tail was real, but the head of the distribution dominated. This encouraged us to try a workflow approach.
-
-## The workflow approach
+The long tail was real, but the head of the distribution dominated, which encouraged us to try a workflow.
 
 To fix both problems, we kept code in charge of the sequencing and reserved the LLM for the *one* genuinely hard part of Alex's message:
 interpreting it, recognising that this is an *account-locked* request and pulling out the identifier (the account number, or the name and branch).
@@ -153,7 +149,7 @@ flowchart TD
 ```
 
 For this one intent, the workflow was the clear fit. The lookup, the flag rule, and the two replies have explicit logic and a small state space.
-Code makes those rules reliable and auditable, and because code selects the reply, the response matches our established template by construction.
+Code makes those rules reliable and auditable, and because code selects the reply, the template is guaranteed rather than prompted for.
 The LLM only bridges human language and structured data.
 
 Two consequences of that split are worth spelling out, because they are what you give up by handing the whole task to an agent:
@@ -165,8 +161,6 @@ Two consequences of that split are worth spelling out, because they are what you
 
 We built the full [four-step pipeline](/post/first-level-support-automation) and ran it in a setup that made iteration cheap. The system went live in **shadow deployment**, where responses were graded by subject-matter experts but never shown to customers, so a wrong answer had almost no blast radius.
 
-Before that, all we had to test against were historic tickets: we could replay the customer messages, but not the state of the bank's records at the time each ticket was written.
-
 We had a tight process to translate [external feedback loop](https://www.deeplearning.ai/the-batch/issue-359) into code changes:
 
 1. Subject-matter experts graded a batch of shadow responses and left free-text feedback.
@@ -174,20 +168,9 @@ We had a tight process to translate [external feedback loop](https://www.deeplea
 3. Cursor turned each piece of feedback into a fix, usually a new branch in the tree.
 4. It added the case to an eval set and re-ran the whole suite.
 
-## 80% was both the target and the problem
-
-We reached an approval rate of 80% on shadow tickets: subject-matter experts judged four out of five generated responses good enough to send.
-That was the ballpark we had promised the client, and on paper it was a success.
-
-It did not translate into the cost reduction the client's private-equity owner was underwriting.
-An 80% approval rate is not an 80% cut in support effort: nobody can tell in advance which fifth is wrong, so a human still reads all of them.
-
-Nobody on either side wrote down the conversion between approval rate and saved effort, and at 80% there may not have been one that worked.
-That arithmetic belongs before the first line of code, not after the shadow deployment.
-
 ## The problem wasn't bounded
 
-A handful of recurring intents really did account for most of the volume.
+Each round of feedback landed a new branch, and for a while that worked.
 But a *true* workflow needs a deterministic mapping from customer intent plus [fetched data](/post/first-level-support-automation#step-3-fetch) to a helpful reply.
 
 That mapping is a grid: every message shape against every state the record behind it can be in. Alex's story filled in two cells. Here is a corner of the rest:
@@ -237,6 +220,17 @@ It was also set up to lose. I optimised for what the client *said* he wanted, no
 what he needed was a system that resolves his end-customers' issues. The graders scored against the templates, so an agent that wrote a clearer,
 more helpful answer in its own words still scored badly, purely for departing from one. We were asking the agent to be a worse workflow.
 
+## 80% was both the target and the problem
+
+We reached an approval rate of 80% on shadow tickets: subject-matter experts judged four out of five generated responses good enough to send.
+That was the ballpark we had promised the client, and on paper it was a success.
+
+It did not translate into the cost reduction the client's private-equity owner was underwriting.
+An 80% approval rate is not an 80% cut in support effort: nobody can tell in advance which fifth is wrong, so a human still reads all of them.
+
+Nobody on either side wrote down the conversion between approval rate and saved effort, and at 80% there may not have been one that worked.
+That arithmetic belongs before the first line of code, not after the shadow deployment.
+
 ## What I would do differently
 
 ### Start with the agent
@@ -273,20 +267,21 @@ It's the same picture as the one above with the default flipped, and the dashed 
 The agentic approach has real caveats, though:
 
 - **Privacy and security are hard to get right.** To be useful on the long tail, the agent needs to draw on historical tickets, which are full of personal data. An agent that retrieves and reasons over them is a far larger exposure surface than a fixed tree.
-- **The agent doesn't shrink the problem, it just defers it.** It faces the same product of message and state, and it has to land on the same business rule; all it changes is that nobody has to enumerate the cases in advance. That is a real advantage (enumerating them was exactly where we hit the wall), but it isn't the same as being right more often. Neither I, nor OpenAI, nor Anthropic know how Alex Carter gets back into their account: that knowledge lives inside the bank, not in the training data. The obvious remedy is to ground the agent in resolved historical tickets, but those are full of conflicting, low-quality resolutions, where the tree, for all its gaps, was a single curated source of truth.
+- **The agent doesn't shrink the grid, it just spares you enumerating it.** That is a real advantage, since enumerating it was exactly where we hit the wall, but it isn't the same as landing on the right cell more often. Neither I, nor OpenAI, nor Anthropic know how Alex Carter gets back into their account: that knowledge lives inside the bank, not in the training data. The obvious remedy is to ground the agent in resolved historical tickets, but those are full of conflicting, low-quality resolutions, where the tree, for all its gaps, was a single curated source of truth.
 
 ### Get into shadow deployment sooner
 
 The first change buys the second one. An agent with a set of tools is much less to build than a tree of intents, plans and templates, so starting agentic is also the shortest path to having *something* in front of graders.
 
 The shadow deployment went live only once the offline numbers on historic tickets looked acceptable.
-That has it backwards. Shadow deployment was the only setting where the pipeline ran against real state and was judged on the thing that mattered.
+That has it backwards. Replaying a historic ticket replays the customer's message, but not the state of the bank's records at the time it was written;
+shadow deployment was the only setting where the pipeline ran against real state and was judged on the thing that mattered.
 We gated the trustworthy signal behind the untrustworthy one.
 
 ### Invest in the external feedback loop, and don't build it yourself
 
-Look again at the three conditions from the top of this post: a coding agent gets its feedback for free from the compiler and the test suite.
-A support system gets none unless you build it. The external loop *is* the missing compiler, and under an agent-first design it's the only thing
+Look again at the three conditions from the top of this post. The second one is the only one that never resolves itself: a coding agent is handed its verdict for free, thousands of times a day.
+A support system has no such verdict unless you build one. The external loop *is* the missing compiler, and under an agent-first design it's the only thing
 that tells you which paths are worth freezing into code. Related reading: [harness engineering](https://openai.com/index/harness-engineering/).
 
 Don't build the whole loop yourself. A narrow review screen for the subject-matter experts is worth writing; the machinery behind it isn't.
