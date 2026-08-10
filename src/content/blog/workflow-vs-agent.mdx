@@ -12,7 +12,7 @@ image: /images/blog/workflow-vs-agent/featured.png
 
 ## TL;DR
 Automating manual workflows with LLMs is [widely piloted and rarely scaled](https://www.mckinsey.com/capabilities/quantumblack/our-insights/the-state-of-ai). This post is a report from one first-level support automation project.
-Two takeaways. Invest in the external feedback loop early: it is the only thing that tells you whether the system actually works.
+Two takeaways. Invest in the external feedback loop early: coding agents get a compiler for free, support systems don't, and that loop is the missing compiler — the only thing that tells you whether the system actually works.
 And workflow versus agent is an empirical question, not a matter of instinct: I picked a side from first principles, and the problem disagreed.
 
 ## Intro
@@ -33,8 +33,10 @@ Customers wrote in to our first-level support team at Northstar Bank with messag
 Point for point, none of the three conditions holds:
 
 1. LLMs haven't seen your internal escalation rules or customer records during training.
-2. The AI system has no feedback readily available from a compiler or test suite.
-3. Handing account access to the wrong person is very expensive.
+2. There is no compiler or test suite to tell the system whether the reply it wrote was any good.
+3. The only verdict available is a human one: someone who knows the bank has to read the reply and judge it. That is minutes of an expert's attention per iteration, not seconds of CPU.
+
+Points 2 and 3 are the ones this post keeps returning to. There is no feedback loop here to begin with; you build one, and every turn of it is expensive.
 
 Every project like this starts with one decision: how much of the work does the model do, and how much does code do? It gets made early, and it shapes a lot downstream.
 
@@ -99,7 +101,7 @@ This looks elegant, but nothing in it guarantees that the agent checks the secur
 That would be an expensive mistake, and a system that decides the order of its own safety checks in free text is exposed to prompt injection.
 As the ServiceNow CEO [put it](https://open.spotify.com/episode/11xeL3QCAF77z1vxOp0am0?si=fc70f33f0dd64ab4): people forgive other people for making mistakes. They don't forgive software.
 
-Our more immediate problem was a different one: stakeholders complained that the agent's replies didn't match the established message templates.
+In practice, though, a different complaint drove the decision: stakeholders said the agent's replies didn't match the established message templates.
 We tried to fix that with prompt engineering, but asking an LLM to be reliably deterministic works against its nature.
 
 ## The workflow approach
@@ -265,8 +267,10 @@ It's the same picture as the one above with the default flipped, and the dashed 
 
 The agentic approach has real caveats, though:
 
-- **Privacy and security are hard to get right.** To be useful on the long tail, the agent needs to draw on historical tickets, which are full of personal data. An agent that retrieves and reasons over them is a far larger exposure surface than a fixed tree.
-- **The agent doesn't shrink the grid, it just spares you enumerating it.** That is a real advantage, since enumerating it was exactly where we hit the wall, but it isn't the same as landing on the right cell more often. Neither I, nor OpenAI, nor Anthropic know how Alex Carter gets back into their account: that knowledge lives inside the bank, not in the training data. The obvious remedy is to ground the agent in resolved historical tickets, but those are full of conflicting, low-quality resolutions, where the tree, for all its gaps, was a single curated source of truth.
+- **The agent doesn't shrink the grid, it just spares you enumerating it.** That is a real advantage, since enumerating it was exactly where we hit the wall. But not having to write a cell down is not the same as landing on the right one more often.
+- **The knowledge that fills the grid is the bank's, not the model's.** Neither I, nor OpenAI, nor Anthropic know how Alex Carter gets back into their account. That lives in the bank's rules and its records, not in the training data, and an agent arrives no better informed than the tree did.
+- **Grounding in historical tickets is not a clean fix.** The obvious remedy is to point the agent at resolved tickets, but those are full of conflicting, low-quality resolutions. The tree, for all its gaps, was at least a single curated source of truth.
+- **Privacy and security are hard to get right.** Those same historical tickets are full of personal data. An agent that retrieves and reasons over them is a far larger exposure surface than a fixed tree.
 
 ### Get into shadow deployment sooner
 
@@ -279,8 +283,8 @@ We gated the trustworthy signal behind the untrustworthy one.
 
 ### Invest in the external feedback loop, and don't build it yourself
 
-Look again at the three conditions from the top of this post. The second one is the only one that never resolves itself: a coding agent is handed its verdict for free, thousands of times a day.
-A support system has no such verdict unless you build one. The external loop *is* the missing compiler, and under an agent-first design it's the only thing
+Look again at the three conditions from the top of this post. The second and third are the ones that never resolve themselves: a coding agent is handed its verdict for free, thousands of times a day.
+A support system has no such verdict unless you build one, and even then it arrives at the speed of a human reading. The external loop *is* the missing compiler, and under an agent-first design it's the only thing
 that tells you which paths are worth freezing into code. Related reading: [harness engineering](https://openai.com/index/harness-engineering/).
 
 Don't build the whole loop yourself. A narrow review screen for the subject-matter experts is worth writing; the machinery behind it isn't.
