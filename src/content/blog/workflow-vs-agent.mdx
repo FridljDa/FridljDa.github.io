@@ -103,7 +103,7 @@ We tried to fix that with prompt engineering, but asking an LLM to be reliably d
 We labelled and clustered roughly 2,300 past tickets with an AI-assisted, iterative process. A handful of intents accounted for the large majority of them.
 The long tail was real, but the head of the distribution dominated, which encouraged us to try a workflow.
 
-To fix both problems, we kept code in charge of the sequencing and reserved the LLM for the *one* genuinely hard part of Alex's message:
+To get both the ordering guarantee and the fixed templates, we kept code in charge of the sequencing and reserved the LLM for the *one* genuinely hard part of Alex's message:
 interpreting it, recognising that this is an *account-locked* request and pulling out the identifier (the account number, or the name and branch).
 Everything after that (the lookup, the flag check, the reply) is deterministic, so code runs the steps in a fixed order and the flag check always happens before any unlock instructions go out.
 
@@ -145,14 +145,14 @@ flowchart TD
 
 For this one intent, the workflow was the clear fit: explicit logic, a small state space, and — because code selects the reply — a template that is guaranteed rather than prompted for.
 
-Two consequences of that split are worth spelling out, because they are what you give up by handing the whole task to an agent:
+Two consequences :
 
-- **Scope the LLM to what only an LLM can do.** Recognising the intent and extracting an identifier from free text is a well-defined task. You can build targeted evals, iterate on the prompt, drop to a cheaper model, or swap the LLM for a Named Entity Recognition model if your vocabulary is bounded enough. None of that is possible once the LLM is entangled with lookup, policy, and messaging.
-- **Iteration is targeted and predictable.** When a message is misread or a policy changes, the fix is local: edit the extraction prompt, add a branch, adjust one API call, and you know what the next message of that shape will do. With an agent, your only tool is a system-prompt edit, and you can't predict what it does to the cases that already worked.
+- **Scope the LLM to what only an LLM can do.** Recognising the intent and extracting an identifier from free text is a well-defined task. You can build targeted evals, iterate on the prompt, drop to a cheaper model, or swap the LLM for a Named Entity Recognition model.
+- **Iteration is targeted and predictable.** When a message is misread or a policy changes, the fix is local: edit the extraction prompt, add a branch, adjust one API call, and you know what the next message of that shape will do.
 
 ## Growing the workflow with a feedback loop
 
-We built the full [four-step pipeline](/post/first-level-support-automation) and ran it in a setup that made iteration safe. The system went live in **shadow deployment**, where responses were graded by subject-matter experts but never shown to customers, so a wrong answer had almost no blast radius.
+We built the full [four-step pipeline](/post/first-level-support-automation) and ran it in a setup that made iteration safe. The system went live in **shadow deployment**, where responses were graded by subject-matter experts but never shown to customers, so a wrong answer had little blast radius.
 
 We had a tight process to translate that external feedback into code changes:
 
@@ -170,7 +170,7 @@ from the client's private-equity owner drove up both the quantity and the qualit
 Each round of feedback landed a new branch, and for a while that worked.
 But a *true* workflow needs a deterministic mapping from customer intent plus [fetched data](/post/first-level-support-automation#step-3-fetch) to a helpful reply.
 
-That mapping is a grid: every message shape against every state the record behind it can be in. Alex's story filled in two cells. Here is a corner of the rest:
+That mapping is a grid: every message shape against every state the record behind it can be in:
 
 | | Verified, no flags | Security flag | Account closed |
 |---|---|---|---|
