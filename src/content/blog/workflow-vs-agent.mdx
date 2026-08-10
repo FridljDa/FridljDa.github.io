@@ -4,17 +4,20 @@ pubDate: 2026-04-19T00:00:00.000Z
 updatedDate: 2026-07-28T00:00:00.000Z
 tags:
   - AI
+  - Customer Support
+  - Architecture
 description: "How I automated first-level support with a workflow, why the state space outgrew it, and what I'd try differently next time."
 image: /images/blog/workflow-vs-agent/featured.png
 ---
 
 ## TL;DR
-Automating manual workflows with LLMs is a hot topic. This post is a report from one first-level support automation project.
+Automating manual workflows with LLMs is [widely piloted and rarely scaled](https://www.mckinsey.com/capabilities/quantumblack/our-insights/the-state-of-ai). This post is a report from one first-level support automation project.
 Two takeaways. Invest in the external feedback loop early: it is the only thing that tells you whether the system actually works.
 And workflow versus agent is an empirical question, not a matter of instinct: I picked a side from first principles and the problem disagreed.
+Whether the agent would have won, I still cannot say.
 
 ## Intro
-Progress in frontier AI models has allowed coding agents to tackle ever more complex and long-running tasks, and benchmarks are saturating fast.
+Progress in frontier AI models has allowed coding agents to tackle ever more complex and long-running tasks, fast enough that benchmarks keep needing to be replaced: [SWE-bench Verified](https://www.swebench.com/verified.html) is close to saturated.
 
 What makes coding agents so effective is a combination of three things:
 1. Software is largely composed of patterns LLMs have seen countless times during training: syntax, idioms, libraries.
@@ -39,7 +42,8 @@ Every project like this starts with one decision: how much of the work does the 
 Given the three points above, my instinct for business automation has been to lean on workflows and keep the LLM on a short leash.
 The first half of this post walks through one clean slice of a support-automation project I worked on and makes that case.
 The second half complicates it: across the full system I followed exactly that instinct, built the workflow, and hit its limits.
-The problem had far more combinations than any tree I could hardcode. The bottom line is inconclusive.
+The problem had far more combinations than any tree I could hardcode.
+That the workflow ran out of room is the part I can show you. Whether starting from the agent would have gone better is a bet I never got to settle.
 I hope this project write up helps you find your balance between agentic and workflow approaches in your own work.
 
 The running example is based on a real project, but the details have been changed to protect the client's privacy.
@@ -180,63 +184,26 @@ That was the ballpark we had promised the client, and on paper it was a success.
 It did not translate into the cost reduction the client's private-equity owner was underwriting.
 An 80% approval rate is not an 80% cut in support effort: nobody can tell in advance which fifth is wrong, so a human still reads all of them.
 
+Nobody on either side wrote down the conversion between approval rate and saved effort, and at 80% there may not have been one that worked.
+That arithmetic belongs before the first line of code, not after the shadow deployment.
+
 ## The problem wasn't bounded
 
 A handful of recurring intents really did account for most of the volume.
 But a *true* workflow needs a deterministic mapping from customer intent plus [fetched data](/post/first-level-support-automation#step-3-fetch) to a helpful reply.
 
-The mapping we were trying to write down is this:
+That mapping is a grid: every message shape against every state the record behind it can be in. Alex's story filled in two cells. Here is a corner of the rest:
 
-```mermaid
-flowchart LR
-    subgraph M["Customer messages"]
-        M1["Locked account"]
-        M2["Missing payment"]
-        M3["Change of details"]
-        MX["…many more"]
-    end
+| | Verified, no flags | Security flag | Account closed |
+|---|---|---|---|
+| **Locked account** | Send unlock instructions | Escalate to security | ? |
+| **Missing payment** | ? | ? | ? |
+| **Change of details** | ? | ? | ? |
 
-    subgraph S["Possible record states"]
-        S1["Verified, no flags"]
-        S2["Security flag"]
-        S3["Account closed"]
-        SX["…many more"]
-    end
-
-    PRODUCT["Every message shape ×<br/>every record state"]
-
-    C1["Case 1"]
-    C2["Case 2"]
-    C3["Case 3"]
-    CN["… case N × M"]
-
-    RULES["Each case needs the right<br/>business rule and reply"]
-
-    M --> PRODUCT
-    S --> PRODUCT
-    PRODUCT --> C1
-    PRODUCT --> C2
-    PRODUCT --> C3
-    PRODUCT --> CN
-    C1 --> RULES
-    C2 --> RULES
-    C3 --> RULES
-    CN --> RULES
-
-    classDef input fill:#f8fafc,stroke:#64748b,stroke-width:1.5px
-    classDef explosion fill:#fee2e2,stroke:#dc2626,stroke-width:2px
-    classDef case fill:#fff7ed,stroke:#ea580c,stroke-width:1.5px
-    classDef rule fill:#dcfce7,stroke:#16a34a,stroke-width:2px
-    class M1,M2,M3,MX,S1,S2,S3,SX input
-    class PRODUCT explosion
-    class C1,C2,C3,CN case
-    class RULES rule
-```
+Every question mark is a business rule someone has to decide, write down, and keep current. Three intents against three record states leaves seven open cells, and we had many more than three of each.
+The fat head we measured was a head in *messages*; the grid is what those messages had to be resolved against.
 
 Our response made it worse: we kept splitting each intent into finer sub-intents (the same request, just a more specific template), which grew the tree faster than it covered new cases.
-
-There's an echo of Rich Sutton's [*The Bitter Lesson*](http://www.incompleteideas.net/IncIdeas/BitterLesson.html) here: hand-encoded human knowledge (our intent tree) tends to lose over time to general methods that scale with compute,
-and as models get cheaper and better that trade only tilts further toward the agent.
 
 ## Bolting an agent onto the tree
 
@@ -271,8 +238,6 @@ Code was the default; the agent was the dashed exception, reached only when no h
 It was also set up to lose. I optimised for what the client *said* he wanted, not what he needed: he wanted replies that matched his templates;
 what he needed was a system that resolves his end-customers' issues. The graders scored against the templates, so an agent that wrote a clearer,
 more helpful answer in its own words still scored badly, purely for departing from one. We were asking the agent to be a worse workflow.
-
-{/* TODO: one sentence on how the fallback actually performed — roughly what share of tickets hit it, and how graders scored those replies against the hardcoded leaves. Without it the "inconclusive" verdict below is asserted rather than shown. */}
 
 ## What I would do differently
 
@@ -316,9 +281,9 @@ The agentic approach has real caveats, though:
 
 The first change buys the second one. An agent with a set of tools is much less to build than a tree of intents, plans and templates, so starting agentic is also the shortest path to having *something* in front of graders.
 
-The shadow deployment went live once the offline numbers on historic tickets looked acceptable.
-That has it backwards. The offline number was the unreliable one, graded without the records the original human agent actually saw, while shadow deployment
-was the only setting where the pipeline ran against real state and was judged on the thing that mattered.
+The shadow deployment went live only once the offline numbers on historic tickets looked acceptable.
+That has it backwards. Shadow deployment was the only setting where the pipeline ran against real state and was judged on the thing that mattered.
+We gated the trustworthy signal behind the untrustworthy one.
 
 ### Invest in the external feedback loop, and don't build it yourself
 
