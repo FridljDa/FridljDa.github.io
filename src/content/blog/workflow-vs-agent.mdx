@@ -181,7 +181,7 @@ That mapping is a grid: every message shape against every state the record behin
 Every question mark is a business rule someone has to decide, write down, and keep current. Three intents against three record states leaves seven open cells, and we had many more than three of each.
 The fat head we measured was a head in *messages*; the grid is what those messages had to be resolved against.
 
-Our response made it worse: we kept splitting each intent into finer sub-intents (the same request, just a more specific template), which grew the tree faster than it covered new cases.
+The template requirement forced the split: a more specific template needs a more specific leaf. So the tree grew faster than it covered cells.
 
 ## Bolting an agent onto the tree
 
