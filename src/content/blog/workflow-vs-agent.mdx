@@ -231,10 +231,12 @@ An 80% approval rate is not an 80% cut in support effort: nobody can tell in adv
 
 Volume decided the rest. The B2C queue we were automating ran at roughly a dozen tickets a day, so even a flawless system was competing for a small slice of one person's time, against the cost of building and maintaining it.
 
-Whether an automation like this can pay for itself comes down to two numbers: how many tickets arrive, and how much effort an approved response actually saves.
-Both are knowable before a single model is chosen. That arithmetic belongs before the first line of code, not after the shadow deployment.
-
 ## What I would do differently
+
+### Do the arithmetic with the client first
+
+Whether an automation like this pays for itself is an ROI calculation, and it needs realistic parameters and the client's agreement on them before the project starts.
+We ran ours after the shadow deployment instead of before.
 
 ### Start with the agent
 
@@ -276,7 +278,7 @@ The agentic approach has real caveats, though:
 
 ### Get into shadow deployment sooner
 
-The first change buys the second one. An agent with a set of tools is much less to build than a tree of intents, plans and templates, so starting agentic is also the shortest path to having *something* in front of graders.
+Starting agentic buys this one. An agent with a set of tools is much less to build than a tree of intents, plans and templates, so starting agentic is also the shortest path to having *something* in front of graders.
 
 The shadow deployment went live only once the offline numbers on historic tickets looked acceptable.
 That has it backwards. Replaying a historic ticket replays the customer's message, but not the state of the bank's records at the time it was written;
