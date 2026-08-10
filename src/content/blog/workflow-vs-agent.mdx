@@ -144,7 +144,7 @@ flowchart TD
 
 For this one intent, the workflow was the clear fit: explicit logic, a small state space, and — because code selects the reply — a template that is guaranteed rather than prompted for.
 
-Two consequences :
+Two consequences:
 
 - **Scope the LLM to what only an LLM can do.** Recognising the intent and extracting an identifier from free text is a well-defined task. You can build targeted evals, iterate on the prompt, drop to a cheaper model, or swap the LLM for a Named Entity Recognition model.
 - **Iteration is targeted and predictable.** When a message is misread or a policy changes, the fix is local: edit the extraction prompt, add a branch, adjust one API call, and you know what the next message of that shape will do.
@@ -158,7 +158,7 @@ We had a tight process to translate that external feedback into code changes:
 1. Subject-matter experts graded a batch of shadow responses and left free-text feedback.
 2. I added a comment on what the solution should look like from a technical perspective.
 3. Cursor implemented the feedback, usually a new branch in the tree.
-4. Cursor added the case to an eval set
+4. Cursor added the case to an eval set.
 5. CI re-ran the eval suite.
 
 Step 1 was the bottleneck: the loop runs on subject-matter expert time — one more item in a day that is
@@ -233,22 +233,7 @@ Volume decided the rest. The ticket queue we were automating ran at roughly a do
 
 Whether an automation like this pays for itself is an ROI calculation, and it needs realistic parameters before the project starts.
 
-### Start with the agent
-
-Next time I would invert the order and try the approach from Will Larson's [Building internal agents](https://lethain.com/agents-series/) series: start with the agent. A path graduates into a workflow only once it shows up often and the agent handles it unreliably, or when the action is irreversible enough that you don't want a model deciding it.
-
-Picture the diagram above with the default flipped: the agent is the solid path that every request takes, and code is the dashed exception, carved out one hardened branch at a time. That flip is the whole point — code paths are grown *out of* proven agent behaviour, not assumed up front.
-
-The agentic approach has real caveats, though:
-
-- **The agent doesn't shrink the grid, it just spares you enumerating it.** That is a real advantage, since enumerating it was exactly where we hit the wall. But not having to write a cell down is not the same as landing on the right one more often; only the feedback loop settles that, filling the grid with evidence instead of anticipation.
-- **The knowledge that fills the grid is the bank's, not the model's.** Neither I, nor OpenAI, nor Anthropic know how Alex Carter gets back into their account. That lives in the bank's rules and its records, not in the training data, and an agent arrives no better informed than the tree did.
-- **Grounding in historical tickets is not a clean fix.** The obvious remedy is to point the agent at resolved tickets, but those are full of conflicting, low-quality resolutions. The tree, for all its gaps, was at least a single curated source of truth.
-- **Privacy and security are hard to get right.** Those same historical tickets are full of personal data. An agent that retrieves and reasons over them is a far larger exposure surface than a fixed tree.
-
 ### Get into shadow deployment sooner
-
-Starting agentic buys this one. An agent with a set of tools is much less to build than a tree of intents, plans and templates, so starting agentic is also the shortest path to having *something* in front of graders.
 
 The shadow deployment went live only once the offline numbers on historic tickets looked acceptable.
 That has it backwards. Replaying a historic ticket replays the customer's message, but not the state of the bank's records at the time it was written;
@@ -258,8 +243,33 @@ We gated the trustworthy signal behind the untrustworthy one.
 ### Invest in the external feedback loop, and don't build it yourself
 
 Look again at the two conditions from the top of this post. The second is the one that never resolves itself: a coding agent is handed its verdict, automatically, every time it runs.
-A support system has no such verdict unless you build one. The external loop *is* the missing compiler, and under an agent-first design it's the only thing
+A support system has no such verdict unless you build one. The external loop *is* the missing compiler, and under the agent-first design below it's the only thing
 that tells you which paths are worth freezing into code. Related reading: [harness engineering](https://openai.com/index/harness-engineering/).
 
 Don't build the whole loop yourself. A narrow review screen for the subject-matter experts is worth writing; the machinery behind it isn't.
 Langfuse's annotation queues as the backend, with a thin custom frontend on its API, would have been the better trade. That deserves a post of its own.
+
+## Alternatives I'd try next time
+
+Two designs I haven't run, but would want to try on the next project of this shape.
+
+### Start with the agent
+
+Invert the order, following Will Larson's [Building internal agents](https://lethain.com/agents-series/) series: start with the agent. A path graduates into a workflow only once it shows up often and the agent handles it unreliably, or when the action is irreversible enough that you don't want a model deciding it.
+
+Picture the [diagram above](#bolting-an-agent-onto-the-tree) with the default flipped: the agent is the solid path that every request takes, and code is the dashed exception, carved out one hardened branch at a time. Code paths are grown *out of* proven agent behaviour, not assumed up front. It is also the shortest path into shadow deployment, since an agent with a set of tools is much less to build than a tree of intents, plans and templates.
+
+The caveats are real, though:
+
+- **The agent doesn't shrink the grid, it just spares you enumerating it.** That is a real advantage, since enumerating it was exactly where we hit the wall. But not having to write a cell down is not the same as landing on the right one more often; only the feedback loop settles that, filling the grid with evidence instead of anticipation.
+- **The agent arrives no better informed than the tree did.** The first condition from the top of the post doesn't move: how Alex Carter gets back into their account lives in the bank's rules and its records, not in the training data.
+- **Grounding in historical tickets is not a clean fix.** The obvious remedy is to point the agent at resolved tickets, but those are full of conflicting, low-quality resolutions. The tree, for all its gaps, was at least a single curated source of truth.
+- **Privacy and security are hard to get right.** Those same historical tickets are full of personal data. An agent that retrieves and reasons over them is a far larger exposure surface than a fixed tree.
+
+### Let the agent write its own branches
+
+In our loop, steps 2 and 3 were me: I read the subject-matter expert's feedback, said what the fix should look like, and had Cursor land a branch. That is the part that doesn't scale, and it's the part an agent with persistent memory could plausibly take over.
+
+Something like [Hermes](https://hermes-agent.nousresearch.com/), which auto-generates skills and keeps what worked as memory. That is the same graduation move as freezing a path into code, just written by the agent instead of by me. Wire that self-improvement loop to the external feedback loop and the grid fills itself: subject-matter expert verdicts go in, skills come out, and the ones that keep proving themselves are the candidates for hardening into actual code.
+
+The obvious risk is that the agent's self-improvement loop and the graders' verdicts drift apart — an agent that learns from its own summaries of what worked, rather than from the human judgment, would be exactly the failure mode this post is about.
