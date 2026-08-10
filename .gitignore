@@ -54,6 +54,7 @@ __pycache__/
 
 # Script output
 scripts/cursor-model-blog/output/
+diagrams/
 
 # Personal configuration files
 *.local

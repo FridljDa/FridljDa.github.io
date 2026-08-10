@@ -12,8 +12,8 @@ image: /images/blog/workflow-vs-agent/featured.png
 
 ## TL;DR
 Automating manual workflows with LLMs is [widely piloted and rarely scaled](https://www.mckinsey.com/capabilities/quantumblack/our-insights/the-state-of-ai). This post is a report from one first-level support automation project.
-Two takeaways. Invest in the external feedback loop early: coding agents get a compiler for free, support systems don't, and that loop is the missing compiler — the only thing that tells you whether the system actually works.
-And workflow versus agent is an empirical question, not a matter of instinct: I picked a side from first principles, and the problem disagreed.
+Two takeaways. Invest in the external feedback loop early: coding agents get theirs for free, support systems don't. That loop is the missing compiler, the only thing that tells you whether the system actually works.
+And workflow versus agent is an empirical question, not a matter of instinct: I picked a side from first principles, hit its limits, and never built the instrument that could have told me whether the other side was better.
 
 ## Intro
 Progress in frontier AI models has allowed coding agents to tackle ever more complex and long-running tasks, fast enough that benchmarks keep needing to be replaced: [SWE-bench Verified](https://www.swebench.com/verified.html) is close to saturated.
@@ -72,7 +72,8 @@ flowchart TD
     A1["🤖 Agent<br/>support reasoning and tool use"]
     T1["🔌 External tool/API<br/>account lookup"]
     T2["🔌 External tool/API<br/>security-flag check"]
-    T3["🔌 External tool/API<br/>send reply / take action"]
+    T3["🔌 External tool/API<br/>send unlock instructions"]
+    T4["🔌 External tool/API<br/>escalate to security"]
     OUT1(["Unlock instructions sent"])
     OUT2(["Escalated to security"])
 
@@ -83,13 +84,14 @@ flowchart TD
     T2 -->|"flag status"| A1
     A1 -->|"send unlock steps"| T3
     T3 --> OUT1
-    A1 -->|"flagged: escalate"| OUT2
+    A1 -->|"flagged: escalate"| T4
+    T4 --> OUT2
 
     classDef agent fill:#f3e8ff,stroke:#7c3aed,stroke-width:2px
     classDef tool fill:#fef3c7,stroke:#d97706,stroke-width:2px
     classDef terminal fill:#f8fafc,stroke:#64748b,stroke-width:1.5px
     class A1 agent
-    class T1,T2,T3 tool
+    class T1,T2,T3,T4 tool
     class INPUT,OUT1,OUT2 terminal
 ```
 
@@ -267,7 +269,7 @@ It's the same picture as the one above with the default flipped, and the dashed 
 
 The agentic approach has real caveats, though:
 
-- **The agent doesn't shrink the grid, it just spares you enumerating it.** That is a real advantage, since enumerating it was exactly where we hit the wall. But not having to write a cell down is not the same as landing on the right one more often.
+- **The agent doesn't shrink the grid, it just spares you enumerating it.** That is a real advantage, since enumerating it was exactly where we hit the wall. But not having to write a cell down is not the same as landing on the right one more often; only the feedback loop settles that, filling the grid with evidence instead of anticipation.
 - **The knowledge that fills the grid is the bank's, not the model's.** Neither I, nor OpenAI, nor Anthropic know how Alex Carter gets back into their account. That lives in the bank's rules and its records, not in the training data, and an agent arrives no better informed than the tree did.
 - **Grounding in historical tickets is not a clean fix.** The obvious remedy is to point the agent at resolved tickets, but those are full of conflicting, low-quality resolutions. The tree, for all its gaps, was at least a single curated source of truth.
 - **Privacy and security are hard to get right.** Those same historical tickets are full of personal data. An agent that retrieves and reasons over them is a far larger exposure surface than a fixed tree.
