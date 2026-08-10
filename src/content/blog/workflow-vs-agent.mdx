@@ -13,8 +13,7 @@ image: /images/blog/workflow-vs-agent/featured.png
 ## TL;DR
 Automating manual workflows with LLMs is [widely piloted and rarely scaled](https://www.mckinsey.com/capabilities/quantumblack/our-insights/the-state-of-ai). This post is a report from one first-level support automation project.
 Two takeaways. Invest in the external feedback loop early: it is the only thing that tells you whether the system actually works.
-And workflow versus agent is an empirical question, not a matter of instinct: I picked a side from first principles and the problem disagreed.
-Whether the agent would have won, I still cannot say.
+And workflow versus agent is an empirical question, not a matter of instinct: I picked a side from first principles, the problem disagreed, and I still cannot say whether the agent would have won.
 
 ## Intro
 Progress in frontier AI models has allowed coding agents to tackle ever more complex and long-running tasks, fast enough that benchmarks keep needing to be replaced: [SWE-bench Verified](https://www.swebench.com/verified.html) is close to saturated.
@@ -43,7 +42,6 @@ Given the three points above, my instinct for business automation has been to le
 The first half of this post walks through one clean slice of a support-automation project I worked on and makes that case.
 The second half complicates it: across the full system I followed exactly that instinct, built the workflow, and hit its limits.
 The problem had far more combinations than any tree I could hardcode.
-That the workflow ran out of room is the part I can show you. Whether starting from the agent would have gone better is a bet I never got to settle.
 I hope this project write up helps you find your balance between agentic and workflow approaches in your own work.
 
 The running example is based on a real project, but the details have been changed to protect the client's privacy.
@@ -167,7 +165,7 @@ Two consequences of that split are worth spelling out, because they are what you
 
 We built the full [four-step pipeline](/post/first-level-support-automation) and ran it in a setup that made iteration cheap. The system went live in **shadow deployment**, where responses were graded by subject-matter experts but never shown to customers, so a wrong answer had almost no blast radius.
 
-We only switched it on once the system looked good enough on historic tickets: we could replay the customer messages, but not the state of the bank's records at the time each ticket was written.
+Before that, all we had to test against were historic tickets: we could replay the customer messages, but not the state of the bank's records at the time each ticket was written.
 
 We had a tight process to translate [external feedback loop](https://www.deeplearning.ai/the-batch/issue-359) into code changes:
 
