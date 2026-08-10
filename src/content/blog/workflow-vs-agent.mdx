@@ -100,8 +100,7 @@ We tried to fix that with prompt engineering, but asking an LLM to be reliably d
 
 ## The workflow approach
 
-We labelled and clustered roughly 2,300 past tickets with an AI-assisted, iterative process. A handful of intents accounted for the large majority of them.
-The long tail was real, but the head of the distribution dominated, which encouraged us to try a workflow.
+We labelled and clustered roughly 2,300 past tickets with an AI-assisted, iterative process. A handful of intents accounted for the large majority of them, which encouraged us to try a workflow.
 
 To get both the ordering guarantee and the fixed templates, we kept code in charge of the sequencing and reserved the LLM for the *one* genuinely hard part of Alex's message:
 interpreting it, recognising that this is an *account-locked* request and pulling out the identifier (the account number, or the name and branch).
@@ -235,34 +234,9 @@ Whether an automation like this pays for itself is an ROI calculation, and it ne
 
 ### Start with the agent
 
-Next time I would invert the order and try the approach from Will Larson's [Building internal agents](https://lethain.com/agents-series/) series: start with the agent. A path graduates into a workflow only once it shows up often and the agent handles it unreliably, or when the action is irreversible enough that you don't want a model deciding it:
+Next time I would invert the order and try the approach from Will Larson's [Building internal agents](https://lethain.com/agents-series/) series: start with the agent. A path graduates into a workflow only once it shows up often and the agent handles it unreliably, or when the action is irreversible enough that you don't want a model deciding it.
 
-```mermaid
-flowchart TD
-    INPUT(["Customer request"])
-    D{"Frequent + unstable,<br/>or high-consequence?"}
-    C["⚙️ Code step<br/>hardened workflow"]
-    A["🤖 Agent<br/>search tickets, use tools,<br/>adapt the response"]
-    OUT(["Response + tool calls"])
-
-    INPUT --> D
-    D -->|"yes"| C
-    D -->|"no: long tail"| A
-    C --> OUT
-    A --> OUT
-    A -.->|"production evidence promotes<br/>proven paths into code"| C
-
-    classDef agent fill:#f3e8ff,stroke:#7c3aed,stroke-width:2px
-    classDef code fill:#dcfce7,stroke:#16a34a,stroke-width:2px
-    classDef decision fill:#fff7ed,stroke:#ea580c,stroke-width:2px
-    classDef terminal fill:#f8fafc,stroke:#64748b,stroke-width:1.5px
-    class A agent
-    class C code
-    class D decision
-    class INPUT,OUT terminal
-```
-
-It's the same picture as the one above with the default flipped, and the dashed edge is the whole point: code paths are grown *out of* proven agent behaviour, not assumed up front.
+Picture the diagram above with the default flipped: the agent is the solid path that every request takes, and code is the dashed exception, carved out one hardened branch at a time. That flip is the whole point — code paths are grown *out of* proven agent behaviour, not assumed up front.
 
 The agentic approach has real caveats, though:
 

@@ -5,7 +5,10 @@
  * (Confluence, Google Docs, slides): upload the PNGs and drop them in
  * where the fences were.
  *
- *   node scripts/mermaid-png/render.mjs [file] [--out dir] [--scale n] [--theme default|dark|neutral|forest]
+ *   node scripts/mermaid-png/render.mjs [file] [--out dir] [--scale n] [--theme default|dark|neutral|forest] [--min-width px]
+ *
+ * Narrow diagrams are upscaled to --min-width CSS pixels before the
+ * screenshot so they do not come out visually smaller than wide ones.
  *
  * Defaults to src/content/blog/workflow-vs-agent.mdx, writing to
  * diagrams/<slug>/<slug>-01.png ...
@@ -19,13 +22,14 @@ const DEFAULT_FILE = 'src/content/blog/workflow-vs-agent.mdx';
 const MERMAID_BUNDLE = 'node_modules/mermaid/dist/mermaid.min.js';
 
 function parseArgs(argv) {
-  const opts = { file: null, out: null, scale: 3, theme: 'default' };
+  const opts = { file: null, out: null, scale: 3, theme: 'default', minWidth: 1000 };
 
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
     if (arg === '--out') opts.out = argv[++i];
     else if (arg === '--scale') opts.scale = Number(argv[++i]);
     else if (arg === '--theme') opts.theme = argv[++i];
+    else if (arg === '--min-width') opts.minWidth = Number(argv[++i]);
     else if (arg.startsWith('--')) throw new Error(`Unknown flag: ${arg}`);
     else if (!opts.file) opts.file = arg;
     else throw new Error(`Unexpected argument: ${arg}`);
@@ -34,6 +38,9 @@ function parseArgs(argv) {
   opts.file = opts.file ?? DEFAULT_FILE;
   if (!Number.isFinite(opts.scale) || opts.scale <= 0) {
     throw new Error('--scale must be a positive number');
+  }
+  if (!Number.isFinite(opts.minWidth) || opts.minWidth <= 0) {
+    throw new Error('--min-width must be a positive number');
   }
   return opts;
 }
@@ -106,23 +113,26 @@ async function main() {
   for (const [index, diagram] of diagrams.entries()) {
     const name = `${slug}-${String(index + 1).padStart(2, '0')}.png`;
 
-    const error = await page.evaluate(async ({ code, id }) => {
+    const error = await page.evaluate(async ({ code, id, minWidth }) => {
       const stage = document.getElementById('stage');
       stage.innerHTML = '';
       try {
         const { svg } = await window.mermaid.render(id, code);
         stage.innerHTML = svg;
-        // Screenshot the intrinsic size, not mermaid's responsive 100% width.
+        // Screenshot the intrinsic size, not mermaid's responsive 100% width,
+        // blown up so narrow diagrams are not rendered tiny.
         const el = stage.querySelector('svg');
         const box = el.getBBox();
-        el.style.width = `${Math.ceil(box.width)}px`;
-        el.style.height = `${Math.ceil(box.height)}px`;
+        el.setAttribute('viewBox', `${box.x} ${box.y} ${box.width} ${box.height}`);
+        const factor = Math.max(1, minWidth / box.width);
+        el.style.width = `${Math.ceil(box.width * factor)}px`;
+        el.style.height = `${Math.ceil(box.height * factor)}px`;
         el.style.maxWidth = 'none';
         return null;
       } catch (err) {
         return String(err?.message ?? err);
       }
-    }, { code: diagram.code, id: `diagram-${index + 1}` });
+    }, { code: diagram.code, id: `diagram-${index + 1}`, minWidth: opts.minWidth });
 
     if (error) {
       await browser.close();
