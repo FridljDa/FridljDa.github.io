@@ -23,7 +23,7 @@ What makes coding agents so effective is a combination of three things:
 2. The [agentic loop](https://www.deeplearning.ai/the-batch/issue-359) provides a tight feedback loop. Looping on results from tests, linters and compiler errors, the agent can handle a wide range of problems without human intervention.
 3. These iterations are cheap.
 
-In benchmarks like [tbench](https://www.tbench.ai/), coding agents are given nothing but terminal access and left to try things, observe results, and loop until the task is done.
+In benchmarks like [tbench](https://www.tbench.ai/), that is all the scaffolding an agent gets: a terminal, and permission to loop.
 But this combination is specific to code. Let's consider the following automation task:
 
 Customers wrote in to our first-level support team at Northstar Bank with messages like this:
@@ -38,9 +38,8 @@ Point for point, none of the three conditions holds:
 
 Every project like this starts with one decision: how much of the work does the model do, and how much does code do? It gets made early, and it shapes a lot downstream.
 
-Given the three points above, my instinct for business automation has been to lean on workflows and keep the LLM on a short leash.
-This post is what happened when I followed that instinct on a support-automation project: I built the workflow, and I hit its limits.
-I hope the write up helps you find your own balance between agentic and workflow approaches.
+Given the three points above, my instinct has been to lean on workflows and keep the LLM on a short leash.
+This post is what happened when I followed that instinct: I built the workflow, and I hit its limits.
 
 The running example is based on a real project, but the details have been changed to protect the client's privacy.
 
@@ -48,7 +47,7 @@ The running example is based on a real project, but the details have been change
 
 ## The fully agentic approach
 
-The first design we considered was a single Support Agent with every tool (account lookup, the security-flag check, and the two actions: send unlock instructions, escalate to security) writing the customer's reply itself.
+The first design we considered was a single Support Agent that held every tool — account lookup, security-flag check, send unlock instructions, escalate to security — and wrote the customer's reply itself.
 
 The diagrams in this post use four shapes:
 
@@ -148,9 +147,7 @@ flowchart TD
     class INPUT,OUT1,OUT2 terminal
 ```
 
-For this one intent, the workflow was the clear fit. The lookup, the flag rule, and the two replies have explicit logic and a small state space.
-Code makes those rules reliable and auditable, and because code selects the reply, the template is guaranteed rather than prompted for.
-The LLM only bridges human language and structured data.
+For this one intent, the workflow was the clear fit: explicit logic, a small state space, and — because code selects the reply — a template that is guaranteed rather than prompted for.
 
 Two consequences of that split are worth spelling out, because they are what you give up by handing the whole task to an agent:
 
@@ -161,14 +158,14 @@ Two consequences of that split are worth spelling out, because they are what you
 
 We built the full [four-step pipeline](/post/first-level-support-automation) and ran it in a setup that made iteration cheap. The system went live in **shadow deployment**, where responses were graded by subject-matter experts but never shown to customers, so a wrong answer had almost no blast radius.
 
-We had a tight process to translate [external feedback loop](https://www.deeplearning.ai/the-batch/issue-359) into code changes:
+We had a tight process to translate that external feedback into code changes:
 
 1. Subject-matter experts graded a batch of shadow responses and left free-text feedback.
 2. I added a comment on what the solution should look like from a technical perspective.
 3. Cursor turned each piece of feedback into a fix, usually a new branch in the tree.
 4. It added the case to an eval set and re-ran the whole suite.
 
-## The problem wasn't bounded
+## The state space wasn't bounded
 
 Each round of feedback landed a new branch, and for a while that worked.
 But a *true* workflow needs a deterministic mapping from customer intent plus [fetched data](/post/first-level-support-automation#step-3-fetch) to a helpful reply.
@@ -214,7 +211,7 @@ flowchart TD
     class INPUT,OUT terminal
 ```
 
-Code was the default; the agent was the dashed exception, reached only when no hardcoded leaf matched, and it only ever got the scraps the code hadn't reached yet.
+Code was the default; the agent was the dashed exception, and it only ever got the scraps the code hadn't reached yet.
 
 It was also set up to lose. I optimised for what the client *said* he wanted, not what he needed: he wanted replies that matched his templates;
 what he needed was a system that resolves his end-customers' issues. The graders scored against the templates, so an agent that wrote a clearer,
@@ -228,14 +225,16 @@ That was the ballpark we had promised the client, and on paper it was a success.
 It did not translate into the cost reduction the client's private-equity owner was underwriting.
 An 80% approval rate is not an 80% cut in support effort: nobody can tell in advance which fifth is wrong, so a human still reads all of them.
 
-Nobody on either side wrote down the conversion between approval rate and saved effort, and at 80% there may not have been one that worked.
-That arithmetic belongs before the first line of code, not after the shadow deployment.
+Volume decided the rest. The B2C queue we were automating ran at roughly a dozen tickets a day, so even a flawless system was competing for a small slice of one person's time, against the cost of building and maintaining it.
+
+Whether an automation like this can pay for itself comes down to two numbers: how many tickets arrive, and how much effort an approved response actually saves.
+Both are knowable before a single model is chosen. That arithmetic belongs before the first line of code, not after the shadow deployment.
 
 ## What I would do differently
 
 ### Start with the agent
 
-A workflow with an agent bolted onto a few paths still wasn't flexible enough to express every customer inquiry and state. Next time I would invert the order and try the approach from Will Larson's [Building internal agents](https://lethain.com/agents-series/) series: start with the agent. A path graduates into a workflow only once it shows up often and the agent handles it unreliably, or when the action is irreversible enough that you don't want a model deciding it:
+Next time I would invert the order and try the approach from Will Larson's [Building internal agents](https://lethain.com/agents-series/) series: start with the agent. A path graduates into a workflow only once it shows up often and the agent handles it unreliably, or when the action is irreversible enough that you don't want a model deciding it:
 
 ```mermaid
 flowchart TD
