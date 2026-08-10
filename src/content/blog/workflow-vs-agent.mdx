@@ -18,10 +18,9 @@ And workflow versus agent is an empirical question, not a matter of instinct: I 
 ## Intro
 Progress in frontier AI models has allowed coding agents to tackle ever more complex and long-running tasks, fast enough that benchmarks keep needing to be replaced: [SWE-bench Verified](https://www.swebench.com/verified.html) is close to saturated.
 
-What makes coding agents so effective is a combination of three things:
+What makes coding agents so effective is a combination of two things:
 1. Software is largely composed of patterns LLMs have seen countless times during training: syntax, idioms, libraries.
 2. The [agentic loop](https://www.deeplearning.ai/the-batch/issue-359) provides a tight feedback loop. Looping on results from tests, linters and compiler errors, the agent can handle a wide range of problems without human intervention.
-3. These iterations are cheap.
 
 In benchmarks like [tbench](https://www.tbench.ai/), that is all the scaffolding an agent gets: a terminal, and permission to loop.
 But this combination is specific to code. Let's consider the following automation task:
@@ -30,17 +29,14 @@ Customers wrote in to our first-level support team at Northstar Bank with messag
 
 > Hi, I'm Alex Carter and I bank with your Riverton branch. My account number is NSB01234 and I can't get in any more; it keeps saying the account is locked. Can you help me get back in?
 
-Point for point, none of the three conditions holds:
+Point for point, neither condition holds:
 
 1. LLMs haven't seen your internal escalation rules or customer records during training.
-2. There is no compiler or test suite to tell the system whether the reply it wrote was any good.
-3. The only verdict available is a human one: someone who knows the bank has to read the reply and judge it. That is minutes of an expert's attention per iteration, not seconds of CPU.
-
-Points 2 and 3 are the ones this post keeps returning to. There is no feedback loop here to begin with; you build one, and every turn of it is expensive.
+2. There is no compiler or test suite to tell the system whether the reply it wrote was any good. The only verdict available is a human one: someone who knows the bank has to read the reply and judge it.
 
 An early decision in projects like this: how much of the work does the model do, and how much does code do? It shapes a lot downstream.
 
-Given the three points above, my instinct has been to lean on workflows and keep the LLM on a short leash.
+Given both points above, my instinct has been to lean on workflows and keep the LLM on a short leash.
 This post is what happened when I followed that instinct: I built the workflow, and I hit its limits.
 
 The running example is based on a real project, but the details have been changed to protect the client's privacy.
@@ -158,7 +154,7 @@ Two consequences of that split are worth spelling out, because they are what you
 
 ## Growing the workflow with a feedback loop
 
-We built the full [four-step pipeline](/post/first-level-support-automation) and ran it in a setup that made iteration cheap. The system went live in **shadow deployment**, where responses were graded by subject-matter experts but never shown to customers, so a wrong answer had almost no blast radius.
+We built the full [four-step pipeline](/post/first-level-support-automation) and ran it in a setup that made iteration safe. The system went live in **shadow deployment**, where responses were graded by subject-matter experts but never shown to customers, so a wrong answer had almost no blast radius.
 
 We had a tight process to translate that external feedback into code changes:
 
@@ -283,8 +279,8 @@ We gated the trustworthy signal behind the untrustworthy one.
 
 ### Invest in the external feedback loop, and don't build it yourself
 
-Look again at the three conditions from the top of this post. The second and third are the ones that never resolve themselves: a coding agent is handed its verdict for free, thousands of times a day.
-A support system has no such verdict unless you build one, and even then it arrives at the speed of a human reading. The external loop *is* the missing compiler, and under an agent-first design it's the only thing
+Look again at the two conditions from the top of this post. The second is the one that never resolves itself: a coding agent is handed its verdict, automatically, every time it runs.
+A support system has no such verdict unless you build one. The external loop *is* the missing compiler, and under an agent-first design it's the only thing
 that tells you which paths are worth freezing into code. Related reading: [harness engineering](https://openai.com/index/harness-engineering/).
 
 Don't build the whole loop yourself. A narrow review screen for the subject-matter experts is worth writing; the machinery behind it isn't.
