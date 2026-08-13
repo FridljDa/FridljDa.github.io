@@ -268,8 +268,6 @@ The caveats are real, though:
 
 ### Let the agent write its own branches
 
-In our loop, steps 2 and 3 were me: I read the subject-matter expert's feedback, said what the fix should look like, and had Cursor land a branch. That is the part that doesn't scale, and it's the part an agent with persistent memory could plausibly take over.
+In our loop, steps 2 and 3 were me translating SME feedback into a branch. That doesn't scale. An agent with persistent memory — something like [Hermes](https://hermes-agent.nousresearch.com/), which keeps what worked as skills — could take that over: the same graduation as freezing a path into code, written by the agent instead of by me. Wire it to the external feedback loop and the grid fills itself.
 
-Something like [Hermes](https://hermes-agent.nousresearch.com/), which auto-generates skills and keeps what worked as memory. That is the same graduation move as freezing a path into code, just written by the agent instead of by me. Wire that self-improvement loop to the external feedback loop and the grid fills itself: subject-matter expert verdicts go in, skills come out, and the ones that keep proving themselves are the candidates for hardening into actual code.
-
-The obvious risk is that the agent's self-improvement loop and the graders' verdicts drift apart — an agent that learns from its own summaries of what worked, rather than from the human judgment, would be exactly the failure mode this post is about.
+The risk is drift: you give a lot of autonomy to an agent.
