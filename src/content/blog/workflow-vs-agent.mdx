@@ -272,8 +272,6 @@ In our loop, steps 2 and 3 were me translating SME feedback into a branch. That 
 
 The risk is drift: you give a lot of autonomy to an agent.
 
-### Take myself out of the loop
-One bottleneck in our loop was me: I had to translate SME feedback into a technical implementation plan.
-Just letting Cursor translate SME feedback into implementation yielded suboptimal results.
-I did experiment with Skill files and targeted guidelines, but this was still suboptimal.
-I could try even harder, more specific skill files/subagents. This is a question of time allocation under constrains.
+### Automate the feedback-to-plan translation
+Step 2 was me: turning SME feedback into an implementation plan. Handing Cursor the raw feedback instead produced worse results, and Skill files and targeted guidelines only narrowed the gap.
+More specific skills, or a subagent dedicated to that translation, might have closed more of it. This is a matter of prioritisation.
