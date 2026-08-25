@@ -178,10 +178,8 @@ That mapping is a grid: every message shape against every state the record behin
 | **Missing payment** | ? | ? | ? |
 | **Change of details** | ? | ? | ? |
 
-Every question mark is a business rule someone has to decide, write down, and keep current. Three intents against three record states leaves seven open cells, and we had many more than three of each.
-The fat head we measured was a head in *messages*; the grid is what those messages had to be resolved against.
-
-The template requirement forced the split: a more specific template needs a more specific leaf. So the tree grew faster than it covered cells.
+Every question mark is a business rule someone has to decide, write down, and keep current. Even this 3×3 toy leaves seven open cells, and we had many more than three of each.
+The fat head we measured was a head in *messages*, not in cells — and since a more specific template needs a more specific leaf, the tree grew faster than it covered them.
 
 ## Bolting an agent onto the tree
 
@@ -273,5 +271,5 @@ In our loop, steps 2 and 3 were me translating SME feedback into a branch. That 
 The risk is drift: you give a lot of autonomy to an agent.
 
 ### Automate the feedback-to-plan translation
-Step 2 was me: turning SME feedback into an implementation plan. Handing Cursor the raw feedback instead produced worse results, and Skill files and targeted guidelines only narrowed the gap.
-More specific skills, or a subagent dedicated to that translation, might have closed more of it. This is a matter of prioritisation.
+Step 2 was me: turning SME feedback into an implementation plan. I did try to hand that off. Cursor on the raw feedback produced worse results, and Skill files and targeted guidelines narrowed the gap without closing it.
+More specific skills, or a subagent dedicated to the translation, might have closed the rest — or might have been time sunk into tooling for nothing. You only find out by spending it, which makes it a prioritisation call.
