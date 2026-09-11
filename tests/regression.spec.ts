@@ -388,7 +388,7 @@ test.describe('Regression Tests', () => {
     const projectName = test.info().project.name;
     test.skip(projectName === 'iPhone 13' || projectName === 'iPad Pro' || projectName === 'Pixel 5', 'Server-side functionality, only needs desktop testing');
 
-    const response = await request.get('/dev/trigger-500');
+    const response = await request.get('/500');
     expect(response.status()).toBe(500);
     const body = await response.text();
     expect(body).toContain('Back to home');
@@ -586,4 +586,3 @@ test.describe('Regression Tests', () => {
     }
   });
 });
-
