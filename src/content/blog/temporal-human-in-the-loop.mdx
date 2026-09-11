@@ -11,11 +11,11 @@ image: /images/blog/temporal-human-in-the-loop/featured.png
 math: false
 ---
 
-Human input gives a workflow an unpredictable pause: someone might respond in minutes or days. Polling in a loop burns resources, while fire-and-forget callbacks do not survive restarts. In a recent project I used [Temporal](https://temporal.io/) to keep these workflows running reliably. This post explains the patterns that worked, without project-specific details.
+Human input gives a workflow an unpredictable pause: someone might respond in minutes or days, and the process may restart in between. In a recent project I used [Temporal](https://temporal.io/) to make that wait durable without keeping a worker busy.
 
-## Why Temporal Fits Human-in-the-Loop
+## Why Temporal fits human-in-the-loop
 
-Human-in-the-loop (HITL) here means: the workflow does some work, then **waits** for a human decision (e.g. approve/reject), and only then continues. The hard part is the wait: it can be seconds or weeks, and the process might be restarted in between.
+Human-in-the-loop (HITL) here means that a workflow does some work, **waits** for a human decision (e.g. approve/reject), and then continues. Polling burns resources, while fire-and-forget callbacks do not survive restarts.
 
 Temporal gives you:
 
@@ -26,7 +26,7 @@ Temporal gives you:
 
 These features let you model "do work → wait for human → continue" as one workflow that survives restarts without guessing how long the human will take.
 
-## Patterns That Worked
+## Patterns that worked
 
 ### 1. Signal + wait condition for approval
 
@@ -80,10 +80,8 @@ while True:
 
 Humans (or UIs) may send the same signal more than once. Making the signal handler idempotent—e.g. "if we already have a decision, return"—avoids race conditions and duplicate side effects when the workflow is replayed or the client retries.
 
-## Engineering Takeaways
+## What the model buys you
 
-- **Reliability under failure** — Workflows can wait for long, unpredictable human response times without holding resources, and they recover deterministically after restarts.
-- **Clear boundaries** — Workflow code only orchestrates and waits; non-deterministic or external actions live in activities. That keeps replay correct and keeps I/O and business rules in one place.
-- **Operability** — Explicit states (e.g. `AWAITING_APPROVAL`) and timeouts make it easier to reason about stuck workflows, set SLAs, and build dashboards.
+Workflow code orchestrates and waits; non-deterministic or external actions live in activities. Explicit states such as `AWAITING_APPROVAL` and bounded waits make stuck workflows visible, while deterministic replay handles restarts without duplicating side effects.
 
-Temporal's durable waits and signals fit systems where humans or slow external services respond on an unknown schedule. I found this model easier to reason about than ad-hoc queues and callbacks, while replay made debugging and later changes safer.
+I found this easier to reason about than ad-hoc queues and callbacks. The same model also covers slow external services when completion time is unknown.

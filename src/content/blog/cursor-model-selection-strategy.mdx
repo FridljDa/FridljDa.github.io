@@ -20,9 +20,6 @@ Planning (understanding the task and designing steps) benefits from strong reaso
 
 Execution (implementing the plan and writing code) can be done well by cheaper models when the plan is clear. This phase uses many more tokens, so keeping cost per token low matters.
 
-1. Use a **premium model for planning**: start the task, get a clear plan, maybe one or two critical edits.
-2. **Switch to a cheaper model for execution**: implement the rest, iterate, run tests.
-
 You avoid both the “everything on the best model” bill and the “everything on the cheapest” quality hit.
 
 ## Why it works
@@ -37,7 +34,7 @@ The chart below plots cost (weighted $/1M tokens: 70% input, 30% output) against
 
 Lower left means cheaper and weaker; upper right means pricier and stronger. Pick a planning model from the upper right and an execution model from the lower half.
 
-### A caveat on token usage
+### Token usage complicates the comparison
 
 The charts above and the recommendations below use price per 1M tokens, but total cost also depends on how many tokens each model uses for the same request. Some models are more verbose or expand the context more aggressively; others stay more compact.
 
@@ -53,9 +50,9 @@ Total tokens per request can differ by orders of magnitude between models for si
 
 <ModelRecommendations client:load />
 
-### How recommendations are selected
+### How the recommendations are selected
 
-Recommendations follow a mathematical approach for optimal cost-performance trade-offs. The chart shows Pareto frontiers as dashed lines (purple for planning, green for execution).
+The chart shows Pareto frontiers as dashed lines (purple for planning, green for execution).
 
 **Mathematical formulation:**
 
@@ -94,7 +91,7 @@ $$
 
 Models are ranked by Elo per dollar. Select 4 models by efficiency per category (or fewer if frontier is smaller).
 
-This approach keeps strictly dominated models out of the recommendations. The formula runs daily via [GitHub Actions](.github/workflows/update-model-data.yaml).
+This keeps strictly dominated models out of the recommendations. The formula runs daily via [GitHub Actions](.github/workflows/update-model-data.yaml).
 
 ## Example workflow
 
@@ -102,9 +99,3 @@ This approach keeps strictly dominated models out of the recommendations. The fo
 2. **Lock in the plan.** Review, maybe one short follow-up, then switch model.
 3. **Switch to the execution model.** Refer to the plan and implement step by step; do most coding here.
 4. **Use the planning model only when needed.** For design decisions or subtle bugs, switch back briefly, then return to the cheaper model.
-
-## Takeaways
-
-- Use **one stronger model for planning** and **one cheaper model for execution** instead of one model for everything.
-- The chart is updated daily—use it to check cost vs performance without tab-hopping.
-- Pick planning from the upper-right of the chart, execution from the lower half, and switch as you move from planning to coding.

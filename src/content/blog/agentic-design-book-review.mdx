@@ -8,13 +8,14 @@ description: "Practical, critical review of 'Agentic Design Patterns' — evalua
 image: /images/blog/agentic-design-book-review/featured.png
 ---
 
-# Introduction
-Agentic Design Patterns: A Hands-On Guide to Building Intelligent Systems
+# Overall verdict
+
+*Agentic Design Patterns: A Hands-On Guide to Building Intelligent Systems*
 https://github.com/DanieleSalatti/AgenticDesignPatterns/blob/main/Agentic_Design_Patterns.pdf
 
-https://link.springer.com/book/10.1007/978-3-032-01402-3. cost of 50 Euros.
+Springer edition: https://link.springer.com/book/10.1007/978-3-032-01402-3. It costs 50 euros.
 
-# Part One
+Some of its high-level concepts still hold up, but the text descriptions are more useful than the code examples. I prefer Pydantic AI to the frameworks used in the book (LangChain, Google ADK, and Agent Crew), and found some examples distracting. The sections promoting Google products, particularly Agent2Agent and Gemini ADK, can be skipped; the author's bias is fairly clear given that they work at Google.
 
 ## Chapter 1: Prompt Chaining 
 Useful concept, although LangChain Expression Language feels like overkill here.
@@ -23,14 +24,13 @@ Useful concept, although LangChain Expression Language feels like overkill here.
 
 Very useful concept: divide and conquer.
 
-## Chapter: Parallelization
+## Chapter 3: Parallelization
 
 Useful for reducing latency, though the value depends on how important latency is in the specific use case.
 
 ## Chapter 4: Reflection
 
-Useful concept to consider for advanced agentic systems.
-The chapter should have mentioned that reasoning models have absorbed the classic self-critique loop in many settings.
+Useful for advanced agentic systems, though reasoning models have absorbed the classic self-critique loop in many settings.
 
 ## Chapter 5: Tool Use
 
@@ -38,33 +38,31 @@ At the time of writing, agent skills were still in their infancy, which makes th
 
 ## Chapter 6: Planning
 
-Useful concept to consider for advanced agentic systems. If we know the steps needed to solve a problem in advance, planning should be avoided. Routing can help here.
-Cursor's "Plan Mode" is an excellent example of a use case where planning can be useful.
+Useful for advanced agentic systems. If the steps are known in advance, routing is often enough; Cursor's "Plan Mode" is a good example of when planning earns its place.
 
 ## Chapter 7: Multi-Agent 
 
-This is a very active area of research. A lot has been tried since the book was published. The chapter reads very thin and misses much of what the community has learned about multi-agent systems since then.
-Cursor's experiments with self-driving codebases are particularly noteworthy: https://cursor.com/blog/self-driving-codebases
+This chapter is thin relative to how much the field has moved since publication. Cursor's experiments with self-driving codebases are particularly noteworthy: https://cursor.com/blog/self-driving-codebases
 
-Also useful https://ai.pydantic.dev/multi-agent-applications/.
-Keywords for further research: agent swarms
-
-# Part Two
+See also https://ai.pydantic.dev/multi-agent-applications/.
+Another useful search term is "agent swarms."
 
 ## Chapter 8: Memory Management
-Very relevant topic. Here the style of the different agentic frameworks actually varies a bit.
-Some concepts would be implemented in Pydantic AI via https://ai.pydantic.dev/dependencies/, which is more general than memory management but can be used for it as well.
+
+This is one area where agent frameworks differ meaningfully. In Pydantic AI, some of the same ideas would be implemented via https://ai.pydantic.dev/dependencies/, which is more general than memory management but can also handle it.
 
 ## Chapter 9: Learning and Adaptation
 
 This seems overhyped and not especially useful in practice for production use.
 
 ## Chapter 10: Model Context Protocol (MCP)
-The section discussing the difference between tool use and MCP is not very clear. On a conceptual level, MCP is just a more structured way to implement tool use. The main difference is that MCP defines a specific protocol for how the agent should interact with the tools, while tool use can be implemented in a more ad-hoc way.
+
+The distinction between tool use and MCP is not explained clearly. Conceptually, MCP is a structured way to implement tool use: it defines a protocol for how an agent interacts with tools, while tool use can also be implemented ad hoc.
 
 In practice, the conceptual difference between the two is not very important, especially if you use agentic coding.
 
-Interesting developments in this area since this book was published:
+Developments since publication:
+
 - https://pydantic.dev/articles/pydantic-monty
 - https://blog.cloudflare.com/code-mode/
 - https://www.anthropic.com/engineering/code-execution-with-mcp
@@ -72,34 +70,16 @@ Interesting developments in this area since this book was published:
 ## Chapter 11: Goal Setting and Monitoring 
 Think of the TODO list in Cursor's "Plan Mode" as a practical example of goal setting and monitoring.
 
-Interesting developments in this area since this book was published:
-- https://github.com/karpathy/autoresearch takes this to another level by using a self-driving codebase to automatically conduct research in the field of deep learning. The agent is able to set its own goals, monitor its progress, and adapt its strategy as needed to achieve its objectives.
+Since publication, [Karpathy's autoresearch](https://github.com/karpathy/autoresearch) has taken this further with a self-driving codebase that conducts deep-learning research. The agent sets goals, monitors progress, and adapts its strategy.
 
-# Part Three
-## Chapter 12: Exception Handling and Recovery 
+## Chapters 12–14
 
-## Chapter 13: Human-in-the-Loop 
-
-## Chapter 14: Knowledge Retrieval (RAG) 
-
-# Part Four
+Chapter 12 covers Exception Handling and Recovery; Chapter 13 covers Human-in-the-Loop; and Chapter 14 covers Knowledge Retrieval (RAG).
 
 ## Chapter 15: Inter-Agent Communication (A2A)
-Advertising for Google's Agent2Agent protocol, which has not seen much adoption. MCP protocol can be used for inter-agent communication as well, and it is more widely adopted. Skip this chapter.
 
-## Chapter 16: Resource-Aware Optimization 
+This reads as advertising for Google's Agent2Agent protocol, which has not seen much adoption. MCP can also support inter-agent communication and is more widely adopted. Skip this chapter.
 
-## Chapter 17: Reasoning Techniques 
+## Chapters 16–21
 
-## Chapter 18: Guardrails/Safety Patterns 
-
-## Chapter 19: Evaluation and Monitoring 
-
-## Chapter 20: Prioritization 
-
-## Chapter 21: Exploration and Discovery
-
-# Conclusion
-- Some high-level concepts are still relevant.
-- Sections promoting Google products like the Agent2Agent protocol and Gemini ADK can safely be skipped. The author's bias is fairly clear here, given that they work at Google.
-- The text descriptions are enough to understand the concepts. I personally like the Pydantic AI agent framework more than the ones used in the book (LangChain, Google ADK, Agent Crew). Overall, the code examples are not very useful and, in some cases, even distracting.
+Chapter 16 covers Resource-Aware Optimization; Chapter 17, Reasoning Techniques; Chapter 18, Guardrails/Safety Patterns; Chapter 19, Evaluation and Monitoring; Chapter 20, Prioritization; and Chapter 21, Exploration and Discovery.

@@ -10,11 +10,11 @@ image: /images/blog/unite-tum-ai-data-mining-hackathon-core-demand/featured.png
 math: true
 ---
 
-I took part in the [Unite x TUM.ai Data Mining Hackathon](https://www.unite.ai/) (March 6–8, 2026, Munich). Our team chose **Challenge 2: Core Demand Prediction & Value Optimization**—predict which recurring procurement needs to put into a “Core Demand” portfolio so that **net economic benefit** (savings minus fixed fees) is maximized. This post summarizes the problem, our pipeline and modeling choices, and what we learned.
+I took part in the [Unite x TUM.ai Data Mining Hackathon](https://www.unite.ai/) (March 6–8, 2026, Munich). Our team chose **Challenge 2: Core Demand Prediction & Value Optimization**: predict which recurring procurement needs to put into a “Core Demand” portfolio to maximize **net economic benefit** (savings minus fixed fees).
 
-## Why this challenge was interesting
+## Prediction with a price tag
 
-This was an **economic portfolio problem**, not simply a prediction task. Every recommended item incurred a fixed monthly fee (€10 in the scoring setup), while savings applied only when that item recurred. Too many predictions let fees dominate; too few left savings on the table. We also had to handle **cold start** (buyers with no history), **warm start** (history available), duplicate SKUs, missing attributes, and inconsistent descriptions.
+Every recommended item incurred a fixed monthly fee (€10 in the scoring setup), while savings applied only when that item recurred. Too many predictions let fees dominate; too few left savings on the table. The task was therefore an economic portfolio problem, with cold-start buyers, duplicate SKUs, missing attributes, and inconsistent descriptions complicating the predictions.
 
 ## Challenge setup and scoring
 
@@ -62,12 +62,6 @@ On the final leaderboard:
 
 Our Level 2 result was stronger relative to the field. At Level 1, we were clearly under-submitting, so our follow-up notes focused on negative-threshold sweeps and hybrid backfill.
 
-## Takeaways
+## Takeaway
 
-- **Economic objective first.** Align the model and selection policy with Net Score (savings − fees), not just accuracy or recall.
-- **Cold start needs its own policy.** Naive cold handling wastes fee budget; industry/context priors and a separate cap are essential.
-- **Tune the selection policy.** Threshold and per-buyer cap often matter more than fancier models when the bottleneck is submission breadth.
-- **Scoring as a black box.** The organizers could change the savings formula or fee; we avoided hardcoding a single rate and tuned against the actual leaderboard.
-- **Keep tuning reproducible.** Run archiving, parameter sweeps, and clear metrics (score, fees, hits, spend capture, warm/cold shape) make it possible to diagnose under-submission and compare approaches.
-
-Demand and recommendation systems in which every prediction has a cost need the same pieces we used here: candidate generation, separate warm and cold paths, a two-stage or factorized value model, and a selection policy tuned to the economic objective.
+Our main lesson was that selection policy mattered as much as model quality. Reproducible threshold and top-K sweeps exposed under-submission, while separate warm- and cold-start paths kept the fee budget under control. The same principle applies to other recommendation systems where every prediction has a cost: optimize the portfolio against that cost, not accuracy or recall in isolation.

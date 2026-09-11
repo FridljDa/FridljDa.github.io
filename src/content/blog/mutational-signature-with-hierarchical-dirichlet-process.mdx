@@ -19,7 +19,7 @@ Cancer cells have elevated rates of somatic mutation. The resulting mutation pat
 
 One type of somatic mutation is the single nucleotide variant (SNV), also referred to as a single base substitution. This involves the replacement of one base pair in the genome with another. There are six possible base pair mutations: C:G\>A:T, C:G\>G:C, C:G\>T:A, T:A\>A:T, T:A\>C:G, and T:A\>G:C. When considering the context of the immediate 5' and 3' neighboring bases, the total number of mutations increases to 96, calculated as $6 \times 4 \times 4 = 96$. These are known as trinucleotide mutation channels. Examples of such mutations include ACA:TGT\>AAA:TTT and ACT:TGA\>AGT:TCA. For simplicity, we will abbreviate these mutations as ACA\>AAA and ACT\>AGT respectively.
 
-## Mutational Signature
+## Mutational signatures
 
 A mutational signature $\theta$ with respect to trinucleotide mutation channels is a discrete probability distribution over the 96 mutational channels i.e. $\theta\in \Delta^{96}$ where
 
@@ -41,7 +41,7 @@ The framework for studying somatic mutations through mutational signatures was i
 
 To estimate mutational signatures and their activities, [Alexandrov et al.](https://pubmed.ncbi.nlm.nih.gov/23318258/) employed Non-Negative Matrix Factorization (NMF). NMF and its variations remain the most widely used methods for estimating mutational signatures and mutational signature activities.
 
-## Dirichlet Process (DP)
+## Dirichlet Process
 
 The Dirichlet Process (DP), denoted $\mathrm{DP}(\alpha, H)$, is a distribution over probability measures. Sampling $G \sim \mathrm{DP}(\alpha, H)$ gives a probability measure $G$. Its two parameters are the concentration $\alpha>0$ and the base measure $H$; the support of $G$ is a subset of the support of $H$.
 
@@ -53,7 +53,7 @@ $$G = \sum_{k=1}^{\infty} e_k \delta_{\tilde{\theta}_k}$$
 
 where $\delta_{\tilde{\theta}_k}$ is a Dirac delta function centered at $\tilde{\theta}_k$. The resulting measure $G$ is discrete, with countable support given by $\{\tilde{\theta}_1, \tilde{\theta}_2, \ldots\}$.
 
-### Mathematical properties of Dirichlet Process
+### Mathematical properties
 
 The base measure $H$ is the mean of the random measure $G$. Specifically, for any measurable set $A$, the expectation of $G(A)$ under the Dirichlet process is given by \[@millerDirichletProcessModels\]:
 
@@ -67,7 +67,7 @@ As $\alpha \rightarrow \infty$, the distribution of $G$ converges to $H$ in the 
 
 $G$ is centered around the prior distribution $H$, with the concentration parameter $\alpha$ controlling how tightly $G$ clusters around $H$. A higher $\alpha$ reduces variability, causing $G$ to approximate $H$ more closely.
 
-### References
+### Dirichlet Process resources
 
 <details>
 
@@ -87,7 +87,7 @@ Recommended material for Dirichlet Process
 
 <summary>
 
-NoteBook Impelementation of the Dirichlet Process
+Notebook implementations of the Dirichlet Process
 </summary>
 
 - https://datamicroscopes.github.io/ncluster.html
@@ -96,7 +96,7 @@ NoteBook Impelementation of the Dirichlet Process
 
 </details>
 
-## Modelling mutational signature with DP
+## Modelling mutational signatures with a Dirichlet Process
 
 Previous studies have used Dirichlet processes to model trinucleotide mutations associated with mutational signatures [(cite)](https://doi.org/10.17863/CAM.22674) and [(cite)](https://www.nature.com/articles/s41586-019-1913-9). Appendix B (p. 234) and Chapter 4 (p. 132) in [(cite)](https://doi.org/10.17863/CAM.22674) provide an overview but omit parts of the derivation. This section works through the model, beginning with a finite mixture. Consider the trinucleotide mutations within a single sample, encoded as $x \in \{1, \ldots, 96\}$ for the 96 possible mutation types.
 
@@ -138,7 +138,7 @@ $$
 \end{aligned}
 $$
 
-This completes our model, which describes how the mutational signatures $\left\{\tilde{\theta}_1, \ldots, \tilde{\theta}_K\right\}$ generate the observed trinucleotide mutations $\left\{x_1, \ldots, x_M\right\}$
+This model describes how the mutational signatures $\left\{\tilde{\theta}_1, \ldots, \tilde{\theta}_K\right\}$ generate the observed trinucleotide mutations $\left\{x_1, \ldots, x_M\right\}$.
 
 ##### Graphical model for known number of components $K$
 
@@ -154,7 +154,7 @@ Here the grey background color indicates that $x_i$ is an observed random variab
 
 #### Step 2: Equivalent model as mixture
 
-In the next step, we aim to integrate out the indicator variable $z_i=k$ in our model, seeking a different representation of the same model. As before, we draw the mutational signature activities as follows:
+Next, we integrate out the indicator variable $z_i=k$ to obtain an equivalent mixture representation. As before, we draw the mutational signature activities as follows:
 
 $$
 \begin{aligned}
@@ -241,9 +241,9 @@ $$
 $$
 
 
-#### Step 4: Short hand notation
+#### Step 4: Shorthand notation
 
-We summarize the first three lines in the last equation by saying that $G$ was generated by the Dirichlet Process $\mathrm{DP}$ with parameters $\alpha$ and $H$. The equations simplify to
+The Dirichlet Process notation summarizes the construction of $G$ from $\alpha$ and $H$:
 
 
 $$
@@ -257,7 +257,7 @@ $$
 
 This completes the derivation of a Dirichlet Process model for trinucleotide mutations, as used in [(cite)](https://www.nature.com/articles/s41586-019-1913-9). It provides an alternative to the classical Non-negative Matrix Factorisation approach used in [(cite)](https://www.nature.com/articles/nature12477) for estimating mutational signatures and their activities.
 
-##### Graphical Model of Dirichlet Process
+##### Graphical model of a Dirichlet Process
 
 We can visualise the Dirichlet process as a graphical model:
 
@@ -267,9 +267,9 @@ We can visualise the Dirichlet process as a graphical model:
 <figcaption aria-hidden="true">ThegraphicalmodelofaDirichletProcess.</figcaption>
 </figure>
 
-## Hierarchical Dirichlet Process (HDP)
+## Hierarchical Dirichlet Process
 
-By taking composition of multiple Dirichlet Processes, we obtain a Hierarchical Dirichlet Process (HDP) [(cite)](https://www.tandfonline.com/doi/abs/10.1198/016214506000000302). Recall that Dirichlet processes excel at modelling mixtures with an unknown number of components. HDPs are tailored for the situation when we have groups of mixture components and/or hierarchies between mixture components. For our model of trinucleotide mutations, we can use HDP to account for multiple samples. We expect from biology that there are general trends of mutational signature activity. However, we expect those trends to be more similar within a sample than between samples. In a mixture modelling approach, this would be captured by separate mixture models for each sample and information sharing between the weights of each sample. In the Dirichlet Process approach, this can be reflected by the HDP model. As before, we start with the prior distribution $H$. We draw a common base distribution $G_0$ from a Dirichlet Process as
+A Hierarchical Dirichlet Process (HDP) composes multiple Dirichlet Processes [(cite)](https://www.tandfonline.com/doi/abs/10.1198/016214506000000302). For trinucleotide mutations, it gives each sample a separate mixture while sharing signatures across samples. We start with the prior distribution $H$ and draw a common base distribution $G_0$:
 
 $$
 \begin{aligned}
@@ -304,7 +304,7 @@ The corresponding graphical model is:
 
 </figure>
 
-### Estimation of mutational signature and mutational signature activity
+### Estimating signatures and their activities
 
 Assume the mutational signatures $\left(\theta_k\right)_{k\in \mathbb{N}}\subset \Delta^{96}$ act on the genome. Borrowing notation from the finite model, let $z_{ji}\in \mathbb{N}$ denote the signature that generated mutation $x_{ji}\in \{1,\ldots,96\}$. Fitting an HDP gives an estimate $\hat{z}_{ji}$ of $z_{ji}$. The estimate $\hat{\theta}_k$ for the probability vector $\theta_k \in \Delta^{96}$ of signature $k$ is
 
@@ -316,9 +316,9 @@ where $\delta_l\in \Delta^{96}$ has mass $1$ at position $l$. Further, we estima
 $$\hat{e}_{kj}=1/M_j\sum_{i=1}^{M_j} \mathbb{I}(\hat{z}_{ji}=k).$$
 
 
-### Advantages of HDP approach compared to the classical NMF approach for mutational signature estimation
+### Comparison with NMF
 
-The Hierarchical Dirichlet Process (HDP) approach offers several advantages over the classical Non-negative Matrix Factorization (NMF) method. It can incorporate prior knowledge and group structures, such as the expectation that certain features should behave in coordinated ways [(cite)](https://doi.org/10.17863/CAM.22674). In mutational signature analysis, HDP can perform two tasks at once: (1) de novo discovery of mutational signatures and (2) estimation of signature activity. It can match the observed mutational catalog to an existing signature library while also identifying new signatures by pseudo-counting the existing library as observational data. HDP also learns the number of signatures directly from the data, avoiding a common model-selection problem in NMF. While some NMF variants can quantify uncertainty, HDP provides this capability more easily.
+Compared with classical Non-negative Matrix Factorization (NMF), the HDP can incorporate prior knowledge and group structure [(cite)](https://doi.org/10.17863/CAM.22674). It estimates signature activity while discovering signatures de novo, and can match observations to an existing signature library while identifying new signatures by pseudo-counting that library as observational data. It also learns the number of signatures from the data. Some NMF variants can quantify uncertainty, but the HDP provides this more directly.
 
 ### References
 
@@ -326,7 +326,7 @@ The Hierarchical Dirichlet Process (HDP) approach offers several advantages over
 
 <summary>
 
-Python Implementations 1
+Python implementations 1
 </summary>
 
 - https://radimrehurek.com/gensim/models/hdpmodel.html
@@ -344,7 +344,7 @@ Python Implementations 1
 
 <summary>
 
-Python Implementations 2
+Python implementations 2
 </summary>
 
 - https://radimrehurek.com/gensim/models/hdpmodel.html
@@ -363,7 +363,7 @@ Python Implementations 2
 
 <summary>
 
-Recommended Material for HDP
+Recommended material for HDP
 </summary>
 
 - https://en.wikipedia.org/wiki/Hierarchical_Dirichlet_process

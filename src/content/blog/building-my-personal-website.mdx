@@ -11,26 +11,20 @@ image: /images/blog/building-my-personal-website/featured.png
 
 This website is built with [Astro](https://astro.build/) using server-side rendering (SSR), styled with Tailwind CSS, and includes an AI chat interface powered by Google's Gemini API. The source code is available on [GitHub](https://github.com/FridljDa/FridljDa.github.io).
 
-This post covers three parts of the implementation:
-
-1. **AI Chat Interface** - A streaming chat interface that provides context-aware responses about my background and blog posts
-2. **Context Generation & "View as Markdown"** - A unified system that generates markdown representations of pages for both AI context and user viewing
-3. **Resume PDF Sync** - The resume PDF is synced from a dedicated CV_management repo that owns rendering; this site only hosts the artifact
-
 ![Technical Highlights: Building a Personal Website](/images/blog/building-my-personal-website/infographic.png)
 
-## 1. AI Chat Interface Implementation
+## 1. AI chat interface
 
 The chat interface allows visitors to ask questions about my experience, skills, publications, and blog posts.
 
-### Architecture Overview
+### Architecture
 
 The chat system consists of two main parts:
 
 - **Client-side React component** (`src/components/Chat.tsx`) - Handles UI, user input, and streaming response display
 - **Server-side API route** (`src/pages/api/chat.ts`) - Processes requests, generates context, and streams responses from Gemini
 
-### Streaming Responses
+### Streaming responses
 
 Streaming makes the interface more responsive. The client uses the `ReadableStream` API to process chunks as they arrive from the server:
 
@@ -87,7 +81,7 @@ Streaming makes the interface more responsive. The client uses the `ReadableStre
 
 The client creates a `ReadableStream` reader, decodes each chunk using `TextDecoder`, and updates the UI as text arrives. Responses appear word by word instead of waiting for the full answer.
 
-### Server-Side Streaming with Gemini
+### Server-side streaming with Gemini
 
 On the server, the API route constructs the context from the website content and streams the response from Gemini:
 
@@ -125,9 +119,9 @@ On the server, the API route constructs the context from the website content and
 
 The server uses Gemini's `sendMessageStream()` method, which returns an async iterable. Each chunk is encoded and enqueued to the `ReadableStream`, which the client consumes in real time.
 
-### Context Injection
+### Context injection
 
-The chat system is context-aware, meaning it has access to all the content on the website. The context is generated from two sources:
+The chat has access to the site's content from two sources:
 
 1. **Home page content** - Biography, experience, publications, and blog post summaries
 2. **Full blog post content** - Complete markdown from all blog posts
@@ -162,7 +156,7 @@ The chat system is context-aware, meaning it has access to all the content on th
 
 The system instruction gives the AI access to the site content and defines boundaries intended to prevent hallucination.
 
-### Mobile-Responsive Design
+### Mobile-responsive design
 
 The chat component automatically minimizes on mobile devices (screens smaller than 768px) and can be toggled between minimized and expanded states:
 
@@ -178,14 +172,14 @@ The chat component automatically minimizes on mobile devices (screens smaller th
 
 When minimized, it appears as a floating button in the bottom-right corner, expanding to a full chat interface when clicked.
 
-## 2. Context Generation & "View as Markdown" Feature
+## 2. Context generation and "View as Markdown"
 
 The same system generates markdown representations of pages for two purposes:
 
 1. **AI Context** - Provides structured markdown content to the chat system
 2. **User Viewing** - Allows users to view any page as markdown via "View as Markdown" buttons
 
-### Markdown Generation Utilities
+### Markdown generation utilities
 
 The core markdown generation logic lives in `src/utils/markdown-generator.ts`. This file contains functions to convert different data structures into markdown:
 
@@ -259,7 +253,7 @@ export async function getBlogPostRawMarkdown(post: CollectionEntry<'blog'>): Pro
 
 This function reads the original MDX file from the filesystem, extracts the content after the frontmatter, and reconstructs a complete markdown document with the frontmatter included.
 
-### API Routes for Markdown
+### API routes for markdown
 
 Two API routes serve markdown to users:
 
@@ -314,7 +308,7 @@ export const GET: APIRoute = async ({ params }) => {
 };
 ```
 
-### ViewAsMarkdown Component
+### ViewAsMarkdown component
 
 The "View as Markdown" buttons are implemented as a simple React component that links to these API routes:
 
@@ -335,25 +329,10 @@ export default function ViewAsMarkdown({ href, label = 'View as Markdown' }: Vie
 
 This component is used in the Biography section and on blog post pages, where it links to the markdown version of the page.
 
-### Benefits of This Approach
+The same functions therefore generate the AI context and the user-facing markdown. That keeps the format consistent, puts changes in one place, and lets users inspect the content available to the AI.
 
-This unified approach has several benefits:
-
-1. **DRY Principle** - The same functions generate markdown for both AI context and user viewing
-2. **Consistency** - The markdown format is consistent across all uses
-3. **Maintainability** - Changes to markdown generation only need to be made in one place
-4. **Transparency** - Users can see exactly what content the AI has access to
-
-## 3. Resume PDF Sync
+## 3. Resume PDF sync
 
 This website does not own CV source or rendering. The resume PDF is built into `public/uploads/resume.pdf` and served at `/uploads/resume.pdf`, and is an artifact only. A separate [CV_management](https://github.com/FridljDa/CV_management) repository holds the CV source (YAML), uses RenderCV to generate the PDF, and syncs the result here via a GitHub Actions workflow that opens a PR with the updated `public/uploads/resume.pdf`. This keeps rendering and tooling in one place and leaves the website repo with just the file to serve.
-
-## Conclusion
-
-The three parts divide responsibilities clearly:
-
-- **The chat interface** uses real-time streaming, AI integration, and context-aware systems
-- **The markdown generation system** illustrates the DRY principle and unified data transformation
-- **The resume PDF sync** keeps the website repo simple while a dedicated CV repo owns source and rendering
 
 The codebase is open source on [GitHub](https://github.com/FridljDa/FridljDa.github.io).

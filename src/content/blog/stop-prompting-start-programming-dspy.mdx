@@ -8,13 +8,14 @@ image: /images/blog/stop-prompting-start-programming-dspy/infographic.png
 math: false
 ---
 
-After reading about [DSPy](https://dspy.ai/) in [Pedram Navid's excellent blog post](https://pedramnavid.com/blog/dspy-part-one/), I wanted a smaller example that showed the framework in use. The example below classifies the sentiment of a movie review and explains the result.
+After reading about [DSPy](https://dspy.ai/) in [Pedram Navid's excellent blog post](https://pedramnavid.com/blog/dspy-part-one/), I wanted a smaller example that showed what the framework changes in practice.
 
-The Goal: Take a movie review, determine if it is `Positive` or `Negative`, and extract a short reason why.
+The example takes a movie review, classifies it as `Positive` or `Negative`, and gives a short reason.
 
-## The "Without DSPy" Approach (The Old Way)
+## Without DSPy: prompt and parser stay coupled
 
-In this approach, your application logic is tightly coupled with a specific, brittle prompt string. You have to manually manage the API, handle formatting instructions, and parse the raw text output.
+The manual version couples application logic to a prompt string. It also handles the API call, formatting instructions, cleanup, and JSON parsing itself.
+
 ```python
 # --- THE OLD WAY ---
 import openai
@@ -60,16 +61,11 @@ s, r = analyze_review_manual("The visuals were stunning, but the story put me to
 print(f"Sentiment: {s}\nReason: {r}")
 ```
 
-**Pain Points:**
+The prompt has to insist on "Return ONLY JSON" and constrain the sentiment values. The application then strips possible Markdown, calls `json.loads`, and handles missing keys. Improving accuracy means manually rewriting the English instructions in `PROMPT_TEMPLATE`.
 
-* **Brittle Prompts:** You have to write "Return ONLY JSON" and "The sentiment must be..."
-* **Parsing Logic:** You need extra code (`json.loads`, string replacement) to handle the output.
-* **Hard to Tune:** If you want to improve accuracy, you have to rewrite the English sentences in the `prompt` variable.
+## With DSPy: declare the contract
 
-
-## The "With DSPy" Approach
-
-In DSPy, you define the *structure* (Input/Output) and let the framework handle the prompt creation and parsing.
+With DSPy, you define the input and output structure and let the framework handle prompt creation and parsing.
 
 ```python
 import dspy
@@ -98,13 +94,11 @@ print(f"Reason: {result.reason}")
 
 ```
 
-### What the Compiled Prompt Looks Like
+### What the generated prompt looks like
 
-If you look at the DSPy example, you'll notice what's missing: **The prompt.**
+The DSPy example has no handwritten prompt. DSPy generates one from the `MovieSentiment` signature.
 
-DSPy automatically generated the prompt in the background based on the MovieSentiment class structure. 
-
-For our `MovieSentiment` example with `ChainOfThought`, DSPy generates a prompt that looks something like this:
+For `MovieSentiment` with `ChainOfThought`, a simplified version looks like this:
 
 ```
 Classify the sentiment of a movie review and explain why.
@@ -117,45 +111,35 @@ Sentiment: Positive or Negative
 Reason: A short explanation
 ```
 
-**How DSPy constructs this:**
+DSPy constructs it from five parts:
 
-1. **Task description**: Taken from the signature's docstring (`"""Classify the sentiment of a movie review and explain why."""`)
+1. The task description comes from the signature's docstring (`"""Classify the sentiment of a movie review and explain why."""`).
+2. Each `InputField` becomes a labeled section; here, `review_text` supplies the label.
+3. `ChainOfThought` adds "Let's think step by step." to encourage reasoning.
+4. Each `OutputField` uses its `desc` value, here `"Positive or Negative"` and `"A short explanation"`, to guide the model.
+5. DSPy adapts the structure to the selected model's chat template.
 
-2. **Input fields**: Each `InputField` becomes a labeled section in the prompt. The field name (`review_text`) is used as the label.
+The actual API prompt is more structured and includes system messages. The useful distinction is that these instructions are derived from the signature rather than maintained in a separate `prompt` string.
 
-3. **ChainOfThought injection**: The `ChainOfThought` module automatically adds "Let's think step by step." to encourage reasoning.
+## What DSPy changes
 
-4. **Output fields**: Each `OutputField` becomes a labeled section with its description. The `desc` parameter (`"Positive or Negative"` and `"A short explanation"`) guides the model on what to produce.
+### 1. Modules replace prompt rewrites
 
-5. **Model-specific formatting**: DSPy adapts this structure to match the chat template of your chosen LM (GPT-4, Claude, Llama, etc.) automatically.
-
-The actual prompt sent to the API is more structured and includes system messages, but this shows the core content. The key insight is that DSPy derives all of this from your declarative signature—you never write these instructions manually.
-
-### Why this is a game changer
-
-### 1. Modularity
-
-Want to change your strategy from a simple prediction to a complex "Reason-Act" loop that can search Wikipedia first? In the old way, you rewrite your entire prompt. In DSPy, you just change one line:
+Changing the strategy from a simple prediction to a "Reason-Act" loop that can search Wikipedia requires changing the module rather than rewriting the entire prompt:
 
 ```python
 analyzer = dspy.ReAct(MovieSentiment, tools=[...])
 ```
 
-### 2. Model Agnosticism
+### 2. Model-specific formatting stays in the framework
 
-Moving from GPT-4 to a locally hosted Llama-3 model often requires completely rewriting prompts to match different chat templates. DSPy handles this translation layer dynamically at runtime. You rarely touch your application code.
+Moving from GPT-4 to a locally hosted Llama-3 model often requires different prompts for different chat templates. DSPy handles that translation at runtime, so the application code usually stays unchanged.
 
-### 3. The Killer Feature: Automated Prompt Optimization via Compilation
+### 3. Metrics can optimize the prompt
 
-Here is the updated "Killer Feature" section of the blog post, rewritten to feature **GEPA** instead of the standard random search.
+When the sentiment analyzer is not accurate enough, the manual approach is to rewrite the prompt and try different few-shot examples by intuition.
 
----
-
-### 3. The Killer Feature: Automated Prompt Optimization via Compilation
-
-Suppose your sentiment analyzer isn't accurate enough. In the "old world," you would spend hours manually rewriting the prompt, relying on intuition to try different few-shot examples.
-
-DSPy provides several optimizers for tuning prompts against a metric, much like hyperparameter tuning in deep learning. Instead of rewriting instructions by intuition, you evaluate prompt variants against a dataset.
+DSPy instead evaluates prompt variants against a dataset and a metric. Its optimizers tune instructions and examples in a process similar to hyperparameter tuning.
 
 To use a DSPy optimizer, you need three things:
 
@@ -163,7 +147,7 @@ To use a DSPy optimizer, you need three things:
 * **A Metric:** A function that defines success (e.g., `correct_sentiment` which returns `True` if the prediction matches the label).
 * **An Optimizer:** A strategy module. While standard optimizers like `BootstrapFewShot` just pick good examples, optimizers like **GEPA** use evolutionary algorithms to rewrite your prompt instructions for you.
 
-Here is how you "compile" your AI program:
+The optimizer then "compiles" the program:
 
 ```python
 from dspy.teleprompt import GEPA
@@ -191,13 +175,13 @@ compiled_analyzer = optimizer.compile(student=analyzer, trainset=my_dataset)
 
 ```
 
-**What happens during `compile()`?**
+#### What `compile()` does
 
-Unlike simpler optimizers that search for examples, GEPA runs a cycle of **reflection and mutation**:
+Unlike simpler optimizers that search for examples, GEPA cycles through **reflection and mutation**:
 
 1. **Evaluation:** It runs the current prompts against your dataset and identifies where they fail (e.g., "The model failed to produce JSON" or "The model confused sarcasm with negativity").
 2. **Reflection:** It uses a meta-model (an LLM) to look at the error traces and diagnose *why* the prompt failed.
 3. **Mutation (Evolution):** It genetically "mutates" the prompt instructions to fix those specific errors. For example, it might rewrite `"Explain why"` to `"Extract a concise substring proving the sentiment"` if the descriptions were too vague.
 4. **Selection:** It keeps the best performing prompts (the "fittest") and discards the rest, repeating this over several generations.
 
-The result is a `compiled_analyzer` that looks just like your original object, but contains optimized instructions and few-shot examples discovered without you writing them manually.
+The resulting `compiled_analyzer` has the same interface as the original object, but contains optimized instructions and few-shot examples. The contract stays in code; the prompt becomes an artifact produced against the metric.

@@ -11,7 +11,7 @@ image: /images/blog/future-of-pull-requests/featured.png
 
 Several people have been arguing publicly that pull request review breaks down when an agent wrote the code. Thomas Dohmke makes the case when pitching Entire. Peter Steinberger has been pushing a "prompt request" framing. CodeRabbit has weighed in on the prompt-vs-PR debate. Most of this discussion either argues that a new primitive is needed (without specifying the UX) or proposes reviewing the prompt upstream of code generation. This post is about the third option: what the downstream review surface should look like once the agent transcript is part of it.
 
-Imagine the following setup:
+The argument assumes:
 
 - You have a decent LLM.
 - You have a good agentic coding harness on top of it.
@@ -52,4 +52,4 @@ The concrete primitive behind this idea is already being built by Entire.
 
 Entire is building a CLI that hooks into your git workflow, captures the agent session on every push, and indexes those sessions alongside commits in the repo itself rather than in some external service. They support Claude Code, Cursor, Gemini CLI, OpenCode, GitHub Copilot CLI, and others. Entire frames this today as a way to read the history of *why* code was written a certain way. But the same plumbing is exactly what a PR review built around better review context would sit on top of.
 
-The diff is not going away. Sometimes you really do want to look at the code. But it should stop being the thing the review starts from. The conversation should be.
+The diff is not going away; reviewers still approve or reject the code that will be merged. But review should start with the conversation, then move to the parts of the diff that need human attention.

@@ -9,7 +9,7 @@ description: "One Pydantic AI primitive scales across deterministic, LLM-assiste
 image: /images/blog/pydantic-ai-type-safe-hybrid-workflows/featured.png
 ---
 
-In [a previous post](https://danielfridljand.de/post/workflow-vs-agent) I argued that business automation should use LLMs only where they add irreplaceable value — and that everything else belongs in regular code. This post is about a practical question that follows from that: if a single pipeline has deterministic steps, LLM-assisted steps, and full agentic steps, how do you keep the seams between them clean?
+In [a previous post](https://danielfridljand.de/post/workflow-vs-agent) I argued that business automation should use LLMs only where they add irreplaceable value, with everything else in regular code. A mixed pipeline still needs clean seams between deterministic, LLM-assisted, and agentic steps. Pydantic models provide those seams.
 
 [Pydantic AI](https://ai.pydantic.dev/) gives you one primitive — `Agent` — and lets you scale it across the spectrum:
 
@@ -17,7 +17,7 @@ In [a previous post](https://danielfridljand.de/post/workflow-vs-agent) I argued
 - **LLM-assisted**: an `Agent` with no tools. One LLM call, one validated output.
 - **Agentic**: an `Agent` with tools, timeouts, and a typed fallback.
 
-The contract is the same in all three cases. You declare an `output_type` — a Pydantic model — and the caller gets back a validated instance of it. Whether that instance came from a compile-time constant, a single LLM call, or an agent that looped through five tool calls is an implementation detail of that one step.
+The pipeline contract is the same in all three cases. Each step returns a Pydantic model, declared as `output_type` for the LLM-assisted and agentic variants. Whether the instance came from regular code, a single LLM call, or an agent that looped through five tool calls is local to that step.
 
 ## LLM-assisted: a typed contract for a single call
 
@@ -80,7 +80,7 @@ async def fetch_deterministic(info: ContactInfo) -> FetchResult:
 
 From the caller's perspective, `fetch_deterministic` and `fetch_agent_run` are interchangeable. That's the property that matters: swapping a step between deterministic and agentic is a local change. The code around it doesn't notice.
 
-## What this actually buys you
+## What the shared contract buys you
 
 Failure modes become typed values. Every way an LLM call can go wrong — malformed output, timeout, refusal, repeated validation failure — gets caught by the runner and turned into an instance of the step's output type with an error field set. The blast radius of "the LLM did something weird" stops at the runner for that step.
 
