@@ -9,11 +9,11 @@ description: "How I used Snakemake to manage a complex 19-stage ticket analysis 
 image: /images/blog/snakemake-ticket-analysis-pipeline/featured.png
 ---
 
-When you're handed thousands of customer support tickets and asked to analyse them—classify intents, prepare training data, and keep the pipeline reproducible—you quickly run into a familiar problem: expensive computational steps (LLM calls, PII censoring) that don't scale if run naively. I tackled this on a real project by orchestrating the entire pipeline with [Snakemake](https://snakemake.readthedocs.io/). This post summarises what the pipeline did and three ways Snakemake made it manageable and efficient.
+On a recent project, I had to classify thousands of customer support tickets, prepare training data, and keep every run reproducible. The expensive steps, mainly LLM calls and PII censoring, did not scale as a sequence of standalone scripts. I used [Snakemake](https://snakemake.readthedocs.io/) to orchestrate the pipeline. This post covers the pipeline and the three parts of Snakemake that helped most.
 
 ## The Challenge
 
-I had over 2000 tickets exported from Zendesk. The goal was to classify each ticket by **customer intent** (e.g. billing questions, technical issues, feedback) so we could later build a first-level customer support AI agent. The classification was iterative: define intents, run an LLM over the tickets, inspect how many remained unclassified or misclassified, then refine the intent taxonomy and repeat. Doing this without a proper workflow would have meant manual scripts, ad-hoc reruns, and a lot of duplicated work.
+I had over 2000 tickets exported from Zendesk. The goal was to classify each ticket by **customer intent** (e.g. billing questions, technical issues, feedback) so we could later build a first-level customer support AI agent. The classification was iterative: define intents, run an LLM over the tickets, inspect how many remained unclassified or misclassified, then refine the intent taxonomy and repeat. Without a workflow engine, each refinement would have required manual scripts, ad-hoc reruns, and duplicated work.
 
 ## Pipeline Overview
 
@@ -63,7 +63,7 @@ The pipeline first reduced each ticket to a fixed set of fields (IDs, channel, s
 }
 ```
 
-The important point is that this **structure** (one record per ticket, list of comments with roles and text) drove how we split work into chunks and merged it back.
+This **structure** (one record per ticket, with a list of comments containing roles and text) determined how we split the work into chunks and merged it again.
 
 ## Three Ways Snakemake Helped
 
@@ -113,7 +113,7 @@ rule merge_censored_chunks:
         "uv run src/processing/merge_tickets.py {params.input_dir} {output.output_path}"
 ```
 
-`get_censored_chunks` reads the manifest produced by the checkpoint and returns the list of censored chunk paths, so the merge rule stays correct even when the number of chunks changes. The same pattern is reused for author classification and for LLM labelling (with labels stored per model so we could experiment with different models). Scatter–gather was the main lever to **parallelise** expensive work and bring wall-clock time down.
+`get_censored_chunks` reads the manifest produced by the checkpoint and returns the list of censored chunk paths, so the merge rule stays correct even when the number of chunks changes. The same pattern is reused for author classification and for LLM labelling (with labels stored per model so we could experiment with different models). Scatter–gather let us **parallelise** the expensive work and reduce wall-clock time.
 
 ### 2. Incremental Processing with Checkpoints
 
@@ -131,6 +131,6 @@ The pipeline is also model-agnostic: labels are stored per-model (e.g. `data/tic
 
 ## Outcome
 
-The pipeline successfully processed and classified the full ticket set into 20+ distinct customer intent categories (e.g. ReceiveTickets, CancelReservation, RefundRequest), supported iterative refinement of the customer intent taxonomy, and produced the datasets needed to train a first-level customer support AI agent (in a separate repo). Snakemake’s scatter–gather pattern, checkpoints, and DAG-based orchestration were central to keeping the workflow efficient and maintainable—exactly the kind of structure that scales to larger datasets and more complex MLOps pipelines.
+The pipeline processed the full ticket set into 20+ customer intent categories (e.g. ReceiveTickets, CancelReservation, RefundRequest). We could refine the taxonomy without rerunning unrelated work, and the final stages produced the datasets needed to train a first-level customer support AI agent in a separate repo. Snakemake’s scatter–gather pattern, checkpoints, and DAG kept the workflow manageable as the pipeline grew.
 
-If you’re designing data or ML pipelines with expensive steps and iterative development, Snakemake is a strong candidate: you get parallelisation, incremental runs, and a clear, declarative specification of the whole workflow in one place.
+For data or ML pipelines with expensive stages and frequent revisions, Snakemake provides parallel execution, incremental runs, and one declarative specification of the workflow.

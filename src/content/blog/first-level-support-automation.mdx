@@ -10,7 +10,7 @@ description: "The four-step pipeline we landed on after iterating in production:
 image: /images/blog/first-level-support-automation/featured.png
 ---
 
-How do you automate first-level customer support without building one big, opaque agent? This post presents the architecture we reached in production: decompose the problem, let LLMs handle interpretation, and keep everything else in code. It is a worked example of [Agentic vs Workflow-based AI](https://danielfridljand.de/post/workflow-vs-agent).
+Our production architecture for first-level customer support splits the problem into small steps, uses LLMs for interpretation, and keeps everything else in code. It is a worked example of [Agentic vs Workflow-based AI](https://danielfridljand.de/post/workflow-vs-agent).
 
 The system turns a customer message into a reply, possibly with attachments, and any required tool calls: invalidating a voucher, filing a reimbursement ticket, or escalating to a human. A preprocessing layer first normalises inbound attachments.
 
@@ -270,4 +270,4 @@ A monolithic agent offers only end-to-end quality, making regressions hard to lo
 
 ## Closing
 
-Decompose into typed steps, reserve LLMs for interpretation, encode known execution in code, and make coverage gaps explicit with "other". The result is an evolvable system where regressions are easy to locate and the long tail is manageable. The same pattern extends naturally to operations triage, legal intake, and insurance claims.
+Decompose into typed steps, reserve LLMs for interpretation, encode known execution in code, and make coverage gaps explicit with "other". This makes regressions easier to locate and keeps the long tail manageable. The same pattern also applies to operations triage, legal intake, and insurance claims.

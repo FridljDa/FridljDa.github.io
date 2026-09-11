@@ -8,9 +8,9 @@ description: "Self-attention is the mechanism. BERT, GPT, and T5 are three diffe
 image: /images/blog/transformer-architectures/featured.png
 ---
 
-This is the third in a short series. The first ([From Kernel Regression to Self-Attention](/post/kernel-to-attention)) derived self-attention. The second ([Masks and Cross-Attention](/post/masks-and-cross-attention)) covered the two extensions every real Transformer uses — masks and cross-attention. This one zooms out one level: those mechanisms are *building blocks*, and BERT, GPT, and T5 are *architectures* built by stacking them in different ways.
+This is the third in a short series. The first ([From Kernel Regression to Self-Attention](/post/kernel-to-attention)) derived self-attention. The second ([Masks and Cross-Attention](/post/masks-and-cross-attention)) covered masks and cross-attention. This post zooms out one level: those mechanisms are *building blocks*, while BERT, GPT, and T5 are *architectures* built by stacking them in different ways.
 
-If you have ever wondered why the original Transformer paper had both an "encoder" and a "decoder," but BERT is called "encoder-only" and GPT is called "decoder-only" — this post is for you.
+The naming can be confusing: the original Transformer paper had both an "encoder" and a "decoder," while BERT is called "encoder-only" and GPT "decoder-only."
 
 Historically, the encoder–decoder came first and the others were carved out of it. Conceptually, it is easier to go the other way: start with the simplest stack and add one mechanism at a time. So we will build up from BERT to GPT to the original Transformer.
 
@@ -18,13 +18,13 @@ Historically, the encoder–decoder came first and the others were carved out of
 
 ## 1. Encoder-only: BERT and friends
 
-The simplest Transformer architecture is a single stack of identical blocks, each containing self-attention and a feed-forward network. No mask, no cross-attention, no second stack.
+The simplest Transformer architecture is a single stack of identical blocks, each containing self-attention and a feed-forward network. It uses neither a mask nor cross-attention, and it has no second stack.
 
 ![Encoder-only transformer architecture](/images/blog/transformer-architectures/encoder.png)
 
-This is BERT ([Devlin et al., 2018](https://arxiv.org/abs/1810.04805)) and its successors — RoBERTa, DeBERTa, ModernBERT. Every position attends to every other position, in both directions. The output is a contextualized vector for each input token.
+This is BERT ([Devlin et al., 2018](https://arxiv.org/abs/1810.04805)) and its successors: RoBERTa, DeBERTa, and ModernBERT. Every position attends to every other position, in both directions. The output is a contextualized vector for each input token.
 
-Bidirectional attention is exactly what you want for *understanding* — sentence classification, named entity recognition, embedding generation. Classifying a word benefits from seeing what comes after it as well as before. There is no generation here; the model produces representations, not tokens.
+Bidirectional attention works well for *understanding* tasks such as sentence classification, named entity recognition, and embedding generation. Classifying a word benefits from seeing what comes after it as well as before. There is no generation here; the model produces representations, not tokens.
 
 ---
 

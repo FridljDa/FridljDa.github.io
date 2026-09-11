@@ -12,13 +12,13 @@ math: true
 import ModelPerformanceChart from '../../components/ModelPerformanceChart';
 import ModelRecommendations from '../../components/ModelRecommendations';
 
-Checking Cursor’s [pricing](https://cursor.com/docs/models#model-pricing) and a [leaderboard](https://arena.ai/leaderboard/code) back and forth is tedious; using “the best” model for everything can lead to surprisingly high bills. A simpler approach: **one stronger model for planning, one cheaper model for execution.**
+Checking Cursor’s [pricing](https://cursor.com/docs/models#model-pricing) and a [leaderboard](https://arena.ai/leaderboard/code) back and forth is tedious; using “the best” model for everything can lead to surprisingly high bills. A simpler approach uses one stronger model for planning and one cheaper model for execution.
 
 ## The two-model strategy
 
-**Planning** (understanding the task, designing steps) benefits from strong reasoning. You send context and get back a plan and a few key decisions; token volume is modest, so the extra cost is often worth it.
+Planning (understanding the task and designing steps) benefits from strong reasoning. You send context and get back a plan and a few key decisions; token volume is modest, so the extra cost is often worth it.
 
-**Execution** (implementing the plan, writing code) can be done well by cheaper models when the plan is clear. This phase uses many more tokens, so keeping cost per token low matters.
+Execution (implementing the plan and writing code) can be done well by cheaper models when the plan is clear. This phase uses many more tokens, so keeping cost per token low matters.
 
 1. Use a **premium model for planning**: start the task, get a clear plan, maybe one or two critical edits.
 2. **Switch to a cheaper model for execution**: implement the rest, iterate, run tests.
@@ -27,27 +27,27 @@ You avoid both the “everything on the best model” bill and the “everything
 
 ## Why it works
 
-Planning is **input-heavy** (lots of context in, compact plan out); execution is **output-heavy** (lots of code generated). [Arena Code](https://arena.ai/leaderboard/code) benchmarks show that mid-tier models are close to the top on code tasks at a fraction of the cost. So: strong reasoning where it matters, lower cost where most tokens are spent.
+Planning is input-heavy (lots of context in, compact plan out); execution is output-heavy (lots of code generated). [Arena Code](https://arena.ai/leaderboard/code) benchmarks show that mid-tier models are close to the top on code tasks at a fraction of the cost. Use strong reasoning where it matters and lower cost where most tokens are spent.
 
 ## Cost vs performance at a glance
 
-The chart below plots **cost** (weighted $/1M tokens: 70% input, 30% output) vs **benchmark performance**. Data comes from Cursor’s pricing and public benchmarks; the [workflow](https://github.com/FridljDa/FridljDa.github.io/blob/master/.github/workflows/update-model-data.yaml) updates it daily.
+The chart below plots cost (weighted $/1M tokens: 70% input, 30% output) against benchmark performance. Data comes from Cursor’s pricing and public benchmarks; the [workflow](https://github.com/FridljDa/FridljDa.github.io/blob/master/.github/workflows/update-model-data.yaml) updates it daily.
 
 <ModelPerformanceChart client:load />
 
-**How to read it:** Lower left = cheaper/weaker, upper right = pricier/stronger. Pick a **planning** model from the upper-right and an **execution** model from the lower half.
+Lower left means cheaper and weaker; upper right means pricier and stronger. Pick a planning model from the upper right and an execution model from the lower half.
 
 ### A caveat on token usage
 
-The charts above and the recommendations below think in **price per 1M tokens**, but **total cost for a task also depends on how many tokens each model uses for the same request**. Some models are more verbose or expand the context more aggressively; others stay more compact.
+The charts above and the recommendations below use price per 1M tokens, but total cost also depends on how many tokens each model uses for the same request. Some models are more verbose or expand the context more aggressively; others stay more compact.
 
 ![Model usage analysis by model](/images/blog/cursor-model-selection-strategy/model-usage-analysis.png)
 
-The figure above shows that **request volume and spend are distributed very unevenly across models**—“auto” and a few heavily used models dominate total cost even when their list price is modest.
+The figure above shows that request volume and spend are distributed very unevenly across models: “auto” and a few heavily used models dominate total cost even when their list price is modest.
 
 ![Token usage per request by model](/images/blog/cursor-model-selection-strategy/token-usage-per-request-by-model.png)
 
-Here you can see that **total tokens per request can differ by orders of magnitude between models for similar tasks**. When you experiment with alternative models, keep an eye not just on price per token and Elo, but also on how long responses are and how much context they tend to pull in; that combination is what ultimately shows up on your bill.
+Total tokens per request can differ by orders of magnitude between models for similar tasks. When you experiment with alternative models, watch price per token and Elo alongside response length and context use; that combination is what shows up on your bill.
 
 ## Recommended pairings
 
@@ -94,7 +94,7 @@ $$
 
 Models are ranked by Elo per dollar. Select 4 models by efficiency per category (or fewer if frontier is smaller).
 
-This approach guarantees recommended models represent the best cost-performance trade-offs available. The formula runs daily via [GitHub Actions](.github/workflows/update-model-data.yaml).
+This approach keeps strictly dominated models out of the recommendations. The formula runs daily via [GitHub Actions](.github/workflows/update-model-data.yaml).
 
 ## Example workflow
 

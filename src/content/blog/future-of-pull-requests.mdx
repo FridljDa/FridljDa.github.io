@@ -15,30 +15,30 @@ Imagine the following setup:
 
 - You have a decent LLM.
 - You have a good agentic coding harness on top of it.
-- Every pull request that gets opened automatically triggers a review pass by AI agents. Those reviewers feed their comments back into the agentic harness, which iterates on the code — say, 30 rounds of back-and-forth — fixing clear mistakes and tightening obvious rough edges.
+- Every pull request that gets opened automatically triggers a review pass by AI agents. Those reviewers feed their comments back into the agentic harness, which iterates on the code for, say, 30 rounds of back-and-forth, fixing clear mistakes and tightening obvious rough edges.
 - You have a solid test suite, type checks, linters, and the usual guardrails in place.
 
 This is not hypothetical. The pieces exist today, and many repositories are already moving in this direction.
 
-One caveat to be honest about up front: whether the iterative loop actually closes reliably — whether the harness in fact catches the small stuff — is itself a frontier problem. Agents today still miss obvious bugs ten iterations in. The argument that follows is conditional on that gap closing. If you do not believe it ever will, none of what follows will apply.
+One caveat: the iterative loop does not yet close reliably. Agents still miss obvious bugs ten iterations in. The argument that follows is conditional on that gap closing. If you do not believe it ever will, none of what follows will apply.
 
 Even then, someone still needs to review the change before merging; the point is to make that review start from better context than a raw wall of changed lines.
 
 ## The current PR view is for a workflow we no longer have
 
-GitHub's PR view is a diff with inline comments. That UI was built for a world where a human wrote those lines and another human inspected the patch before merge — where scrutinizing each line for off-by-ones and missed edge cases was the right job. In 2026 it is unfair to expect human reviewers to be that first reader, and it does not scale. The diff is the output. The interesting object is the process that produced it.
+GitHub's PR view is a diff with inline comments. That UI was built for a world where a human wrote those lines and another human inspected the patch before merge. Scrutinizing each line for off-by-ones and missed edge cases was the right job. In 2026 it is unfair to expect human reviewers to be that first reader, and it does not scale. The diff is the output. The interesting object is the process that produced it.
 
 ## Attach the conversation, not just the diff
 
 ### Steinberger's "prompt request"
 
-Peter Steinberger, the founder of OpenClaw, has been arguing publicly for a while that the right unit of review in the age of agentic coding is no longer the diff but the prompt that produced it — what he calls a "prompt request" rather than a pull request ([Lex Fridman interview](https://lexfridman.com/peter-steinberger-transcript/)).
+Peter Steinberger, the founder of OpenClaw, has been arguing publicly for a while that the right unit of review in the age of agentic coding is no longer the diff but the prompt that produced it, which he calls a "prompt request" rather than a pull request ([Lex Fridman interview](https://lexfridman.com/peter-steinberger-transcript/)).
 
 The value of the prompt and the agent transcript is that they explain intent and process: what the author tried to make the agent do, which constraints were explicit, which alternatives were considered, and which checks the agent claims to have run. That is context a diff alone does not provide.
 
 ### The proposal
 
-Attach the conversation history with the agentic coding harness to each commit. Every prompt, every tool call, every plan the agent considered and rejected, every test run and how the output changed the next step — all of it is an artifact you keep alongside the code.
+Attach the conversation history with the agentic coding harness to each commit: every prompt, tool call, rejected plan, test run, and resulting change in direction. Keep it alongside the code.
 
 When the pull request is opened, a separate LLM agent reads the diff and those conversations across all the commits in the PR. It then produces a summary of the important decisions: which architectural choices were made, which alternatives were considered, which assumptions were taken on trust, which corners of the problem the agent never explored, and which parts of the diff probably deserve human attention.
 

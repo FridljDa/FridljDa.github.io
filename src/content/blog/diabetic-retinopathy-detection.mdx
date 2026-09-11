@@ -54,14 +54,14 @@ We experimented with $weight\_nonDR \in \{2, 2.5, 3\}$ to find the optimal balan
 
 ### Hyperparameter Tuning and Results
 
-To optimize our model's performance, we conducted a comprehensive grid search over hyperparameters including learning rate ($10^{-3}$ to $10^{-4}$), batch size (8, 16), optimizer (SGD, Adam), momentum (0.9 for SGD), and balancing strategy (none, oversampling, weighted loss). We quantitatively measured performance using accuracy, precision, recall, and F1-score on training and testing sets.
+To optimize our model's performance, we conducted a grid search over hyperparameters including learning rate ($10^{-3}$ to $10^{-4}$), batch size (8, 16), optimizer (SGD, Adam), momentum (0.9 for SGD), and balancing strategy (none, oversampling, weighted loss). We quantitatively measured performance using accuracy, precision, recall, and F1-score on training and testing sets.
 
 The best results were obtained using a learning rate of $0.0001$, a batch size of $16$, oversampling the underrepresented non-DR class in the training dataset, and the SGD optimizer. This configuration achieved:
 - **Testing precision**: 0.967
 - **Testing recall**: 0.935
 - **Testing accuracy**: 0.921
 
-Interestingly, almost all configurations produced high testing recall, with 10 out of 18 experiments achieving a testing recall above 0.9. The oversampling method achieved the highest testing precision, while the weighted cross-entropy improved testing recall. The SGD optimizer generally outperformed the Adam optimizer for the default hyperparameter configurations. Training converged after 35 epochs, indicating stable learning.
+Almost all configurations produced high testing recall, with 10 out of 18 experiments achieving a testing recall above 0.9. The oversampling method achieved the highest testing precision, while the weighted cross-entropy improved testing recall. The SGD optimizer generally outperformed the Adam optimizer for the default hyperparameter configurations. Training converged after 35 epochs, indicating stable learning.
 
 ## Image Segmentation with U-Net
 
@@ -80,7 +80,7 @@ We added L2 regularization to prevent overfitting.
 
 ### Data Labeling and Processing
 
-We utilized the VGG Image Annotator software to label DR images accurately, creating a custom region attribute called "Abnormality" with a dropdown menu to differentiate between hemorrhages and exudates. With the assistance of a retinal specialist, we labeled 76 DR images. We used rectangles to label the images, though polygons would have been more accurate given the oval shapes of hemorrhages and exudates.
+We used the VGG Image Annotator software to label DR images accurately, creating a custom region attribute called "Abnormality" with a dropdown menu to differentiate between hemorrhages and exudates. With the assistance of a retinal specialist, we labeled 76 DR images. We used rectangles to label the images, though polygons would have been more accurate given the oval shapes of hemorrhages and exudates.
 
 After labeling, we exported a CSV file containing positions of each hemorrhage and exudate, including x and y coordinates and height and width of rectangles. We created ground truth masks with two channels—one for hemorrhages and one for exudates—serving as pixel-wise representations for training the U-Net model.
 
@@ -126,7 +126,7 @@ Our segmentation model achieved:
 - **Jaccard Index (IoU)**: 0.4753
 - **Dice Coefficient**: 0.6696
 
-The high accuracy suggests many pixels were accurately classified, though the moderate recall and overlap metrics indicate potential for improvement. Notably, detection of hemorrhages was significantly more accurate than exudates, with recall and accuracy metrics close to 1 for hemorrhages. This discrepancy is clinically understandable: exudates can be challenging to identify even for specialists, as they can be mistaken for cotton wool spots (fluffy white patches resembling exudates) or camera artifacts.
+The high accuracy suggests many pixels were accurately classified, though the moderate recall and overlap metrics indicate potential for improvement. Detection of hemorrhages was significantly more accurate than exudates, with recall and accuracy metrics close to 1 for hemorrhages. This discrepancy is clinically understandable: exudates can be challenging to identify even for specialists, as they can be mistaken for cotton wool spots (fluffy white patches resembling exudates) or camera artifacts.
 
 ## Discussion and Future Directions
 
@@ -134,5 +134,4 @@ Our study highlights the potential of AI, particularly ResNet and U-Net models, 
 
 However, several limitations should be addressed in future work. The dataset's small size (126 images for classification, 67 for segmentation) and class imbalance may have negatively affected model performance despite mitigation strategies. To improve classification accuracy, it would be beneficial to include more non-DR fundus images and expand the dataset to around a thousand images with better balance.
 
-For segmentation, the rectangular labeling method, while practical, is not ideal for training U-Net models as it includes regions that are not hemorrhages or exudates. Future work should use polygons, ovals, or irregular shapes that better fit the edges of these abnormalities. Additionally, consulting professional ophthalmologists for precise identification and labeling of exudates would provide more accurate training labels.
-
+For segmentation, the rectangular labeling method, while practical, is not ideal for training U-Net models as it includes regions that are not hemorrhages or exudates. Future work should use polygons, ovals, or irregular shapes that better fit the edges of these abnormalities. Consulting professional ophthalmologists for precise identification and labeling of exudates would provide more accurate training labels.

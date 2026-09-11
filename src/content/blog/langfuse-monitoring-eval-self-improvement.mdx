@@ -16,21 +16,19 @@ In a recent AI-powered support project I relied on [Langfuse](https://langfuse.c
 
 We treat observability as a port: the app depends on a `MonitoringPort` interface, and the Langfuse implementation lives in an adapter. That keeps the core logic free of SDK details and makes it easy to test with a no-op or mock.
 
-**Traces and spans.** The adapter exposes an `observe` decorator that wraps any function and sends a span to Langfuse. We use it on intent classification, extraction, and agentic steps (fetch, plan, message). Each trace gets **provenance metadata**—git commit, branch, deploy env—so we can tie a run to a code version. We also set session IDs when we have them (e.g. from the chat UI), so we can group traces by conversation.
+The adapter exposes an `observe` decorator that wraps any function and sends a span to Langfuse. We use it on intent classification, extraction, and agentic steps (fetch, plan, message). Each trace gets provenance metadata—git commit, branch, deploy env—so we can tie a run to a code version. We also set session IDs when we have them (e.g. from the chat UI), so we can group traces by conversation.
 
-**Token usage and cost.** We log input/output token counts and the model name on the current observation. Langfuse can then infer or display cost per call and per trace. That's essential when we run evals or production traffic: we see which step and which model is expensive.
+We also log input/output token counts and the model name on the current observation. Langfuse can then infer or display cost per call and per trace, showing which step and model is expensive during evals or production traffic.
 
-**Prompt registration.** At startup we register prompts (e.g. intent classification, information extraction) with Langfuse. That gives a single place to see which prompt versions are in use and to compare runs when we change a prompt.
-
-In short: one monitoring port, one Langfuse adapter, and consistent metadata so we can debug and tune with full context.
+At startup we register prompts (e.g. intent classification, information extraction) with Langfuse. That gives a single place to see which prompt versions are in use and to compare runs when we change a prompt.
 
 ## 2. Persisting runs and traces for later review
 
 Evaluations are separate from unit tests: they measure performance over time and are built around **Langfuse datasets and dataset runs**. We keep evaluation data in git (e.g. JSONL files); a script syncs them into Langfuse as datasets. Each evaluation run loads a dataset, runs the task per item, applies evaluators, records scores on each trace, and links traces to dataset items. So in Langfuse we get **one trace per test case**, with input, output, and scores.
 
-**Scores and run-level metrics.** Evaluators return structured scores (e.g. intent match, correct tools selected, resolution helpfulness). We record them on the trace and also compute run-level aggregates—accuracy, pass rate, mean latency—and attach them to the dataset run. That way we can compare runs side by side: "this run after the prompt change" vs "last week's run."
+Evaluators return structured scores (e.g. intent match, correct tools selected, resolution helpfulness). We record them on the trace and also compute run-level aggregates—accuracy, pass rate, mean latency—and attach them to the dataset run. That way we can compare runs side by side: "this run after the prompt change" vs "last week's run."
 
-**Why persistence matters.** We don't throw away runs. We can open any past run, drill into a failed case, and see the full trace: which step failed, what the model saw and returned, and what the scorer said. That's crucial for post-hoc debugging and for regression analysis when we refactor or change prompts.
+We don't throw away runs. We can open any past run, drill into a failed case, and see the full trace: which step failed, what the model saw and returned, and what the scorer said. This supports post-hoc debugging and regression analysis when we refactor or change prompts.
 
 ## 3. Self-improving codebase with Cursor agents and eval data
 
@@ -56,9 +54,9 @@ run evals
   confirm fixes pass
 ```
 
-**Why sequential and not parallel.** The analyzer agents run one trace at a time, not concurrently. Each one may modify source files; parallel runs would cause conflicts. The orchestrator hands off the next trace only after the previous one has returned its `AnalyzerResult`.
+The analyzer agents run one trace at a time because each may modify source files. The orchestrator hands off the next trace only after the previous one has returned its `AnalyzerResult`, avoiding conflicts between parallel edits.
 
-**Typed contracts between agents.** Each handoff carries a typed payload—`FailingTrace` from discovery, `AnalyzerResult` from the analyzer, `RerunResult` from the rerunner—defined in a single contracts file that all agents reference. That keeps the pipeline consistent when agents are swapped or updated.
+Each handoff carries a typed payload—`FailingTrace` from discovery, `AnalyzerResult` from the analyzer, `RerunResult` from the rerunner—defined in a single contracts file that all agents reference. This keeps the pipeline consistent when agents are swapped or updated.
 
 ### Root-cause categories
 
@@ -76,15 +74,15 @@ The analyzer classifies each failure into one of seven categories, each with its
 
 For `something_else` the agent posts a comment on the Langfuse trace and returns `implemented_fix: "no_code_change"`—no code is touched. Everything is still logged so we can spot recurring patterns.
 
-**One hard guardrail.** The analyzer is explicitly prohibited from editing raw customer-interaction fixtures. If a raw-case failure looks like a data problem, the fix goes into the prompt or comparison logic—not the fixture file. That boundary is enforced in the agent's system prompt, not just convention.
+The analyzer is prohibited from editing raw customer-interaction fixtures. If a raw-case failure looks like a data problem, the fix goes into the prompt or comparison logic—not the fixture file. That boundary is enforced in the agent's system prompt, not just convention.
 
 ## 4. When to fix eval data vs. when to fix prompts
 
 Once you have persistent traces and a triage loop, a subtler question emerges: given a set of failures, should you fix the *evaluation data* (ground truth, false positive patterns) or fix the *model behavior* (prompts, system behavior)? These are separate concerns and getting them confused wastes time.
 
-**Fix eval data first.** If the ground truth is wrong or the pattern matching is too strict, any metric you compute is misleading. You might "improve" precision by tightening a prompt when the real fix is correcting an over-broad ground-truth pattern. Symptoms: high unknown-positive count (model outputs that don't match any pattern), patterns that are too narrow or too loose, or anchors that match the right comment in the wrong location.
+Fix eval data first. If the ground truth is wrong or the pattern matching is too strict, any metric you compute is misleading. You might "improve" precision by tightening a prompt when the real fix is correcting an over-broad ground-truth pattern. Symptoms include a high unknown-positive count (model outputs that don't match any pattern), patterns that are too narrow or too loose, or anchors that match the right comment in the wrong location.
 
-**Fix prompts after.** Once eval data correctly reflects what the model *should* do, low precision or recall is a prompt problem. Symptoms: the model consistently misses a class of real issues (false negatives), or consistently flags things it shouldn't (false positives), and the patterns are already correct.
+Fix prompts after the eval data reflects what the model *should* do. Low precision or recall then points to the prompt: the model consistently misses a class of real issues (false negatives) or flags things it shouldn't (false positives), while the patterns are already correct.
 
 In practice this means running two distinct workflows:
 
@@ -98,9 +96,9 @@ Keeping these separate also prevents a common trap: adding ground-truth patterns
 This setup gives a few things that matter when shipping and maintaining AI in production:
 
 - **Measurable quality.** We're not guessing whether a change helped; we compare runs and scores before and after.
-- **Robust telemetry.** Traces, token usage, and provenance are first-class, so we can debug and tune with full context.
+- **Detailed telemetry.** Traces, token usage, and provenance are first-class, so we can debug and tune with full context.
 - **Closed loop.** Evaluation data doesn't just sit in a dashboard—it feeds back into fixes via a repeatable triage and rerun workflow.
 - **Clean boundaries.** Monitoring is behind a port; evaluation and triage use the same Langfuse API and datasets; the decision between "fix eval data" and "fix prompts" is explicit and kept separate.
 - **Guardrails by design.** Hard constraints (no editing raw customer fixtures, sequential analysis to avoid file conflicts, typed contracts between agents) are enforced in agent system prompts, not just convention.
 
-If you're building AI pipelines and want observability, durable run history, and a way to turn eval failures into code improvements, this pattern—Langfuse for monitoring and datasets, a multi-agent triage loop driven by Cursor, and an explicit eval-data-vs-prompts decision framework—is easy to adopt and keeps the pipeline maintainable as the system grows.
+Together, Langfuse monitoring and datasets, the Cursor triage loop, and the explicit eval-data-vs-prompts decision keep failures traceable and the pipeline maintainable as the system grows.

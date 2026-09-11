@@ -64,7 +64,7 @@ async def fetch_agent_run(info: ContactInfo) -> FetchResult:
         return FetchResult(record=None, error_code="AGENT_FAILED")
 ```
 
-Two things worth calling out. First, the `output_type` is still `FetchResult` on the error path — we construct one with `record=None` so downstream code doesn't need to special-case "did the agent work?" because the shape is the same either way. Second, every LLM call gets an explicit timeout. An agent without a timeout is a production incident waiting to happen.
+The `output_type` on the error path is still `FetchResult`: we construct one with `record=None`, so downstream code doesn't need to special-case "did the agent work?" and sees the same shape either way. Every LLM call also gets an explicit timeout. An agent without a timeout is a production incident waiting to happen.
 
 ## Deterministic: no agent at all, same shape
 
@@ -82,8 +82,8 @@ From the caller's perspective, `fetch_deterministic` and `fetch_agent_run` are i
 
 ## What this actually buys you
 
-**Failure modes become typed values.** Every way an LLM call can go wrong — malformed output, timeout, refusal, repeated validation failure — gets caught by the runner and turned into an instance of the step's output type with an error field set. The blast radius of "the LLM did something weird" stops at the runner for that step.
+Failure modes become typed values. Every way an LLM call can go wrong — malformed output, timeout, refusal, repeated validation failure — gets caught by the runner and turned into an instance of the step's output type with an error field set. The blast radius of "the LLM did something weird" stops at the runner for that step.
 
-**The agency-level decision becomes local.** When a step you thought needed an agent turns out to be solvable with deterministic code, you delete the agent and keep the same `output_type`. When a step you thought was deterministic starts failing on edge cases, you swap in an agent without touching anything around it. The unit of change is one function.
+The agency-level decision becomes local. When a step you thought needed an agent turns out to be solvable with deterministic code, you delete the agent and keep the same `output_type`. When a step you thought was deterministic starts failing on edge cases, you swap in an agent without touching anything around it. The unit of change is one function.
 
 If you're curious what this looks like in a non-toy pipeline — one with intent classification, structured extraction, deterministic lookups, and an LLM-fallback planner all wired together — see [Architecture of a First-Level Support Automation](https://danielfridljand.de/post/first-level-support-automation).

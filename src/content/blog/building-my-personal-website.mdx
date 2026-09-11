@@ -9,9 +9,9 @@ description: "A deep dive into the technical implementation of my personal websi
 image: /images/blog/building-my-personal-website/featured.png
 ---
 
-This website is built with [Astro](https://astro.build/) using server-side rendering (SSR), styled with Tailwind CSS, and features an AI chat interface powered by Google's Gemini API. The source code is available on [GitHub](https://github.com/FridljDa/FridljDa.github.io).
+This website is built with [Astro](https://astro.build/) using server-side rendering (SSR), styled with Tailwind CSS, and includes an AI chat interface powered by Google's Gemini API. The source code is available on [GitHub](https://github.com/FridljDa/FridljDa.github.io).
 
-In this post, I'll walk through three interesting technical features I implemented:
+This post covers three parts of the implementation:
 
 1. **AI Chat Interface** - A streaming chat interface that provides context-aware responses about my background and blog posts
 2. **Context Generation & "View as Markdown"** - A unified system that generates markdown representations of pages for both AI context and user viewing
@@ -32,7 +32,7 @@ The chat system consists of two main parts:
 
 ### Streaming Responses
 
-One of the key features is streaming responses, which provides a more responsive user experience. The client uses the `ReadableStream` API to process chunks as they arrive from the server:
+Streaming makes the interface more responsive. The client uses the `ReadableStream` API to process chunks as they arrive from the server:
 
 ```tsx
   const handleSubmit = async (e: React.FormEvent) => {
@@ -85,11 +85,11 @@ One of the key features is streaming responses, which provides a more responsive
   };
 ```
 
-The client creates a `ReadableStream` reader, decodes each chunk using `TextDecoder`, and updates the UI incrementally as text arrives. This creates a smooth, ChatGPT-like experience where responses appear word-by-word.
+The client creates a `ReadableStream` reader, decodes each chunk using `TextDecoder`, and updates the UI as text arrives. Responses appear word by word instead of waiting for the full answer.
 
 ### Server-Side Streaming with Gemini
 
-On the server, the API route constructs a comprehensive context from the website content and streams the response from Gemini:
+On the server, the API route constructs the context from the website content and streams the response from Gemini:
 
 ```typescript
     // Generate streaming response from Gemini
@@ -123,7 +123,7 @@ On the server, the API route constructs a comprehensive context from the website
     });
 ```
 
-The server uses Gemini's `sendMessageStream()` method, which returns an async iterable. Each chunk is encoded and enqueued to the `ReadableStream`, which the client consumes in real-time.
+The server uses Gemini's `sendMessageStream()` method, which returns an async iterable. Each chunk is encoded and enqueued to the `ReadableStream`, which the client consumes in real time.
 
 ### Context Injection
 
@@ -160,7 +160,7 @@ The chat system is context-aware, meaning it has access to all the content on th
     `;
 ```
 
-This context is injected as a system instruction when starting the chat session, ensuring the AI has access to all relevant information while maintaining strict boundaries to prevent hallucination.
+The system instruction gives the AI access to the site content and defines boundaries intended to prevent hallucination.
 
 ### Mobile-Responsive Design
 
@@ -180,7 +180,7 @@ When minimized, it appears as a floating button in the bottom-right corner, expa
 
 ## 2. Context Generation & "View as Markdown" Feature
 
-A key design decision was to create a unified system for generating markdown representations of pages. This serves two purposes:
+The same system generates markdown representations of pages for two purposes:
 
 1. **AI Context** - Provides structured markdown content to the chat system
 2. **User Viewing** - Allows users to view any page as markdown via "View as Markdown" buttons
@@ -333,7 +333,7 @@ export default function ViewAsMarkdown({ href, label = 'View as Markdown' }: Vie
 }
 ```
 
-This component is used in the Biography section and on blog post pages, providing a simple way for users to access the markdown version of any page.
+This component is used in the Biography section and on blog post pages, where it links to the markdown version of the page.
 
 ### Benefits of This Approach
 
@@ -350,11 +350,10 @@ This website does not own CV source or rendering. The resume PDF is built into `
 
 ## Conclusion
 
-These three features demonstrate different aspects of modern web development:
+The three parts divide responsibilities clearly:
 
-- **The chat interface** showcases real-time streaming, AI integration, and context-aware systems
+- **The chat interface** uses real-time streaming, AI integration, and context-aware systems
 - **The markdown generation system** illustrates the DRY principle and unified data transformation
 - **The resume PDF sync** keeps the website repo simple while a dedicated CV repo owns source and rendering
 
-Together, they create a website that is both functional and maintainable, with clear separation of concerns and automated processes that reduce manual work. The codebase is open source and available on [GitHub](https://github.com/FridljDa/FridljDa.github.io) for anyone interested in exploring the implementation details further.
-
+The codebase is open source on [GitHub](https://github.com/FridljDa/FridljDa.github.io).

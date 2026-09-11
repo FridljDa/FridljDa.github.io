@@ -9,7 +9,7 @@ math: true
 image: /images/blog/masks-and-cross-attention/featured.png
 ---
 
-This post is a follow-up to [From Kernel Regression to Self-Attention](/post/kernel-to-attention) — same notation, same setup. There we ended with full self-attention, where every position in a sequence attends to every other position using learned projections of itself. That is the mechanism. In practice, two extensions are layered on top before you get to a real Transformer:
+This post follows [From Kernel Regression to Self-Attention](/post/kernel-to-attention) and uses the same notation. There we ended with full self-attention, where every position in a sequence attends to every other position using learned projections of itself. Transformer architectures add two extensions:
 
 - **Masks**, which restrict which positions a query is allowed to read from. The most important is the causal mask used in autoregressive language modeling, but padding masks come up routinely in batched training.
 - **Cross-attention**, which relaxes the *self* part: queries come from one sequence, keys and values from another. This is what lets one sequence be conditioned on another.
@@ -61,7 +61,7 @@ In code, $-\infty$ is typically a large negative constant like $-10^9$, which is
 
 The mechanism is unchanged. Queries still come from $W^{(q)} \boldsymbol{x}$, keys from $W^{(k)} \boldsymbol{x}$, values from $W^{(v)} \boldsymbol{x}$; the dot-product score and the $\sqrt{d}$ rescaling are exactly as in [§5](/post/kernel-to-attention#5-scaling-why-divide-by-sqrtd) of the previous post. All that has changed is which scores survive the softmax.
 
-The asymmetry is worth dwelling on. Position $i$ no longer sees positions $j > i$, but position $j$ (with $j > i$) still sees position $i$. The mask makes information flow strictly forward through the sequence. Each output $\boldsymbol{y}_i$ is now a weighted average over only its own past — exactly the constraint autoregressive training requires.
+The mask is asymmetric. Position $i$ no longer sees positions $j > i$, but position $j$ (with $j > i$) still sees position $i$. Information flows strictly forward through the sequence. Each output $\boldsymbol{y}_i$ is now a weighted average over only its own past — exactly the constraint autoregressive training requires.
 
 ![Causal-mask asymmetry: position 3 reads only 3 past positions, but is read by 6 current and future positions. Same matrix, same position, asymmetric reach.](/images/blog/masks-and-cross-attention/causal_mask_asymmetry.png)
 
@@ -87,7 +87,7 @@ $$
 \boldsymbol{q}_i = W^{(q)} \boldsymbol{x}^A_i, \quad \boldsymbol{k}_j = W^{(k)} \boldsymbol{x}^B_j, \quad \boldsymbol{v}_j = W^{(v)} \boldsymbol{x}^B_j
 $$
 
-Three things are worth noting:
+The comparison with self-attention has three parts:
 
 - **The mechanism is unchanged.** Scaled dot product, softmax, weighted average — exactly equation (13). Only the inputs differ.
 - **The score matrix changes shape.** Stacking $Q = X^A W^{(q)\top}$ ($n$ rows) and $K = X^B W^{(k)\top}$ ($m$ rows), the score matrix $QK^\top$ is $n \times m$ instead of the $n \times n$ we have seen so far. Each row $i$ holds the scores from query position $i$ in $A$ against every key position in $B$.

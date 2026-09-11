@@ -22,7 +22,7 @@ What makes coding agents so effective is a combination of two things:
 2. The [agentic loop](https://www.deeplearning.ai/the-batch/issue-359) provides a tight feedback loop. Looping on results from tests, linters and compiler errors, the agent can handle a wide range of problems without human intervention.
 
 In benchmarks like [tbench](https://www.tbench.ai/), that is all the scaffolding an agent gets: a terminal, and permission to loop.
-But this combination is specific to code. Let's consider the following automation task:
+But this combination is specific to code. Consider this automation task:
 
 Customers wrote in to our first-level support team at Northstar Bank with messages like this:
 
@@ -102,7 +102,7 @@ We tried to fix that with prompt engineering, but asking an LLM to be reliably d
 
 We labelled and clustered roughly 2,300 past tickets with an AI-assisted, iterative process. A handful of intents accounted for the large majority of them, which encouraged us to try a workflow.
 
-To get both the ordering guarantee and the fixed templates, we kept code in charge of the sequencing and reserved the LLM for the *one* genuinely hard part of Alex's message:
+To get both the ordering guarantee and the fixed templates, we kept code in charge of the sequencing and reserved the LLM for the *one* hard part of Alex's message:
 interpreting it, recognising that this is an *account-locked* request and pulling out the identifier (the account number, or the name and branch).
 Everything after that (the lookup, the flag check, the reply) is deterministic, so code runs the steps in a fixed order and the flag check always happens before any unlock instructions go out.
 
@@ -162,7 +162,7 @@ We had a tight process to translate that external feedback into code changes:
 5. CI re-ran the eval suite.
 
 Step 1 was the bottleneck: the loop runs on subject-matter expert time — one more item in a day that is
-already full, for people who may suspect they are training their own replacement. We were fortunate on both counts: our main point of contact was genuinely enthusiastic and not worried about being automated away, and top-down pressure
+already full, for people who may suspect they are training their own replacement. We were fortunate on both counts: our main point of contact was enthusiastic and not worried about being automated away, and top-down pressure
 from the client's leadership drove up both the quantity and the quality of the feedback.
 
 ## The state space wasn't bounded

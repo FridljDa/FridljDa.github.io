@@ -11,7 +11,7 @@ image: /images/blog/temporal-human-in-the-loop/featured.png
 math: false
 ---
 
-Orchestrating workflows that depend on human input is tricky: you don't know whether someone will respond in minutes or in days. Polling in a loop burns resources; fire-and-forget callbacks don't survive restarts. In a recent project I used [Temporal](https://temporal.io/) to run such workflows reliably. This post summarizes why Temporal fits this problem and the patterns that worked well—without any project-specific details.
+Human input gives a workflow an unpredictable pause: someone might respond in minutes or days. Polling in a loop burns resources, while fire-and-forget callbacks do not survive restarts. In a recent project I used [Temporal](https://temporal.io/) to keep these workflows running reliably. This post explains the patterns that worked, without project-specific details.
 
 ## Why Temporal Fits Human-in-the-Loop
 
@@ -24,7 +24,7 @@ Temporal gives you:
 - **Queries** — Read-only views of workflow state so UIs can show "waiting for approval" or "approved by X" without affecting execution.
 - **Deterministic replay** — After a crash or deploy, Temporal replays the workflow from history. So you keep a single source of truth (workflow state) and avoid duplicate side effects.
 
-Together, that means you can model "do work → wait for human → continue" as a single workflow that survives restarts and doesn't guess how long the human will take.
+These features let you model "do work → wait for human → continue" as one workflow that survives restarts without guessing how long the human will take.
 
 ## Patterns That Worked
 
@@ -63,7 +63,7 @@ Without a timeout, a workflow could wait indefinitely if the human never respond
 
 ### 3. Polling external systems with unknown completion time
 
-Sometimes the "human" part is actually an external API that completes asynchronously (e.g. a job queue). You don't know how long it will take. A robust pattern is: run an activity that starts the job, then in the workflow loop—check status via an activity, break if done or failed, otherwise `workflow.sleep(interval)` and retry, with an overall time budget. All sleep and branching is deterministic, so replays are safe.
+The same problem appears with an external API that completes asynchronously (e.g. a job queue). Start the job in an activity, then have the workflow check its status through another activity. If the job is neither done nor failed, call `workflow.sleep(interval)` and retry within an overall time budget. The sleeps and branches are deterministic, so replay remains safe.
 
 ```python
 # Conceptual: poll until done or timeout
@@ -86,4 +86,4 @@ Humans (or UIs) may send the same signal more than once. Making the signal handl
 - **Clear boundaries** — Workflow code only orchestrates and waits; non-deterministic or external actions live in activities. That keeps replay correct and keeps I/O and business rules in one place.
 - **Operability** — Explicit states (e.g. `AWAITING_APPROVAL`) and timeouts make it easier to reason about stuck workflows, set SLAs, and build dashboards.
 
-If you're designing systems where humans (or slow external systems) are in the loop and the wait time is unknown, Temporal's model of durable waits and signals is a good fit. I found it much easier to reason about than ad-hoc queues and callbacks, and the replay guarantee made debugging and evolution safer.
+Temporal's durable waits and signals fit systems where humans or slow external services respond on an unknown schedule. I found this model easier to reason about than ad-hoc queues and callbacks, while replay made debugging and later changes safer.

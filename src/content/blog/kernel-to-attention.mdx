@@ -13,7 +13,7 @@ I have a mathematics background, and kernel regression is something I have studi
 
 Self-attention, on the other hand, felt slippery to me when I started learning it. It is confusing that the input tokens $\boldsymbol{x}$ play so many roles at once: they are queries, keys, and values.
 
-If you happen to have the same background — comfortable with kernel regression, uncertain about attention — this post is for you. Following §15.4.2 and §15.5 of Kevin P. Murphy's *[Probabilistic Machine Learning: An Introduction](https://probml.github.io/pml-book/book1.html)*, I will derive self-attention from kernel regression step by step. I keep Murphy's notation where possible so the post can be read alongside the book.
+Following §15.4.2 and §15.5 of Kevin P. Murphy's *[Probabilistic Machine Learning: An Introduction](https://probml.github.io/pml-book/book1.html)*, I will derive self-attention from kernel regression step by step. I keep Murphy's notation where possible so the post can be read alongside the book.
 
 ---
 
@@ -192,7 +192,7 @@ The $i$-th row of $Y$ is the output for query $i$: a context-weighted blend of a
 
 So far we have been in the kernel-regression setting: each training point came with a scalar label $y_i$, and the value in (9) was $\boldsymbol{v}_i = y_i$. A Transformer processes something different — a sequence of tokens $\boldsymbol{x}_1, \ldots, \boldsymbol{x}_n$ with no labels attached. There are no $y_i$'s. Every position has to supply its own payload.
 
-The natural move is to let each token play all three roles. In **self-attention**, every position attends to every other position *in the same sequence*, using the tokens themselves for queries, keys, and values:
+Self-attention lets each token play all three roles. Every position attends to every other position *in the same sequence*, using the tokens themselves for queries, keys, and values:
 
 $$
 \boldsymbol{y}_i = \operatorname{Attn}\!\left(\boldsymbol{x}_i,\; \{(\boldsymbol{x}_j, \boldsymbol{x}_j)\}_{j=1}^{n}\right)
@@ -238,7 +238,7 @@ $$
 \end{aligned}
 $$
 
-Self-attention is not a mysterious black box. It is the natural result of applying a Gaussian similarity kernel, normalizing with softmax, generalizing the similarity, letting a sequence attend to itself, and adding learned projections to rescue the key/value distinction. Every piece has a reason.
+Self-attention follows from applying a Gaussian similarity kernel, normalizing with softmax, generalizing the similarity, letting a sequence attend to itself, and adding learned projections to separate keys from values.
 
 ---
 
