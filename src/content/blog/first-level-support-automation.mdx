@@ -12,7 +12,7 @@ image: /images/blog/first-level-support-automation/featured.png
 
 Our production architecture for first-level customer support splits the problem into small steps, uses LLMs for interpretation, and keeps everything else in code. It is the production version of the approach described in [Workflow or Agent](https://danielfridljand.de/post/workflow-vs-agent).
 
-The system turns a customer message into a reply, possibly with attachments, and any required tool calls: invalidating a voucher, filing a reimbursement ticket, or escalating to a human. A preprocessing layer first normalises inbound attachments.
+The system turns a customer message into a reply, possibly with attachments, and any required tool calls: updating a record, filing a follow-up ticket, or escalating to a human. A preprocessing layer first normalises inbound attachments.
 
 In the diagrams, **🤖 Agent** is autonomous, **🧠 LLM-assisted step** is a constrained model call, **⚙️ Code step** is deterministic logic, and **🔌 External tool/API** is an external dependency.
 
