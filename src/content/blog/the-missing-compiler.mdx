@@ -1,0 +1,87 @@
+---
+title: "The Missing Compiler: Business Automation Has No Test Suite"
+pubDate: 2026-04-20T00:00:00.000Z
+updatedDate: 2026-09-20T00:00:00.000Z
+tags:
+  - AI
+  - Customer Support
+  - Evaluation
+description: "Coding agents get a verdict for free from tests, linters and compilers. A business automation gets none, so you have to build one. What our human feedback loop looked like, and what I would do differently."
+---
+
+## TL;DR
+Automating manual workflows with LLMs is [widely piloted and rarely scaled](https://www.mckinsey.com/capabilities/quantumblack/our-insights/the-state-of-ai). One reason: the feedback loop that makes coding agents work has no equivalent in business processes, and teams treat building one as overhead rather than as the core of the project. Invest in the external feedback loop early, and don't build the machinery yourself.
+
+## Why coding agents work
+
+Progress in frontier AI models has allowed coding agents to tackle ever more complex and long-running tasks, fast enough that benchmarks keep needing to be replaced: [SWE-bench Verified](https://www.swebench.com/verified.html) is close to saturated.
+
+What makes coding agents so effective is a combination of two things:
+
+1. Software is largely composed of patterns LLMs have seen countless times during training: syntax, idioms, libraries.
+2. The [agentic loop](https://www.deeplearning.ai/the-batch/issue-359) provides a tight feedback loop. Looping on results from tests, linters and compiler errors, the agent can handle a wide range of problems without human intervention.
+
+In benchmarks like [tbench](https://www.tbench.ai/), that is all the scaffolding an agent gets: a terminal, and permission to loop.
+
+## Neither condition holds elsewhere
+
+Consider a first-level support automation. Customers write in with messages like this:
+
+> Hi, I'm Alex Carter and I bank with your Riverton branch. My account number is NSB01234 and I can't get in any more; it keeps saying the account is locked. Can you help me get back in?
+
+Point for point, neither condition holds:
+
+1. LLMs haven't seen your internal escalation rules or customer records during training.
+2. There is no compiler or test suite to tell the system whether the reply it wrote was any good. The only verdict available is a human one: someone who knows the bank has to read the reply and judge it.
+
+The first condition is unfixable — those rules and records are simply not in the training data, and the architecture you choose doesn't change that. The second is the one worth spending on, because a verdict is a thing you can build.
+
+The running example is based on a real project, but the details have been changed to protect the client's privacy. The architecture the loop was attached to is in [Workflow or Agent](/post/workflow-vs-agent).
+
+## The loop we built
+
+The system went live in **shadow deployment**: responses were graded by subject-matter experts but never shown to customers, so a wrong answer had little blast radius.
+
+We had a tight process to translate that external feedback into code changes:
+
+1. Subject-matter experts graded a batch of shadow responses and left free-text feedback.
+2. I added a comment on what the solution should look like from a technical perspective.
+3. Cursor implemented the feedback, usually a new branch in the rule tree that maps an intent onto a reply.
+4. Cursor added the case to an eval set.
+5. CI re-ran the eval suite.
+
+Steps 4 and 5 are the part that looks most like a compiler, and they are the easy part. Once a case is written down, the machinery that keeps it from regressing is ordinary engineering — [Langfuse in Production](/post/langfuse-monitoring-eval-self-improvement) covers how we ran it.
+
+Step 1 is the bottleneck. The loop runs on subject-matter expert time: one more item in a day that is already full, for people who may suspect they are training their own replacement. We were fortunate on both counts — the reviewers engaged with it, and the work had visible sponsorship from the client's leadership, which kept both the quantity and the quality of the feedback up. Neither is something to count on by default. When you estimate a project of this shape, the reviewers' availability is a hard input, not a detail to sort out later.
+
+## Get into shadow deployment sooner
+
+The shadow deployment went live only once the offline numbers on historic tickets looked acceptable. That has it backwards.
+
+Replaying a historic ticket replays the customer's message, but not the state of the records at the time it was written. The reply that was correct then may be wrong against today's data, and you have no way to tell which. Shadow deployment was the only setting where the pipeline ran against real state and was judged on the thing that mattered.
+
+We gated the trustworthy signal behind the untrustworthy one. Offline replay is useful as a regression net once you know what good looks like; it is a poor way to find out.
+
+## Don't build the loop yourself
+
+The external loop *is* the missing compiler. It is the only thing that tells you which paths are worth hardening into code — and if you [start from an agent rather than a rule tree](/post/workflow-vs-agent#next-time-start-with-the-agent), it is the only thing telling you anything at all. Related reading: [harness engineering](https://openai.com/index/harness-engineering/).
+
+That makes it tempting to build it properly, in-house, as a first-class part of the system. I would resist that now.
+
+A narrow review screen for the subject-matter experts is worth writing yourself: it is the surface they touch every day, it should show exactly the ticket and the proposed reply and nothing else, and every click you remove buys you more feedback. The machinery behind it — queues, assignment, score storage, history — is not worth writing. Langfuse's annotation queues as the backend, with a thin custom frontend on its API, would have been the better trade.
+
+## Untried: who translates the feedback
+
+Steps 2 and 3 were me, turning free-text feedback into an implementation plan and then into a rule. That doesn't scale, and it puts a single engineer on the critical path of every improvement. I have not solved this, but here is where I got.
+
+Handing step 2 to Cursor on the raw feedback produced worse results than doing it myself; Skill files and targeted guidelines narrowed the gap without closing it. More specific skills, or a subagent dedicated to the translation, might close the rest — or might be time sunk into tooling for nothing. You only find out by spending it.
+
+The more interesting version is to hand over both steps. An agent with persistent memory — something like [Hermes](https://hermes-agent.nousresearch.com/), which keeps what worked as skills — would perform the same graduation as freezing a path into code, written by the agent instead of by me. Wire it to the external feedback loop and the system accumulates its own rules from graded evidence.
+
+The risk is drift. You hand a lot of autonomy to an agent, and the thing keeping it honest is the same loop that is already your scarcest resource.
+
+## The loop is the project
+
+If I started a project of this shape again, the first thing I would build is the review screen and the shadow path that feeds it — before the intent tree, before the templates, before choosing between [a workflow and an agent](/post/workflow-vs-agent) at all. Everything downstream is guesswork until someone who knows the business is reading output every day.
+
+The one thing to settle even before the loop is what it should be pointed at. Ours was aimed at an approval rate, and [an approval rate is not a cost reduction](/post/approval-rate-is-not-savings).

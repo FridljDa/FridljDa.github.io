@@ -10,7 +10,7 @@ description: "The four-step pipeline we landed on after iterating in production:
 image: /images/blog/first-level-support-automation/featured.png
 ---
 
-Our production architecture for first-level customer support splits the problem into small steps, uses LLMs for interpretation, and keeps everything else in code. It is the production version of the approach described in [Agentic vs Workflow-based AI](https://danielfridljand.de/post/workflow-vs-agent).
+Our production architecture for first-level customer support splits the problem into small steps, uses LLMs for interpretation, and keeps everything else in code. It is the production version of the approach described in [Workflow or Agent](https://danielfridljand.de/post/workflow-vs-agent).
 
 The system turns a customer message into a reply, possibly with attachments, and any required tool calls: invalidating a voucher, filing a reimbursement ticket, or escalating to a human. A preprocessing layer first normalises inbound attachments.
 
@@ -212,7 +212,7 @@ If nothing clears the threshold, fetch returns no record and the plan can reques
 
 Plan generation receives the **resolved intent leaf**, extracted fields, fetched records, and fetch metadata. Dispatch is therefore a keyed lookup, not another classification: converging paths share one plan, so `account_locked` behaves the same whether reached through account access or card services.
 
-Each known leaf owns a small decision tree over the fetched data: was a record found, is there one candidate, is it flagged? Branches end in a pre-written template plus any tool calls. These trees encode the business logic and grow as patterns emerge. [Agentic vs Workflow-based AI](https://danielfridljand.de/post/workflow-vs-agent) explains why we keep them in code.
+Each known leaf owns a small decision tree over the fetched data: was a record found, is there one candidate, is it flagged? Branches end in a pre-written template plus any tool calls. These trees encode the business logic and grow as patterns emerge. [Workflow or Agent](https://danielfridljand.de/post/workflow-vs-agent) explains why we keep them in code.
 
 ```mermaid
 flowchart TD
