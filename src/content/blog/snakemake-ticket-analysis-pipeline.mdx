@@ -5,15 +5,15 @@ updatedDate: 2026-02-06
 tags:
   - Data Engineering
   - Python
-description: "How I used Snakemake to manage a complex 19-stage ticket analysis pipeline, leveraging scatter-gather parallelization to efficiently process 2000+ customer support tickets with LLM classification."
+description: "How I used Snakemake to manage a complex 19-stage ticket analysis pipeline, leveraging scatter-gather parallelization to efficiently process a couple of thousand customer support tickets with LLM classification."
 image: /images/blog/snakemake-ticket-analysis-pipeline/featured.png
 ---
 
-On a recent project, I had to classify more than 2000 customer support tickets, prepare training data, and keep every run reproducible. The expensive steps, mainly LLM calls and PII censoring, did not work well as a sequence of standalone scripts. I used [Snakemake](https://snakemake.readthedocs.io/) to make the dependencies explicit and rerun only what had changed.
+On a recent project, I had to classify a couple of thousand customer support tickets, prepare training data, and keep every run reproducible. The example is based on a real project, with details changed to protect the client's privacy. The expensive steps, mainly LLM calls and PII censoring, did not work well as a sequence of standalone scripts. I used [Snakemake](https://snakemake.readthedocs.io/) to make the dependencies explicit and rerun only what had changed.
 
 ## The challenge
 
-The tickets came from Zendesk. We wanted to classify each one by **customer intent** (e.g. billing questions, technical issues, feedback) for a later first-level customer support AI agent. The work was iterative: define intents, run an LLM over the tickets, inspect what remained unclassified or misclassified, refine the taxonomy, and repeat. Without a workflow engine, each pass meant manual scripts, ad-hoc reruns, and duplicated work.
+The tickets came from the client's helpdesk system. We wanted to classify each one by **customer intent** (e.g. billing questions, technical issues, feedback) for a later first-level customer support AI agent. The work was iterative: define intents, run an LLM over the tickets, inspect what remained unclassified or misclassified, refine the taxonomy, and repeat. Without a workflow engine, each pass meant manual scripts, ad-hoc reruns, and duplicated work.
 
 ## Pipeline overview
 
@@ -33,31 +33,31 @@ The rule graph below gives a bird’s-eye view of the workflow and its dependenc
 
 ## The ticket shape
 
-Tickets were Zendesk-style exports. Each ticket had:
+Tickets were standard helpdesk exports. Each ticket had:
 
 - **Identifiers and metadata**: ticket ID, channel (e.g. email, chat), satisfaction score when available.
 - **Comments**: a time-ordered list of entries, each with timestamp, body text, and an author role (customer, agent, or sometimes unknown when the export didn’t carry that information).
 
-The pipeline first reduced each ticket to a fixed set of fields (IDs, channel, satisfaction, comment list with normalised author and body). Sensitive content in comment bodies was then censored (e.g. names, emails) so that all downstream steps—including LLM labelling—operated on safe, anonymised text. Below is one example ticket with intent **ReceiveTickets**, with all identifying details replaced by dummy data and uninteresting fields omitted, to illustrate the structure:
+The pipeline first reduced each ticket to a fixed set of fields (IDs, channel, satisfaction, comment list with normalised author and body). Sensitive content in comment bodies was then censored (e.g. names, emails) so that all downstream steps—including LLM labelling—operated on safe, anonymised text. Below is one example ticket, with all identifying details replaced by dummy data and uninteresting fields omitted, to illustrate the structure:
 
 ```json
 {
   "id": 10001,
-  "subject": "Tickets wurde nicht geschickt",
+  "subject": "Order not received",
   "channel": "email",
   "comments": [
     {
-      "body": "Sehr geehrte Damen und Herren,\n\nich habe online 2 Tickets gekauft\nSent from my iPhone",
-      "created_at": "2025-11-05T10:01:57Z",
+      "body": "Hello,\n\nI ordered two items online last week and they still haven't arrived.\nSent from my iPhone",
+      "created_at": "2025-01-14T10:01:57Z",
       "author_role": "customer"
     },
     {
-      "body": "Guten Tag,\n\nich habe Ihnen die Kaufbestätigung nochmals zugesandt.\nZur Sicherheit hänge ich die Tickets an diese Mail mit an.\n\nMit freundlichen Grüßen\nSupport-Team",
-      "created_at": "2025-11-05T10:14:46Z",
+      "body": "Hello,\n\nI have re-sent your confirmation of purchase.\nI am also attaching the documents to this email, just in case.\n\nKind regards,\nSupport Team",
+      "created_at": "2025-01-14T10:14:46Z",
       "author_role": "agent"
     }
   ],
-  "customer_intent": "ReceiveTickets"
+  "customer_intent": "OrderNotReceived"
 }
 ```
 
@@ -67,7 +67,7 @@ This structure, one record per ticket with a list of comments containing roles a
 
 ### 1. Scatter–gather for expensive steps
 
-The heaviest steps were: PII censoring, LLM-based author classification, and LLM-based intent labelling. Running them over 2000+ tickets in one go would have been slow and brittle. So we used a **scatter–gather** pattern. The censoring step uses Microsoft Presidio with multilingual NLP models (English and German) to detect PII, then replaces it with realistic synthetic data via Faker, maintaining consistency within each ticket.
+The heaviest steps were: PII censoring, LLM-based author classification, and LLM-based intent labelling. Running them over a couple of thousand tickets in one go would have been slow and brittle. So we used a **scatter–gather** pattern. The censoring step uses Microsoft Presidio with multilingual NLP models to detect PII, then replaces it with realistic synthetic data via Faker, maintaining consistency within each ticket.
 
 1. **Scatter**: A checkpoint rule splits the extracted tickets into chunks (e.g. 500 tickets per chunk) and writes a manifest of chunk filenames.
 2. **Process in parallel**: Each chunk is processed by its own rule (e.g. `censor_chunk`, `classify_authors_chunk`, `label_llm_chunk`). Snakemake can run these in parallel with `--cores N`.
@@ -129,4 +129,4 @@ The pipeline is also model-agnostic: labels are stored per-model (e.g. `data/tic
 
 ## Outcome
 
-The pipeline processed the full ticket set into 20+ customer intent categories (e.g. ReceiveTickets, CancelReservation, RefundRequest). We could refine the taxonomy without rerunning unrelated work, and the final stages produced the datasets needed to train a first-level customer support AI agent in a separate repo. Snakemake kept the benefit concrete: parallel execution for expensive stages, incremental reruns during taxonomy work, and one DAG that showed how the 19+ stages fit together.
+The pipeline processed the full ticket set into 20+ customer intent categories. We could refine the taxonomy without rerunning unrelated work, and the final stages produced the datasets needed to train a first-level customer support AI agent in a separate repo. Snakemake kept the benefit concrete: parallel execution for expensive stages, incremental reruns during taxonomy work, and one DAG that showed how the 19+ stages fit together.
