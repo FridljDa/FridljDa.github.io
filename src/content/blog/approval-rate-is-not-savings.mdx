@@ -1,0 +1,59 @@
+---
+title: "An Approval Rate Is Not a Cost Reduction"
+pubDate: 2026-04-21T00:00:00.000Z
+updatedDate: 2026-09-20T00:00:00.000Z
+tags:
+  - AI
+  - Customer Support
+  - Evaluation
+description: "We hit the approval rate we had promised and it still didn't cut support cost. Why an approval rate is not a cost reduction, and the arithmetic worth doing before the project starts."
+---
+
+## TL;DR
+An approval rate is not a cost reduction. Unless someone can tell in advance *which* answers are the bad ones, a human still reads all of them, and the saving is a fraction of what the headline number suggests. Do that arithmetic with the client before the project starts.
+
+## The number we hit
+
+On a first-level support automation, **80%** was both the target and the problem. The system ran in shadow deployment: it drafted a reply to every incoming ticket, subject-matter experts graded the drafts, and nothing was ever sent to a customer. Four out of five drafts were judged good enough to send — an 80% approval rate, the ballpark we had promised. On paper it was a success.
+
+It did not translate into the cost reduction the project was funded to deliver.
+
+The example is based on a real project, with details changed to protect the client's privacy. The architecture behind the number is in [Workflow or Agent](/post/workflow-vs-agent), and the loop that produced the grades is in [The Missing Compiler](/post/the-missing-compiler).
+
+## Why the gap is so wide
+
+It is simple once you see it: nobody can tell in advance which fifth is wrong, so a human still reads all of them.
+
+What the automation reliably replaced was *composing* a reply, not *deciding* whether a reply is correct — and the reviewer still has to load the customer's situation into their head to make that decision.
+
+So the honest accounting looks less like "80% of the tickets are handled" and more like "every ticket now costs a read instead of a write." How big a saving that is depends entirely on how much of the original work was the deciding rather than the writing, which is a question about your queue, not about the model. It is also the first number to put in front of a client rather than the last.
+
+## What would have to be true
+
+For an approval rate to become a cost reduction, one of these has to hold:
+
+- **The system knows when it is unsure.** If the model can separate the cases it will get right from the ones it won't, you can auto-send the confident slice and route the rest to a human. Then the useful metric is not the overall approval rate but the approval rate *within the auto-send slice*, and how large that slice is. A calibrated 50% that you can act on beats an uncalibrated 80% that you can't.
+- **Review is genuinely cheaper than authoring.** True where the reply is long, formulaic, or requires assembling data the reviewer would otherwise have to look up by hand. Less true where the hard part was the judgement call.
+- **The errors are cheap.** If a wrong reply costs little to correct after the fact, you can accept some bad sends and skip the review. In a bank, that assumption does not survive contact with compliance.
+
+We were optimising the headline approval rate, which measures none of these. And the grading criterion behind it was whether a draft matched one of the client's established message templates, not whether the customer's issue got resolved — a proxy for a proxy.
+
+## Volume decides the rest
+
+Even with all of that fixed, the arithmetic has a second term: how many tickets there are.
+
+The queue we were automating ran at roughly a dozen tickets a day. Even a flawless system was competing for a small slice of one person's time, against the cost of building and maintaining it — and maintenance is not optional, since the business rules the system encodes keep changing.
+
+This is the term that is easiest to check and easiest to skip. It requires no model, no prototype and no pilot: just the queue volume and a realistic handling time.
+
+## Do the arithmetic with the client first
+
+Whether an automation like this pays for itself is an ROI calculation, and it needs realistic parameters before the project starts, not after the demo lands. The parameters worth pinning down:
+
+- **Volume.** Tickets per day in the queue you are actually automating, not the whole support inbox.
+- **Handling time.** Minutes per ticket today, and minutes per ticket to *review* a generated draft.
+- **The cost of being wrong.** What happens to a bad reply that goes out, and who carries it.
+- **Reviewer availability.** The feedback loop runs on subject-matter expert time, both during the build and afterwards.
+- **Maintenance.** Who edits the rules when the business changes them, and how often that is.
+
+None of this is hard. It is uncomfortable, because the honest version of the calculation sometimes says the project shouldn't happen — which is exactly the value of doing it before rather than after.

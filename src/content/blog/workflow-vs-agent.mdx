@@ -1,41 +1,31 @@
 ---
-title: "The Missing Compiler: Automating First-Level Support"
+title: "Workflow or Agent: Where the Decisions Live"
 pubDate: 2026-04-19T00:00:00.000Z
-updatedDate: 2026-08-10T00:00:00.000Z
+updatedDate: 2026-09-20T00:00:00.000Z
 tags:
   - AI
   - Customer Support
   - Architecture
-description: "How I automated first-level support with a workflow, why the state space outgrew it, and what I'd try differently next time."
+description: "Two designs for the same first-level support automation — an agent holding every tool, and a workflow that keeps code in charge of the order of operations — and why the state space eventually outgrew the workflow."
 image: /images/blog/workflow-vs-agent/featured.png
 ---
 
 ## TL;DR
-Automating manual workflows with LLMs is [widely piloted and rarely scaled](https://www.mckinsey.com/capabilities/quantumblack/our-insights/the-state-of-ai). This post is a report from one first-level support automation project.
-Main takeaway: Invest in the external feedback loop early to develop in a data-driven way.
+The first architectural decision in an LLM automation is how much of the work the model does and how much code does. We put code in charge of sequencing and gave the LLM one narrow job. That was right for the head of the ticket distribution and wrong for the tail. Next time I would invert the order and start with the agent.
 
-## Intro
-Progress in frontier AI models has allowed coding agents to tackle ever more complex and long-running tasks, fast enough that benchmarks keep needing to be replaced: [SWE-bench Verified](https://www.swebench.com/verified.html) is close to saturated.
-
-What makes coding agents so effective is a combination of two things:
-1. Software is largely composed of patterns LLMs have seen countless times during training: syntax, idioms, libraries.
-2. The [agentic loop](https://www.deeplearning.ai/the-batch/issue-359) provides a tight feedback loop. Looping on results from tests, linters and compiler errors, the agent can handle a wide range of problems without human intervention.
-
-In benchmarks like [tbench](https://www.tbench.ai/), that is all the scaffolding an agent gets: a terminal, and permission to loop.
-But this combination is specific to code. Consider this automation task:
+## The task
 
 Customers wrote in to our first-level support team at Northstar Bank with messages like this:
 
 > Hi, I'm Alex Carter and I bank with your Riverton branch. My account number is NSB01234 and I can't get in any more; it keeps saying the account is locked. Can you help me get back in?
 
-Point for point, neither condition holds:
-
-1. LLMs haven't seen your internal escalation rules or customer records during training.
-2. There is no compiler or test suite to tell the system whether the reply it wrote was any good. The only verdict available is a human one: someone who knows the bank has to read the reply and judge it.
-
-An early decision in projects like this: how much of the work does the model do, and how much does code do? It shapes a lot downstream. Given both points above, my instinct has been to lean on workflows and keep the LLM on a short leash.
-
 The running example is based on a real project, but the details have been changed to protect the client's privacy.
+
+An early decision in a project like this: how much of the work does the model do, and how much does code do? It shapes a lot downstream.
+
+Two facts pushed us toward code. The first is that LLMs haven't seen your internal escalation rules or customer records during training. The second is that nothing here plays the role a compiler or test suite plays for a coding agent: no automatic verdict tells the system whether the reply it wrote was any good, so someone who knows the bank has to read it and judge. That second fact has [a post of its own](/post/the-missing-compiler); this one is about who decides the order of operations.
+
+Either way, my instinct was to lean on workflows and keep the LLM on a short leash.
 
 ---
 
@@ -149,25 +139,12 @@ Two consequences:
 - **Scope the LLM to what only an LLM can do.** Recognising the intent and extracting an identifier from free text is a well-defined task. You can build targeted evals, iterate on the prompt, drop to a cheaper model, or swap the LLM for a Named Entity Recognition model.
 - **Iteration is targeted and predictable.** When a message is misread or a policy changes, the fix is local: edit the extraction prompt, add a branch, adjust one API call, and you know what the next message of that shape will do.
 
-## Growing the workflow with a feedback loop
-
-We built the full [four-step pipeline](/post/first-level-support-automation) and ran it in a setup that made iteration safe. The system went live in **shadow deployment**, where responses were graded by subject-matter experts but never shown to customers, so a wrong answer had little blast radius.
-
-We had a tight process to translate that external feedback into code changes:
-
-1. Subject-matter experts graded a batch of shadow responses and left free-text feedback.
-2. I added a comment on what the solution should look like from a technical perspective.
-3. Cursor implemented the feedback, usually a new branch in the tree.
-4. Cursor added the case to an eval set.
-5. CI re-ran the eval suite.
-
-Step 1 was the bottleneck: the loop runs on subject-matter expert time — one more item in a day that is
-already full, for people who may suspect they are training their own replacement. We were fortunate on both counts: our main point of contact was enthusiastic and not worried about being automated away, and top-down pressure
-from the client's leadership drove up both the quantity and the quality of the feedback.
+The production version of this pattern, scaled up to a four-step pipeline, is in [Architecture of a First-Level Support Automation](/post/first-level-support-automation); the typing that holds the seams together is in [Type-Safe Hybrid Workflows with Pydantic AI](/post/pydantic-ai-type-safe-hybrid-workflows).
 
 ## The state space wasn't bounded
 
-Each round of feedback landed a new branch, and for a while that worked.
+We ran that pipeline in shadow deployment — it drafted a reply to every incoming ticket, subject-matter experts graded the drafts, and nothing went to a customer. Each round of their feedback landed a new branch in the tree, and for a while that worked.
+
 But a *true* workflow needs a deterministic mapping from customer intent plus [fetched data](/post/first-level-support-automation#step-3-fetch) to a helpful reply.
 
 That mapping is a grid: every message shape against every state the record behind it can be in:
@@ -211,47 +188,11 @@ flowchart TD
 
 Code was the default; the agent was the dashed exception, and it only ever got the scraps the code hadn't reached yet.
 
-The grading criterion worked against it, too. We scored on template match — the requirement the client had stated — rather than on whether
+The grading criterion worked against it, too. We scored on template match — the requirement we had been given — rather than on whether
 the end-customer's issue got resolved. So an agent that wrote a clearer, more helpful answer in its own words still scored badly,
 purely for departing from a template. We were asking the agent to be a worse workflow.
 
-## 80% was both the target and the problem
-
-We reached an approval rate of 80% on shadow tickets: subject-matter experts judged four out of five generated responses good enough to send.
-That was the ballpark we had promised the client, and on paper it was a success.
-
-It did not translate into the cost reduction the project was funded to deliver.
-An 80% approval rate is not an 80% cut in support effort: nobody can tell in advance which fifth is wrong, so a human still reads all of them.
-
-Volume decided the rest. The ticket queue we were automating ran at roughly a dozen tickets a day, so even a flawless system was competing for a small slice of one person's time, against the cost of building and maintaining it.
-
-## What I would do differently
-
-### Do the arithmetic with the client first
-
-Whether an automation like this pays for itself is an ROI calculation, and it needs realistic parameters before the project starts.
-
-### Get into shadow deployment sooner
-
-The shadow deployment went live only once the offline numbers on historic tickets looked acceptable.
-That has it backwards. Replaying a historic ticket replays the customer's message, but not the state of the bank's records at the time it was written;
-shadow deployment was the only setting where the pipeline ran against real state and was judged on the thing that mattered.
-We gated the trustworthy signal behind the untrustworthy one.
-
-### Invest in the external feedback loop, and don't build it yourself
-
-Look again at the two conditions from the top of this post. The second is the one that never resolves itself: a coding agent is handed its verdict, automatically, every time it runs.
-A support system has no such verdict unless you build one. The external loop *is* the missing compiler, and under the agent-first design below it's the only thing
-that tells you which paths are worth freezing into code. Related reading: [harness engineering](https://openai.com/index/harness-engineering/).
-
-Don't build the whole loop yourself. A narrow review screen for the subject-matter experts is worth writing; the machinery behind it isn't.
-Langfuse's annotation queues as the backend, with a thin custom frontend on its API, would have been the better trade. That deserves a post of its own.
-
-## Alternatives I'd try next time
-
-Two designs I haven't run, but would want to try on the next project of this shape.
-
-### Start with the agent
+## Next time: start with the agent
 
 Invert the order, following Will Larson's [Building internal agents](https://lethain.com/agents-series/) series: start with the agent. A path graduates into a workflow only once it shows up often and the agent handles it unreliably, or when the action is irreversible enough that you don't want a model deciding it.
 
@@ -260,16 +201,10 @@ Picture the [diagram above](#bolting-an-agent-onto-the-tree) with the default fl
 The caveats are real, though:
 
 - **The agent doesn't shrink the grid, it just spares you enumerating it.** That is a real advantage, since enumerating it was exactly where we hit the wall. But not having to write a cell down is not the same as landing on the right one more often; only the feedback loop settles that, filling the grid with evidence instead of anticipation.
-- **The agent arrives no better informed than the tree did.** The first condition from the top of the post doesn't move: how Alex Carter gets back into their account lives in the bank's rules and its records, not in the training data.
+- **The agent arrives no better informed than the tree did.** The first of the two facts above doesn't move: how Alex Carter gets back into their account lives in the bank's rules and its records, not in the training data.
 - **Grounding in historical tickets is not a clean fix.** The obvious remedy is to point the agent at resolved tickets, but those are full of conflicting, low-quality resolutions. The tree, for all its gaps, was at least a single curated source of truth.
 - **Privacy and security are hard to get right.** Those same historical tickets are full of personal data. An agent that retrieves and reasons over them is a far larger exposure surface than a fixed tree.
 
-### Let the agent write its own branches
+## What actually settles it
 
-In our loop, steps 2 and 3 were me translating SME feedback into a branch. That doesn't scale. An agent with persistent memory — something like [Hermes](https://hermes-agent.nousresearch.com/), which keeps what worked as skills — could take that over: the same graduation as freezing a path into code, written by the agent instead of by me. Wire it to the external feedback loop and the grid fills itself.
-
-The risk is drift: you give a lot of autonomy to an agent.
-
-### Automate the feedback-to-plan translation
-Step 2 was me: turning SME feedback into an implementation plan. I did try to hand that off. Cursor on the raw feedback produced worse results, and Skill files and targeted guidelines narrowed the gap without closing it.
-More specific skills, or a subagent dedicated to the translation, might have closed the rest — or might have been time sunk into tooling for nothing. You only find out by spending it, which makes it a prioritisation call.
+Neither design tells you which cells of that grid matter. A workflow makes you guess them up front; an agent lets you skip writing them down. Only evidence from people who know the business settles which paths are worth freezing into code — which is why I'd now build [that loop](/post/the-missing-compiler) before committing to either architecture, and check that [the arithmetic works at all](/post/approval-rate-is-not-savings) before building anything.
