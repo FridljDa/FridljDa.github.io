@@ -1,7 +1,7 @@
 ---
 title: "The Missing Compiler: Business Automation Has No Test Suite"
 pubDate: 2026-04-20T00:00:00.000Z
-updatedDate: 2026-09-20T00:00:00.000Z
+updatedDate: 2026-10-02T00:00:00.000Z
 tags:
   - AI
   - Customer Support
@@ -10,7 +10,7 @@ description: "Coding agents get a verdict for free from tests, linters and compi
 ---
 
 ## TL;DR
-Automating manual workflows with LLMs is [widely piloted and rarely scaled](https://www.mckinsey.com/capabilities/quantumblack/our-insights/the-state-of-ai). One reason: the feedback loop that makes coding agents work has no equivalent in business processes, and teams treat building one as overhead rather than as the core of the project. Invest in the external feedback loop early, and don't build the machinery yourself.
+Automating manual workflows with LLMs is [widely piloted and rarely scaled](https://www.mckinsey.com/capabilities/quantumblack/our-insights/the-state-of-ai). One reason: the feedback loop that makes coding agents work has no equivalent in business processes, and teams treat building one as overhead rather than as the core of the project. A good loop is also the cheapest way to get domain knowledge out of the people who have it, which is where the real bottleneck sits. Invest in it early, and don't build the machinery yourself.
 
 ## Why coding agents work
 
@@ -34,7 +34,7 @@ Point for point, neither condition holds:
 1. LLMs haven't seen your internal escalation rules or customer records during training.
 2. There is no compiler or test suite to tell the system whether the reply it wrote was any good. The only verdict available is a human one: someone who knows the bank has to read the reply and judge it.
 
-The first condition is unfixable — those rules and records are simply not in the training data, and the architecture you choose doesn't change that. The second is the one worth spending on, because a verdict is a thing you can build.
+Neither the model nor the architecture you choose changes the first condition: those rules and records are simply not in the training data. The second is the one worth spending on, because a verdict is a thing you can build — and, as it turns out, building it is also the best way to chip away at the first.
 
 The running example is based on a real project, but the details have been changed to protect the client's privacy. The architecture the loop was attached to is in [Workflow or Agent](/post/workflow-vs-agent).
 
@@ -52,7 +52,15 @@ We had a tight process to translate that external feedback into code changes:
 
 Steps 4 and 5 are the part that looks most like a compiler, and they are the easy part. Once a case is written down, the machinery that keeps it from regressing is ordinary engineering — [Langfuse in Production](/post/langfuse-monitoring-eval-self-improvement) covers how we ran it.
 
-Step 1 is the bottleneck. The loop runs on subject-matter expert time: one more item in a day that is already full, for people who may suspect they are training their own replacement. We were fortunate on both counts — the reviewers engaged with it, and the work had visible sponsorship from the client's leadership, which kept both the quantity and the quality of the feedback up. Neither is something to count on by default. When you estimate a project of this shape, the reviewers' availability is a hard input, not a detail to sort out later.
+## The bottleneck moves
+
+Eliyahu Goldratt's [theory of constraints](https://en.wikipedia.org/wiki/Theory_of_constraints) rests on a simple observation: every system has a bottleneck, and fixing it doesn't remove it, it moves it somewhere else. Time saved anywhere but at the bottleneck buys you nothing.
+
+AI-assisted coding moved ours. Once a decision was made, Cursor and CI turned it into a branch, an eval case and a green build with little of my time; writing code was no longer what limited progress. What limited it was step 1: getting domain knowledge out of the heads of the people who had it.
+
+That knowledge is mostly tacit. The people who know a business can rarely write its rules down in advance — every `?` in [the grid](/post/workflow-vs-agent#the-state-space-wasnt-bounded) is a rule nobody had written — but shown a specific draft, they can tell you at a glance what is wrong with it. Grading a concrete reply is a far cheaper way to extract a rule than asking for its specification. So the loop has a second job, and it may be the more important one: besides standing in for the verdict a coding agent gets for free, it is the extraction tool for knowledge that exists only in people's heads.
+
+It also runs on their time: one more item in a day that is already full, for people who may suspect they are training their own replacement. We were fortunate on both counts — the reviewers engaged with it, and the work had visible sponsorship from the client's leadership, which kept both the quantity and the quality of the feedback up. Neither is something to count on by default. When you estimate a project of this shape, the reviewers' availability is a hard input, not a detail to sort out later, and everything else in the loop should be built to spend as little of it as possible.
 
 ## Get into shadow deployment sooner
 
@@ -68,11 +76,11 @@ The external loop *is* the missing compiler. It is the only thing that tells you
 
 That makes it tempting to build it properly, in-house, as a first-class part of the system. I would resist that now.
 
-A narrow review screen for the subject-matter experts is worth writing yourself: it is the surface they touch every day, it should show exactly the ticket and the proposed reply and nothing else, and every click you remove buys you more feedback. The machinery behind it — queues, assignment, score storage, history — is not worth writing. Langfuse's annotation queues as the backend, with a thin custom frontend on its API, would have been the better trade.
+A narrow review screen for the subject-matter experts is worth writing yourself: it is the surface they touch every day, it should show exactly the ticket and the proposed reply and nothing else, and every click you remove is reviewer time handed back to the bottleneck. The machinery behind it — queues, assignment, score storage, history — is not worth writing. Langfuse's annotation queues as the backend, with a thin custom frontend on its API, would have been the better trade.
 
 ## Untried: who translates the feedback
 
-Steps 2 and 3 were me, turning free-text feedback into an implementation plan and then into a rule. That doesn't scale, and it puts a single engineer on the critical path of every improvement. I have not solved this, but here is where I got.
+Steps 2 and 3 were me, turning free-text feedback into an implementation plan and then into a rule. That doesn't scale, and it puts a single engineer on the critical path of every improvement: once the reviewers are grading steadily, this is where the bottleneck moves next. I have not solved this, but here is where I got.
 
 Handing step 2 to Cursor on the raw feedback produced worse results than doing it myself; Skill files and targeted guidelines narrowed the gap without closing it. More specific skills, or a subagent dedicated to the translation, might close the rest — or might be time sunk into tooling for nothing. You only find out by spending it.
 
