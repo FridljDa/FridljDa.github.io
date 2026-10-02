@@ -1,5 +1,5 @@
 ---
-title: "Orchestrating ML Data Pipelines with Snakemake: A Real-World Case Study"
+title: "Orchestrating an LLM Ticket-Classification Pipeline with Snakemake"
 pubDate: 2026-02-06
 updatedDate: 2026-02-06
 tags:
@@ -43,21 +43,21 @@ The pipeline first reduced each ticket to a fixed set of fields (IDs, channel, s
 ```json
 {
   "id": 10001,
-  "subject": "Order not received",
+  "subject": "Card not received",
   "channel": "email",
   "comments": [
     {
-      "body": "Hello,\n\nI ordered two items online last week and they still haven't arrived.\nSent from my iPhone",
+      "body": "Hello,\n\nI requested a replacement card last week and it still hasn't arrived.\nSent from my iPhone",
       "created_at": "2025-01-14T10:01:57Z",
       "author_role": "customer"
     },
     {
-      "body": "Hello,\n\nI have re-sent your confirmation of purchase.\nI am also attaching the documents to this email, just in case.\n\nKind regards,\nSupport Team",
+      "body": "Hello,\n\nI have re-issued your card.\nI am also attaching the confirmation to this email, just in case.\n\nKind regards,\nSupport Team",
       "created_at": "2025-01-14T10:14:46Z",
       "author_role": "agent"
     }
   ],
-  "customer_intent": "OrderNotReceived"
+  "customer_intent": "CardNotReceived"
 }
 ```
 

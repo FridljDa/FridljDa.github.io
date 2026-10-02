@@ -41,7 +41,7 @@ test.describe('Prompt Injection Blog Post', () => {
     // Verify the title
     const title = article.locator('h1').first();
     await expect(title).toBeVisible();
-    await expect(title).toHaveText('Prompt Injection');
+    await expect(title).toHaveText('Prompt Injection: Can You Make My Chatbot Leak Its Password?');
   });
 
   test('should display hackathon challenge content', async ({ page }) => {

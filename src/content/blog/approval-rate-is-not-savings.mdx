@@ -7,30 +7,31 @@ tags:
   - Customer Support
   - Evaluation
 description: "A high approval rate on generated support replies is not a cost reduction. Why the two come apart, and the arithmetic worth doing before automating a support queue."
+image: /images/blog/approval-rate-is-not-savings/featured.png
 ---
 
 ## TL;DR
-An approval rate is not a cost reduction. Unless someone can tell in advance *which* answers are the bad ones, a human still reads all of them, and the saving is a fraction of what the headline number suggests. Do that arithmetic before the project starts, not after the demo lands.
+An approval rate is not a cost reduction. Unless someone can tell in advance *which* answers are the bad ones, a human still reads all of them, and the saving is a fraction of what the headline number suggests. Do that arithmetic, queue volume included, before the project starts.
 
 ## The number everyone reaches for
 
 The natural way to measure an LLM support automation is an approval rate. Run the system in **shadow deployment** — it drafts a reply to every incoming ticket, subject-matter experts grade the drafts, and nothing is sent to a customer — and count how many drafts the experts would have sent as written.
 
-It is a good number for steering development; it is the one I iterated against on a first-level support project, through the loop described in [The Missing Compiler](/post/the-missing-compiler). It is a poor number for a business case, because it invites a reading it can't support: an 80% approval rate sounds like 80% of the work done.
+It is a good number for steering development. It is a poor number for a business case, because it invites a reading it can't support: an 80% approval rate sounds like 80% of the work done.
 
 ## Why the two come apart
 
-Nobody can tell in advance which fifth is wrong, so a human still reads all of them.
+Unless something can flag in advance which fifth is wrong, a human still reads all of them.
 
 What the automation reliably replaces is *composing* a reply, not *deciding* whether a reply is correct — and the reviewer still has to load the customer's situation into their head to make that decision.
 
-So the honest accounting looks less like "80% of the tickets are handled" and more like "every ticket now costs a read instead of a write." How big a saving that is depends entirely on how much of the original work was the deciding rather than the writing, which is a question about your queue, not about the model. It is also the first number to put in front of a client rather than the last.
+So the honest accounting looks less like "80% of the tickets are handled" and more like "every ticket now costs a read instead of a write." How big a saving that is depends entirely on how much of the original work was the deciding rather than the writing, which is a question about your queue, not about the model.
 
 ## What would have to be true
 
 For an approval rate to become a cost reduction, one of these has to hold:
 
-- **The system knows when it is unsure.** If the model can separate the cases it will get right from the ones it won't, you can auto-send the confident slice and route the rest to a human. Then the useful metric is not the overall approval rate but the approval rate *within the auto-send slice*, and how large that slice is. A calibrated 50% that you can act on beats an uncalibrated 80% that you can't.
+- **The system knows when it is unsure.** If the model can separate the cases it will get right from the ones it won't, you can auto-send the confident slice and route the rest to a human. Then the useful metric is not the overall approval rate but the approval rate *within the auto-send slice*, and how large that slice is. Auto-sending half the queue with near-zero errors beats an 80% approval rate you can't act on.
 - **Review is genuinely cheaper than authoring.** True where the reply is long, formulaic, or requires assembling data the reviewer would otherwise have to look up by hand. Less true where the hard part was the judgement call.
 - **The errors are cheap.** If a wrong reply costs little to correct after the fact, you can accept some bad sends and skip the review. In regulated domains like banking, that assumption rarely survives contact with compliance.
 
@@ -40,13 +41,11 @@ A headline approval rate measures none of these. It is often a proxy for a proxy
 
 Even with all of that fixed, the arithmetic has a second term: how many tickets there are.
 
-Take a queue that sees a dozen tickets a day. Even a flawless system is competing for a small slice of one person's time, against the cost of building and maintaining it — and maintenance is not optional, since the business rules the system encodes keep changing.
+Take a low-volume queue. Even a flawless system is competing for a small slice of one person's time, against the cost of building and maintaining it — and maintenance is not optional, since the business rules the system encodes keep changing.
 
-This is the term that is easiest to check and easiest to skip. It requires no model, no prototype and no pilot: just the queue volume and a realistic handling time.
+## Do the arithmetic first
 
-## Do the arithmetic with the client first
-
-Whether an automation like this pays for itself is an ROI calculation, and it needs realistic parameters before the project starts, not after the demo lands. The parameters worth pinning down:
+Whether an automation like this pays for itself is an ROI calculation. The parameters worth pinning down before the project starts:
 
 - **Volume.** Tickets per day in the queue you are actually automating, not the whole support inbox.
 - **Handling time.** Minutes per ticket today, and minutes per ticket to *review* a generated draft.
