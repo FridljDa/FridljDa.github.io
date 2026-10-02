@@ -1,0 +1,156 @@
+---
+/**
+ * A blog post as plain HTML for pasting into Confluence.
+ *
+ * Confluence keeps headings, lists, tables, links and images from pasted HTML
+ * and drops styling, so this page renders the post without the site layout,
+ * and components that draw with CSS or SVG render a plain variant instead (they
+ * check Astro.locals.confluence). Links and images point at the production
+ * site, so a post's images have to be deployed before it is pasted.
+ *
+ * Unlisted and noindex: the content is the public post, only the format differs.
+ */
+import { getCollection, render } from 'astro:content';
+import { SITE } from '../../../data/site';
+
+const { slug } = Astro.params;
+const post = (await getCollection('blog')).find((p) => p.id === slug);
+
+if (!post) {
+  return Astro.redirect('/404', 404);
+}
+
+Astro.locals.confluence = true;
+const { Content } = await render(post);
+const postUrl = `${SITE.url}/post/${post.id}`;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex" />
+    <link rel="canonical" href={postUrl} />
+    <title>{post.data.title} (Confluence copy)</title>
+  </head>
+  <body>
+    <div class="toolbar">
+      <p>
+        Plain copy of <a href={postUrl}>this post</a> for Confluence. Copy the title into the page title and the
+        body into the page. Images load from {new URL(SITE.url).host}, as they will in Confluence, so a broken one
+        here has not been deployed yet.
+      </p>
+      <div class="actions">
+        <button type="button" data-copy="title">Copy title</button>
+        <button type="button" data-copy="body">Copy body</button>
+        <span class="status" role="status"></span>
+      </div>
+    </div>
+
+    <main>
+      <h1 id="title">{post.data.title}</h1>
+      <article id="body" data-base={postUrl}>
+        <p><em>Originally published at <a href={postUrl}>{postUrl.replace(/^https:\/\//, '')}</a>.</em></p>
+        {post.data.image && <img src={post.data.image} alt={post.data.title} />}
+        <Content />
+      </article>
+    </main>
+
+    <script>
+      const title = document.getElementById('title')!;
+      const body = document.getElementById('body')!;
+      const base = body.dataset.base!;
+
+      // Headings are wrapped in a link to their own anchor, which a paste keeps.
+      for (const link of body.querySelectorAll('a.heading-link')) {
+        link.replaceWith(...link.childNodes);
+      }
+      // Relative URLs would resolve against the Confluence page.
+      for (const link of body.querySelectorAll('a[href]')) {
+        link.setAttribute('href', new URL(link.getAttribute('href')!, base).href);
+      }
+      for (const img of body.querySelectorAll('img[src]')) {
+        img.setAttribute('src', new URL(img.getAttribute('src')!, base).href);
+      }
+
+      // A copy event rather than the async Clipboard API, which browsers deny
+      // without a permission grant; this only needs the click.
+      function copy(el: HTMLElement): boolean {
+        const onCopy = (event: ClipboardEvent) => {
+          event.clipboardData?.setData('text/html', el.innerHTML);
+          event.clipboardData?.setData('text/plain', el.innerText);
+          event.preventDefault();
+        };
+        document.addEventListener('copy', onCopy);
+        try {
+          return document.execCommand('copy');
+        } finally {
+          document.removeEventListener('copy', onCopy);
+        }
+      }
+
+      const status = document.querySelector('.status')!;
+      const targets = { title, body };
+      for (const button of document.querySelectorAll<HTMLButtonElement>('[data-copy]')) {
+        const what = button.dataset.copy as keyof typeof targets;
+        button.addEventListener('click', () => {
+          status.textContent = copy(targets[what])
+            ? `Copied the ${what}.`
+            : `Could not copy the ${what}; select it and copy by hand.`;
+        });
+      }
+    </script>
+
+    <style is:global>
+      :root {
+        color-scheme: light dark;
+        font-family: system-ui, sans-serif;
+        line-height: 1.6;
+      }
+      body {
+        max-width: 48rem;
+        margin: 0 auto;
+        padding: 0 1rem 4rem;
+        background: Canvas;
+        color: CanvasText;
+      }
+      .toolbar {
+        position: sticky;
+        top: 0;
+        padding: 0.75rem 0;
+        border-bottom: 1px solid color-mix(in srgb, CanvasText 20%, transparent);
+        background: Canvas;
+        font-size: 0.875rem;
+      }
+      .toolbar p {
+        margin: 0 0 0.5rem;
+      }
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.5rem;
+      }
+      button {
+        font: inherit;
+        padding: 0.375rem 0.75rem;
+        cursor: pointer;
+      }
+      img {
+        max-width: 100%;
+        height: auto;
+      }
+      table {
+        border-collapse: collapse;
+      }
+      th,
+      td {
+        border: 1px solid color-mix(in srgb, CanvasText 25%, transparent);
+        padding: 0.375rem 0.625rem;
+        text-align: left;
+        vertical-align: top;
+      }
+    </style>
+  </body>
+</html>

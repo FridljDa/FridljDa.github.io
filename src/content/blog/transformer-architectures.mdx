@@ -1,9 +1,10 @@
 ---
 title: "Encoder, Decoder, Both: The Three Transformer Architectures"
 pubDate: 2026-05-03T00:00:00.000Z
-updatedDate: 2026-05-03T00:00:00.000Z
+updatedDate: 2026-10-02T00:00:00.000Z
 tags:
   - AI
+math: true
 description: "Self-attention is the mechanism. BERT, GPT, and T5 are three different ways to stack it."
 image: /images/blog/transformer-architectures/featured.png
 ---
@@ -18,19 +19,21 @@ Historically, the encoder–decoder came first and the others were carved out of
 
 ## 1. Encoder-only: BERT and friends
 
-The simplest Transformer architecture is a single stack of identical blocks, each containing self-attention and a feed-forward network. It uses neither a mask nor cross-attention, and it has no second stack.
+The simplest Transformer architecture is a single stack of identical blocks, each containing self-attention and a feed-forward network. It has no causal mask, no cross-attention and no second stack; the only mask it uses is for padding.
 
 ![Encoder-only transformer architecture](/images/blog/transformer-architectures/encoder.png)
 
 This is BERT ([Devlin et al., 2018](https://arxiv.org/abs/1810.04805)) and its successors: RoBERTa, DeBERTa, and ModernBERT. Every position attends to every other position, in both directions. The output is a contextualized vector for each input token.
 
-Bidirectional attention works well for *understanding* tasks such as sentence classification, named entity recognition, and embedding generation. Classifying a word benefits from seeing what comes after it as well as before. There is no generation here; the model produces representations, not tokens.
+Bidirectional attention works well for *understanding* tasks such as sentence classification, named entity recognition, and embedding generation. Classifying a word benefits from seeing what comes after it as well as before.
+
+There is no open-ended generation here. BERT is pre-trained by *masked language modelling*: about 15% of the input tokens are hidden, mostly behind a `[MASK]` token, and the model predicts them from both sides. Because the targets are hidden in the input itself, bidirectional attention has nothing to copy, so the [leakage problem](/post/masks-and-cross-attention#1-the-leakage-problem) that forces a causal mask on GPT does not arise. The model produces representations, not tokens.
 
 ---
 
 ## 2. Decoder-only: GPT, Llama, Claude
 
-Now add one mechanism: a causal mask on the self-attention layer.
+Now add one mechanism: a [causal mask](/post/masks-and-cross-attention#2-the-fix--infty-before-softmax) on the self-attention layer.
 
 ![Decoder-only transformer architecture](/images/blog/transformer-architectures/decoder.png)
 
@@ -50,7 +53,7 @@ The original Transformer ([Vaswani et al., 2017](https://arxiv.org/abs/1706.0376
 
 The left stack is exactly the encoder-only architecture from §1: bidirectional self-attention over the source sentence. The right stack is almost the decoder-only architecture from §2: causal-masked self-attention over the target sentence so far. The new piece is the cross-attention layer inside each block of the right stack, which lets each target position attend to every source position by reading keys and values from the encoder's final output. In the original paper, both stacks have $N = 6$ blocks.
 
-This is also where the naming finally clicks. *That* cross-attention layer — the bridge from the right stack to the left — is what made the original decoder a decoder. The "decoder-only" models from §2 do not have it; with no encoder, there is nothing to cross-attend to. A more honest name would be "causal-masked Transformer," but "decoder-only" stuck because these models, like the original decoder, generate autoregressively — emitting tokens left to right, conditioning each on what has already been produced.
+This is also where the name comes from. [Liu et al. (2018)](https://arxiv.org/abs/1801.10198) took this right-hand stack on its own, dropping the encoder and with it the cross-attention layer, which had nothing left to attend to; GPT ([Radford et al., 2018](https://cdn.openai.com/research-covers/language-unsupervised/language_understanding_paper.pdf)) adopted the same "Transformer decoder". What survives of the original decoder is its causal mask and its job: emitting tokens left to right, each conditioned on what has already been produced. A more honest name would be "causal-masked Transformer," but "decoder-only" stuck.
 
 ---
 
@@ -62,21 +65,13 @@ This is also where the naming finally clicks. *That* cross-attention layer — t
 | Decoder-only     | Causal-masked    | None            | GPT, Llama, Claude               | Open-ended generation   |
 | Encoder–decoder  | Both kinds       | Yes             | T5, BART, original Transformer   | Sequence-to-sequence    |
 
-The choice is task-driven. Need a representation? Encoder-only. Need to generate text from scratch? Decoder-only. Need to generate text *conditioned on a different sequence* (translation, summarization, structured generation from long input)? Encoder–decoder.
-
-A practical note: encoder–decoder models like T5 ([Raffel et al., 2019](https://arxiv.org/abs/1910.10683)) and BART are still actively used for sequence-to-sequence tasks where the input and output are clearly distinct. But the gravitational center of the field has shifted to decoder-only, because anything you can frame as "continue this text" — which turns out to be a lot — can be done by a decoder-only model with the right prompt.
+Encoder–decoder models like T5 ([Raffel et al., 2019](https://arxiv.org/abs/1910.10683)) and BART ([Lewis et al., 2019](https://arxiv.org/abs/1910.13461)) are still actively used for sequence-to-sequence tasks where the input and output are clearly distinct. But the gravitational center of the field has shifted to decoder-only, because anything you can frame as "continue this text" — which turns out to be a lot — can be done by a decoder-only model with the right prompt.
 
 ---
 
 ## Summary
 
-Self-attention is the *mechanism*. The three Transformer families are different ways to stack it.
-
-- **Encoder-only** uses bidirectional self-attention. Everything sees everything.
-- **Decoder-only** adds a causal mask. The future is hidden.
-- **Encoder–decoder** adds a second stack and a cross-attention bridge between them.
-
-In all three, the underlying attention layer is the same scaled-dot-product self-attention from [the kernel regression derivation](/post/kernel-to-attention). The architectural differences are entirely about *which positions can see which* — controlled by masks and by which sequence each query reads from.
+In all three, the underlying attention layer is the same scaled dot-product attention from [the kernel regression derivation](/post/kernel-to-attention). The architectural differences are entirely about *which positions can see which* — controlled by masks and by which sequence each query reads from.
 
 ---
 

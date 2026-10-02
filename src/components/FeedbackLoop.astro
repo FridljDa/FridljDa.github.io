@@ -1,0 +1,376 @@
+---
+/**
+ * The five-step feedback loop in "The loop we built" in the-missing-compiler,
+ * and the copies of it that later sections use to point at one step.
+ *
+ * Steps come in as props so they stay readable in the post's raw markdown; the
+ * post defines them once (`export const loop`) and spreads them into each copy.
+ * People's steps and tools' steps sit in separate lanes because the post argues
+ * the constraint lives with the people, not the tools.
+ *
+ * Every copy has the same layout, each lane a row of steps, so the later ones
+ * read as the first one again. `compact` drops the step descriptions; `focus`
+ * marks one step (numbered from 1) with `focusLabel` and mutes the others.
+ *
+ * A paste into Confluence drops the CSS that draws the lanes, so the Confluence
+ * copy of the post shows a PNG of each copy instead, named by `name`. The
+ * figure carries the PNG's path, and the script that renders them finds every
+ * figure that does; regenerate them after changing a loop:
+ * npm run confluence:figures
+ */
+
+interface Step {
+  label: string;
+  text: string;
+}
+
+interface Props {
+  /** Unique within the post: the Confluence PNG is <name>.png in the post's image folder. */
+  name: string;
+  people: Step[];
+  tools: Step[];
+  returnLabel: string;
+  compact?: boolean;
+  focus?: number;
+  focusLabel?: string;
+}
+
+const { name, people, tools, returnLabel, compact = false, focus, focusLabel } = Astro.props;
+const lanes = [
+  { name: 'People', kind: 'people', steps: people, start: 1 },
+  { name: 'Tools', kind: 'tools', steps: tools, start: people.length + 1 },
+];
+
+const png = `/images/blog/${Astro.params.slug}/${name}.png`;
+const alt = [
+  'Feedback loop.',
+  ...lanes.map(
+    (lane) =>
+      `${lane.name}: ${
+        lane.steps.length
+          ? lane.steps
+              .map((step, i) => `${lane.start + i}. ${step.label}${compact ? '' : ` (${step.text.replace(/\.$/, '')})`}`)
+              .join('; ')
+          : 'no one'
+      }.`
+  ),
+  `Then: ${returnLabel}, back to step 1.`,
+  focus && focusLabel ? `Step ${focus} is marked "${focusLabel}".` : '',
+]
+  .filter(Boolean)
+  .join(' ');
+
+// Every step gets the same width, so the lanes share the row by step count. A
+// lane with no steps keeps a step's width: a loop with nobody in it still has
+// the same shape as the others, and says so.
+const [p, t] = [Math.max(people.length, 1), Math.max(tools.length, 1)];
+// The return path runs from under the tools lane's centre back to step 1, the
+// first step of the first lane with any.
+const returnLeft = people.length ? '1.75rem' : `calc((100% - 2rem) * ${p / (p + t)} + 2rem + 1.75rem)`;
+const style = [
+  `--lane-cols: minmax(0, ${p}fr) 2rem minmax(0, ${t}fr)`,
+  `--return-left: ${returnLeft}`,
+  `--return-right: calc((100% - 2rem) * ${t / (p + t)} / 2)`,
+].join('; ');
+---
+
+{Astro.locals.confluence ? (
+  <img src={png} alt={alt} />
+) : (
+  <figure
+    class:list={['feedback-loop not-prose', compact ? 'my-6' : 'my-8', { 'has-focus': focus }]}
+    style={style}
+    data-confluence-png={png}
+  >
+    <div class="lanes">
+      {lanes.map((lane, laneIndex) => (
+        <>
+          {laneIndex > 0 && (
+            <div class="handoff" aria-hidden="true">
+              {lanes[laneIndex - 1].steps.length > 0 && (
+                <svg viewBox="0 0 24 24"><path d="M5 12h13M13 6l6 6-6 6" /></svg>
+              )}
+            </div>
+          )}
+          <div class:list={['lane', lane.kind, { empty: !lane.steps.length }]}>
+            <p class="lane-name">{lane.name}</p>
+            {lane.steps.length ? (
+              <ol start={lane.start} role="list">
+                {lane.steps.map((step, i) => {
+                  const n = lane.start + i;
+                  const isFocus = n === focus;
+                  return (
+                    <li class:list={{ focus: isFocus }} aria-current={isFocus ? 'step' : undefined}>
+                      <span class="num" aria-hidden="true">{n}</span>
+                      <span class="label">{step.label}</span>
+                      {isFocus && focusLabel && <span class="focus-label">{focusLabel}</span>}
+                      {!compact && <p class="text">{step.text}</p>}
+                    </li>
+                  );
+                })}
+              </ol>
+            ) : (
+              <p class="nobody">No one</p>
+            )}
+          </div>
+        </>
+      ))}
+    </div>
+    <div class="return">
+      <div class="return-path" aria-hidden="true"></div>
+      <p class="return-label">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.34-5.66M20 4v5h-5" /></svg>
+        {returnLabel}
+      </p>
+    </div>
+  </figure>
+)}
+
+<style>
+  .feedback-loop {
+    --text-primary: #111827;
+    --text-secondary: #4b5563;
+    --border: #e5e7eb;
+    /* Darker than the shadow timeline's line blue: it carries small text here. */
+    --people: #1f6dc9;
+    --people-bg: #f3f7fd;
+    --people-border: #cfe0f5;
+    --tools: #6b7280;
+    --tools-bg: #f9fafb;
+    --surface: #ffffff;
+    --step-gap: 0.75rem;
+    container-type: inline-size;
+  }
+  :global(.dark) .feedback-loop {
+    --text-primary: #f3f4f6;
+    --text-secondary: #9ca3af;
+    --border: #374151;
+    --people: #5b9cea;
+    --people-bg: #172338;
+    --people-border: #24406a;
+    --tools: #9ca3af;
+    --tools-bg: #1f2937;
+    --surface: #111827;
+  }
+
+  .lanes {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.5rem;
+  }
+
+  .lane {
+    --accent: var(--tools);
+    --rail: var(--border);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 0.75rem 0.875rem 0.875rem;
+    background: var(--tools-bg);
+  }
+  .lane.people {
+    --accent: var(--people);
+    --rail: var(--people-border);
+    background: var(--people-bg);
+    border-color: var(--people-border);
+  }
+
+  .lane.empty {
+    border-style: dashed;
+    background: transparent;
+  }
+  .nobody {
+    margin: 0;
+    font-size: 0.875rem;
+    font-style: italic;
+    line-height: 1.75rem;
+    color: var(--text-secondary);
+  }
+
+  .lane-name {
+    margin: 0 0 0.625rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    line-height: 1rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+
+  /* Each lane is a row of steps: number, label, then the description. */
+  ol {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
+    gap: var(--step-gap);
+  }
+  li {
+    position: relative;
+    display: grid;
+    align-content: start;
+    justify-items: start;
+    gap: 0.375rem;
+  }
+  /* Rail from this step's number to the next one's. */
+  li:not(:last-child)::before {
+    content: '';
+    position: absolute;
+    top: calc(0.875rem - 1px);
+    left: calc(1.75rem + 0.375rem);
+    right: calc(0.375rem - var(--step-gap));
+    height: 2px;
+    background: var(--rail);
+  }
+
+  .num {
+    display: grid;
+    place-items: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    border-radius: 999px;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: var(--accent);
+    background: var(--surface);
+    border: 2px solid var(--accent);
+  }
+  .people .num {
+    color: var(--surface);
+    background: var(--people);
+  }
+
+  .label {
+    font-size: 0.875rem;
+    font-weight: 650;
+    line-height: 1.3;
+    color: var(--text-primary);
+  }
+  .text {
+    margin: 0;
+    font-size: 0.8125rem;
+    line-height: 1.45;
+    color: var(--text-secondary);
+  }
+
+  /* One step singled out; the rest stay readable but recede. */
+  .has-focus li:not(.focus) .num {
+    opacity: 0.45;
+  }
+  .has-focus li:not(.focus) .label {
+    font-weight: 500;
+    color: var(--text-secondary);
+  }
+  .focus .num {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+  .focus-label {
+    padding: 0.125rem 0.5rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    line-height: 1.25rem;
+    white-space: nowrap;
+    color: var(--surface);
+    background: var(--accent);
+  }
+
+  .handoff {
+    display: grid;
+    place-items: center;
+    color: var(--text-secondary);
+  }
+  .handoff svg,
+  .return-label svg {
+    width: 1.25rem;
+    height: 1.25rem;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .handoff svg {
+    transform: rotate(90deg);
+  }
+
+  .return {
+    position: relative;
+    margin-top: 0.5rem;
+  }
+  .return-path {
+    display: none;
+  }
+  .return-label {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.375rem;
+    margin: 0;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+  }
+
+  /* Phones: a lane of four steps leaves each label about 70px. */
+  @container (max-width: 400px) {
+    .lanes {
+      --step-gap: 0.5rem;
+    }
+    .label {
+      font-size: 0.8125rem;
+    }
+  }
+
+  @container (min-width: 600px) {
+    .lanes {
+      grid-template-columns: var(--lane-cols);
+      gap: 0;
+    }
+    /* Level with the numbers: lane border, padding and name, then half a number. */
+    .handoff {
+      align-items: start;
+      padding-top: calc(1px + 0.75rem + 1rem + 0.625rem + 0.875rem - 0.625rem);
+    }
+    .handoff svg {
+      transform: none;
+    }
+
+    /* U-shaped path from under the tools lane back up to step 1. */
+    .return {
+      margin-top: 0;
+      height: 3.25rem;
+    }
+    .return-path {
+      display: block;
+      position: absolute;
+      top: 0;
+      left: var(--return-left);
+      right: var(--return-right);
+      height: 1.5rem;
+      border: 2px dashed var(--border);
+      border-top: none;
+      border-radius: 0 0 12px 12px;
+    }
+    .return-path::before {
+      content: '';
+      position: absolute;
+      left: -7px;
+      top: -2px;
+      border: 6px solid transparent;
+      border-bottom: 8px solid var(--text-secondary);
+      border-top: none;
+    }
+    .return-label {
+      position: absolute;
+      /* Centred on the path, not the figure. */
+      left: calc((var(--return-left) + 100% - var(--return-right)) / 2);
+      top: calc(1.5rem - 0.7em);
+      transform: translateX(-50%);
+      padding: 0 0.625rem;
+      white-space: nowrap;
+      background: var(--surface);
+    }
+  }
+</style>

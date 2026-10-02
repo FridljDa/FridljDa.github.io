@@ -1,7 +1,7 @@
 ---
 title: "From Kernel Regression to Self-Attention: A Line-by-Line Derivation"
 pubDate: 2026-04-20
-updatedDate: 2026-04-20
+updatedDate: 2026-10-02
 tags:
   - AI
   - Math
@@ -14,7 +14,7 @@ I have a mathematics background, and kernel regression is something I have studi
 
 Self-attention, on the other hand, felt slippery to me when I started learning it. It is confusing that the input tokens $\boldsymbol{x}$ play so many roles at once: they are queries, keys, and values.
 
-Following §15.4.2 and §15.5 of Kevin P. Murphy's *[Probabilistic Machine Learning: An Introduction](https://probml.github.io/pml-book/book1.html)*, I will derive self-attention from kernel regression step by step. I keep Murphy's notation where possible so the post can be read alongside the book.
+Following §15.4 and §15.5.1 of Kevin P. Murphy's *[Probabilistic Machine Learning: An Introduction](https://probml.github.io/pml-book/book1.html)*, I will derive self-attention from kernel regression step by step. I keep Murphy's notation where possible so the post can be read alongside the book.
 
 ---
 
@@ -37,7 +37,7 @@ $$
 where $\sigma$ is called the *bandwidth*. We build the weights $\alpha_i$ by normalizing the kernel across training points. Because of the normalization, the prefactor $1/\sqrt{2\pi\sigma^2}$ is irrelevant and we drop it:
 
 $$
-\alpha_i(\boldsymbol{x}, \boldsymbol{x}_{1:n}) = \frac{\exp\!\left(-\dfrac{\|\boldsymbol{x} - \boldsymbol{x}_i\|^2}{2\sigma^2}\right)}{\sum_{j=1}^n \exp\!\left(-\dfrac{\|\boldsymbol{x} - \boldsymbol{x}_j\|^2}{2\sigma^2}\right)}
+\alpha_i(\boldsymbol{x}, \boldsymbol{x}_{1:n}) = \frac{\mathcal{K}_\sigma(\|\boldsymbol{x} - \boldsymbol{x}_i\|)}{\sum_{j=1}^n \mathcal{K}_\sigma(\|\boldsymbol{x} - \boldsymbol{x}_j\|)} = \frac{\exp\!\left(-\dfrac{\|\boldsymbol{x} - \boldsymbol{x}_i\|^2}{2\sigma^2}\right)}{\sum_{j=1}^n \exp\!\left(-\dfrac{\|\boldsymbol{x} - \boldsymbol{x}_j\|^2}{2\sigma^2}\right)}
 \tag{3}
 $$
 
@@ -80,7 +80,7 @@ f(\boldsymbol{x}) = \sum_{i=1}^{n} \operatorname{softmax}_i\!\left(a(\boldsymbol
 \tag{8}
 $$
 
-Equations (7) and (8) look identical — and that is the point. Only the *meaning* of $a$ has widened: in (7) it is fixed to the Gaussian form (5); in (8) it is any real-valued function. No modelling power has been added; the similarity function has become a pluggable component. That small abstraction is what opens the door to the attention vocabulary.
+Equations (7) and (8) are identical; only the *meaning* of $a$ has widened. In (7) it is fixed to the Gaussian form (5); in (8) it is any real-valued function. The similarity function has become a pluggable component.
 
 ---
 
@@ -107,7 +107,7 @@ This is mostly a rename: $\boldsymbol{k}_i = \boldsymbol{x}_i$ and $\boldsymbol{
 
 ## 4. From Gaussian scores to dot-product scores
 
-The Gaussian score in (3) involves a squared distance. Expand it:
+The Gaussian score (5) involves a squared distance. Expand it:
 
 $$
 -\frac{\|\boldsymbol{q} - \boldsymbol{k}_i\|^2}{2\sigma^2} = -\frac{\|\boldsymbol{q}\|^2}{2\sigma^2} \;+\; \frac{\boldsymbol{q}^\top \boldsymbol{k}_i}{\sigma^2} \;-\; \frac{\|\boldsymbol{k}_i\|^2}{2\sigma^2}
@@ -121,14 +121,14 @@ $$
 \tag{11}
 $$
 
-so adding an $i$-independent constant to every score leaves the weights unchanged. The $-\|\boldsymbol{q}\|^2/(2\sigma^2)$ term is exactly such a constant and drops out. If we additionally assume keys are unit-norm, the third term $-\|\boldsymbol{k}_i\|^2/(2\sigma^2)$ is also constant and drops out. What remains is a softmax-equivalent score — call it $\tilde{a}$:
+so adding an $i$-independent constant to every score leaves the weights unchanged. The $-\|\boldsymbol{q}\|^2/(2\sigma^2)$ term is exactly such a constant and drops out. If we additionally assume all keys have the same norm, the third term $-\|\boldsymbol{k}_i\|^2/(2\sigma^2)$ is also constant and drops out. What remains is a softmax-equivalent score — call it $\tilde{a}$:
 
 $$
 \tilde{a}(\boldsymbol{q}, \boldsymbol{k}_i) = \frac{\boldsymbol{q}^\top \boldsymbol{k}_i}{\sigma^2}
 \tag{12}
 $$
 
-Because $\operatorname{softmax}_i(a(\boldsymbol{q}, \boldsymbol{k}_i)) = \operatorname{softmax}_i(\tilde{a}(\boldsymbol{q}, \boldsymbol{k}_i))$ for all $i$, we can replace $a$ with $\tilde{a}$ in (9) without changing any attention weight. This is the **dot-product attention score**. The bandwidth $\sigma$ is still a free parameter; [§5](#5-scaling-why-divide-by-sqrtd) determines its standard value.
+Because $\operatorname{softmax}_i(a(\boldsymbol{q}, \boldsymbol{k}_i)) = \operatorname{softmax}_i(\tilde{a}(\boldsymbol{q}, \boldsymbol{k}_i))$ for all $i$, we can replace $a$ with $\tilde{a}$ in (9) without changing any attention weight. This is the **dot-product attention score**. The bandwidth $\sigma$ is still a free parameter; [§5](#5-scaling-why-divide-by-dsqrtdd) determines its standard value.
 
 ---
 
@@ -146,7 +146,7 @@ $$
 \operatorname{Var}(\boldsymbol{q}^\top \boldsymbol{k}_i) = \operatorname{Var}\!\left(\sum_{\ell=1}^d q_\ell\, k_{i,\ell}\right) = \sum_{\ell=1}^d \operatorname{Var}(q_\ell\, k_{i,\ell}) = d
 $$
 
-So the raw dot product has standard deviation $\sqrt{d}$ — it grows with dimension. Without rescaling, large-magnitude inputs push the softmax into a saturated regime where one score dominates and gradients with respect to the others vanish. Setting $\sigma^2 = \sqrt{d}$ keeps the score variance at $O(1)$ independent of $d$, keeping the softmax in a well-behaved regime.
+So the raw dot product has standard deviation $\sqrt{d}$ — it grows with dimension. Without rescaling, the scores spread further apart as $d$ grows, the softmax saturates towards a one-hot vector, and its gradients vanish. Setting $\sigma^2 = \sqrt{d}$ gives the score unit variance, independent of $d$.
 
 ---
 
@@ -160,7 +160,7 @@ K = \begin{pmatrix} \boldsymbol{k}_1^\top \\ \vdots \\ \boldsymbol{k}_n^\top \en
 V = \begin{pmatrix} \boldsymbol{v}_1^\top \\ \vdots \\ \boldsymbol{v}_n^\top \end{pmatrix} \quad \in \mathbb{R}^{n \times d}
 $$
 
-Then $QK^\top$ is an $n\times n$ matrix whose $(i,j)$ entry is exactly the dot-product score $\tilde{a}(\boldsymbol{q}_i, \boldsymbol{k}_j) = \boldsymbol{q}_i^\top\boldsymbol{k}_j$. To see this concretely, consider $n = 3$ tokens and $d = 2$:
+Then $QK^\top$ is an $n\times n$ matrix whose $(i,j)$ entry is the raw dot product $\boldsymbol{q}_i^\top\boldsymbol{k}_j$; dividing by $\sqrt{d}$ gives the score $\tilde{a}(\boldsymbol{q}_i, \boldsymbol{k}_j)$ from §5. To see this concretely, consider $n = 3$ tokens and $d = 2$:
 
 $$
 QK^\top =
@@ -174,14 +174,14 @@ QK^\top =
 \end{pmatrix}
 $$
 
-Row $i$ holds all the scores that query $i$ assigns to every key. Scaling by $1/\sqrt{d}$ and applying softmax row-wise turns each row into a probability distribution — the **attention weights** for that query. Multiplying by $V$ then takes a weighted average of the value rows for each query, giving the output matrix $Y \in \mathbb{R}^{n \times d}$. This is exactly (9) computed for all queries at once:
+Row $i$ holds all the scores that query $i$ assigns to every key. Scaling by $1/\sqrt{d}$ and applying softmax row-wise turns each row into a probability distribution — the **attention weights** for that query. Call this $n \times n$ matrix of weights $A$. Multiplying by $V$ then takes a weighted average of the value rows for each query, giving the output matrix $Y \in \mathbb{R}^{n \times d}$. This is exactly (9) computed for all queries at once:
 
 $$
 Y = \operatorname{Attn}(Q, K, V) = \operatorname{softmax}\!\left(\frac{Q K^\top}{\sqrt{d}}\right) V
 \tag{13}
 $$
 
-This is **scaled dot-product attention** — the exact formula from "[Attention Is All You Need](https://arxiv.org/abs/1706.03762)" [Vaswani et al., 2017]. Read left to right, the pipeline has a clear shape:
+This is **scaled dot-product attention** — the exact formula from "[Attention Is All You Need](https://arxiv.org/abs/1706.03762)" [Vaswani et al., 2017]. As a pipeline of matrix shapes:
 
 ![Scaled dot-product attention as a matrix pipeline: Q (n×d) times K^T (d×n) gives an n×n score matrix, which softmax turns into an attention matrix A (n×n), which multiplied by V (n×d) yields the output Y (n×d).](/images/blog/kernel-to-attention/attention_matrix_form.png)
 
@@ -191,7 +191,7 @@ The $i$-th row of $Y$ is the output for query $i$: a context-weighted blend of a
 
 ## 7. Self-attention
 
-So far we have been in the kernel-regression setting: each training point came with a scalar label $y_i$, and the value in (9) was $\boldsymbol{v}_i = y_i$. A Transformer processes something different — a sequence of tokens $\boldsymbol{x}_1, \ldots, \boldsymbol{x}_n$ with no labels attached. There are no $y_i$'s. Every position has to supply its own payload.
+So far we have been in the kernel-regression setting: each training point came with a scalar label $y_i$, and the value in (9) was $\boldsymbol{v}_i = y_i$. A Transformer processes something different — a sequence of tokens $\boldsymbol{x}_1, \ldots, \boldsymbol{x}_n$ with no labels attached. Every position has to supply its own payload.
 
 Self-attention lets each token play all three roles. Every position attends to every other position *in the same sequence*, using the tokens themselves for queries, keys, and values:
 
@@ -200,7 +200,7 @@ $$
 \tag{14}
 $$
 
-Each token $\boldsymbol{x}_i$ acts simultaneously as a query (asking "who is relevant to me?") and contributes a key and value (answering "here is what I offer to others"). This lets the model build **context-dependent representations**: the embedding of the word *it* can depend on whether the surrounding sentence is about an animal or a street. And because there are no recurrences, all $n$ outputs $\boldsymbol{y}_1, \ldots, \boldsymbol{y}_n$ can be computed in parallel — this is what makes Transformers so much faster to train than RNNs.
+This lets the model build **context-dependent representations**: the embedding of the word *it* can depend on whether the surrounding sentence is about an animal or a street. And because there are no recurrences, all $n$ outputs $\boldsymbol{y}_1, \ldots, \boldsymbol{y}_n$ can be computed in parallel — this is what makes Transformers so much faster to train than RNNs.
 
 ---
 
@@ -213,7 +213,7 @@ $$
 \tag{15}
 $$
 
-Each input $\boldsymbol{x}$ is passed through three different matrices before entering the attention formula. The matrices $W^{(q)}, W^{(k)}, W^{(v)}$ are learned end-to-end by backpropagation. Plugging (15) into (14) gives the full self-attention layer used in Transformers:
+The matrices $W^{(q)}, W^{(k)}, W^{(v)}$ are learned end-to-end by backpropagation. Plugging (15) into (14) gives the full self-attention layer used in Transformers:
 
 $$
 \boldsymbol{y}_i = \operatorname{Attn}\!\left(W^{(q)} \boldsymbol{x}_i,\; \left\{\left(W^{(k)} \boldsymbol{x}_j,\; W^{(v)} \boldsymbol{x}_j\right)\right\}_{j=1}^{n}\right)
@@ -239,8 +239,8 @@ $$
 \end{aligned}
 $$
 
-Self-attention follows from applying a Gaussian similarity kernel, normalizing with softmax, generalizing the similarity, letting a sequence attend to itself, and adding learned projections to separate keys from values.
+Next in the series: [Masks and Cross-Attention](/post/masks-and-cross-attention) restricts which positions may attend to which, and [Encoder, Decoder, Both](/post/transformer-architectures) stacks the pieces into BERT, GPT and T5.
 
 ---
 
-*Primary reference: Kevin P. Murphy, "Probabilistic Machine Learning: An Introduction", MIT Press (2022). The kernel-regression-as-attention framing is developed in §15.4.2 (pp. 520–521); self-attention and the transformer architecture are covered in §15.5–15.5.2 (pp. 526–527). Available online at [probml.github.io/pml-book/book1.html](https://probml.github.io/pml-book/book1.html). Original transformer paper: Vaswani et al., "[Attention Is All You Need](https://arxiv.org/abs/1706.03762)", NeurIPS 2017.*
+*Primary reference: Kevin P. Murphy, "Probabilistic Machine Learning: An Introduction", MIT Press (2022). The kernel-regression-as-attention framing is developed in §15.4.2 (pp. 520–521) and the scaled dot-product score in §15.4.3; self-attention and the transformer architecture are covered in §15.5–15.5.2 (pp. 526–527). Available online at [probml.github.io/pml-book/book1.html](https://probml.github.io/pml-book/book1.html). Original transformer paper: Vaswani et al., "[Attention Is All You Need](https://arxiv.org/abs/1706.03762)", NeurIPS 2017.*

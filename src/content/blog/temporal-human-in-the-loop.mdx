@@ -1,6 +1,7 @@
 ---
 title: "Temporal for Human-in-the-Loop: When You Don't Know How Long to Wait"
 pubDate: 2026-02-25
+updatedDate: 2026-10-02
 tags:
   - Software Engineering
   - Workflows
@@ -11,7 +12,7 @@ image: /images/blog/temporal-human-in-the-loop/featured.png
 math: false
 ---
 
-Human input gives a workflow an unpredictable pause: someone might respond in minutes or days, and the process may restart in between. In a recent project I used [Temporal](https://temporal.io/) to make that wait durable without keeping a worker busy.
+Human input gives a workflow an unpredictable pause: someone might respond in minutes or days, and the process may restart in between. In [a recent project](/post/first-level-support-automation) I used [Temporal](https://temporal.io/) to make that wait durable without keeping a worker busy.
 
 ## Why Temporal fits human-in-the-loop
 
@@ -22,7 +23,7 @@ Temporal gives you:
 - **Durable waits** — The workflow can `await` a condition for hours or days without holding a thread or a DB connection. The workflow is persisted; when the condition is satisfied (e.g. via a signal), execution resumes.
 - **Signals** — External actors (e.g. your approval UI) send decisions into the workflow as signals. The workflow reacts when the signal arrives; no polling from inside the workflow.
 - **Queries** — Read-only views of workflow state so UIs can show "waiting for approval" or "approved by X" without affecting execution.
-- **Deterministic replay** — After a crash or deploy, Temporal replays the workflow from history. So you keep a single source of truth (workflow state) and avoid duplicate side effects.
+- **Deterministic replay** — After a crash or deploy, Temporal rebuilds the workflow's state by replaying its event history, without re-running activities that already completed.
 
 These features let you model "do work → wait for human → continue" as one workflow that survives restarts without guessing how long the human will take.
 
@@ -57,13 +58,15 @@ async def run(self, timeout_days: int) -> dict:
 
 The UI (or another service) queries workflow state to show the right screen and sends `approve` or `reject` via the Temporal client. No polling inside the workflow.
 
+A signal handler can only ignore a late or duplicate decision; the sender never learns that it was ignored. If the UI needs to know whether its decision was accepted, a [Workflow Update](https://docs.temporal.io/develop/python/message-passing) with a validator can reject it instead.
+
 ### 2. Timeouts so workflows don't hang forever
 
-Without a timeout, a workflow could wait indefinitely if the human never responds. Using `wait_condition(..., timeout=...)` gives you a clear outcome: either a decision arrives (signal) or the workflow times out and you can mark it rejected or escalate. That makes the system predictable and operable.
+Without a timeout, a workflow could wait indefinitely if the human never responds. Using `wait_condition(..., timeout=...)` gives you a clear outcome: either a decision arrives (signal) or the workflow times out and you can mark it rejected or escalate.
 
 ### 3. Polling external systems with unknown completion time
 
-The same problem appears with an external API that completes asynchronously (e.g. a job queue). Start the job in an activity, then have the workflow check its status through another activity. If the job is neither done nor failed, call `workflow.sleep(interval)` and retry within an overall time budget. The sleeps and branches are deterministic, so replay remains safe.
+The same problem appears with an external API that completes asynchronously (e.g. a job queue). Start the job in an activity, then have the workflow check its status through another activity. If the job is neither done nor failed, call `workflow.sleep(interval)` and retry within an overall time budget. The sleeps and branches are deterministic, so replay remains safe. Each iteration adds events to the workflow history, though, so for long budgets let the status activity's retry policy do the polling, or use continue-as-new.
 
 ```python
 # Conceptual: poll until done or timeout
@@ -78,10 +81,10 @@ while True:
 
 ### 4. Idempotent signals
 
-Humans (or UIs) may send the same signal more than once. Making the signal handler idempotent—e.g. "if we already have a decision, return"—avoids race conditions and duplicate side effects when the workflow is replayed or the client retries.
+Humans (or UIs) may send the same signal more than once. Making the signal handler idempotent—e.g. "if we already have a decision, return"—avoids race conditions and duplicate side effects when a reviewer clicks twice or the client retries.
 
 ## What the model buys you
 
-Workflow code orchestrates and waits; non-deterministic or external actions live in activities. Explicit states such as `AWAITING_APPROVAL` and bounded waits make stuck workflows visible, while deterministic replay handles restarts without duplicating side effects.
+Workflow code orchestrates and waits; non-deterministic or external actions live in activities. Explicit states such as `AWAITING_APPROVAL` and bounded waits make stuck workflows visible, while deterministic replay handles restarts without re-running completed activities. Activities themselves run at least once, so the side effects inside them still need to be idempotent.
 
-I found this easier to reason about than ad-hoc queues and callbacks. The same model also covers slow external services when completion time is unknown.
+I found this easier to reason about than ad-hoc queues and callbacks.

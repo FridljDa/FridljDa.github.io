@@ -11,6 +11,8 @@
     "preview": "astro preview",
     "astro": "astro",
     "mermaid:png": "node scripts/mermaid-png/render.mjs",
+    "mockup:png": "node scripts/mockups/render.mjs",
+    "confluence:figures": "node scripts/confluence/render-figures.mjs",
     "test": "playwright test",
     "test:ui": "playwright test --ui",
     "test:headed": "playwright test --headed",

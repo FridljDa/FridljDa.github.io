@@ -1,0 +1,207 @@
+---
+/**
+ * Schematic for "Get into shadow deployment sooner" in the-missing-compiler.
+ *
+ * Cumulative responses reviewed by experts over time for two projects with the
+ * same reviewer capacity: one that goes into shadow as soon as the simplest
+ * agent drafts a reply, and one that first iterates offline and shows a handful
+ * of responses in each weekly demo. Not measured data, so there are no axis
+ * values and no hover layer.
+ *
+ * A paste into Confluence drops inline SVG, so the Confluence copy of the post
+ * shows a PNG of this figure instead. Regenerate it after changing the figure:
+ * npm run confluence:figures
+ */
+
+type Point = [t: number, count: number];
+
+const W = 720;
+const H = 400;
+const plot = { left: 64, right: 600, top: 64, bottom: 312 };
+
+const T_MAX = 10;
+const SHADOW_EARLY = 1;
+const SHADOW_LATE = 6;
+const DEMOS = [1.5, 2.5, 3.5, 4.5, 5.5];
+// A demo shows a handful of responses; a week in shadow, where experts grade
+// and comment on every draft themselves, is one unit.
+const PER_DEMO = 0.2;
+const GAP_AT = 9.6;
+
+const demoTotal = DEMOS.length * PER_DEMO;
+const early: Point[] = [
+  [SHADOW_EARLY, 0],
+  [T_MAX, T_MAX - SHADOW_EARLY],
+];
+const late: Point[] = [
+  [0, 0],
+  ...DEMOS.flatMap((t, i): Point[] => [
+    [t, i * PER_DEMO],
+    [t, (i + 1) * PER_DEMO],
+  ]),
+  [SHADOW_LATE, demoTotal],
+  [T_MAX, demoTotal + T_MAX - SHADOW_LATE],
+];
+
+const x = (t: number) => plot.left + (t / T_MAX) * (plot.right - plot.left);
+const y = (count: number) => plot.bottom - (count / early[1][1]) * (plot.bottom - plot.top);
+const points = (path: Point[]) => path.map(([t, count]) => `${x(t)},${y(count)}`).join(' ');
+
+const gap = points([...early, ...late.filter(([t]) => t >= SHADOW_EARLY).reverse()]);
+
+const gapTop = y(GAP_AT - SHADOW_EARLY);
+const gapBottom = y(demoTotal + GAP_AT - SHADOW_LATE);
+// Sits low in the band between the two lines, clear of both and of the late cut.
+const noteX = x(GAP_AT) - 12;
+const noteY = gapBottom - 28;
+const bracketY = plot.bottom + 34;
+
+const title = 'Responses reviewed by experts over time, shadow first versus shadow after offline tuning';
+const desc =
+  'Schematic. Both projects start at the same time and have the same reviewer capacity. One goes into shadow ' +
+  'deployment almost immediately, and experts grade and comment on its responses from then on. The other spends ' +
+  'the first stretch iterating offline, with experts seeing only a handful of responses in each weekly demo, and ' +
+  'only then goes into shadow. From that point both collect at the same rate, so the lead from the early start is ' +
+  'never made up.';
+---
+
+{Astro.locals.confluence ? (
+  <img src="/images/blog/the-missing-compiler/shadow-timeline.png" alt={`${title}. ${desc}`} />
+) : (
+  <figure class="shadow-timeline not-prose my-8">
+    <div class="scroll">
+      <svg
+        viewBox={`0 0 ${W} ${H}`}
+        role="img"
+        aria-labelledby="shadow-timeline-title shadow-timeline-desc"
+      >
+        <title id="shadow-timeline-title">{title}</title>
+        <desc id="shadow-timeline-desc">{desc}</desc>
+
+        <polygon class="gap" points={gap} />
+
+        <line class="axis" x1={plot.left} y1={plot.bottom} x2={plot.right} y2={plot.bottom} />
+        <line class="axis" x1={plot.left} y1={plot.bottom} x2={plot.left} y2={plot.top - 16} />
+
+        <line class="cut" x1={x(SHADOW_EARLY)} y1={plot.bottom} x2={x(SHADOW_EARLY)} y2={plot.top - 34} />
+        <line class="cut" x1={x(SHADOW_LATE)} y1={plot.bottom} x2={x(SHADOW_LATE)} y2={plot.top - 34} />
+        <text class="label" x={x(SHADOW_EARLY) + 6} y={plot.top - 26}>Shadow with the simplest agent</text>
+        <text class="label" x={x(SHADOW_LATE) + 6} y={plot.top - 26}>Shadow after offline tuning</text>
+
+        <polyline class="series late" points={points(late)} />
+        <polyline class="series early" points={points(early)} />
+
+        {DEMOS.map((t, i) => (
+          <circle class="demo" cx={x(t)} cy={y((i + 1) * PER_DEMO)} r="4" />
+        ))}
+
+        <line class="gap-arrow" x1={x(GAP_AT)} y1={gapTop + 6} x2={x(GAP_AT)} y2={gapBottom - 6} />
+        <path class="gap-arrow-head" d={`M${x(GAP_AT) - 5},${gapTop + 11} L${x(GAP_AT)},${gapTop + 4} L${x(GAP_AT) + 5},${gapTop + 11}`} />
+        <path class="gap-arrow-head" d={`M${x(GAP_AT) - 5},${gapBottom - 11} L${x(GAP_AT)},${gapBottom - 4} L${x(GAP_AT) + 5},${gapBottom - 11}`} />
+        <text class="note" x={noteX} y={noteY} text-anchor="end">Verdicts the late</text>
+        <text class="note" x={noteX} y={noteY + 19} text-anchor="end">start never gets back</text>
+
+        <text class="label strong" x={plot.right + 10} y={y(early.at(-1)![1]) + 5}>Shadow first</text>
+        <text class="label strong" x={plot.right + 10} y={y(late.at(-1)![1]) + 5}>What we did</text>
+
+        <text class="axis-title" transform={`translate(${plot.left - 18},${(plot.top + plot.bottom) / 2}) rotate(-90)`} text-anchor="middle">
+          Responses reviewed by experts
+        </text>
+        <text class="tick" x={plot.left} y={plot.bottom + 20} text-anchor="middle">Project start</text>
+        <text class="tick" x={plot.right} y={plot.bottom + 20} text-anchor="end">Time →</text>
+
+        <path
+          class="bracket"
+          d={`M${x(0) + 2},${bracketY - 6} V${bracketY} H${x(SHADOW_LATE) - 2} V${bracketY - 6}`}
+        />
+        <text class="note" x={(x(0) + x(SHADOW_LATE)) / 2} y={bracketY + 20} text-anchor="middle">
+          Offline iterations, shown in weekly demos
+        </text>
+      </svg>
+    </div>
+  </figure>
+)}
+
+<style>
+  .shadow-timeline {
+    --text-primary: #111827;
+    --text-secondary: #4b5563;
+    --axis: #d1d5db;
+    --early: #2a78d6;
+    --late: #858a93;
+    --surface: #ffffff;
+  }
+  :global(.dark) .shadow-timeline {
+    --text-primary: #f3f4f6;
+    --text-secondary: #9ca3af;
+    --axis: #374151;
+    --early: #3987e5;
+    --late: #6b7280;
+    --surface: #111827;
+  }
+
+  .scroll {
+    overflow-x: auto;
+  }
+  svg {
+    display: block;
+    width: 100%;
+    min-width: 540px;
+    height: auto;
+    font-family: inherit;
+  }
+
+  .axis,
+  .bracket {
+    stroke: var(--axis);
+    stroke-width: 1;
+    fill: none;
+  }
+  .cut {
+    stroke: var(--text-secondary);
+    stroke-width: 1;
+    stroke-dasharray: 4 4;
+  }
+  .gap {
+    fill: var(--early);
+    opacity: 0.1;
+  }
+  .series {
+    fill: none;
+    stroke-width: 2.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .early {
+    stroke: var(--early);
+  }
+  .late {
+    stroke: var(--late);
+  }
+  .demo {
+    fill: var(--late);
+    stroke: var(--surface);
+    stroke-width: 2;
+  }
+  .gap-arrow,
+  .gap-arrow-head {
+    stroke: var(--text-secondary);
+    stroke-width: 1.25;
+    fill: none;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  text {
+    font-size: 15px;
+    fill: var(--text-secondary);
+  }
+  .strong {
+    fill: var(--text-primary);
+    font-weight: 600;
+  }
+  .axis-title,
+  .tick {
+    font-size: 14px;
+  }
+</style>

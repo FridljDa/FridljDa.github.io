@@ -1,6 +1,7 @@
 ---
 title: "Langfuse in Production: From Failing Evals to Targeted Fixes"
 pubDate: 2026-02-25
+updatedDate: 2026-10-02
 tags:
   - AI
   - Python
@@ -10,13 +11,13 @@ image: /images/blog/langfuse-monitoring-eval-self-improvement/featured.png
 math: false
 ---
 
-In a recent AI-powered support project, [Langfuse](https://langfuse.com/) connected production monitoring, evaluation history, and a Cursor-based triage loop. The important part was not any one dashboard. It was keeping enough context to turn an evaluation failure into the right kind of fix.
+In [a recent AI-powered support project](/post/first-level-support-automation), [Langfuse](https://langfuse.com/) connected production monitoring, evaluation history, and a Cursor-based triage loop. What mattered was keeping enough context to turn an evaluation failure into the right kind of fix.
 
 ## 1. Monitoring production and evaluation flows
 
 We treat observability as a port: the app depends on a `MonitoringPort` interface, and the Langfuse implementation lives in an adapter. That keeps the core logic free of SDK details and makes it easy to test with a no-op or mock.
 
-The adapter exposes an `observe` decorator that wraps any function and sends a span to Langfuse. We use it on intent classification, extraction, and agentic steps (fetch, plan, message). Each trace gets provenance metadata—git commit, branch, deploy env—so we can tie a run to a code version. We also set session IDs when we have them (e.g. from the chat UI), so we can group traces by conversation.
+The adapter exposes an `observe` decorator that wraps any function and sends a span to Langfuse. We use it on intent classification, extraction, and the later steps (fetch, plan, message). Each trace gets provenance metadata—git commit, branch, deploy env—so we can tie a run to a code version. We also set session IDs when we have them (e.g. from the chat UI), so we can group traces by conversation.
 
 We also log input/output token counts and the model name on the current observation. Langfuse can then infer or display cost per call and per trace, showing which step and model is expensive during evals or production traffic.
 
@@ -28,30 +29,30 @@ Evaluations are separate from unit tests: they measure performance over time and
 
 Evaluators return structured scores (e.g. intent match, correct tools selected, resolution helpfulness). We record them on the trace and also compute run-level aggregates—accuracy, pass rate, mean latency—and attach them to the dataset run. That way we can compare runs side by side: "this run after the prompt change" vs "last week's run."
 
-We don't throw away runs. We can open any past run, drill into a failed case, and see the full trace: which step failed, what the model saw and returned, and what the scorer said. This supports post-hoc debugging and regression analysis when we refactor or change prompts.
+We don't throw away runs. We can open any past run, drill into a failed case, and see the full trace: which step failed, what the model saw and returned, and what the scorer said.
 
 ## 3. Turning failures into targeted fixes
 
 Persisted traces become useful when they feed back into the codebase. A single Cursor command (`/langfuse-triage-failures`) runs a triage loop with three specialized subagents.
 
-```
-run evals
-    |
-    v
-[eval-discovery agent]
-  list_failing_traces.py -> FailingTrace[] JSON
-    |
-    v  (one handoff per trace, sequential)
-[eval-trace-analyzer agent]  x N
-  classify root cause
-  implement targeted fix (or no-op)
-  post comment to Langfuse trace
-  -> AnalyzerResult JSON
-    |
-    v
-[eval-rerunner agent]
-  rerun_failed_evals.py -> RerunResult[] JSON
-  confirm fixes pass
+```mermaid
+flowchart TD
+    RUN(["Eval run"])
+    D["🤖 eval-discovery agent<br/>list_failing_traces.py"]
+    A["🤖 eval-trace-analyzer agent<br/>classify root cause, fix or no-op,<br/>comment on the Langfuse trace"]
+    R["🤖 eval-rerunner agent<br/>rerun_failed_evals.py"]
+    OUT(["Fixes confirmed"])
+
+    RUN --> D
+    D -->|"FailingTrace[]"| A
+    A -->|"next trace, one at a time"| A
+    A -->|"AnalyzerResult[]"| R
+    R -->|"RerunResult[]"| OUT
+
+    classDef agent fill:#f3e8ff,stroke:#7c3aed,stroke-width:2px,color:#1f2937
+    classDef terminal fill:#f8fafc,stroke:#64748b,stroke-width:1.5px,color:#1f2937
+    class D,A,R agent
+    class RUN,OUT terminal
 ```
 
 The analyzer agents run one trace at a time because each may modify source files. The orchestrator hands off the next trace only after the previous one has returned its `AnalyzerResult`, avoiding conflicts between parallel edits.
@@ -74,13 +75,13 @@ The analyzer classifies each failure into one of seven categories, each with its
 
 For `something_else` the agent posts a comment on the Langfuse trace and returns `implemented_fix: "no_code_change"`—no code is touched. Everything is still logged so we can spot recurring patterns.
 
-The analyzer is prohibited from editing raw customer-interaction fixtures. If a raw-case failure looks like a data problem, the fix goes into the prompt or comparison logic—not the fixture file. That boundary is enforced in the agent's system prompt, not just convention.
+The analyzer is prohibited from editing raw customer-interaction fixtures: they are real inputs, and editing one would make a test pass without making the system any better. If a raw case fails because the message itself is messy, the fix goes into the prompt or comparison logic, not the fixture file. That boundary is written into the agent's system prompt rather than left to convention.
 
 ## 4. Fix eval data before prompts
 
 Each failure still requires a choice: fix the *evaluation data* (ground truth and false-positive patterns) or the *model behavior* (prompts and system behavior). Mixing them wastes time and can make the metrics less trustworthy.
 
-Fix eval data first. If the ground truth is wrong or the pattern matching is too strict, any metric you compute is misleading. You might "improve" precision by tightening a prompt when the real fix is correcting an over-broad ground-truth pattern. Symptoms include a high unknown-positive count (model outputs that don't match any pattern), patterns that are too narrow or too loose, or anchors that match the right comment in the wrong location.
+Fix eval data first. If the ground truth is wrong or the pattern matching is too strict, any metric you compute is misleading. You might "improve" precision by tightening a prompt when the real fix is correcting an over-broad ground-truth pattern. Symptoms include a high unknown-positive count (model outputs that don't match any pattern), or patterns that are too narrow or too loose.
 
 Fix prompts after the eval data reflects what the model *should* do. Low precision or recall then points to the prompt: the model consistently misses a class of real issues (false negatives) or flags things it shouldn't (false positives), while the patterns are already correct.
 
@@ -93,6 +94,4 @@ Keeping these separate also prevents a common trap: adding ground-truth patterns
 
 ## What closes the loop
 
-The monitoring port keeps Langfuse out of the core logic. Dataset runs preserve the evidence behind each score. The triage command then uses that evidence under explicit constraints: raw customer fixtures stay untouched, analyzer edits run sequentially, and typed contracts connect the agents.
-
-That combination makes a failed evaluation traceable from production context to root cause, code change, and rerun. More importantly, it keeps a bad label from being "fixed" with a prompt change, or bad model behavior hidden by changing the label.
+Together, these make a failed evaluation traceable from production context to root cause, code change, and rerun. More importantly, they keep a bad label from being "fixed" with a prompt change, or bad model behavior hidden by changing the label.

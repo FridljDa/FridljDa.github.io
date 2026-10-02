@@ -1,0 +1,220 @@
+<!doctype html>
+<!--
+  Mockup of the screen subject-matter experts used to grade shadow replies
+  (the-missing-compiler, "The loop we built", step 1).
+
+  Render to PNG with:  npm run mockup:png
+  That writes the whole screen (#mockup) and, separately, the customer's
+  message (#customer-message), which the posts show in place of a quote.
+  Everything is fictional and follows the Northstar Bank framing used in the
+  posts. Keep it that way: no real vendors, intents, names or dates.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>SME review screen</title>
+<style>
+  :root {
+    --page: #0b1726;
+    --panel: #102236;
+    --panel-inner: #15293f;
+    --border: #243b55;
+    --text: #e4ecf5;
+    --muted: #8ea3b8;
+    --chip: #4ade80;
+    --selected: #f2c014;
+    --selected-text: #10202f;
+    --customer: #e5484d;
+    --width: 672px; /* the blog's desktop content column, so the PNG shows at 1:1 */
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: transparent; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    font-size: 15px;
+    line-height: 1.45;
+    color: var(--text);
+    padding: 16px;
+  }
+
+  #mockup {
+    width: var(--width);
+    background: var(--page);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .details-header {
+    padding: 8px 16px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .details-header .chevron { display: inline-block; margin-right: 6px; }
+
+  .body { padding: 16px 16px 18px; }
+
+  h3 {
+    margin: 0 0 8px;
+    font-size: 14px;
+    font-weight: 650;
+  }
+  .section + .section { margin-top: 16px; }
+
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px;
+  }
+  .msg {
+    display: flex;
+    gap: 10px;
+    padding: 10px 12px;
+    background: var(--panel-inner);
+    border-radius: 4px;
+  }
+  .msg + .msg { margin-top: 6px; }
+  .msg p { margin: 0 0 6px; }
+  .msg p:last-child { margin-bottom: 0; }
+
+  .avatar {
+    flex: none;
+    width: 26px;
+    height: 26px;
+    border-radius: 6px;
+    display: grid;
+    place-items: center;
+    background: #24384f;
+    color: var(--text);
+  }
+  .avatar.customer { background: var(--customer); color: #fff; }
+  .avatar svg { width: 16px; height: 16px; }
+
+  .meta { font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+  .meta b { color: var(--text); font-weight: 600; }
+  .chip {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 11px;
+    color: var(--chip);
+  }
+
+  hr { border: 0; border-top: 1px solid var(--border); margin: 18px 0; }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+  }
+  .btn {
+    font: inherit;
+    font-size: 11px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--text);
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 7px 8px;
+    text-align: center;
+    display: grid;
+    place-items: center;
+  }
+  .btn.selected {
+    background: var(--selected);
+    border-color: var(--selected);
+    color: var(--selected-text);
+    font-weight: 650;
+  }
+  .btn.small { display: inline-block; padding: 6px 10px; }
+  .actions { margin-top: 10px; }
+
+</style>
+</head>
+<body>
+<div id="mockup">
+  <div class="details-header"><span class="chevron">&#9662;</span>Details</div>
+
+  <div class="body">
+    <div class="section">
+      <h3>Conversation history</h3>
+      <div class="panel" id="customer-message">
+        <div class="msg">
+          <div class="avatar customer">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="5.5" r="2.6"/><path d="M3 14c.6-2.8 2.6-4.2 5-4.2s4.4 1.4 5 4.2"/></svg>
+          </div>
+          <div>
+            <div class="meta"><b>Customer</b> · 2026-03-12 09:41</div>
+            <p>Hi, I'm Alex Carter and I bank with your Riverton branch. My account number is NSB01234 and I can't get in any more; it keeps saying the account is locked. Can you help me get back in?</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>Suggested reply</h3>
+      <div class="panel">
+        <div class="msg">
+          <div class="avatar">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="2" y="3.5" width="12" height="9" rx="1.5"/><path d="M2.5 4.5 8 9l5.5-4.5"/></svg>
+          </div>
+          <div>
+            <div class="meta"><b>Proposed reply</b> · <span class="chip">email</span></div>
+            <p>Dear Alex Carter,</p>
+            <p>Thank you for your message.</p>
+            <p>To help you with your login problem, we need the email address you used when you opened your account. Please send it to us in reply to this message.</p>
+            <p>Kind regards,<br>Northstar Bank Customer Support</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <hr>
+
+    <div class="section">
+      <h3>Rejection reason</h3>
+      <div class="grid">
+        <div class="btn">Uncategorized rejection</div>
+        <div class="btn">Wording discrepancies</div>
+        <div class="btn selected">Wrong process</div>
+        <div class="btn">Long tail / niche</div>
+        <div class="btn">Staff found the record, AI could not</div>
+        <div class="btn">AI found data, staff cannot verify</div>
+      </div>
+      <div class="actions"><span class="btn small">Resubmit</span></div>
+    </div>
+
+    <hr>
+
+    <div class="section">
+      <h3>Comments</h3>
+      <div class="panel">
+        <div class="msg">
+          <div class="avatar">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M2.5 3.5h11v7h-6l-3 2.5v-2.5h-2z"/></svg>
+          </div>
+          <div>
+            <div class="meta"><b>Jordan M.</b> · Account services · 2026-03-12 14:05</div>
+            <p>They already gave us their account number, so we can look them up. Never ask for something we can find ourselves. And we don't sort out locked accounts by email: if there's no security flag, send the self-service unlock link; if there is one, it goes to the security team, not back to the customer.</p>
+          </div>
+        </div>
+        <div class="msg">
+          <div class="avatar">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M2.5 2.5h5.2l5.8 5.8-5.2 5.2-5.8-5.8z"/><circle cx="5.3" cy="5.3" r="0.9"/></svg>
+          </div>
+          <div>
+            <div class="meta"><b>Jordan M.</b> · 2026-03-12 14:05</div>
+            <p><b>Annotation:</b> Wrong process</p>
+            <p><b>Verdict:</b> Rejected</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+</body>
+</html>

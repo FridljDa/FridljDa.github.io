@@ -1,11 +1,11 @@
 ---
 title: "Orchestrating an LLM Ticket-Classification Pipeline with Snakemake"
 pubDate: 2026-02-06
-updatedDate: 2026-02-06
+updatedDate: 2026-10-02
 tags:
   - Data Engineering
   - Python
-description: "How I used Snakemake to manage a complex 19-stage ticket analysis pipeline, leveraging scatter-gather parallelization to efficiently process a couple of thousand customer support tickets with LLM classification."
+description: "Scatter–gather and incremental reruns in Snakemake for an iterative LLM ticket-classification pipeline with 19+ stages, from PII censoring to training data."
 image: /images/blog/snakemake-ticket-analysis-pipeline/featured.png
 ---
 
@@ -13,7 +13,7 @@ On a recent project, I had to classify a couple of thousand customer support tic
 
 ## The challenge
 
-The tickets came from the client's helpdesk system. We wanted to classify each one by **customer intent** (e.g. billing questions, technical issues, feedback) for a later first-level customer support AI agent. The work was iterative: define intents, run an LLM over the tickets, inspect what remained unclassified or misclassified, refine the taxonomy, and repeat. Without a workflow engine, each pass meant manual scripts, ad-hoc reruns, and duplicated work.
+The tickets came from the client's helpdesk system. We wanted to classify each one by **customer intent** (e.g. billing questions, technical issues, feedback) for a later [first-level customer support AI agent](/post/first-level-support-automation). The work was iterative: define intents, run an LLM over the tickets, inspect what remained unclassified or misclassified, refine the taxonomy, and repeat. Without a workflow engine, each pass meant manual scripts, ad-hoc reruns, and duplicated work.
 
 ## Pipeline overview
 
@@ -25,11 +25,13 @@ The Snakemake pipeline has 19+ stages. At a high level it:
 4. **Classifies comment authors** (customer vs agent vs unknown) using an LLM where metadata was missing.
 5. **Labels tickets by intent** with an LLM, using the same chunk structure for efficiency.
 6. **Produces two outputs**: a censored dataset for training, and an uncensored (in-memory/view-only) path for inspection in a Streamlit app.
-7. **Prepares training data**: filter to labeled tickets, drop non-actionable intents, balanced subsample per intent, truncate agent resolution, and transform into the final training format.
+7. **Prepares training data**: filter to labelled tickets, drop non-actionable intents, balanced subsample per intent, truncate agent resolution, and transform into the final training format.
 
 The rule graph below gives a bird’s-eye view of the workflow and its dependencies.
 
 ![Snakemake rule graph for the ticket analysis pipeline](/images/blog/snakemake-ticket-analysis-pipeline/rulegraph.png)
+
+*Drawn before the checkpoint has run, so the per-chunk rules described below don't appear; Snakemake adds them once the split has written its manifest.*
 
 ## The ticket shape
 
@@ -73,6 +75,31 @@ The heaviest steps were: PII censoring, LLM-based author classification, and LLM
 2. **Process in parallel**: Each chunk is processed by its own rule (e.g. `censor_chunk`, `classify_authors_chunk`, `label_llm_chunk`). Snakemake can run these in parallel with `--cores N`.
 3. **Gather**: A merge rule collects all chunk outputs into a single file (e.g. censored tickets, author-labelled tickets, or per-model label CSVs).
 
+```mermaid
+flowchart LR
+    IN(["tickets.jsonl"])
+    S["checkpoint<br/>split_for_censoring"]
+    C1["censor_chunk<br/>chunk_1"]
+    C2["censor_chunk<br/>chunk_2"]
+    CN["censor_chunk<br/>chunk_n"]
+    M["merge_censored_chunks"]
+    OUT(["censored tickets.jsonl"])
+
+    IN --> S
+    S -->|"manifest"| C1
+    S --> C2
+    S --> CN
+    C1 --> M
+    C2 --> M
+    CN --> M
+    M --> OUT
+
+    classDef rule fill:#dcfce7,stroke:#16a34a,stroke-width:2px,color:#1f2937
+    classDef file fill:#f8fafc,stroke:#64748b,stroke-width:1.5px,color:#1f2937
+    class S,C1,C2,CN,M rule
+    class IN,OUT file
+```
+
 Example: the censoring stage is implemented as a checkpoint split, a parameterised chunk rule, and a merge that uses a function to discover chunk names from the manifest:
 
 ```python
@@ -111,22 +138,23 @@ rule merge_censored_chunks:
         "uv run src/processing/merge_tickets.py {params.input_dir} {output.output_path}"
 ```
 
-`get_censored_chunks` reads the manifest produced by the checkpoint and returns the list of censored chunk paths, so the merge rule stays correct even when the number of chunks changes. The same pattern is reused for author classification and for LLM labelling (with labels stored per model so we could experiment with different models). Scatter–gather let us **parallelise** the expensive work and reduce wall-clock time.
+`get_censored_chunks` reads the manifest produced by the checkpoint and returns the list of censored chunk paths, so the merge rule stays correct even when the number of chunks changes. The same pattern is reused for author classification and for LLM labelling (with labels stored per model so we could experiment with different models).
 
-### 2. Incremental processing with checkpoints
+### 2. Incremental reruns
 
-Because we refined customer intents iteratively, we often re-ran the pipeline after changing only the intent definitions or a few scripts. Without checkpoints, we would have had to re-run every step after the split. With a **checkpoint** that produces the manifest, Snakemake knows the set of chunks only after the split runs. Downstream rules (merge, or any step that depends on “all chunks”) are then scheduled after the checkpoint, and only chunks whose inputs changed get re-executed. That meant we could re-run after intent tweaks and only recompute the chunks that were actually affected, saving a lot of time during the iterative refinement phase.
+Because we refined customer intents iteratively, we often re-ran the pipeline after changing only the intent definitions or a few scripts. Snakemake reruns a rule only when its inputs, parameters or code change, so each pass recomputed the rules that depended on what had changed and reused everything else. That saved a lot of time during the iterative refinement phase.
+
+The **checkpoint** does a different job. The number of chunks is known only after the split has run, and the checkpoint tells Snakemake to re-evaluate the DAG at that point, so the merge rules wait for every chunk that actually exists.
 
 ### 3. Dependency management and reproducibility
 
 With 19+ steps, two output paths (censored for training, uncensored for viewing), and several scatter–gather phases, hand-managing the order of operations would have been error-prone. Snakemake’s DAG took care of it: we just declared inputs and outputs for each rule, and the correct execution order and parallelisation followed. That gave:
 
-- **Reproducibility**: Same inputs and config produce the same outputs; the pipeline is fully specified in the Snakefile and config.
-- **Maintainability**: Adding or changing a step (e.g. a new filter or transformation) is a matter of adding or editing a rule and wiring inputs/outputs.
-- **Transparency**: The rule graph (as in the figure above) makes the whole pipeline visible at a glance, which helps both debugging and onboarding.
+- **Reproducibility**: The pipeline is fully specified in the Snakefile and config, so a rerun takes the same steps in the same order. The LLM labels themselves are not bit-for-bit reproducible.
+- **Transparency**: The rule graph (as in the figure above) makes the pipeline's structure visible at a glance, which helps both debugging and onboarding.
 
 The pipeline is also model-agnostic: labels are stored per-model (e.g. `data/tickets/13_labeled/Qwen_Qwen3-Coder-480B/`), allowing easy experimentation with different LLMs without reprocessing tickets.
 
 ## Outcome
 
-The pipeline processed the full ticket set into 20+ customer intent categories. We could refine the taxonomy without rerunning unrelated work, and the final stages produced the datasets needed to train a first-level customer support AI agent in a separate repo. Snakemake kept the benefit concrete: parallel execution for expensive stages, incremental reruns during taxonomy work, and one DAG that showed how the 19+ stages fit together.
+The pipeline processed the full ticket set into 20+ customer intent categories. We could refine the taxonomy without rerunning unrelated work, and the final stages produced the datasets needed to train a first-level customer support AI agent in a separate repo.

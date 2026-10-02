@@ -1,7 +1,7 @@
 ---
 title: "Masks and Cross-Attention: Extending Self-Attention"
 pubDate: 2026-05-03T00:00:00.000Z
-updatedDate: 2026-05-03T00:00:00.000Z
+updatedDate: 2026-10-02T00:00:00.000Z
 tags:
   - AI
   - Math
@@ -15,13 +15,13 @@ This post follows [From Kernel Regression to Self-Attention](/post/kernel-to-att
 - **Masks**, which restrict which positions a query is allowed to read from. The most important is the causal mask used in autoregressive language modeling, but padding masks come up routinely in batched training.
 - **Cross-attention**, which relaxes the *self* part: queries come from one sequence, keys and values from another. This is what lets one sequence be conditioned on another.
 
-Both are small modifications to equation (13) of the previous post. The mechanism — scaled dot product, softmax, weighted average — is unchanged in both cases. What changes is *which positions are allowed to attend to which*, and *which sequence each input comes from*. This post covers both.
+Both are small modifications to equation (13) of the previous post. The mechanism — scaled dot product, softmax, weighted average — is unchanged in both cases. What changes is *which positions are allowed to attend to which*, and *which sequence each input comes from*.
 
 ---
 
 ## 1. The leakage problem
 
-A decoder-only language model is trained on next-token prediction: given tokens $\boldsymbol{x}_1, \ldots, \boldsymbol{x}_n$, it should predict $\boldsymbol{x}_{i+1}$ from the output $\boldsymbol{y}_i$ at position $i$, for every $i$.
+A decoder-only language model is trained on next-token prediction: given tokens $\boldsymbol{x}_1, \ldots, \boldsymbol{x}_n$, it should predict $\boldsymbol{x}_{i+1}$ from the output $\boldsymbol{y}_i$ at position $i$, for every $i < n$.
 
 At inference time, this constraint is automatic — when generating token $i+1$, only tokens $1, \ldots, i$ exist. There is nothing to leak. At training time, the situation is different. The point of a Transformer is parallelism: we want to compute $\boldsymbol{y}_1, \ldots, \boldsymbol{y}_n$ in a single forward pass, with all targets visible. But equation (16) from the previous post says
 
@@ -60,13 +60,13 @@ In code, $-\infty$ is typically a large negative constant like $-10^9$, which is
 
 ## 3. What changes, what doesn't
 
-The mechanism is unchanged. Queries still come from $W^{(q)} \boldsymbol{x}$, keys from $W^{(k)} \boldsymbol{x}$, values from $W^{(v)} \boldsymbol{x}$; the dot-product score and the $\sqrt{d}$ rescaling are exactly as in [§5](/post/kernel-to-attention#5-scaling-why-divide-by-sqrtd) of the previous post. All that has changed is which scores survive the softmax.
+The mechanism is unchanged. Queries still come from $W^{(q)} \boldsymbol{x}$, keys from $W^{(k)} \boldsymbol{x}$, values from $W^{(v)} \boldsymbol{x}$; the dot-product score and the $\sqrt{d}$ rescaling are exactly as in [§5](/post/kernel-to-attention#5-scaling-why-divide-by-dsqrtdd) of the previous post. All that has changed is which scores survive the softmax.
 
 The mask is asymmetric. Position $i$ no longer sees positions $j > i$, but position $j$ (with $j > i$) still sees position $i$. Information flows strictly forward through the sequence. Each output $\boldsymbol{y}_i$ is now a weighted average over only its own past — exactly the constraint autoregressive training requires.
 
-![Causal-mask asymmetry: position 3 reads only 3 past positions, but is read by 6 current and future positions. Same matrix, same position, asymmetric reach.](/images/blog/masks-and-cross-attention/causal_mask_asymmetry.png)
+![Causal-mask asymmetry: position 3 reads 3 positions (1–3, itself included) but is read by 6 (positions 3–8). Same matrix, same position, asymmetric reach.](/images/blog/masks-and-cross-attention/causal_mask_asymmetry.png)
 
-Parallelism is preserved. All $n$ outputs are still computed in a single matrix multiplication, just with a triangular attention pattern instead of a full one. This is what lets decoder-only Transformers train at the same speed as bidirectional ones, despite the stricter information constraint.
+Parallelism is preserved. All $n$ outputs are still computed with the same matrix multiplications, just with a triangular attention pattern instead of a full one. This is what lets decoder-only Transformers train at the same speed as bidirectional ones, despite the stricter information constraint.
 
 ---
 
@@ -74,7 +74,7 @@ Parallelism is preserved. All $n$ outputs are still computed in a single matrix 
 
 A second, more mundane use of masking comes from batching. Real training batches contain sequences of different lengths. To pack them into a single tensor, shorter sequences are padded with a special token up to the length of the longest. These padding tokens carry no meaning and should not contribute to any output.
 
-The same trick handles them. Build a padding mask $M^{\text{pad}}$ where $M^{\text{pad}}_{ij} = -\infty$ whenever key $j$ is a padding token, and $0$ otherwise. Add it to the scores before softmax. In a decoder, both masks combine: $M^{\text{total}} = M^{\text{causal}} + M^{\text{pad}}$, which is still $-\infty$ wherever either is.
+The same trick handles them. Build a padding mask $M^{\text{pad}}$ where $M^{\text{pad}}_{ij} = -\infty$ whenever key $j$ is a padding token, and $0$ otherwise. Add it to the scores before softmax. Only key columns are masked: the rows for padding queries still produce outputs, and the loss simply ignores them. In a decoder, both masks combine: $M^{\text{total}} = M^{\text{causal}} + M^{\text{pad}}$, which is still $-\infty$ wherever either is.
 
 ---
 
@@ -82,16 +82,15 @@ The same trick handles them. Build a padding mask $M^{\text{pad}}$ where $M^{\te
 
 The second extension is cross-attention. In self-attention, the query, key, and value all come from the same sequence — that is what makes it *self*. Cross-attention relaxes this: queries come from one sequence, keys and values from another.
 
-Concretely, given two sequences — call them $X^A \in \mathbb{R}^{n \times d}$ with rows $\boldsymbol{x}^A_1, \ldots, \boldsymbol{x}^A_n$ and $X^B \in \mathbb{R}^{m \times d}$ with rows $\boldsymbol{x}^B_1, \ldots, \boldsymbol{x}^B_m$ — cross-attention lets every position in $A$ attend to every position in $B$. The learned projections from [§8](/post/kernel-to-attention#8-making-it-parametric-learned-projections) of the previous post split as follows:
+Concretely, given two sequences — call them $X^A \in \mathbb{R}^{n \times d}$ with rows $\boldsymbol{x}^A_1, \ldots, \boldsymbol{x}^A_n$ and $X^B \in \mathbb{R}^{m \times d}$ with rows $\boldsymbol{x}^B_1, \ldots, \boldsymbol{x}^B_m$ — cross-attention lets every position in $A$ attend to every position in $B$. The learned projections from [§8](/post/kernel-to-attention#8-making-it-parametric-learned-projections) of the previous post split as follows (a cross-attention layer has its own projection matrices, separate from those of the self-attention layer):
 
 $$
 \boldsymbol{q}_i = W^{(q)} \boldsymbol{x}^A_i, \quad \boldsymbol{k}_j = W^{(k)} \boldsymbol{x}^B_j, \quad \boldsymbol{v}_j = W^{(v)} \boldsymbol{x}^B_j
 $$
 
-The comparison with self-attention has three parts:
+The comparison with self-attention has two parts:
 
-- **The mechanism is unchanged.** Scaled dot product, softmax, weighted average — exactly equation (13). Only the inputs differ.
-- **The score matrix changes shape.** Stacking $Q = X^A W^{(q)\top}$ ($n$ rows) and $K = X^B W^{(k)\top}$ ($m$ rows), the score matrix $QK^\top$ is $n \times m$ instead of the $n \times n$ we have seen so far. Each row $i$ holds the scores from query position $i$ in $A$ against every key position in $B$.
+- **The score matrix changes shape.** Stacking $Q = X^A W^{(q)\top}$ ($n$ rows), and $K = X^B W^{(k)\top}$ and $V = X^B W^{(v)\top}$ (both $m$ rows), the score matrix $QK^\top$ is $n \times m$ instead of the $n \times n$ we have seen so far. Each row $i$ holds the scores from query position $i$ in $A$ against every key position in $B$.
 - **Self-attention is the special case where $A = B$.** When the two sequences are identical, queries, keys, and values all come from the same source, and we are back to (13) plus the learned projections.
 
 In matrix form:
@@ -101,7 +100,9 @@ $$
 \tag{18}
 $$
 
-— one output vector per position in $A$, where each output is a weighted blend of the value rows derived from $B$. Most of the previous post carries through unchanged; the only difference is the interpretation of *where each input comes from*.
+— one output vector per position in $A$, where each output is a weighted blend of the value rows derived from $B$.
+
+Masks carry over with one change. A padding mask over the keys of $B$ becomes an $n \times m$ matrix; the causal mask is not used, because every position in $A$ may read the whole of $B$.
 
 The most prominent use is in encoder–decoder Transformers, where decoder positions attend to the encoder's output — that is what lets a translation model align "die Katze saß" with "the cat sat." But the mechanism is general: it shows up wherever a model needs to condition one sequence on another.
 
@@ -109,19 +110,14 @@ The most prominent use is in encoder–decoder Transformers, where decoder posit
 
 ## Summary
 
-Self-attention as derived in the previous post lets every position attend to every other position in the same sequence. Two extensions cover most of what real Transformers do:
-
-- **Masking** sets entries of the score matrix to $-\infty$ before softmax, blocking flow from masked positions. Causal masks block the future; padding masks block padding tokens. Both rely on $e^{-\infty} = 0$.
-- **Cross-attention** lets queries come from one sequence and keys/values from another. The mechanism is otherwise identical; only the score matrix changes shape from $n \times n$ to $n \times m$.
-
 A single formula subsumes all three cases — vanilla self-attention, masked self-attention, and cross-attention:
 
 $$
 \operatorname{Attn}(Q, K, V; M) = \operatorname{softmax}\!\left(\frac{QK^\top}{\sqrt{d}} + M\right) V
 $$
 
-When $Q$, $K$, $V$ come from the same sequence and $M = 0$, this is the original (13). When $M$ encodes a causal or padding mask, this is masked self-attention. When $Q$ comes from one sequence and $K$, $V$ from another, this is cross-attention. The next post shows how Transformers stack these into encoder-only, decoder-only, and encoder–decoder architectures.
+When $Q$, $K$, $V$ come from the same sequence and $M = 0$, this is the original (13). When $M$ encodes a causal or padding mask, this is masked self-attention. When $Q$ comes from one sequence and $K$, $V$ from another, this is cross-attention. [The next post](/post/transformer-architectures) shows how Transformers stack these into encoder-only, decoder-only, and encoder–decoder architectures.
 
 ---
 
-*Built on the notation and derivation in [From Kernel Regression to Self-Attention](/post/kernel-to-attention). Causal masking and cross-attention both originate with Vaswani et al., "[Attention Is All You Need](https://arxiv.org/abs/1706.03762)", NeurIPS 2017, §3.2.*
+*Built on the notation and derivation in [From Kernel Regression to Self-Attention](/post/kernel-to-attention). Causal masking and the encoder–decoder attention layer used here are from Vaswani et al., "[Attention Is All You Need](https://arxiv.org/abs/1706.03762)", NeurIPS 2017, §3.2. Attention from a decoder over encoder states goes back to Bahdanau, Cho and Bengio, "[Neural Machine Translation by Jointly Learning to Align and Translate](https://arxiv.org/abs/1409.0473)", 2014.*

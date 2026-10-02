@@ -1,15 +1,15 @@
 ---
 title: "Type-Safe Hybrid Workflows with Pydantic AI"
 pubDate: 2026-02-25T00:00:00.000Z
-updatedDate: 2026-05-16T00:00:00.000Z
+updatedDate: 2026-10-02T00:00:00.000Z
 tags:
   - AI
   - Python
-description: "One Pydantic AI primitive scales across deterministic, LLM-assisted, and agentic steps — with the same typed contract everywhere."
+description: "Pydantic models as the contract between deterministic, LLM-assisted and agentic steps, so moving a step from one to another is a local change."
 image: /images/blog/pydantic-ai-type-safe-hybrid-workflows/featured.png
 ---
 
-In [a previous post](https://danielfridljand.de/post/workflow-vs-agent) I weighed keeping code in charge of a business automation against handing it to an agent. Either way the result is usually a mixed pipeline, and it needs clean seams between deterministic, LLM-assisted, and agentic steps. Pydantic models provide those seams.
+In [Workflow or Agent](/post/workflow-vs-agent) I weigh keeping code in charge of a business automation against handing it to an agent. Either way the result is usually a mixed pipeline, and it needs clean seams between deterministic, LLM-assisted, and agentic steps. Pydantic models provide those seams.
 
 [Pydantic AI](https://ai.pydantic.dev/) gives you one primitive — `Agent` — and lets you scale it across the spectrum:
 
@@ -40,7 +40,7 @@ result = await extractor.run(message_text)
 # result.output is already a ContactInfo instance
 ```
 
-If the model returns malformed JSON or a value that violates the schema, Pydantic validation fails and Pydantic AI retries — feeding the validation error back into the prompt so the model can correct itself. If it keeps failing, we raise. Downstream code doesn't care whether the model nailed it first try or needed three attempts — it only ever sees a validated `ContactInfo`.
+If the model returns malformed JSON or a value that violates the schema, Pydantic validation fails and Pydantic AI retries — feeding the validation error back into the prompt so the model can correct itself. If it keeps failing, Pydantic AI raises, and the step's runner catches it, as in the agentic example below. Downstream code doesn't care whether the model nailed it first try or needed three attempts — it only ever sees a validated `ContactInfo`.
 
 ## Agentic: same contract, more machinery
 
@@ -59,12 +59,12 @@ async def fetch_agent_run(info: ContactInfo) -> FetchResult:
         async with asyncio.timeout(10):
             result = await fetch_agent.run(info.model_dump_json())
             return result.output
-    except (asyncio.TimeoutError, Exception) as e:
+    except Exception as e:
         log.warning("fetch agent failed", error=e)
         return FetchResult(record=None, error_code="AGENT_FAILED")
 ```
 
-The `output_type` on the error path is still `FetchResult`: we construct one with `record=None`, so downstream code doesn't need to special-case "did the agent work?" and sees the same shape either way. Every LLM call also gets an explicit timeout. An agent without a timeout is a production incident waiting to happen.
+The `output_type` on the error path is still `FetchResult`: we construct one with `record=None`, so downstream code doesn't need to special-case "did the agent work?" and sees the same shape either way. Agent runs also get an explicit timeout. An agent without a timeout is a production incident waiting to happen.
 
 ## Deterministic: no agent at all, same shape
 
@@ -78,12 +78,12 @@ async def fetch_deterministic(info: ContactInfo) -> FetchResult:
     return FetchResult(record=None)
 ```
 
-From the caller's perspective, `fetch_deterministic` and `fetch_agent_run` are interchangeable. That's the property that matters: swapping a step between deterministic and agentic is a local change. The code around it doesn't notice.
+From the caller's perspective, `fetch_deterministic` and `fetch_agent_run` are interchangeable.
 
 ## What the shared contract buys you
 
-Failure modes become typed values. Every way an LLM call can go wrong — malformed output, timeout, refusal, repeated validation failure — gets caught by the runner and turned into an instance of the step's output type with an error field set. The blast radius of "the LLM did something weird" stops at the runner for that step.
+Failure modes become typed values. Every way an LLM call can go wrong — malformed output, timeout, refusal, repeated validation failure — gets caught by the runner and turned into an instance of the step's output type, like the `FetchResult` with an `error_code` above. The blast radius of "the LLM did something weird" stops at the runner for that step.
 
 The agency-level decision becomes local. When a step you thought needed an agent turns out to be solvable with deterministic code, you delete the agent and keep the same `output_type`. When a step you thought was deterministic starts failing on edge cases, you swap in an agent without touching anything around it. The unit of change is one function.
 
-If you're curious what this looks like in a non-toy pipeline — one with intent classification, structured extraction, deterministic lookups, and an LLM-fallback planner all wired together — see [Architecture of a First-Level Support Automation](https://danielfridljand.de/post/first-level-support-automation).
+If you're curious what this looks like in a non-toy pipeline — one with intent classification, structured extraction, deterministic lookups, and an LLM-fallback planner all wired together — see [Architecture of a First-Level Support Automation](/post/first-level-support-automation).

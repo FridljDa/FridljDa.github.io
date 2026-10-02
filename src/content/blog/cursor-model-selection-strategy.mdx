@@ -1,18 +1,19 @@
 ---
 title: "Strategic Model Selection in Cursor: Balancing Cost and Performance"
 pubDate: 2026-02-06
+updatedDate: 2026-10-02
 tags:
   - AI
   - Productivity
-description: "Learn how to optimize your Cursor usage by choosing expensive models for planning and cheap models for execution, with a cost vs performance chart updated daily."
+description: "Use an expensive model for planning and a cheap one for execution in Cursor, with a cost-vs-performance chart built from Cursor's pricing and Arena scores."
 image: /images/blog/cursor-model-selection-strategy/featured.png
-math: true
+math: false
 ---
 
 import ModelPerformanceChart from '../../components/ModelPerformanceChart';
 import ModelRecommendations from '../../components/ModelRecommendations';
 
-Checking Cursor’s [pricing](https://cursor.com/docs/models#model-pricing) and a [leaderboard](https://arena.ai/leaderboard/code) back and forth is tedious; using “the best” model for everything can lead to surprisingly high bills. A simpler approach uses one stronger model for planning and one cheaper model for execution.
+Checking Cursor’s [pricing](https://cursor.com/docs/models-and-pricing#model-pricing) and a [leaderboard](https://arena.ai/leaderboard/code) back and forth is tedious; using “the best” model for everything can lead to surprisingly high bills. A simpler approach uses one stronger model for planning and one cheaper model for execution.
 
 ## The two-model strategy
 
@@ -24,11 +25,11 @@ You avoid both the “everything on the best model” bill and the “everything
 
 ## Why it works
 
-Planning is input-heavy (lots of context in, compact plan out); execution is output-heavy (lots of code generated). [Arena Code](https://arena.ai/leaderboard/code) benchmarks show that mid-tier models are close to the top on code tasks at a fraction of the cost. Use strong reasoning where it matters and lower cost where most tokens are spent.
+Planning takes a few requests; execution takes many, and each one re-sends the growing context. [Arena Code](https://arena.ai/leaderboard/code) benchmarks show that mid-tier models are close to the top on code tasks at a fraction of the cost. Use strong reasoning where it matters and lower cost where most tokens are spent.
 
 ## Cost vs performance at a glance
 
-The chart below plots cost (weighted $/1M tokens: 70% input, 30% output) against benchmark performance. Data comes from Cursor’s pricing and public benchmarks; the [workflow](https://github.com/FridljDa/FridljDa.github.io/blob/master/.github/workflows/update-model-data.yaml) updates it daily.
+The chart below plots cost (weighted $/1M tokens: 70% input, 30% output) against benchmark performance. Data comes from Cursor’s pricing and public benchmarks; a [workflow](https://github.com/FridljDa/FridljDa.github.io/blob/master/.github/workflows/update-model-data.yaml) fetches fresh data daily and proposes it as a pull request. The weighting ignores cache-read pricing, which, as the next section shows, is how most agent tokens are billed.
 
 <ModelPerformanceChart client:load />
 
@@ -36,7 +37,7 @@ Lower left means cheaper and weaker; upper right means pricier and stronger. Pic
 
 ### Token usage complicates the comparison
 
-The charts above and the recommendations below use price per 1M tokens, but total cost also depends on how many tokens each model uses for the same request. Some models are more verbose or expand the context more aggressively; others stay more compact.
+The chart above and the recommendations below use price per 1M tokens, but total cost also depends on how many tokens each model uses for the same request. Some models are more verbose or expand the context more aggressively; others stay more compact.
 
 ![Model usage analysis by model](/images/blog/cursor-model-selection-strategy/model-usage-analysis.png)
 
@@ -44,7 +45,7 @@ The figure above shows that request volume and spend are distributed very uneven
 
 ![Token usage per request by model](/images/blog/cursor-model-selection-strategy/token-usage-per-request-by-model.png)
 
-Total tokens per request can differ by orders of magnitude between models for similar tasks. When you experiment with alternative models, watch price per token and Elo alongside response length and context use; that combination is what shows up on your bill.
+Tokens per request vary by orders of magnitude within each model, and the typical request differs severalfold between models. Almost all of those tokens are cached input re-read on every request, not generated code. These are real requests rather than identical tasks, so part of the gap between models reflects the work, not the model. When you experiment with alternative models, watch price per token and Elo alongside response length and context use; that combination is what shows up on your bill.
 
 ## Recommended pairings
 
@@ -52,46 +53,14 @@ Total tokens per request can differ by orders of magnitude between models for si
 
 ### How the recommendations are selected
 
-The chart shows Pareto frontiers as dashed lines (purple for planning, green for execution).
+The chart shows Pareto frontiers as dashed lines (purple for planning, green for execution). The recommendations come from four steps:
 
-**Mathematical formulation:**
+1. **Minimum performance.** Only models with an Arena-Code or LMSYS Arena score of at least 1200 qualify (no BigCodeBench-only models).
+2. **Category.** Planning needs a score of at least 1300; execution needs a weighted cost of at most \$2.50 per 1M tokens. A model that qualifies for both is listed under planning.
+3. **Pareto optimality.** Within each category, drop any model that another model matches or beats on both score and cost, and strictly beats on at least one.
+4. **Efficiency.** Rank the rest by score per dollar and keep the top three per category.
 
-**Step 1: Minimum performance threshold**
-
-$$
-\text{Elo} \geq 1200
-$$
-
-Only models with Arena-Code or LMSYS Arena Elo scores qualify (no BigCodeBench-only models).
-
-**Step 2: Category criteria (not mutually exclusive)**
-
-$$
-\text{Planning}: \text{Elo} \geq 1300 \quad|\quad \text{Execution}: \text{Elo} \geq 1200 \,\wedge\, \text{Cost} \leq \$2.5
-$$
-
-**Step 3: Pareto optimality (no dominated models)**
-
-Within each category, keep only Pareto-optimal models. A model qualifies only if no other model is both better-performing and cheaper, ensuring you never choose a strictly dominated option:
-
-$$
-\text{Pareto-optimal} \iff \nexists \text{ model } B: 
-\begin{cases}
-\text{Elo}_B \geq \text{Elo}_A \\
-\text{Cost}_B \leq \text{Cost}_A \\
-\text{at least one } >
-\end{cases}
-$$
-
-**Step 4: Rank by efficiency and select top picks**
-
-$$
-\text{Efficiency} = \frac{\text{Elo}}{\text{Cost per 1M tokens}}
-$$
-
-Models are ranked by Elo per dollar. Select 4 models by efficiency per category (or fewer if frontier is smaller).
-
-This keeps strictly dominated models out of the recommendations. The formula runs daily via [GitHub Actions](.github/workflows/update-model-data.yaml).
+The same [workflow](https://github.com/FridljDa/FridljDa.github.io/blob/master/.github/workflows/update-model-data.yaml) that fetches the data reruns this selection.
 
 ## Example workflow
 

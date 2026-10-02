@@ -6,11 +6,11 @@ tags:
   - AI
   - Customer Support
   - Architecture
-description: "The four-step pipeline we landed on after iterating in production: a rooted DAG of intents, grouped extraction, weighted-scoring fetch, and a mostly-hardcoded planner with an explicit LLM fallback."
+description: "The four-step pipeline we landed on after iterating on live tickets: a rooted DAG of intents, grouped extraction, weighted-scoring fetch, and a mostly-hardcoded planner with an explicit LLM fallback."
 image: /images/blog/first-level-support-automation/featured.png
 ---
 
-Our production architecture for first-level customer support splits the problem into small steps, uses LLMs for interpretation, and keeps everything else in code. It is the production version of the approach described in [Workflow or Agent](https://danielfridljand.de/post/workflow-vs-agent).
+Our architecture for first-level customer support splits the problem into small steps, uses LLMs for interpretation, and keeps everything else in code. It is the full version of the workflow approach in [Workflow or Agent](/post/workflow-vs-agent), which also explains why I would now invert its default.
 
 The system turns a customer message into a reply, possibly with attachments, and any required tool calls: updating a record, filing a follow-up ticket, or escalating to a human. A preprocessing layer first normalises inbound attachments.
 
@@ -37,10 +37,10 @@ flowchart TD
     C2 -.->|"'other' leaf"| A1
     A1 -->|"proposed plan"| OUT
 
-    classDef agent fill:#f3e8ff,stroke:#7c3aed,stroke-width:2px
-    classDef llm fill:#dbeafe,stroke:#2563eb,stroke-width:2px
-    classDef code fill:#dcfce7,stroke:#16a34a,stroke-width:2px
-    classDef terminal fill:#f8fafc,stroke:#64748b,stroke-width:1.5px
+    classDef agent fill:#f3e8ff,stroke:#7c3aed,stroke-width:2px,color:#1f2937
+    classDef llm fill:#dbeafe,stroke:#2563eb,stroke-width:2px,color:#1f2937
+    classDef code fill:#dcfce7,stroke:#16a34a,stroke-width:2px,color:#1f2937
+    classDef terminal fill:#f8fafc,stroke:#64748b,stroke-width:1.5px,color:#1f2937
     class A1 agent
     class L1,L2 llm
     class C1,C2 code
@@ -51,7 +51,7 @@ Intent recognition and extraction run in parallel. Fetch uses the extracted fiel
 
 We will trace this message through all four steps:
 
-> *I bank with Northstar Bank's Riverton branch. My name is Alex Carter, and my partner is Jamie Carter. Our account number is NSBO1234. We can no longer access the account.*
+> *I bank with Northstar Bank's Riverton branch. My name is Alex Carter, and my partner is Jamie Carter. Our account number is NSBO1234. We can no longer access the account; it keeps saying it is locked.*
 
 All details are fictional. The example contains three common complications: an ambiguous intent, two named people, and a `0`/`O` ambiguity in the account number (`NSBO1234` or `NSB01234`).
 
@@ -59,10 +59,10 @@ All details are fictional. The example contains three common complications: an a
 
 ## Step 1: Intent recognition
 
-We classify the message against a **rooted DAG of intents, biased toward depth 2**. The root contains broad intents ("account access", "payments", "card services", …) and an explicit "other"; most parents contain a few sub-intents and another "other". One constrained LLM call selects the parent, then another selects among its children. These Pydantic AI `Agent` calls have no tools or open-ended loop and return typed outputs. [Type-Safe Hybrid Workflows with Pydantic AI](https://danielfridljand.de/post/pydantic-ai-type-safe-hybrid-workflows) covers the mechanics.
+We classify the message against a **rooted DAG of intents, biased toward depth 2**. The root contains broad intents ("account access", "payments", "card services", …) and an explicit "other"; most parents contain a few sub-intents and another "other". One constrained LLM call selects the parent, then another selects among its children. These Pydantic AI `Agent` calls have no tools or open-ended loop and return typed outputs. [Type-Safe Hybrid Workflows with Pydantic AI](/post/pydantic-ai-type-safe-hybrid-workflows) covers the mechanics.
 
 ```mermaid
-flowchart TD
+flowchart LR
     R(["Customer message"])
     R --> P1["Account access"]
     R --> P2["Payments"]
@@ -78,9 +78,9 @@ flowchart TD
     P3 --> LOCKED
     P3 --> P3OT["Other"]
 
-    classDef intent fill:#f8fafc,stroke:#64748b,stroke-width:1.5px
-    classDef selected fill:#dbeafe,stroke:#2563eb,stroke-width:2px
-    classDef fallback fill:#fff7ed,stroke:#ea580c,stroke-width:2px,stroke-dasharray:4 4
+    classDef intent fill:#f8fafc,stroke:#64748b,stroke-width:1.5px,color:#1f2937
+    classDef selected fill:#dbeafe,stroke:#2563eb,stroke-width:2px,color:#1f2937
+    classDef fallback fill:#fff7ed,stroke:#ea580c,stroke-width:2px,stroke-dasharray:4 4,color:#1f2937
     class R,P1,P2,P3,P1A,P1B,P3A intent
     class LOCKED selected
     class POT,P1OT,P3OT fallback
@@ -94,7 +94,7 @@ flowchart TD
 
 **Two narrow calls beat one wide classifier.** Each parent exposes only its reachable children as a typed `Literal`, avoiding confusion between unrelated categories. Shared leaves simply appear in more than one parent's options.
 
-Intent recognition is also the pipeline's cleanest eval target: labeled conversations yield precision, recall, and a confusion matrix.
+Intent recognition is also the pipeline's cleanest eval target: labelled conversations yield precision, recall, and a confusion matrix.
 
 Our example resolves to **account access → account locked**, the same leaf a card-PIN lockout could reach through **card services**.
 
@@ -102,7 +102,7 @@ Our example resolves to **account access → account locked**, the same leaf a c
 
 ## Step 2: Information extraction
 
-In parallel with intent recognition, separate LLM-assisted steps extract **groups** of related fields. Our example uses `People` (names) and `Account` (identifiers and branch). Each group has its own prompt and Pydantic output model, including validation and retries. [The Pydantic AI post](https://danielfridljand.de/post/pydantic-ai-type-safe-hybrid-workflows) shows the wiring.
+In parallel with intent recognition, separate LLM-assisted steps extract **groups** of related fields. Our example uses `People` (names) and `Account` (identifiers and branch). Each group has its own prompt and Pydantic output model, including validation and retries. [The Pydantic AI post](/post/pydantic-ai-type-safe-hybrid-workflows) shows the wiring.
 
 ```mermaid
 flowchart TD
@@ -125,8 +125,8 @@ flowchart TD
     P_FIELDS --> OUT(["Extracted information"])
     A_FIELDS --> OUT
 
-    classDef llm fill:#dbeafe,stroke:#2563eb,stroke-width:2px
-    classDef data fill:#f8fafc,stroke:#64748b,stroke-width:1.5px
+    classDef llm fill:#dbeafe,stroke:#2563eb,stroke-width:2px,color:#1f2937
+    classDef data fill:#f8fafc,stroke:#64748b,stroke-width:1.5px,color:#1f2937
     class P_STEP,A_STEP llm
     class MSG,P_FIELDS,A_FIELDS,OUT data
 ```
@@ -161,8 +161,9 @@ Fetch uses a **weighted-scoring fan-out** to absorb extraction's false positives
 flowchart TD
     EX(["Extracted information"])
     Q1["🔌 External tool/API<br/>given_name=Alex<br/>given_name=Jamie"]
-    Q2["🔌 External tool/API<br/>family_name=Carter<br/>branch=Riverton"]
+    Q2["🔌 External tool/API<br/>family_name=Carter"]
     Q3["🔌 External tool/API<br/>account_number=NSBO1234<br/>account_number=NSB01234"]
+    Q4["🔌 External tool/API<br/>branch=Riverton"]
     C1["⚙️ Code step<br/>merge by primary ID<br/>and sum signal strengths"]
     C2["⚙️ Code step<br/>keep the maximum score<br/>above the threshold"]
     OUT(["Candidate records"])
@@ -170,17 +171,19 @@ flowchart TD
     EX -->|"parallel queries"| Q1
     EX -->|"parallel queries"| Q2
     EX -->|"parallel queries"| Q3
+    EX -->|"parallel queries"| Q4
     Q1 -->|"candidate hits"| C1
     Q2 -->|"candidate hits"| C1
     Q3 -->|"candidate hits"| C1
+    Q4 -->|"candidate hits"| C1
     C1 -->|"scored records"| C2
     C2 --> OUT
 
-    classDef code fill:#dcfce7,stroke:#16a34a,stroke-width:2px
-    classDef tool fill:#fef3c7,stroke:#d97706,stroke-width:2px
-    classDef terminal fill:#f8fafc,stroke:#64748b,stroke-width:1.5px
+    classDef code fill:#dcfce7,stroke:#16a34a,stroke-width:2px,color:#1f2937
+    classDef tool fill:#fef3c7,stroke:#d97706,stroke-width:2px,color:#1f2937
+    classDef terminal fill:#f8fafc,stroke:#64748b,stroke-width:1.5px,color:#1f2937
     class C1,C2 code
-    class Q1,Q2,Q3 tool
+    class Q1,Q2,Q3,Q4 tool
     class EX,OUT terminal
 ```
 
@@ -204,7 +207,7 @@ The example produces these simplified hits:
 
 `acc_001` is the sole maximum above the threshold, so it wins. Its account-number hit comes from the generated `0`/`O` variant: the customer wrote `NSBO1234`, while the record contains `NSB01234`.
 
-If nothing clears the threshold, fetch returns no record and the plan can request more information. This step is plain code: fan out, sum weighted hits, threshold.
+If nothing clears the threshold, fetch returns no record and the plan can request more information.
 
 ---
 
@@ -212,7 +215,7 @@ If nothing clears the threshold, fetch returns no record and the plan can reques
 
 Plan generation receives the **resolved intent leaf**, extracted fields, fetched records, and fetch metadata. Dispatch is therefore a keyed lookup, not another classification: converging paths share one plan, so `account_locked` behaves the same whether reached through account access or card services.
 
-Each known leaf owns a small decision tree over the fetched data: was a record found, is there one candidate, is it flagged? Branches end in a pre-written template plus any tool calls. These trees encode the business logic and grow as patterns emerge. [Workflow or Agent](https://danielfridljand.de/post/workflow-vs-agent) explains why we keep them in code.
+Each known leaf owns a small decision tree over the fetched data: was a record found, is there one candidate, is it flagged? Branches end in a pre-written template plus any tool calls. These trees encode the business logic and grow as patterns emerge. [Workflow or Agent](/post/workflow-vs-agent) explains why we kept them in code, and why I would now make the agent the default instead.
 
 ```mermaid
 flowchart TD
@@ -221,7 +224,7 @@ flowchart TD
     A1["🤖 Agent<br/>propose fallback plan"]
     D1{"Account<br/>found?"}
     D2{"Exactly one<br/>candidate?"}
-    D3{"Fraud flag<br/>set?"}
+    D3{"Security flag<br/>set?"}
     C2["⚙️ Code step<br/>request account information"]
     C3["⚙️ Code step<br/>request account disambiguation"]
     C4["⚙️ Code step<br/>send unlock instructions"]
@@ -237,10 +240,10 @@ flowchart TD
     D3 -->|"no"| C4
     D3 -->|"yes"| C5
 
-    classDef agent fill:#f3e8ff,stroke:#7c3aed,stroke-width:2px
-    classDef code fill:#dcfce7,stroke:#16a34a,stroke-width:2px
-    classDef decision fill:#fff7ed,stroke:#ea580c,stroke-width:2px
-    classDef terminal fill:#f8fafc,stroke:#64748b,stroke-width:1.5px
+    classDef agent fill:#f3e8ff,stroke:#7c3aed,stroke-width:2px,color:#1f2937
+    classDef code fill:#dcfce7,stroke:#16a34a,stroke-width:2px,color:#1f2937
+    classDef decision fill:#fff7ed,stroke:#ea580c,stroke-width:2px,color:#1f2937
+    classDef terminal fill:#f8fafc,stroke:#64748b,stroke-width:1.5px,color:#1f2937
     class A1 agent
     class C1,C2,C3,C4,C5 code
     class D1,D2,D3 decision
@@ -251,7 +254,7 @@ flowchart TD
 
 Our `account_locked` example finds one unflagged record, `acc_001`, and lands on the parametrised "unlock instructions" template.
 
-Plans involving money, account access, or side effects require human review. [Temporal for Human-in-the-Loop](https://danielfridljand.de/post/temporal-human-in-the-loop) covers durable waits, signals, and recovery across restarts.
+Plans involving money, account access, or side effects require human review. [Temporal for Human-in-the-Loop](/post/temporal-human-in-the-loop) covers durable waits, signals, and recovery across restarts.
 
 ---
 
@@ -259,15 +262,15 @@ Plans involving money, account access, or side effects require human review. [Te
 
 Each step has its own evaluation:
 
-- **Intent:** precision, recall, and a confusion matrix over labeled parent/sub-intents.
+- **Intent:** precision, recall, and a confusion matrix over labelled parent/sub-intents.
 - **Extraction:** field-level precision and recall for each group, allowing the intended false-positive bias.
 - **Fetch:** integration tests over extracted fields, fixed API responses, weights, and thresholds.
-- **Plan:** unit tests for known leaves; a labeled golden set for fallback plans.
+- **Plan:** unit tests for known leaves; a labelled golden set for fallback plans.
 
-A monolithic agent offers only end-to-end quality, making regressions hard to locate. Decomposition isolates them. Meanwhile, "other" buckets form a self-curating queue for new intents, extraction groups, or hardcoded branches.
+A monolithic agent is mostly judged end to end, which makes regressions hard to locate. Decomposition isolates them.
 
 ---
 
 ## Where the pattern fits
 
-Typed steps make regressions easier to locate. Keeping known execution in code and routing coverage gaps through "other" makes the long tail manageable without turning the whole pipeline into an agent. The same pattern also applies to operations triage, legal intake, and insurance claims.
+Typed steps make regressions easy to locate, and "other" makes coverage gaps visible. Which path should be the default is a separate question. Here it is code, and the agent gets whatever code hasn't reached; [Workflow or Agent](/post/workflow-vs-agent#next-time-make-the-agent-the-default) argues for the opposite.

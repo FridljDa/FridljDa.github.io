@@ -17,7 +17,7 @@ The first architectural decision in an LLM automation is how much of the work th
 
 Customers wrote in to our first-level support team at Northstar Bank with messages like this:
 
-> Hi, I'm Alex Carter and I bank with your Riverton branch. My account number is NSB01234 and I can't get in any more; it keeps saying the account is locked. Can you help me get back in?
+![Customer message: Hi, I'm Alex Carter and I bank with your Riverton branch. My account number is NSB01234 and I can't get in any more; it keeps saying the account is locked. Can you help me get back in?](/images/blog/the-missing-compiler/customer-message.png)
 
 The running example is based on a real project, but the details have been changed to protect the client's privacy.
 
@@ -27,26 +27,9 @@ Two facts pushed us toward code. The first is that LLMs haven't seen your intern
 
 ## The fully agentic approach
 
-The first design we considered was a single Support Agent that held every tool — account lookup, security-flag check, send unlock instructions, escalate to security — and wrote the customer's reply itself.
+The first design we tried was a single Support Agent that held every tool — account lookup, security-flag check, send unlock instructions, escalate to security — and wrote the customer's reply itself.
 
-The diagrams in this post use four shapes:
-
-```mermaid
-flowchart LR
-    LA["🤖 Agent<br/>chooses actions, uses tools"]
-    LL["🧠 LLM-assisted step<br/>constrained model call"]
-    LC["⚙️ Code step<br/>deterministic logic"]
-    LT["🔌 External tool/API<br/>outside dependency"]
-
-    classDef agent fill:#f3e8ff,stroke:#7c3aed,stroke-width:2px
-    classDef llm fill:#dbeafe,stroke:#2563eb,stroke-width:2px
-    classDef code fill:#dcfce7,stroke:#16a34a,stroke-width:2px
-    classDef tool fill:#fef3c7,stroke:#d97706,stroke-width:2px
-    class LA agent
-    class LL llm
-    class LC code
-    class LT tool
-```
+In the diagrams, **🤖 Agent** chooses its own actions and tools, **🧠 LLM-assisted step** is a constrained model call, **⚙️ Code step** is deterministic logic, and **🔌 External tool/API** is an outside dependency.
 
 ```mermaid
 flowchart TD
@@ -69,9 +52,9 @@ flowchart TD
     A1 -->|"flagged: escalate"| T4
     T4 --> OUT2
 
-    classDef agent fill:#f3e8ff,stroke:#7c3aed,stroke-width:2px
-    classDef tool fill:#fef3c7,stroke:#d97706,stroke-width:2px
-    classDef terminal fill:#f8fafc,stroke:#64748b,stroke-width:1.5px
+    classDef agent fill:#f3e8ff,stroke:#7c3aed,stroke-width:2px,color:#1f2937
+    classDef tool fill:#fef3c7,stroke:#d97706,stroke-width:2px,color:#1f2937
+    classDef terminal fill:#f8fafc,stroke:#64748b,stroke-width:1.5px,color:#1f2937
     class A1 agent
     class T1,T2,T3,T4 tool
     class INPUT,OUT1,OUT2 terminal
@@ -86,7 +69,7 @@ We tried to fix that with prompt engineering, but asking an LLM to be reliably d
 
 ## The workflow approach
 
-We labelled and clustered a sample of past tickets with an AI-assisted, iterative process. A handful of intents accounted for the large majority of them, which encouraged us to try a workflow.
+We labelled and clustered a sample of past tickets with [an AI-assisted, iterative process](/post/snakemake-ticket-analysis-pipeline). A handful of intents accounted for the large majority of them, which encouraged us to try a workflow.
 
 To get both the ordering guarantee and the fixed templates, we kept code in charge of the sequencing and reserved the LLM for the *one* hard part of Alex's message:
 interpreting it, recognising that this is an *account-locked* request and pulling out the identifier (the account number, or the name and branch).
@@ -116,11 +99,11 @@ flowchart TD
     C2 --> OUT1
     C3 --> OUT2
 
-    classDef llm fill:#dbeafe,stroke:#2563eb,stroke-width:2px
-    classDef code fill:#dcfce7,stroke:#16a34a,stroke-width:2px
-    classDef tool fill:#fef3c7,stroke:#d97706,stroke-width:2px
-    classDef decision fill:#fff7ed,stroke:#ea580c,stroke-width:2px
-    classDef terminal fill:#f8fafc,stroke:#64748b,stroke-width:1.5px
+    classDef llm fill:#dbeafe,stroke:#2563eb,stroke-width:2px,color:#1f2937
+    classDef code fill:#dcfce7,stroke:#16a34a,stroke-width:2px,color:#1f2937
+    classDef tool fill:#fef3c7,stroke:#d97706,stroke-width:2px,color:#1f2937
+    classDef decision fill:#fff7ed,stroke:#ea580c,stroke-width:2px,color:#1f2937
+    classDef terminal fill:#f8fafc,stroke:#64748b,stroke-width:1.5px,color:#1f2937
     class L1,L2 llm
     class C1,C2,C3 code
     class T1 tool
@@ -135,7 +118,7 @@ Two consequences:
 - **Scope the LLM to what only an LLM can do.** Recognising the intent and extracting an identifier from free text is a well-defined task. You can build targeted evals, iterate on the prompt, drop to a cheaper model, or swap the extractor for a Named Entity Recognition model.
 - **Iteration is targeted and predictable.** When a message is misread or a policy changes, the fix is local: edit the extraction prompt, add a branch, adjust one API call, and you know what the next message of that shape will do.
 
-The production version of this pattern, scaled up to a four-step pipeline, is in [Architecture of a First-Level Support Automation](/post/first-level-support-automation); the typing that holds the seams together is in [Type-Safe Hybrid Workflows with Pydantic AI](/post/pydantic-ai-type-safe-hybrid-workflows).
+The full version of this pattern, scaled up to a four-step pipeline, is in [Architecture of a First-Level Support Automation](/post/first-level-support-automation); the typing that holds the seams together is in [Type-Safe Hybrid Workflows with Pydantic AI](/post/pydantic-ai-type-safe-hybrid-workflows).
 
 ## The state space wasn't bounded
 
@@ -172,10 +155,10 @@ flowchart TD
     C --> OUT
     A --> OUT
 
-    classDef agent fill:#f3e8ff,stroke:#7c3aed,stroke-width:2px
-    classDef code fill:#dcfce7,stroke:#16a34a,stroke-width:2px
-    classDef decision fill:#fff7ed,stroke:#ea580c,stroke-width:2px
-    classDef terminal fill:#f8fafc,stroke:#64748b,stroke-width:1.5px
+    classDef agent fill:#f3e8ff,stroke:#7c3aed,stroke-width:2px,color:#1f2937
+    classDef code fill:#dcfce7,stroke:#16a34a,stroke-width:2px,color:#1f2937
+    classDef decision fill:#fff7ed,stroke:#ea580c,stroke-width:2px,color:#1f2937
+    classDef terminal fill:#f8fafc,stroke:#64748b,stroke-width:1.5px,color:#1f2937
     class A agent
     class C code
     class D decision
@@ -192,12 +175,38 @@ purely for departing from a template. We were asking the agent to be a worse wor
 
 Invert the default, following Will Larson's [Building an internal agent](https://lethain.com/agents-coordinators/), which starts every workflow with the LLM. A path graduates into a workflow only once it shows up often and the agent handles it unreliably, or when the action is irreversible enough that you don't want a model deciding it.
 
-Picture the [diagram above](#bolting-an-agent-onto-the-tree) with the default flipped: the agent is the solid path that every request takes, and code is the dashed exception, carved out one hardened branch at a time. It is also the shortest path into shadow deployment, since an agent with a set of tools is much less to build than a tree of intents, plans and templates.
+Flip the default in the [diagram above](#bolting-an-agent-onto-the-tree): the agent becomes the solid path, and code the dashed exception, carved out one hardened branch at a time.
+
+```mermaid
+flowchart TD
+    INPUT(["Customer request"])
+    D{"Hardened path?"}
+    A["🤖 Agent<br/>default for every other request"]
+    C["⚙️ Code step<br/>graduated path"]
+    OUT(["Response + tool calls"])
+
+    INPUT --> D
+    D -->|"no"| A
+    D -.->|"proven or irreversible"| C
+    A --> OUT
+    C --> OUT
+
+    classDef agent fill:#f3e8ff,stroke:#7c3aed,stroke-width:2px,color:#1f2937
+    classDef code fill:#dcfce7,stroke:#16a34a,stroke-width:2px,color:#1f2937
+    classDef decision fill:#fff7ed,stroke:#ea580c,stroke-width:2px,color:#1f2937
+    classDef terminal fill:#f8fafc,stroke:#64748b,stroke-width:1.5px,color:#1f2937
+    class A agent
+    class C code
+    class D decision
+    class INPUT,OUT terminal
+```
+
+It is also the shortest path into shadow deployment, since an agent with a set of tools is much less to build than a tree of intents, plans and templates.
 
 The caveats are real, though:
 
 - **The agent doesn't shrink the grid, it just spares you enumerating it.** That is a real advantage, since enumerating it was exactly where we hit the wall. But skipping a cell is not the same as answering it correctly.
-- **The agent arrives no better informed than the tree did.** The first of the two facts above doesn't move: how Alex Carter gets back into their account lives in the bank's rules and its records, not in the training data.
+- **The agent arrives no better informed than the tree did.** It can read Alex Carter's record, but how to get them back in depends on the bank's rules, and a read tool only helps with the rules somebody wrote down.
 - **Grounding in historical tickets is not a clean fix.** The obvious remedy is to point the agent at resolved tickets, but those are full of resolutions that contradict each other and current policy. The tree, for all its gaps, was at least a single curated source of truth.
 - **Privacy and security are hard to get right.** Those same historical tickets are full of personal data. An agent that retrieves and reasons over them is a far larger exposure surface than a fixed tree.
 

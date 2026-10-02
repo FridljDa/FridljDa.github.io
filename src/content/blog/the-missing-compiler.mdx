@@ -1,17 +1,20 @@
 ---
-title: "The Missing Compiler: Business Automation Has No Test Suite"
+title: "The Missing Compiler: Where the Bottleneck Goes When Code Is Cheap"
 pubDate: 2026-04-20T00:00:00.000Z
 updatedDate: 2026-10-02T00:00:00.000Z
 tags:
   - AI
   - Customer Support
   - Evaluation
-description: "Coding agents get a free verdict from tests and compilers; business automation gets none. Building the human feedback loop is the project, and expert time is the bottleneck."
+description: "Once coding agents make code cheap, business automation's bottleneck moves to the experts: with no compiler or test suite, their judgement is the only verdict."
 image: /images/blog/the-missing-compiler/featured.png
 ---
 
+import FeedbackLoop from '../../components/FeedbackLoop.astro';
+import ShadowTimeline from '../../components/ShadowTimeline.astro';
+
 ## TL;DR
-Automating manual workflows with LLMs is [widely piloted and rarely scaled](https://www.mckinsey.com/capabilities/quantumblack/our-insights/the-state-of-ai). One reason: the feedback loop that makes coding agents work has no equivalent in business processes, and teams treat building one as overhead rather than as the core of the project. A good loop is also the cheapest way to get domain knowledge out of the people who have it, which is where the real bottleneck sits. Invest in it early, and don't build the machinery yourself.
+The question hanging over coding agents is what becomes the bottleneck once code is cheap. On an LLM support automation, the answer was concrete: the subject-matter experts. Coding agents get a free verdict on every attempt from tests and compilers; a business process has none, so the only verdict is someone who knows the business reading the output. Once the code was cheap, their time limited everything. Plan the project around it: get into shadow deployment early, build the review screen rather than the plumbing, and expect the bottleneck to move again.
 
 ## Why coding agents work
 
@@ -20,16 +23,29 @@ What makes coding agents so effective is a combination of two things:
 1. Software is largely composed of patterns LLMs have seen countless times during training: syntax, idioms, libraries.
 2. The [agentic loop](https://www.deeplearning.ai/the-batch/issue-359) gets a verdict on every attempt from tests, linters and compiler errors, so the agent can handle a wide range of problems without human intervention.
 
+<FeedbackLoop
+  name="coding-agent-loop"
+  people={[]}
+  tools={[
+    { label: 'Agent writes code', text: 'An attempt at the task.' },
+    { label: 'Tests and compiler judge', text: 'Tests, linters and compiler errors, on every attempt.' },
+  ]}
+  returnLabel="Next attempt"
+  compact
+  focus={2}
+  focusLabel="Verdict"
+/>
+
 ## Neither condition holds elsewhere
 
 Consider a first-level support automation. Customers write in with messages like this:
 
-> Hi, I'm Alex Carter and I bank with your Riverton branch. My account number is NSB01234 and I can't get in any more; it keeps saying the account is locked. Can you help me get back in?
+![Customer message: Hi, I'm Alex Carter and I bank with your Riverton branch. My account number is NSB01234 and I can't get in any more; it keeps saying the account is locked. Can you help me get back in?](/images/blog/the-missing-compiler/customer-message.png)
 
 1. LLMs haven't seen your internal escalation rules or customer records during training.
 2. There is no compiler or test suite to tell the system whether the reply it wrote was any good. The only verdict available is a human one: someone who knows the bank has to read the reply and judge it.
 
-No model or architecture changes the first. The second is the one worth spending on, because a verdict is a thing you can build — and building it is also the best way to chip away at the first.
+A read tool fixes the records, and would fix the rules too if anyone had written them down. Usually nobody has: they live in the heads of the people who handle the tickets. The second condition is the one worth spending on, because a verdict is a thing you can build — and building it is also the best way to get those rules written down.
 
 The running example is based on a real project, but the details have been changed to protect the client's privacy. The architecture the loop was attached to is in [Workflow or Agent](/post/workflow-vs-agent).
 
@@ -39,27 +55,48 @@ The system went live in **shadow deployment**: responses were graded by subject-
 
 We had a tight process to translate that external feedback into code changes:
 
-1. Subject-matter experts graded a batch of shadow responses and left free-text feedback.
-2. I added a comment on what the solution should look like from a technical perspective.
-3. Cursor implemented the feedback, usually a new branch in the rule tree that maps an intent onto a reply.
-4. Cursor added the case to an eval set.
-5. CI re-ran the eval suite.
+export const loop = {
+  people: [
+    { label: 'Experts grade', text: 'A batch of shadow responses, with free-text feedback.' },
+    { label: 'I translate', text: 'The feedback into a comment on what the solution should look like technically.' },
+  ],
+  tools: [
+    { label: 'Agent implements', text: 'Usually as a new branch in the rule tree that maps an intent onto a reply.' },
+    { label: 'Agent adds an eval', text: 'The case goes into the eval set.' },
+    { label: 'CI re-runs evals', text: 'The whole suite, so earlier fixes stay fixed.' },
+  ],
+  returnLabel: 'Next batch of shadow responses',
+};
+
+<FeedbackLoop name="feedback-loop" {...loop} />
 
 Steps 4 and 5 are the part that looks most like a compiler, and they are the easy part. Once a case is written down, the machinery that keeps it from regressing is ordinary engineering — [Langfuse in Production](/post/langfuse-monitoring-eval-self-improvement) covers how we ran it.
+
+Step 1 is where the verdict comes from. The experts graded in a review screen that showed them the customer's message and the proposed reply, and asked what was wrong with it:
+
+![Mocked-up review screen: the customer's locked-account message, the proposed reply asking for an email address, the rejection reason "Wrong process" selected, and the reviewer's comment explaining the unwritten rules for locked accounts.](/images/blog/the-missing-compiler/sme-review-screen.png)
+
+*Step 1, mocked up: a reply graded "Wrong process", with the reviewer's reasoning.*
 
 ## The bottleneck moves
 
 Eliyahu Goldratt's [theory of constraints](https://en.wikipedia.org/wiki/Theory_of_constraints) rests on a simple observation: every system has a bottleneck, and fixing it doesn't remove it, it moves it somewhere else. Time saved anywhere but at the bottleneck buys you nothing.
 
-AI-assisted coding moved ours. Once a decision was made, Cursor and CI turned it into a branch, an eval case and a green build with little of my time; writing code was no longer what limited progress. What limited it was step 1: getting domain knowledge out of the heads of the people who had it.
+AI-assisted coding moved ours. Once a decision was made, the coding agent and CI turned it into a branch, an eval case and a green build with little of my time; writing code was no longer what limited progress. What limited it was step 1: getting domain knowledge out of the heads of the people who had it. That is the missing compiler again. Where the verdict is a test suite, cheap code speeds up the whole loop; where the verdict is a person, the loop waits on them.
 
-That knowledge is mostly tacit. The people who know a business can rarely write its rules down in advance, but shown a specific draft, they can tell you at a glance what is wrong with it. Grading a concrete reply is a far cheaper way to extract a rule than asking for its specification. So the loop has a second job, and it may be the more important one: besides standing in for the verdict a coding agent gets for free, it is the extraction tool for knowledge that exists only in people's heads.
+<FeedbackLoop name="feedback-loop-bottleneck" {...loop} compact focus={1} focusLabel="Bottleneck" />
+
+That knowledge is mostly tacit. The people who know a business can rarely write its rules down in advance, but shown a specific draft, they can tell you at a glance what is wrong with it. The reviewer's comment in the mockup above is exactly that: two rules nobody had written down, prompted by a single reply that broke both. Grading a concrete reply is a far cheaper way to extract a rule than asking for its specification. So the loop has a second job, and it may be the more important one: besides standing in for the verdict a coding agent gets for free, it is the extraction tool for knowledge that exists only in people's heads.
 
 It also runs on their time: one more item in a day that is already full, for people who may suspect they are training their own replacement. We were fortunate on both counts — the reviewers engaged with it, and the work had visible sponsorship from the client's leadership, which kept both the quantity and the quality of the feedback up. Neither is something to count on by default. When you estimate a project of this shape, the reviewers' availability is a hard input, not a detail to sort out later, and everything else in the loop should be built to spend as little of it as possible.
 
 ## Get into shadow deployment sooner
 
 The shadow deployment went live only once the offline numbers on historic tickets looked acceptable. That has it backwards.
+
+<ShadowTimeline />
+
+*Schematic, not measured. Before shadow, experts saw a handful of responses in each weekly demo, run from my machine; in shadow they grade and comment on every draft themselves. Reviewer capacity is the same in both paths, and it is the bottleneck, so the lead from going into shadow early is never made up.*
 
 Replaying a historic ticket replays the customer's message, but not the state of the records at the time it was written. The reply that was correct then may be wrong against today's data, and the ticket archive doesn't record which. Shadow deployment was the only setting where the pipeline ran against real state.
 
@@ -71,18 +108,33 @@ The external loop *is* the missing compiler, which makes it tempting to build it
 
 A narrow review screen for the subject-matter experts is worth writing yourself: it is the surface they touch every day, it should show exactly the ticket and the proposed reply and nothing else, and every click you remove is reviewer time handed back to the bottleneck. The machinery behind it — queues, assignment, score storage, history — is not worth writing. Langfuse's annotation queues as the backend, with a thin custom frontend on its API, is the better trade.
 
-## Unsolved: who translates the feedback
+## The next bottleneck: who translates the feedback
 
-Step 2 was me, turning free-text feedback into an implementation plan for Cursor. That doesn't scale, and it puts a single engineer on the critical path of every improvement: once the reviewers are grading steadily, this is where the bottleneck moves next. I have not solved this, but here is where I got.
+Step 2 was me, turning free-text feedback into an implementation plan for the coding agent. That doesn't scale, and it puts a single engineer on the critical path of every improvement: once the reviewers are grading steadily, this is where the bottleneck moves next. I have not solved this, but here is where I got.
 
-Handing step 2 to Cursor on the raw feedback produced worse results than doing it myself; Skill files and targeted guidelines narrowed the gap without closing it. More specific skills, or a subagent dedicated to the translation, might close the rest.
+<FeedbackLoop name="feedback-loop-next-bottleneck" {...loop} compact focus={2} focusLabel="Next bottleneck" />
+
+Handing step 2 to the coding agent on the raw feedback produced worse results than doing it myself; Skill files and targeted guidelines narrowed the gap without closing it. More specific skills, or a subagent dedicated to the translation, might close the rest.
 
 The more interesting version is to hand the whole translation to an agent. One with persistent memory — something like [Hermes](https://hermes-agent.nousresearch.com/), which keeps what worked as skills — could turn graded feedback into skills itself, instead of me turning it into rules. A skill is a prompt, not a guarantee, but wired to the external feedback loop the system would keep learning from graded evidence.
 
+export const nextLoop = {
+  ...loop,
+  people: [loop.people[0]],
+  tools: [
+    { label: 'Agent translates', text: 'The feedback into a plan, using skills it kept from earlier fixes.' },
+    ...loop.tools,
+  ],
+};
+
+<FeedbackLoop name="feedback-loop-could-be" {...nextLoop} compact focus={2} focusLabel="Was me" />
+
+*What the loop could look like: step 2 moves to the tools, and the experts are the only people left in it.*
+
 The risk is drift. You hand a lot of autonomy to an agent, and the thing keeping it honest is the same loop that is already your scarcest resource.
 
-## The loop is the project
+## Start at the bottleneck
 
-If I started a project of this shape again, the first thing I would build is the review screen and the shadow path that feeds it, with [the simplest agent that can draft a reply](/post/workflow-vs-agent#next-time-make-the-agent-the-default) behind it — before the rule tree, before the templates. Everything downstream is guesswork until someone who knows the business is reading output every day.
+Coding agents didn't remove the hard part of this project; they made it obvious where it was. If I started a project of this shape again, the first thing I would build is the review screen and the shadow path that feeds it, with [the simplest agent that can draft a reply](/post/workflow-vs-agent#next-time-make-the-agent-the-default) behind it — before the rule tree, before the templates. Everything downstream is guesswork until someone who knows the business is reading output every day.
 
 The one thing to settle even before the loop is what it should be pointed at, because [an approval rate is not a cost reduction](/post/approval-rate-is-not-savings).
