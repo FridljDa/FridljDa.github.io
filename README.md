@@ -33,7 +33,7 @@ The site will be available at `http://localhost:4321`.
 ## Features
 
 - **Server-Side Rendering (SSR)** - Built with Astro 6.x SSR mode
-- **AI Chat** - Interactive chat powered by Google Gemini API
+- **AI Chat** - Interactive chat powered by Google Gemini API. Each visitor gets a daily question limit (`PROMPTS_PER_VISITOR_PER_DAY` in `src/utils/prompt-quota.ts`), shown in the chat header, so one visitor cannot use up the shared free Gemini quota
 - **Blog** - MDX-based blog posts with math support (KaTeX)
 - **Responsive Design** - Built with Tailwind CSS
 

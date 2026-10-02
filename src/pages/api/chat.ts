@@ -11,6 +11,13 @@ import {
   createErrorResponse,
 } from '../../utils/validation';
 import { isRateLimitError, isRecoverableModelError } from '../../utils/error';
+import {
+  consumePrompt,
+  getPromptQuota,
+  getVisitorId,
+  refundPrompt,
+} from '../../utils/prompt-quota';
+import { setPromptQuotaHeaders } from '../../utils/prompt-quota-headers';
 import type { ChatMessage, GeminiHistoryMessage } from '../../types/api';
 import type { ZodIssue } from 'zod';
 
@@ -53,7 +60,23 @@ async function tryModelChat(
   return await chat.sendMessageStream(userMessage);
 }
 
-export const POST: APIRoute = async ({ request }) => {
+/**
+ * Returns how many chat prompts the visitor has left today
+ */
+export const GET: APIRoute = async ({ request, clientAddress }) => {
+  const quota = getPromptQuota(getVisitorId(request, clientAddress));
+  return new Response(JSON.stringify(quota), {
+    headers: {
+      'Content-Type': 'application/json',
+      'Cache-Control': 'no-store',
+    },
+  });
+};
+
+export const POST: APIRoute = async ({ request, clientAddress }) => {
+  const visitorId = getVisitorId(request, clientAddress);
+  let promptReserved = false;
+
   try {
     if (!validateContentType(request)) {
       return createErrorResponse('Invalid Content-Type');
@@ -80,6 +103,18 @@ export const POST: APIRoute = async ({ request }) => {
         500
       );
     }
+
+    const quota = consumePrompt(visitorId);
+    if (!quota) {
+      const response = createErrorResponse(
+        'Prompt limit reached',
+        'You have used all of your questions for today.',
+        429
+      );
+      setPromptQuotaHeaders(response.headers, getPromptQuota(visitorId));
+      return response;
+    }
+    promptReserved = true;
 
     const genAI = new GoogleGenerativeAI(apiKey);
 
@@ -167,6 +202,7 @@ export const POST: APIRoute = async ({ request }) => {
 
     // If we exhausted all models, return an error
     if (!result) {
+      refundPrompt(visitorId);
       logger.error('All models exhausted. Last error:', lastError instanceof Error ? lastError.message : String(lastError));
       const isRateLimit = lastError && isRateLimitError(lastError);
       return createErrorResponse(
@@ -200,14 +236,19 @@ export const POST: APIRoute = async ({ request }) => {
       },
     });
 
-    return new Response(stream, {
+    const response = new Response(stream, {
       headers: {
         'Content-Type': 'text/plain; charset=utf-8',
         'Transfer-Encoding': 'chunked',
         'X-Content-Type-Options': 'nosniff',
       },
     });
+    setPromptQuotaHeaders(response.headers, quota);
+    return response;
   } catch (error) {
+    if (promptReserved) {
+      refundPrompt(visitorId);
+    }
     logger.error(
       'Chat endpoint error:',
       error instanceof Error ? error.message : String(error)
