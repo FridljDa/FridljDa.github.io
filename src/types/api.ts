@@ -17,3 +17,11 @@ export interface GeminiHistoryMessage {
   parts: Array<{ text: string }>;
 }
 
+
+export interface PromptQuota {
+  limit: number;
+  used: number;
+  remaining: number;
+  /** ISO timestamp of the next daily reset */
+  resetsAt: string;
+}
