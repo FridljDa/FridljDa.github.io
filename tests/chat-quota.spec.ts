@@ -3,38 +3,29 @@ import { expandChatAndAcceptConsent } from './helpers/chat';
 
 const RESETS_AT = '2030-01-01T08:00:00.000Z';
 
-function quotaHeaders(remaining: number) {
-  return {
-    'X-Prompt-Limit': '10',
-    'X-Prompt-Remaining': String(remaining),
-    'X-Prompt-Reset': RESETS_AT,
-  };
-}
-
-test.describe('Chat prompt quota', () => {
-  test('should report the remaining prompts from the API', async ({ request }) => {
+test.describe('Chat quota', () => {
+  test('should report the questions left today from the API', async ({ request }) => {
     const response = await request.get('/api/chat');
     expect(response.status()).toBe(200);
     expect(response.headers()['cache-control']).toBe('no-store');
 
     const quota = await response.json();
-    expect(quota.limit).toBeGreaterThan(0);
-    expect(quota.remaining).toBeLessThanOrEqual(quota.limit);
+    expect(quota.remaining).toBeGreaterThanOrEqual(0);
+    expect(typeof quota.exhausted).toBe('boolean');
     expect(Date.parse(quota.resetsAt)).toBeGreaterThan(Date.now());
   });
 
-  test('should show the remaining prompts and update them after each answer', async ({ page }) => {
+  test('should show the questions left and refresh them after each answer', async ({ page }) => {
+    let remaining = 42;
     await page.route('/api/chat', async (route: Route) => {
       if (route.request().method() === 'GET') {
-        await route.fulfill({
-          json: { limit: 10, used: 0, remaining: 10, resetsAt: RESETS_AT },
-        });
+        await route.fulfill({ json: { remaining, exhausted: false, resetsAt: RESETS_AT } });
         return;
       }
+      remaining -= 1;
       await route.fulfill({
         status: 200,
         contentType: 'text/plain; charset=utf-8',
-        headers: quotaHeaders(9),
         body: 'Daniel is an AI Engineer.',
       });
     });
@@ -42,44 +33,48 @@ test.describe('Chat prompt quota', () => {
     await page.goto('/');
     await expandChatAndAcceptConsent(page);
 
-    const counter = page.getByTestId('chat-prompt-quota');
-    await expect(counter).toHaveText('10 of 10 questions left');
+    const counter = page.getByTestId('chat-quota');
+    await expect(counter).toHaveText('42 questions left today');
 
     const chatInput = page.locator('#chat-input');
     await chatInput.pressSequentially('What is his role?', { delay: 10 });
     await chatInput.press('Enter');
 
     await expect(page.getByText('Daniel is an AI Engineer.')).toBeVisible();
-    await expect(counter).toHaveText('9 of 10 questions left');
+    await expect(counter).toHaveText('41 questions left today');
   });
 
-  test('should explain the limit and disable input when no prompts are left', async ({ page }) => {
+  test('should disable input once the daily quota is used up', async ({ page }) => {
+    let exhausted = false;
     await page.route('/api/chat', async (route: Route) => {
       if (route.request().method() === 'GET') {
         await route.fulfill({
-          json: { limit: 10, used: 9, remaining: 1, resetsAt: RESETS_AT },
+          json: { remaining: exhausted ? 0 : 1, exhausted, resetsAt: RESETS_AT },
         });
         return;
       }
+      exhausted = true;
       await route.fulfill({
-        status: 429,
+        status: 503,
         contentType: 'application/json',
-        headers: quotaHeaders(0),
-        body: JSON.stringify({ error: 'Prompt limit reached' }),
+        body: JSON.stringify({
+          error: 'All models exhausted',
+          message: 'All available Gemini models have reached their rate limits. Please try again later.',
+        }),
       });
     });
 
     await page.goto('/');
     await expandChatAndAcceptConsent(page);
-    await expect(page.getByTestId('chat-prompt-quota')).toHaveText('1 of 10 questions left');
+    await expect(page.getByTestId('chat-quota')).toHaveText('1 question left today');
 
     const chatInput = page.locator('#chat-input');
     await chatInput.pressSequentially('One more question', { delay: 10 });
     await chatInput.press('Enter');
 
-    await expect(page.getByText(/You've used all 10 questions for today/)).toBeVisible();
-    await expect(page.getByTestId('chat-prompt-quota')).toHaveText('0 of 10 questions left');
+    await expect(page.getByText(/The daily usage limit has been reached/)).toBeVisible();
+    await expect(page.getByTestId('chat-quota')).toHaveText('0 questions left today');
     await expect(chatInput).toBeDisabled();
-    await expect(chatInput).toHaveAttribute('placeholder', /No questions left until/);
+    await expect(chatInput).toHaveAttribute('placeholder', /Daily quota used up until/);
   });
 });

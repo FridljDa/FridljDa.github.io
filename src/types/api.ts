@@ -17,11 +17,11 @@ export interface GeminiHistoryMessage {
   parts: Array<{ text: string }>;
 }
 
-
-export interface PromptQuota {
-  limit: number;
-  used: number;
+export interface GeminiQuota {
+  /** Estimated questions left today across all models, shared by all visitors */
   remaining: number;
+  /** Gemini has rejected every model for the rest of the day */
+  exhausted: boolean;
   /** ISO timestamp of the next daily reset */
   resetsAt: string;
 }

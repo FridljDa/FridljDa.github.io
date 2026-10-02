@@ -1,14 +1,13 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import type { Message } from '../types/chat';
-import type { PromptQuota } from '../types/api';
+import type { GeminiQuota } from '../types/api';
 import ChatMessage from './ChatMessage';
 import { ErrorBoundary } from './ErrorBoundary';
 import { isRateLimitErrorMessage } from '../utils/error';
-import { readPromptQuotaHeaders } from '../utils/prompt-quota-headers';
 
 const CHAT_CONSENT_KEY = 'chat-consent';
 
-function formatResetTime(quota: PromptQuota) {
+function formatResetTime(quota: GeminiQuota) {
   return new Date(quota.resetsAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
@@ -19,7 +18,7 @@ function ChatContent() {
   const [isMinimized, setIsMinimized] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasConsent, setHasConsent] = useState(false);
-  const [quota, setQuota] = useState<PromptQuota | null>(null);
+  const [quota, setQuota] = useState<GeminiQuota | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -42,24 +41,24 @@ function ChatContent() {
     }
   }, [messages, isMinimized, hasConsent]);
 
-  // Refresh the remaining prompt count whenever the chat is opened
-  useEffect(() => {
-    if (isMinimized || !hasConsent) return;
-    let cancelled = false;
-    fetch('/api/chat', { cache: 'no-store' })
-      .then((response) => (response.ok ? response.json() : null))
-      .then((data: PromptQuota | null) => {
-        if (!cancelled && data) setQuota(data);
-      })
-      .catch(() => {
-        // The counter is informational; the chat still works without it
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [isMinimized, hasConsent]);
+  const refreshQuota = useCallback(async () => {
+    try {
+      const response = await fetch('/api/chat', { cache: 'no-store' });
+      if (response.ok) {
+        setQuota(await response.json());
+      }
+    } catch {
+      // The counter is informational; the chat still works without it
+    }
+  }, []);
 
-  const isOutOfPrompts = quota !== null && quota.remaining <= 0;
+  useEffect(() => {
+    if (!isMinimized && hasConsent) {
+      refreshQuota();
+    }
+  }, [isMinimized, hasConsent, refreshQuota]);
+
+  const isQuotaExhausted = quota?.exhausted === true;
 
   const toggleMinimize = () => {
     setIsMinimized(!isMinimized);
@@ -72,7 +71,7 @@ function ChatContent() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim() || isLoading || !hasConsent || isOutOfPrompts) return;
+    if (!input.trim() || isLoading || !hasConsent || isQuotaExhausted) return;
 
     const userMessage: Message = { role: 'user', content: input };
     setMessages((prev) => [...prev, userMessage]);
@@ -86,22 +85,6 @@ function ChatContent() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ messages: [...messages, userMessage] }),
       });
-
-      const latestQuota = readPromptQuotaHeaders(response.headers);
-      if (latestQuota) {
-        setQuota(latestQuota);
-      }
-
-      if (response.status === 429 && latestQuota?.remaining === 0) {
-        setMessages((prev) => [
-          ...prev,
-          {
-            role: 'ai',
-            content: `You've used all ${latestQuota.limit} questions for today. To keep this chat free for everyone, more become available at ${formatResetTime(latestQuota)}.`,
-          },
-        ]);
-        return;
-      }
 
       if (!response.ok) {
         let errorMessage = `HTTP error! status: ${response.status}`;
@@ -152,8 +135,9 @@ function ChatContent() {
 
       let userMessage = 'Sorry, I encountered an error. Please try again.';
       if (isRateLimitErrorMessage(errorMessage)) {
-        userMessage =
-          'The daily usage limit has been reached. The quota resets at 9:00 AM CET. Please try again later.';
+        userMessage = `The daily usage limit has been reached. The quota resets at ${
+          quota ? formatResetTime(quota) : '9:00 AM CET'
+        }. Please try again later.`;
       }
 
       setMessages((prev) => [
@@ -165,6 +149,7 @@ function ChatContent() {
       ]);
     } finally {
       setIsLoading(false);
+      refreshQuota();
     }
   };
 
@@ -189,10 +174,10 @@ function ChatContent() {
         {hasConsent && quota && (
           <span
             className="ml-auto mr-2 text-xs whitespace-nowrap"
-            title={`Questions reset at ${formatResetTime(quota)}`}
-            data-testid="chat-prompt-quota"
+            title={`Shared by all visitors. Resets at ${formatResetTime(quota)}.`}
+            data-testid="chat-quota"
           >
-            {quota.remaining} of {quota.limit} questions left
+            {quota.remaining} {quota.remaining === 1 ? 'question' : 'questions'} left today
           </span>
         )}
         <button
@@ -268,18 +253,18 @@ function ChatContent() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder={
-                  isOutOfPrompts
-                    ? `No questions left until ${formatResetTime(quota)}`
+                  isQuotaExhausted
+                    ? `Daily quota used up until ${formatResetTime(quota)}`
                     : 'Ask about skills, experience...'
                 }
                 className="flex-1 px-4 py-2 border border-input rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-transparent transition-all bg-surface-elevated text-heading placeholder-text-subtle"
-                disabled={isLoading || isOutOfPrompts}
+                disabled={isLoading || isQuotaExhausted}
                 aria-invalid={error ? true : undefined}
                 aria-describedby={error ? 'chat-error' : undefined}
               />
               <button
                 type="submit"
-                disabled={isLoading || isOutOfPrompts || !input.trim()}
+                disabled={isLoading || isQuotaExhausted || !input.trim()}
                 aria-label="Send message"
                 className="btn-focus-ring bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white rounded-full w-10 h-10 flex items-center justify-center transition-colors shadow-sm"
               >

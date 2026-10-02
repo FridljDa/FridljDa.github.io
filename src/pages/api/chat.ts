@@ -12,21 +12,14 @@ import {
 } from '../../utils/validation';
 import { isRateLimitError, isRecoverableModelError } from '../../utils/error';
 import {
-  consumePrompt,
-  getPromptQuota,
-  getVisitorId,
-  refundPrompt,
-} from '../../utils/prompt-quota';
-import { setPromptQuotaHeaders } from '../../utils/prompt-quota-headers';
+  GEMINI_MODELS,
+  getGeminiQuota,
+  isModelAvailable,
+  recordModelFailure,
+  recordModelSuccess,
+} from '../../utils/gemini-quota';
 import type { ChatMessage, GeminiHistoryMessage } from '../../types/api';
 import type { ZodIssue } from 'zod';
-
-const GEMINI_MODELS = [
-  'gemini-2.5-flash',
-  'gemini-3-flash-preview',
-  'gemini-2.5-flash-lite',
-  'gemma-3-27b',
-] as const;
 
 /**
  * Attempts to get a chat stream using the specified model
@@ -61,11 +54,10 @@ async function tryModelChat(
 }
 
 /**
- * Returns how many chat prompts the visitor has left today
+ * Returns how many questions are left today, shared by all visitors
  */
-export const GET: APIRoute = async ({ request, clientAddress }) => {
-  const quota = getPromptQuota(getVisitorId(request, clientAddress));
-  return new Response(JSON.stringify(quota), {
+export const GET: APIRoute = async () => {
+  return new Response(JSON.stringify(getGeminiQuota()), {
     headers: {
       'Content-Type': 'application/json',
       'Cache-Control': 'no-store',
@@ -73,10 +65,7 @@ export const GET: APIRoute = async ({ request, clientAddress }) => {
   });
 };
 
-export const POST: APIRoute = async ({ request, clientAddress }) => {
-  const visitorId = getVisitorId(request, clientAddress);
-  let promptReserved = false;
-
+export const POST: APIRoute = async ({ request }) => {
   try {
     if (!validateContentType(request)) {
       return createErrorResponse('Invalid Content-Type');
@@ -103,18 +92,6 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
         500
       );
     }
-
-    const quota = consumePrompt(visitorId);
-    if (!quota) {
-      const response = createErrorResponse(
-        'Prompt limit reached',
-        'You have used all of your questions for today.',
-        429
-      );
-      setPromptQuotaHeaders(response.headers, getPromptQuota(visitorId));
-      return response;
-    }
-    promptReserved = true;
 
     const genAI = new GoogleGenerativeAI(apiKey);
 
@@ -166,19 +143,22 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
 
     const lastUserMessage = validatedBody.messages[validatedBody.messages.length - 1].content;
 
-    // Try each model in sequence until one succeeds
+    // Try each model that still has quota today until one succeeds
+    const models = GEMINI_MODELS.map((model) => model.name).filter((name) => isModelAvailable(name));
     let result;
     let lastError: unknown;
 
-    for (let i = 0; i < GEMINI_MODELS.length; i++) {
-      const modelName = GEMINI_MODELS[i];
+    for (let i = 0; i < models.length; i++) {
+      const modelName = models[i];
       try {
         logger.info(`Attempting to use model: ${modelName}`);
         result = await tryModelChat(genAI, modelName, history, systemInstruction, lastUserMessage);
+        recordModelSuccess(modelName);
         logger.info(`Successfully using model: ${modelName}`);
         break;
       } catch (error) {
         lastError = error;
+        recordModelFailure(modelName, error);
         const isRecoverable = isRecoverableModelError(error);
         const isRateLimit = isRateLimitError(error);
         logger.warn(
@@ -188,7 +168,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
         );
 
         // If it's a recoverable error (rate limit or model not found) and we have more models to try, continue
-        if (isRecoverable && i < GEMINI_MODELS.length - 1) {
+        if (isRecoverable && i < models.length - 1) {
           logger.info(`Rotating to next model due to ${isRateLimit ? 'rate limit' : 'model unavailability'}`);
           continue;
         }
@@ -202,9 +182,9 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
 
     // If we exhausted all models, return an error
     if (!result) {
-      refundPrompt(visitorId);
       logger.error('All models exhausted. Last error:', lastError instanceof Error ? lastError.message : String(lastError));
-      const isRateLimit = lastError && isRateLimitError(lastError);
+      // No error means no model was tried: all are used up for today
+      const isRateLimit = lastError === undefined || isRateLimitError(lastError);
       return createErrorResponse(
         'All models exhausted',
         isRateLimit
@@ -236,19 +216,14 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
       },
     });
 
-    const response = new Response(stream, {
+    return new Response(stream, {
       headers: {
         'Content-Type': 'text/plain; charset=utf-8',
         'Transfer-Encoding': 'chunked',
         'X-Content-Type-Options': 'nosniff',
       },
     });
-    setPromptQuotaHeaders(response.headers, quota);
-    return response;
   } catch (error) {
-    if (promptReserved) {
-      refundPrompt(visitorId);
-    }
     logger.error(
       'Chat endpoint error:',
       error instanceof Error ? error.message : String(error)
