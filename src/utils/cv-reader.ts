@@ -101,7 +101,12 @@ export function cvYamlToMarkdown(): string {
     out.push('');
   }
 
-  const experienceKeys = ['software_development_experience', 'data_science_experience'] as const;
+  const experienceKeys = [
+    'industry_experience',
+    'research_experience',
+    'software_development_experience',
+    'data_science_experience',
+  ] as const;
   for (const key of experienceKeys) {
     const entries = sections[key];
     if (!Array.isArray(entries) || entries.length === 0) continue;

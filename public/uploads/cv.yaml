@@ -10,29 +10,30 @@ cv:
       username: FridljDa
   sections:
     summary:
-      - "AI engineer building production systems in Python and Rust. Ramping into a new technical and stakeholder domain within months. Proudest work to date is an agentic customer-support system I took from discovery to live production as the sole engineer — automating ~87% of B2C traffic since April 2026."
-    software_development_experience:
+      - "AI engineer building production systems in Python and Rust, with a mathematician's rigor about whether they work. My proudest work to date: an LLM-based customer-support system I took from discovery to live production as the sole AI engineer, drafting resolutions for 800+ B2C tickets in its first three months at ~87% reviewer approval."
+    industry_experience:
       - company: TNG Technology Consulting
-        position: Software Consultant - Applied AI
+        position: AI Engineer - Software Consultant
         location: Munich, Germany
         start_date: 2025-12
         end_date: present
-        summary: "Building and owning production AI systems for enterprise clients, from customer discovery through live operation."
+        summary: "Building AI and predictive-analytics systems for clients and for TNG, from discovery through live operation."
         highlights:
-          - "Architected a hybrid AI-system: deterministic paths for the recurring-intent majority, agentic fallback for the long tail. Shadow-deployed so every response was staff-reviewed before customer contact."
-          - "Built an AI-assisted improvement loop: reviewer feedback became shipped code changes, each gated against a growing Langfuse eval suite. "
-          - "Leading development of a privacy-first desktop AI agent (Tauri/React frontend, Rust backend) that lets non-technical staff run agentic workflows over sensitive local files. Hardened for a month until it survived an adversarial 15 person red-team, then rolled out to the internal department."
-          - "Shipped an automated privacy-sensitive review service to Kubernetes. Used by partners to validate customer offers."
+          - "Architected a cinema-ticketing support system as a hybrid: deterministic paths for the recurring-intent majority, agentic fallback for the long tail, every draft reviewed by staff before customer contact."
+          - "Built a feedback-driven improvement loop: reviewer corrections became shipped code changes, each gated against a growing Langfuse evaluation suite, on Temporal workflows that pause for staff sign-off."
+          - "Sole engineer on a scrap-prediction proof of concept for a manufacturer: across ~40 benchmarked models, order attributes fixed at booking matched the full sensor set, steering the client toward tracking raw-material batches."
+          - "One of three developers on an internal sandboxed platform (Tauri/React, Rust) for agentic workflows on sensitive local files; it cleared a 15-person adversarial red-team, unlocking expansion beyond the pilot."
+          - "Scaled a retailer's cashier-fraud anomaly scoring from a 7-store sample to its full estate via SQL Server aggregation."
       - company: TNG Technology Consulting
-        position: Software Consultant - Enterprise Modernization
+        position: Platform Engineer - Software Consultant
         location: Munich, Germany
         start_date: 2024-12
         end_date: 2025-12
-        summary: "Platform engineer on a multi-team program modernizing a global supply-chain application."
+        summary: "Platform engineer on a multi-team program modernizing a global supply-chain application from Java 8 to 17."
         highlights:
           - "Deployed a JFrog Artifactory proxy in three days after the work had been repeatedly postponed as too costly, cutting a recurring CI step from eight hours to 30 seconds — saving each developer ~1–2 hours a week."
           - "Added OWASP dependency scanning to the Jenkins pipeline and built Grafana dashboards over Prometheus metrics, giving stakeholders visibility of CVE reduction throughout the migration."
-    data_science_experience:
+    research_experience:
       - company: Stanford University School of Medicine
         position: Research Data Analyst - Environmental Epidemiology
         location: Palo Alto, USA
@@ -61,9 +62,9 @@ cv:
           - "Grade: 1.0. Exchange studies at Yale and Hebrew University of Jerusalem."
     skills:
       - label: Stack
-        details: "Python (PydanticAI, Temporal, FastAPI), Rust, Java, TypeScript/React, C++"
+        details: "Python (scikit-learn, PydanticAI), Rust, TypeScript/React, Java, SQL, R, C++"
       - label: Systems and delivery
-        details: "Kubernetes, ArgoCD, Jenkins, Grafana/Prometheus, ELK, Temporal, Langfuse"
+        details: "Temporal, Langfuse, Kubernetes, Jenkins, Grafana/Prometheus"
 design:
   theme: sb2nov
   page:
@@ -162,5 +163,5 @@ design:
 locale:
   language: english
 settings:
-  current_date: '2026-07-29'
+  current_date: '2026-10-02'
   bold_keywords: []
