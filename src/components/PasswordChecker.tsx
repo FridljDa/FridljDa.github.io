@@ -5,15 +5,6 @@ export default function PasswordChecker() {
   const [status, setStatus] = useState<'idle' | 'checking' | 'success' | 'error'>('idle');
   const [message, setMessage] = useState('');
 
-  // The secret password from environment variable
-  // Note: In a real application, never expose secrets to client-side code
-  // This is intentionally insecure for educational purposes
-  const SECRET_PASSWORD = import.meta.env.PUBLIC_SECRET_PASSWORD;
-
-  if (!SECRET_PASSWORD) {
-    console.error('PUBLIC_SECRET_PASSWORD environment variable is not set. Please set it in your .env file.');
-  }
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim()) return;
@@ -22,11 +13,24 @@ export default function PasswordChecker() {
     setStatus('checking');
     setMessage('Validating password...');
 
-    // Simulate a delay for visual feedback (mimics API call)
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    // The password is checked on the server so it never ships in the client bundle
+    let correct = false;
+    try {
+      const [response] = await Promise.all([
+        fetch('/api/check-password', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password: input }),
+        }),
+        // Keep a short delay for visual feedback
+        new Promise(resolve => setTimeout(resolve, 1500)),
+      ]);
+      correct = response.ok && (await response.json()).correct === true;
+    } catch {
+      correct = false;
+    }
 
-    // Check if the password matches
-    if (input === SECRET_PASSWORD) {
+    if (correct) {
       setStatus('success');
       setMessage('🎉 Access Granted! You found the secret password!');
     } else {
