@@ -10,6 +10,8 @@ description: "The four-step pipeline we landed on after iterating on live ticket
 image: /images/blog/first-level-support-automation/featured.png
 ---
 
+import IntentDagGrowth from '../../components/IntentDagGrowth.astro';
+
 Our architecture for first-level customer support splits the problem into small steps, uses LLMs for interpretation, and keeps everything else in code. It is the full version of the workflow approach in [Workflow or Agent](/post/workflow-vs-agent), which also explains why I would now invert its default.
 
 The system turns a customer message into a reply, possibly with attachments, and any required tool calls: updating a record, filing a follow-up ticket, or escalating to a human. A preprocessing layer first normalises inbound attachments.
@@ -91,6 +93,10 @@ flowchart LR
 **Shared leaves make this a DAG, not a tree.** **Account locked** belongs under both **Account access** and **Card services**. Once either path reaches that leaf, handling is identical. A tree would duplicate the unlock flow; a DAG keeps one plan and makes downstream logic depend on the leaf, not the route.
 
 **"Other" makes coverage gaps explicit.** Requests outside the taxonomy land in a visible queue for future intents and route cleanly to less structured handling.
+
+**Expert feedback grows the DAG.** In shadow deployment, subject-matter experts graded every draft. A request they kept flagging in an "other" bucket became a new leaf; one that needed an existing leaf's handling gave that leaf a second parent. [The Missing Compiler](/post/the-missing-compiler) covers that loop.
+
+<IntentDagGrowth />
 
 **Two narrow calls beat one wide classifier.** Each parent exposes only its reachable children as a typed `Literal`, avoiding confusion between unrelated categories. Shared leaves simply appear in more than one parent's options.
 
