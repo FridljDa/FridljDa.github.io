@@ -21,7 +21,7 @@ Set these in the Render dashboard for your web service:
   - Get your API key from [Google AI Studio](https://makersuite.google.com/app/apikey)
   - This key is used server-side and should be kept secure
 
-- `PUBLIC_SECRET_PASSWORD` - Secret password for the prompt injection hackathon challenge
+- `SECRET_PASSWORD` - Secret password for the prompt injection hackathon challenge
   - This is used in the blog post and should be kept secure
   - REQUIRED: Must be set in both local development and production
   - Tests use a fallback password (HackathonWinner2026!) when not set

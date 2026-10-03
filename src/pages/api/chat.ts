@@ -82,10 +82,10 @@ export const POST: APIRoute = async ({ request }) => {
     const validatedBody = parseResult.data;
 
     const apiKey = getEnvVar('GEMINI_API_KEY');
-    const secretPassword = import.meta.env.PUBLIC_SECRET_PASSWORD;
+    const secretPassword = import.meta.env.SECRET_PASSWORD;
     
     if (!secretPassword) {
-      logger.error('PUBLIC_SECRET_PASSWORD environment variable is not set');
+      logger.error('SECRET_PASSWORD environment variable is not set');
       return createErrorResponse(
         'Configuration error',
         'The prompt injection challenge is not properly configured. Please contact the site administrator.',

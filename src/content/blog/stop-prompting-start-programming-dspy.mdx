@@ -145,34 +145,37 @@ To use a DSPy optimizer, you need three things:
 
 * **A Dataset:** A list of inputs and expected outputs (e.g., 20 examples of movie reviews and their correct labels).
 * **A Metric:** A function that defines success (e.g., `correct_sentiment` which returns `True` if the prediction matches the label).
-* **An Optimizer:** A strategy module. While standard optimizers like `BootstrapFewShot` just pick good examples, optimizers like **GEPA** use evolutionary algorithms to rewrite your prompt instructions for you.
+* **An Optimizer:** A strategy module. While standard optimizers like `BootstrapFewShot` just pick good examples, optimizers like **GEPA** ([Agrawal et al., 2025](https://arxiv.org/abs/2507.19457)) use LLM reflection and an evolutionary search to rewrite your prompt instructions for you.
 
 The optimizer then "compiles" the program:
 
 ```python
-from dspy.teleprompt import GEPA
+import dspy
 
 # 1. Define the Metric
-# This tells the optimizer what "success" looks like
-def validate_sentiment(example, prediction, trace=None):
-    # We check if the sentiment matches exactly
-    return example.sentiment == prediction.sentiment
+# GEPA's metric returns a score plus textual feedback. The feedback is what
+# the reflection model reads to understand why a prediction went wrong.
+def validate_sentiment(gold, pred, trace=None, pred_name=None, pred_trace=None):
+    correct = gold.sentiment.lower() == pred.sentiment.lower()
+    feedback = (
+        "Correct label."
+        if correct
+        else f"Expected '{gold.sentiment}' but got '{pred.sentiment}'."
+    )
+    return dspy.Prediction(score=float(correct), feedback=feedback)
 
 # 2. Initialize the GEPA Optimizer
-# GEPA (Genetic Evolutionary Prompt Optimization) is an advanced strategy 
-# that evolves both the instructions and the few-shot examples.
-optimizer = GEPA(
+# GEPA (Genetic-Pareto) uses an LLM to reflect on failures and rewrite
+# the instructions of each predictor in the program.
+optimizer = dspy.GEPA(
     metric=validate_sentiment,
-    num_generations=5,       # How many "evolutionary steps" to run
-    population_size=10,      # How many prompt variations to keep in the pool
-    mutation_rate=0.5,       # How aggressively to rewrite the instructions
-    verbose=True
+    auto="light",                                   # Budget preset: "light", "medium" or "heavy"
+    reflection_lm=dspy.LM("openai/gpt-4o", temperature=1.0),  # A strong model that proposes new instructions
 )
 
 # 3. Compile!
-# DSPy now acts as an automated prompt engineer, evolving your program
-compiled_analyzer = optimizer.compile(student=analyzer, trainset=my_dataset)
-
+# trainset/valset are lists of dspy.Example(review_text=..., sentiment=...).with_inputs("review_text")
+compiled_analyzer = optimizer.compile(analyzer, trainset=trainset, valset=valset)
 ```
 
 #### What `compile()` does
@@ -181,7 +184,7 @@ Unlike simpler optimizers that search for examples, GEPA cycles through **reflec
 
 1. **Evaluation:** It runs the current prompts against your dataset and identifies where they fail (e.g., "The model failed to produce JSON" or "The model confused sarcasm with negativity").
 2. **Reflection:** It uses a meta-model (an LLM) to look at the error traces and diagnose *why* the prompt failed.
-3. **Mutation (Evolution):** It genetically "mutates" the prompt instructions to fix those specific errors. For example, it might rewrite `"Explain why"` to `"Extract a concise substring proving the sentiment"` if the descriptions were too vague.
-4. **Selection:** It keeps the best performing prompts (the "fittest") and discards the rest, repeating this over several generations.
+3. **Mutation (Evolution):** It "mutates" the prompt instructions to fix those specific errors. For example, it might rewrite `"Explain why"` to `"Extract a concise substring proving the sentiment"` if the descriptions were too vague.
+4. **Selection:** Instead of keeping only the single best prompt, it keeps a Pareto front: every candidate that is the best on at least one validation example survives. New mutations are drawn from that front, so ideas that solve different subsets of the data are not discarded too early.
 
-The resulting `compiled_analyzer` has the same interface as the original object, but contains optimized instructions and few-shot examples. The contract stays in code; the prompt becomes an artifact produced against the metric.
+The resulting `compiled_analyzer` has the same interface as the original object, but contains optimized instructions. The contract stays in code; the prompt becomes an artifact produced against the metric.

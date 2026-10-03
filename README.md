@@ -21,7 +21,7 @@ npm install
    ```
    - Required variables:
      - `GEMINI_API_KEY` - Your Google Gemini API key (get from https://aistudio.google.com/app/apikey)
-     - `PUBLIC_SECRET_PASSWORD` - Secret password for the prompt injection hackathon challenge (used in the blog post)
+     - `SECRET_PASSWORD` - Secret password for the prompt injection hackathon challenge (used in the blog post)
 
 3. Start the development server:
 ```bash
