@@ -25,7 +25,7 @@ const FIGURES = [
   },
 ];
 
-const POSTS = ['the-missing-compiler'];
+const POSTS = ['the-missing-compiler', 'first-level-support-automation'];
 
 // Figures are drawn at 720px wide; the rest is the white margin around them.
 const FIGURE_WIDTH = 768;
@@ -65,6 +65,8 @@ async function main() {
       viewport: { width: 1000, height: 800 },
       deviceScaleFactor: SCALE,
       colorScheme: 'light',
+      // Animated figures skip to their final state, so the PNG doesn't catch one mid-way.
+      reducedMotion: 'reduce',
     });
     for (const { post, selector, out } of [...FIGURES, ...(await discover(page, base))]) {
       await open(page, base, post);
