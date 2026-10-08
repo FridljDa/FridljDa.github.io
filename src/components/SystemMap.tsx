@@ -250,7 +250,7 @@ const TALL: Layout = (() => {
     tags: {
       expert: { x: 350, y: 522 },
       store: { x: 362, y: 424 },
-      me: { x: 358, y: 540 },
+      me: { x: 384, y: 540 },
       it: { x: 340, y: 664 },
     },
     harness: { x: 70, y: 318, w: 236, h: 196, label: { x: 74, y: 548, anchor: 'start' } },
