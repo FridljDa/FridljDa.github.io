@@ -1,0 +1,28 @@
+---
+/**
+ * The system map of the-missing-compiler, with one section's part highlighted
+ * (see SystemMap.tsx for the presets). Rendered on the server, no JavaScript.
+ *
+ * A paste into Confluence drops inline SVG, so the Confluence copy shows a PNG
+ * of each preset, map-<preset>.png in the post's image folder. Regenerate them
+ * after changing the map: npm run confluence:figures
+ */
+import SystemMapSvg, { PRESETS, type PresetName } from './SystemMap';
+import './loop-animation.css';
+
+interface Props {
+  preset: PresetName;
+}
+
+const { preset } = Astro.props;
+const { description } = PRESETS[preset];
+const png = `/images/blog/${Astro.params.slug}/map-${preset}.png`;
+---
+
+{Astro.locals.confluence ? (
+  <img src={png} alt={description} />
+) : (
+  <figure class="system-map not-prose my-8" data-confluence-png={png}>
+    <SystemMapSvg preset={preset} id={`map-${preset}`} />
+  </figure>
+)}

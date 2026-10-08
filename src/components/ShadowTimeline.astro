@@ -123,21 +123,28 @@ const desc =
 )}
 
 <style>
+  /* The palette of the post's other figures (loop-animation.css). */
   .shadow-timeline {
-    --text-primary: #111827;
-    --text-secondary: #4b5563;
-    --axis: #d1d5db;
-    --early: #2a78d6;
-    --late: #858a93;
+    --text-primary: #1f2937;
+    --text-secondary: #6b7280;
+    --axis: #cbd5e1;
+    --early: #2563eb;
+    --late: #64748b;
     --surface: #ffffff;
   }
   :global(.dark) .shadow-timeline {
     --text-primary: #f3f4f6;
     --text-secondary: #9ca3af;
     --axis: #374151;
-    --early: #3987e5;
+    --early: #5b9cea;
     --late: #6b7280;
     --surface: #111827;
+  }
+
+  /* Without containment the chart's min-width below would widen the post's
+     column instead of scrolling inside it. */
+  .shadow-timeline {
+    container-type: inline-size;
   }
 
   .scroll {

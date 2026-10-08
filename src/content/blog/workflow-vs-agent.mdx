@@ -10,6 +10,8 @@ description: "An agent holding every tool, or a workflow that keeps code in char
 image: /images/blog/workflow-vs-agent/featured.png
 ---
 
+import ThemedImage from '../../components/ThemedImage.astro';
+
 ## TL;DR
 The first architectural decision in an LLM automation is how much of the work the model does and how much code does. We put code in charge of sequencing and gave the LLM one narrow job. That was right for the few request types that make up most tickets and wrong for the long tail. Next time I would make the agent the default and carve code paths out of it.
 
@@ -17,7 +19,7 @@ The first architectural decision in an LLM automation is how much of the work th
 
 Customers wrote in to our first-level support team at Northstar Bank with messages like this:
 
-![Customer message: Hi, I'm Alex Carter and I bank with your Riverton branch. My account number is NSB01234 and I can't get in any more; it keeps saying the account is locked. Can you help me get back in?](/images/blog/the-missing-compiler/customer-message.png)
+<ThemedImage src="/images/blog/the-missing-compiler/customer-message.png" alt={"Customer message: Hi, I'm Alex Carter and I bank with your Riverton branch. My account number is NSB01234 and I can't get in any more; it keeps saying the account is locked. Can you help me get back in?"} />
 
 The running example is based on a real project, but the details have been changed to protect the client's privacy.
 
