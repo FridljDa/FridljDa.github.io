@@ -1,0 +1,32 @@
+/* Theme for the Remotion compositions in src/remotion/, which read these
+   variables and fall back to the light values when rendered elsewhere. */
+.loop-animation {
+  --lv-surface: #ffffff;
+  --lv-text: #1f2937;
+  --lv-muted: #6b7280;
+  --lv-edge: #cbd5e1;
+  --lv-node-bg: #f8fafc;
+  --lv-node-border: #64748b;
+  --lv-other-bg: #fff7ed;
+  --lv-other: #ea580c;
+  --lv-added-bg: #dbeafe;
+  --lv-added: #2563eb;
+  --lv-ok: #2a9d8f;
+  --lv-bad: #e76f51;
+  --lv-warn: #e9a23b;
+}
+.dark .loop-animation {
+  --lv-surface: #111827;
+  --lv-text: #f3f4f6;
+  --lv-muted: #9ca3af;
+  --lv-edge: #374151;
+  --lv-node-bg: #1f2937;
+  --lv-node-border: #6b7280;
+  --lv-other-bg: #2a1c12;
+  --lv-other: #f97316;
+  --lv-added-bg: #172338;
+  --lv-added: #5b9cea;
+  --lv-ok: #3bb3a4;
+  --lv-bad: #ee8466;
+  --lv-warn: #f0b552;
+}
