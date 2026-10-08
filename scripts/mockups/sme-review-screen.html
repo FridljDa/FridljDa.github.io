@@ -25,10 +25,10 @@
     --text: #1f2937;
     --muted: #6b7280;
     --avatar: #e2e8f0;
-    --chip: #2a9d8f;
-    --selected: #e9a23b;
-    --selected-text: #1f2937;
-    --customer: #e76f51;
+    --chip: #2563eb;
+    --ok: #2a9d8f;
+    --bad: #e76f51;
+    --customer: #64748b;
     --width: 672px; /* the blog's desktop content column, so the PNG shows at 1:1 */
   }
   html.dark {
@@ -39,10 +39,10 @@
     --text: #f3f4f6;
     --muted: #9ca3af;
     --avatar: #374151;
-    --chip: #3bb3a4;
-    --selected: #f0b552;
-    --selected-text: #1f2937;
-    --customer: #ee8466;
+    --chip: #5b9cea;
+    --ok: #3bb3a4;
+    --bad: #ee8466;
+    --customer: #6b7280;
   }
 
   * { box-sizing: border-box; }
@@ -140,12 +140,18 @@
     display: grid;
     place-items: center;
   }
+  /* The same green and red as the checks and crosses in the post's figures. */
   .btn.selected {
-    background: var(--selected);
-    border-color: var(--selected);
-    color: var(--selected-text);
+    background: var(--bad);
+    border-color: var(--bad);
+    color: #fff;
     font-weight: 650;
   }
+  .verdict { display: flex; gap: 6px; }
+  .verdict .btn { display: inline-flex; gap: 6px; align-items: center; padding: 7px 14px; font-weight: 650; }
+  .verdict .btn svg { width: 14px; height: 14px; }
+  .btn.approve { color: var(--ok); border-color: var(--ok); }
+  .rejected { color: var(--bad); font-weight: 650; }
   .btn.small { display: inline-block; padding: 6px 10px; }
   .actions { margin-top: 10px; }
 
@@ -192,6 +198,20 @@
     <hr>
 
     <div class="section">
+      <h3>Verdict</h3>
+      <div class="verdict">
+        <div class="btn approve">
+          <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7.2l2.6 2.6L11 4.2"/></svg>
+          Approve
+        </div>
+        <div class="btn selected">
+          <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3.5 3.5l7 7M10.5 3.5l-7 7"/></svg>
+          Reject
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
       <h3>Rejection reason</h3>
       <div class="grid">
         <div class="btn">Uncategorized rejection</div>
@@ -225,7 +245,7 @@
           <div>
             <div class="meta"><b>Jordan M.</b> · 2026-03-12 14:05</div>
             <p><b>Annotation:</b> Wrong process</p>
-            <p><b>Verdict:</b> Rejected</p>
+            <p><b>Verdict:</b> <span class="rejected">Rejected</span></p>
           </div>
         </div>
       </div>

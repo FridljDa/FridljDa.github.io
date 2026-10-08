@@ -11,7 +11,7 @@
  * angles. Static: rendered on the server, no JavaScript.
  */
 import type { ReactNode } from 'react';
-import { color, Person, Expert, Agent, Evals, Comment, Reply, type Point } from '../remotion/shared';
+import { color, PALETTE, Person, Expert, Agent, Evals, Comment, Reply, type Point } from '../remotion/shared';
 
 type NodeId = 'customers' | 'tickets' | 'support' | 'queue' | 'expert' | 'me' | 'coder' | 'tests' | 'it' | 'endpoints';
 type EdgeId =
@@ -170,9 +170,9 @@ function NodeIcon({ id, agentTranslates }: { id: NodeId; agentTranslates?: boole
     case 'customers':
       return (
         <g>
-          <Person x={x - 22} y={y + 4} scale={1.1} fill="#4f86c6" />
-          <Person x={x + 22} y={y + 4} scale={1.1} fill="#e76f51" />
-          <Person x={x} y={y - 4} scale={1.25} fill="#2a9d8f" />
+          <Person x={x - 22} y={y + 4} scale={1.1} fill={PALETTE[0]} />
+          <Person x={x + 22} y={y + 4} scale={1.1} fill={PALETTE[2]} />
+          <Person x={x} y={y - 4} scale={1.25} fill={PALETTE[1]} />
         </g>
       );
     case 'tickets':
