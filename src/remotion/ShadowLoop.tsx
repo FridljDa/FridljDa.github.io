@@ -1,9 +1,13 @@
 /**
  * The shadow-deployment loop: customers write in one at a time, each message
  * runs through the intent DAG to a leaf, and the subject-matter expert grades
- * the drafted reply. Most grades are a check. A cross sends the expert's
- * comment to the coding agent, which grows the DAG, and the next customer with
- * that request reaches the new leaf.
+ * the drafted reply. Most grades are a check. On a cross the expert's comment
+ * is stored with the case; I pick it up from the store and steer the coding
+ * agent, which grows the DAG, and the next customer with that request reaches
+ * the new leaf.
+ *
+ * Two layouts of the same scene: `wide` (16:9) and `tall` for phones, with the
+ * DAG on top and the expert, store, me and the coding agent below it.
  *
  * The DAG ends as drawn in first-level-support-automation ("Step 1: Intent
  * recognition"). Nodes never move: every later node already has its slot, so
@@ -23,6 +27,7 @@ import {
   edgePath,
   Person,
   Expert,
+  Store,
   Agent,
   Envelope,
   Reply,
@@ -122,16 +127,57 @@ const GROWN_EDGES = new Set(SCRIPT.flatMap((v) => (v.grows ? [edgeKey(...v.grows
 const ENTER = 10;
 const HOP = 11;
 const TO_EXPERT = 14;
-const COMMENT = 16;
-const TYPING = 26;
+const TO_STORE = 12;
+const TO_ME = 14;
+const TO_AGENT = 12;
+const TYPING = 24;
 const SPARK = 14;
 const GROW = 18;
 const HOLD = 60;
 
-const CUSTOMER: Point = { x: 96, y: ROOT.y };
-const EXPERT: Point = { x: 846, y: 150 };
-const AGENT: Point = { x: 846, y: 408 };
-const TALLY_Y = 238;
+interface Layout {
+  width: number;
+  height: number;
+  /** Where the DAG, drawn in its own coordinates above, is moved to. */
+  dag: Point;
+  /** Where a customer stands, and where they walk in from. */
+  customer: Point;
+  customerFrom: Point;
+  expert: Point;
+  tallyY: number;
+  store: Point;
+  me: Point;
+  agent: Point;
+}
+
+export const LAYOUTS = {
+  wide: {
+    width: 960,
+    height: 540,
+    dag: { x: 0, y: 0 },
+    customer: { x: 96, y: ROOT.y },
+    customerFrom: { x: -40, y: ROOT.y },
+    expert: { x: 846, y: 96 },
+    tallyY: 178,
+    store: { x: 846, y: 282 },
+    me: { x: 770, y: 430 },
+    agent: { x: 890, y: 430 },
+  },
+  tall: {
+    width: 540,
+    height: 900,
+    dag: { x: -162, y: 70 },
+    customer: { x: 34, y: 262 },
+    customerFrom: { x: 34, y: -40 },
+    expert: { x: 112, y: 650 },
+    tallyY: 726,
+    store: { x: 112, y: 820 },
+    me: { x: 290, y: 820 },
+    agent: { x: 440, y: 820 },
+  },
+} satisfies Record<string, Layout>;
+
+export type LayoutName = keyof typeof LAYOUTS;
 
 interface Timed extends Visit {
   index: number;
@@ -142,7 +188,9 @@ interface Timed extends Visit {
   reach: number[];
   replyAt: number;
   gradeAt: number;
-  commentAt?: number;
+  storeAt?: number;
+  meAt?: number;
+  planAt?: number;
   typingAt?: number;
   sparkAt?: number;
   growAt?: number;
@@ -157,8 +205,10 @@ for (const [index, visit] of SCRIPT.entries()) {
   const gradeAt = replyAt + TO_EXPERT;
   const timed: Timed = { ...visit, index, color: PALETTE[index % PALETTE.length], ok: !visit.grows, start, reach, replyAt, gradeAt };
   if (visit.grows) {
-    timed.commentAt = gradeAt + 10;
-    timed.typingAt = timed.commentAt + COMMENT;
+    timed.storeAt = gradeAt + 10;
+    timed.meAt = timed.storeAt + TO_STORE + 4;
+    timed.planAt = timed.meAt + TO_ME + 6;
+    timed.typingAt = timed.planAt + TO_AGENT;
     timed.sparkAt = timed.typingAt + TYPING;
     timed.growAt = timed.sparkAt + SPARK;
     cursor = timed.growAt + GROW + 6;
@@ -182,7 +232,11 @@ const lit = (frame: number, visit: Timed, from: number) => {
   return 1 - progress(frame, visit.gradeAt + 8, visit.gradeAt + 20);
 };
 
-export const ShadowLoop = () => {
+export const ShadowLoop = ({ layout = 'wide' }: { layout?: LayoutName }) => {
+  const L: Layout = LAYOUTS[layout];
+  const { expert: EXPERT, agent: AGENT, store: STORE, me: ME } = L;
+  /** A point of the DAG in this layout's coordinates. */
+  const D = (p: Point): Point => ({ x: p.x + L.dag.x, y: p.y + L.dag.y });
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
@@ -222,7 +276,8 @@ export const ShadowLoop = () => {
 
   return (
     <AbsoluteFill style={{ background: color('surface') }}>
-      <svg viewBox="0 0 960 540" width="100%" height="100%" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+      <svg viewBox={`0 0 ${L.width} ${L.height}`} width="100%" height="100%" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+        <g transform={`translate(${L.dag.x} ${L.dag.y})`}>
         {/* Edges */}
         {EDGES.map(([from, to]) => {
           const key = edgeKey(from, to);
@@ -311,20 +366,32 @@ export const ShadowLoop = () => {
             </g>
           );
         })}
+        </g>
 
-        {/* The expert, their grades, and the coding agent; comments travel down the dashed line. */}
-        <line x1={EXPERT.x} x2={EXPERT.x} y1={TALLY_Y + 22} y2={AGENT.y - 44} stroke={color('edge')} strokeWidth={2} strokeDasharray="4 6" />
+        {/* The expert, their grades, the store, me and the coding agent */}
+        <path
+          d={`M${EXPERT.x},${L.tallyY + 18} V${STORE.y - 40} M${STORE.x + 36},${STORE.y} L${ME.x - 30},${ME.y} M${ME.x + 30},${ME.y} H${AGENT.x - 44}`}
+          fill="none"
+          stroke={color('edge')}
+          strokeWidth={2}
+          strokeDasharray="4 6"
+        />
+        <Store x={STORE.x} y={STORE.y} />
+        <Person x={ME.x} y={ME.y} scale={1.4} fill={color('text')} />
+        <Label x={ME.x} y={ME.y + 50}>
+          Me
+        </Label>
         <Expert x={EXPERT.x} y={EXPERT.y} scale={1.5 * (grading ? 1 + 0.06 * pop(grading.replyAt + TO_EXPERT - 6) : 1)} />
         <Label x={EXPERT.x} y={EXPERT.y + 46}>
           Expert
         </Label>
         {TIMELINE.filter((v) => frame >= v.gradeAt).map((v, i) => {
           const x = EXPERT.x + (i - (SCRIPT.length - 1) / 2) * 18;
-          return <Grade key={v.index} ok={v.ok} r={8} x={x} y={TALLY_Y} scale={pop(v.gradeAt + 8)} />;
+          return <Grade key={v.index} ok={v.ok} r={8} x={x} y={L.tallyY} scale={pop(v.gradeAt + 8)} />;
         })}
 
         <Agent x={AGENT.x} y={AGENT.y} scale={1.5} typing={fixing ? progress(frame, fixing.typingAt!, fixing.sparkAt! - 4) : 0} />
-        <Label x={AGENT.x} y={AGENT.y + 54}>
+        <Label x={AGENT.x} y={AGENT.y + 50}>
           Coding agent
         </Label>
 
@@ -339,8 +406,8 @@ export const ShadowLoop = () => {
           parts.push(
             <Person
               key="customer"
-              x={lerp(-40, CUSTOMER.x, enter)}
-              y={CUSTOMER.y + 50 * leave}
+              x={lerp(L.customerFrom.x, L.customer.x, enter)}
+              y={lerp(L.customerFrom.y, L.customer.y, enter) + 50 * leave}
               scale={1.5}
               opacity={enter * (1 - leave)}
               fill={v.color}
@@ -356,13 +423,14 @@ export const ShadowLoop = () => {
             const t = progress(frame, travelStart + hop * HOP, travelStart + (hop + 1) * HOP);
             const p = edgePoint(outPoint(nodes[hop]), inPoint(v.path[hop]), t);
             const fade = 1 - progress(frame, arrive, arrive + 6);
-            parts.push(<circle key="msg" cx={p.x} cy={p.y} r={9} fill={v.color} opacity={fade} />);
+            const q = D(p);
+            parts.push(<circle key="msg" cx={q.x} cy={q.y} r={9} fill={v.color} opacity={fade} />);
           }
 
           // The drafted reply goes to the expert, who grades it.
           if (frame >= v.replyAt && frame < v.gradeAt + 4) {
             const t = progress(frame, v.replyAt, v.gradeAt);
-            const p = mix({ x: leafOut.x + 22, y: leafOut.y }, { x: EXPERT.x - 46, y: EXPERT.y + 6 }, t);
+            const p = mix(D({ x: leafOut.x + 22, y: leafOut.y }), { x: EXPERT.x - 46, y: EXPERT.y + 6 }, t);
             parts.push(<Reply key="reply" x={p.x} y={p.y} scale={1.4} stroke={v.color} opacity={1 - progress(frame, v.gradeAt, v.gradeAt + 4)} />);
           }
           const shown = pop(v.gradeAt);
@@ -373,21 +441,31 @@ export const ShadowLoop = () => {
           return <g key={v.index}>{parts}</g>;
         })}
 
-        {/* A cross: the expert's comment goes to the agent, and the agent's fix grows the DAG. */}
-        {TIMELINE.filter((v) => v.grows && frame >= v.commentAt! && frame < v.growAt! + 4).map((v) => {
+        {/* A cross: the comment is stored, I pick it up and steer the agent, and its fix grows the DAG. */}
+        {TIMELINE.filter((v) => v.grows && frame >= v.storeAt! && frame < v.growAt! + 4).map((v) => {
           const parts = [];
-          if (frame < v.typingAt! + 4) {
-            const t = progress(frame, v.commentAt!, v.typingAt!);
-            const p = mix({ x: EXPERT.x, y: EXPERT.y + 80 }, { x: AGENT.x, y: AGENT.y - 60 }, t);
-            parts.push(<Comment key="comment" x={p.x} y={p.y} scale={1.2} opacity={1 - progress(frame, v.typingAt!, v.typingAt! + 4)} />);
+          const travel = (from: Point, to: Point, start: number, end: number) => mix(from, to, progress(frame, start, end));
+          if (frame < v.meAt! + TO_ME + 2) {
+            // Into the store, then out of it to me.
+            const p =
+              frame < v.meAt!
+                ? travel({ x: EXPERT.x, y: L.tallyY + 30 }, { x: STORE.x, y: STORE.y - 34 }, v.storeAt!, v.storeAt! + TO_STORE)
+                : travel({ x: STORE.x + 30, y: STORE.y - 10 }, { x: ME.x - 10, y: ME.y - 44 }, v.meAt!, v.meAt! + TO_ME);
+            parts.push(<Comment key="comment" x={p.x} y={p.y} scale={1.1} opacity={1 - progress(frame, v.meAt! + TO_ME - 2, v.meAt! + TO_ME + 2)} />);
+          }
+          if (frame >= v.planAt! && frame < v.typingAt! + 4) {
+            const p = travel({ x: ME.x + 26, y: ME.y - 30 }, { x: AGENT.x - 40, y: AGENT.y - 30 }, v.planAt!, v.typingAt!);
+            parts.push(<Reply key="plan" x={p.x} y={p.y} scale={1.2} stroke={color('added')} opacity={1 - progress(frame, v.typingAt!, v.typingAt! + 4)} />);
           }
           if (frame >= v.sparkAt!) {
             const g = v.grows!;
-            const target = g.node
-              ? { x: NODES[g.node].x + NODES[g.node].w / 2, y: NODES[g.node].y }
-              : edgePoint(outPoint(g.edge[0]), inPoint(g.edge[1]), 0.5);
+            const target = D(
+              g.node
+                ? { x: NODES[g.node].x + NODES[g.node].w / 2, y: NODES[g.node].y }
+                : edgePoint(outPoint(g.edge[0]), inPoint(g.edge[1]), 0.5)
+            );
             const t = progress(frame, v.sparkAt!, v.growAt!);
-            const from = { x: AGENT.x - 44, y: AGENT.y };
+            const from = { x: AGENT.x, y: AGENT.y - 34 };
             // Arc above the straight line, so the spark doesn't cut through the DAG's labels.
             const p = mix(from, target, t);
             const lift = Math.sin(Math.PI * t) * 60;

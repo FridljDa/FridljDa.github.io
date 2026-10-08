@@ -150,6 +150,15 @@ export const Evals = (place: IconProps) => (
   </Place>
 );
 
+/** A database: the feedback store, where drafts, grades and comments are kept. */
+export const Store = (place: IconProps) => (
+  <Place {...place}>
+    <path d="M-28,-20 v40 a28,9 0 0 0 56,0 v-40" fill={color('node-bg')} stroke={color('node-border')} strokeWidth={2.5} />
+    <ellipse cx={0} cy={-20} rx={28} ry={9} fill={color('node-bg')} stroke={color('node-border')} strokeWidth={2.5} />
+    <path d="M-28,0 a28,9 0 0 0 56,0" fill="none" stroke={color('node-border')} strokeWidth={2} />
+  </Place>
+);
+
 /** A customer message. */
 export const Envelope = (place: IconProps) => (
   <Place {...place}>

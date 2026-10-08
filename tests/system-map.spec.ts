@@ -7,9 +7,10 @@ test.describe('System map in The Missing Compiler', () => {
     await page.goto(POST);
     const sections = page.locator('.prose h2');
     const maps = page.locator('figure.system-map');
-    await expect(maps).toHaveCount(11);
-    // One under every section heading, plus the second one in the next-bottleneck section.
-    expect(await maps.count()).toBe((await sections.count()) + 1);
+    await expect(maps).toHaveCount(12);
+    // One under every section heading, plus the second one in "The bottleneck moves" (today, after
+    // before) and in "The next bottleneck" (what it could be).
+    expect(await maps.count()).toBe((await sections.count()) + 2);
 
     // The overview greys nothing out; a section's map greys out the rest.
     const greyed = (i: number) => maps.nth(i).locator('g[opacity="0.22"]').count();

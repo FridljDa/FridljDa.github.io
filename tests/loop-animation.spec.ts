@@ -22,14 +22,12 @@ test.describe('Loop animations', () => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.goto(COMPILER);
     const figures = page.locator('figure.loop-animation');
-    await expect(figures).toHaveCount(2);
+    await expect(figures).toHaveCount(1);
 
     const loop = figures.nth(0);
     await expect(loop.getByText('Password reset')).toBeVisible();
     await expect(loop.getByText('Account locked')).toBeVisible();
     await expect(loop.getByRole('button', { name: /play/i })).toHaveCount(0);
-
-    await expect(figures.nth(1).getByText('Bottleneck')).toBeVisible();
   });
 
   test('the animations do not widen the page on a phone', async ({ page }) => {
@@ -43,7 +41,7 @@ test.describe('Loop animations', () => {
   test('the Confluence copies show the PNGs instead', async ({ page }) => {
     for (const [post, pngs] of [
       [SUPPORT, ['shadow-loop']],
-      [COMPILER, ['shadow-loop', 'bottleneck-moves']],
+      [COMPILER, ['shadow-loop']],
     ] as const) {
       await page.goto(`${post}/confluence`);
       const srcs = await page.locator('#body img').evaluateAll((imgs) => imgs.map((img) => img.getAttribute('src')));
