@@ -27,24 +27,11 @@ type EdgeId =
   | 'build'
   | 'reads';
 
-const N: Record<NodeId, Point> = {
-  customers: { x: 86, y: 300 },
-  tickets: { x: 86, y: 470 },
-  support: { x: 300, y: 300 },
-  queue: { x: 300, y: 196 },
-  expert: { x: 300, y: 84 },
-  me: { x: 620, y: 84 },
-  coder: { x: 620, y: 300 },
-  tests: { x: 846, y: 300 },
-  it: { x: 760, y: 470 },
-  endpoints: { x: 500, y: 470 },
-};
-
 export interface Preset {
   /** Parts drawn at full strength; everything else is greyed out. Empty means everything. */
   focus: (NodeId | EdgeId)[];
   /** A pill next to one part, e.g. "Bottleneck". */
-  tag?: { on: NodeId; text: string; side?: 'top' | 'right' | 'bottom' | 'left' };
+  tag?: { on: NodeId; text: string };
   /** Step 2 done by an agent with skills instead of me. */
   agentTranslates?: boolean;
   description: string;
@@ -73,7 +60,7 @@ export const PRESETS = {
   },
   bottleneck: {
     focus: ['expert'],
-    tag: { on: 'expert', text: 'Bottleneck', side: 'left' },
+    tag: { on: 'expert', text: 'Bottleneck' },
     description: 'Highlighted: the expert, marked as the bottleneck.',
   },
   endpoints: {
@@ -86,63 +73,181 @@ export const PRESETS = {
   },
   'review-screen': {
     focus: ['expert'],
-    tag: { on: 'queue', text: 'Not this', side: 'left' },
+    tag: { on: 'queue', text: 'Not this' },
     description: 'Highlighted: the expert’s review screen. The queue behind it stays greyed out.',
   },
   'next-bottleneck': {
     focus: ['me'],
-    tag: { on: 'me', text: 'Next bottleneck', side: 'right' },
+    tag: { on: 'me', text: 'Next bottleneck' },
     description: 'Highlighted: me, translating feedback, marked as the next bottleneck.',
   },
   'could-be': {
     focus: ['comment', 'me', 'plan'],
     agentTranslates: true,
-    tag: { on: 'me', text: 'Was me', side: 'right' },
+    tag: { on: 'me', text: 'Was me' },
     description: 'Highlighted: an agent with skills translating the expert’s comment, where I used to.',
   },
   start: {
     focus: ['customers', 'messages', 'support', 'drafts', 'queue', 'graded', 'expert'],
-    tag: { on: 'expert', text: 'Build first', side: 'left' },
+    tag: { on: 'expert', text: 'Build first' },
     description: 'Highlighted: the shadow path and the expert’s review screen, the first thing to build.',
   },
 } satisfies Record<string, Preset>;
 
 export type PresetName = keyof typeof PRESETS;
 
-// Where an edge leaves and enters, and an optional icon riding on it.
-const EDGES: Record<EdgeId, { d: string; dashed?: boolean; rides?: { at: Point; icon: ReactNode } }> = {
-  messages: { d: `M${N.customers.x + 40},300 H${N.support.x - 84}` },
-  replay: { d: `M${N.tickets.x + 36},462 C190,462 180,330 ${N.support.x - 88},330`, dashed: true },
-  drafts: { d: `M${N.support.x},${N.support.y - 50} V${N.queue.y + 30}` },
-  graded: { d: `M${N.queue.x},${N.queue.y - 30} V${N.expert.y + 52}` },
-  comment: { d: `M${N.expert.x + 92},84 H${N.me.x - 44}`, rides: { at: { x: 462, y: 84 }, icon: <Comment x={0} y={0} /> } },
-  plan: { d: `M${N.me.x},${N.me.y + 40} V${N.coder.y - 46}`, rides: { at: { x: 620, y: 192 }, icon: <Reply x={0} y={0} stroke={color('added')} scale={1.2} /> } },
-  compile: { d: '' },
-  ships: { d: `M${N.coder.x - 50},300 H${N.support.x + 88}` },
-  spec: { d: `M${N.coder.x + 40},${N.coder.y + 36} C720,350 ${N.it.x},380 ${N.it.x},${N.it.y - 40}` },
-  build: { d: `M${N.it.x - 46},470 H${N.endpoints.x + 46}` },
-  reads: { d: `M${N.endpoints.x},${N.endpoints.y - 34} C${N.endpoints.x},380 470,330 ${N.support.x + 88},330` },
-};
+interface Layout {
+  width: number;
+  height: number;
+  /** Bigger in the narrow layout, which is shown smaller. */
+  labelSize?: number;
+  N: Record<NodeId, Point>;
+  /** Paths for each edge; `rides` puts the comment or the plan on it. */
+  edges: Record<Exclude<EdgeId, 'compile'>, { d: string; dashed?: boolean; rides?: { at: Point; icon: 'comment' | 'plan' } }>;
+  /** The coding agent's loop with evals and CI: there and back. */
+  compile: [string, string];
+  labels: Record<NodeId, Point & { anchor?: 'start' | 'middle' | 'end' }>;
+  badges: Partial<Record<NodeId, Point>>;
+  /** Where a preset's tag goes, by the part it marks. */
+  tags: Partial<Record<NodeId, Point>>;
+}
 
-const LABELS: Partial<Record<NodeId, { text: string; dy: number; dx?: number }>> = {
-  customers: { text: 'Customers', dy: 56 },
-  tickets: { text: 'Old tickets', dy: 52 },
-  support: { text: 'Support agent', dy: 72 },
-  expert: { text: 'Expert', dy: 66, dx: 62 },
-  me: { text: 'Me', dy: -46 },
-  coder: { text: 'Coding agent', dy: 66 },
-  tests: { text: 'Evals & CI', dy: 58 },
-  it: { text: 'IT', dy: 58 },
-  endpoints: { text: 'Endpoints', dy: 56 },
+const WIDE: Layout = (() => {
+  const N: Record<NodeId, Point> = {
+    customers: { x: 86, y: 300 },
+    tickets: { x: 86, y: 470 },
+    support: { x: 300, y: 300 },
+    queue: { x: 300, y: 196 },
+    expert: { x: 300, y: 84 },
+    me: { x: 620, y: 84 },
+    coder: { x: 620, y: 300 },
+    tests: { x: 846, y: 300 },
+    it: { x: 760, y: 470 },
+    endpoints: { x: 500, y: 470 },
+  };
+  return {
+    width: 960,
+    height: 560,
+    N,
+    edges: {
+      messages: { d: `M${N.customers.x + 40},300 H${N.support.x - 84}` },
+      replay: { d: `M${N.tickets.x + 36},462 C190,462 180,330 ${N.support.x - 88},330`, dashed: true },
+      drafts: { d: `M${N.support.x},${N.support.y - 50} V${N.queue.y + 30}` },
+      graded: { d: `M${N.queue.x},${N.queue.y - 30} V${N.expert.y + 52}` },
+      comment: { d: `M${N.expert.x + 92},84 H${N.me.x - 44}`, rides: { at: { x: 462, y: 84 }, icon: 'comment' } },
+      plan: { d: `M${N.me.x},${N.me.y + 40} V${N.coder.y - 46}`, rides: { at: { x: 620, y: 192 }, icon: 'plan' } },
+      ships: { d: `M${N.coder.x - 50},300 H${N.support.x + 88}` },
+      spec: { d: `M${N.coder.x + 40},${N.coder.y + 36} C720,350 ${N.it.x},380 ${N.it.x},${N.it.y - 40}` },
+      build: { d: `M${N.it.x - 46},470 H${N.endpoints.x + 46}` },
+      reads: { d: `M${N.endpoints.x},${N.endpoints.y - 34} C${N.endpoints.x},380 470,330 ${N.support.x + 88},330` },
+    },
+    compile: [
+      `M${N.coder.x + 48},286 C700,240 790,240 ${N.tests.x - 36},282`,
+      `M${N.tests.x - 36},318 C790,360 700,360 ${N.coder.x + 48},314`,
+    ],
+    labels: {
+      customers: { x: 86, y: 356 },
+      tickets: { x: 86, y: 522 },
+      support: { x: 300, y: 372 },
+      queue: { x: 0, y: 0 },
+      expert: { x: 362, y: 150 },
+      me: { x: 620, y: 38 },
+      coder: { x: 620, y: 366 },
+      tests: { x: 846, y: 358 },
+      it: { x: 760, y: 528 },
+      endpoints: { x: 500, y: 526 },
+    },
+    badges: {
+      expert: { x: N.expert.x - 98, y: N.expert.y - 50 },
+      me: { x: N.me.x + 48, y: N.me.y + 32 },
+      coder: { x: N.coder.x - 52, y: N.coder.y - 40 },
+      tests: { x: N.tests.x + 52, y: N.tests.y - 40 },
+    },
+    tags: {
+      expert: { x: 110, y: 84 },
+      queue: { x: 110, y: 196 },
+      me: { x: 770, y: 84 },
+      it: { x: 760, y: 400 },
+    },
+  };
+})();
+
+/**
+ * The same map for phones: two columns instead of four, the business side on
+ * the left (customers, support agent, expert) and the build side on the right
+ * (evals, coding agent, me, IT), so labels stay readable at a phone's width.
+ */
+const TALL: Layout = (() => {
+  const N: Record<NodeId, Point> = {
+    tickets: { x: 64, y: 84 },
+    customers: { x: 230, y: 84 },
+    support: { x: 150, y: 240 },
+    queue: { x: 150, y: 362 },
+    expert: { x: 176, y: 476 },
+    me: { x: 480, y: 476 },
+    coder: { x: 480, y: 240 },
+    tests: { x: 480, y: 92 },
+    it: { x: 480, y: 626 },
+    endpoints: { x: 150, y: 626 },
+  };
+  return {
+    width: 620,
+    height: 710,
+    labelSize: 25,
+    N,
+    edges: {
+      messages: { d: 'M226,112 L196,184' },
+      replay: { d: 'M78,112 L102,184', dashed: true },
+      drafts: { d: 'M150,292 V330' },
+      graded: { d: 'M150,394 V426' },
+      comment: { d: 'M272,476 H434', rides: { at: { x: 352, y: 476 }, icon: 'comment' } },
+      plan: { d: 'M480,436 V280', rides: { at: { x: 480, y: 358 }, icon: 'plan' } },
+      ships: { d: 'M430,240 H240' },
+      spec: { d: 'M526,256 C618,330 618,570 528,604' },
+      build: { d: 'M434,626 H188' },
+      reads: { d: 'M116,616 C36,580 28,280 60,262' },
+    },
+    compile: ['M448,206 C418,180 422,140 454,114', 'M508,126 C542,148 544,178 514,202'],
+    labels: {
+      tickets: { x: 30, y: 40, anchor: 'start' },
+      customers: { x: 236, y: 40 },
+      support: { x: 244, y: 206, anchor: 'start' },
+      queue: { x: 0, y: 0 },
+      expert: { x: 238, y: 548 },
+      me: { x: 480, y: 540 },
+      coder: { x: 428, y: 306, anchor: 'end' },
+      tests: { x: 480, y: 40 },
+      it: { x: 480, y: 690 },
+      endpoints: { x: 150, y: 690 },
+    },
+    badges: {
+      expert: { x: 78, y: 424 },
+      me: { x: 522, y: 450 },
+      coder: { x: 536, y: 214 },
+      tests: { x: 424, y: 76 },
+    },
+    tags: {
+      expert: { x: 330, y: 418 },
+      queue: { x: 300, y: 362 },
+      me: { x: 480, y: 412 },
+      it: { x: 300, y: 580 },
+    },
+  };
+})();
+
+const LABELS: Partial<Record<NodeId, string>> = {
+  customers: 'Customers',
+  tickets: 'Old tickets',
+  support: 'Support agent',
+  expert: 'Expert',
+  me: 'Me',
+  coder: 'Coding agent',
+  tests: 'Evals & CI',
+  it: 'IT',
+  endpoints: 'Endpoints',
 };
 
 const STEPS: Partial<Record<NodeId, string>> = { expert: '1', me: '2', coder: '3', tests: '4 5' };
-const BADGE_AT: Partial<Record<NodeId, Point>> = {
-  expert: { x: N.expert.x - 98, y: N.expert.y - 50 },
-  me: { x: N.me.x + 48, y: N.me.y + 32 },
-  coder: { x: N.coder.x - 52, y: N.coder.y - 40 },
-  tests: { x: N.tests.x + 52, y: N.tests.y - 40 },
-};
 
 function Dim({ on, children }: { on: boolean; children: ReactNode }) {
   return (
@@ -164,8 +269,8 @@ const Badge = ({ x, y, text }: Point & { text: string }) => {
   );
 };
 
-function NodeIcon({ id, agentTranslates }: { id: NodeId; agentTranslates?: boolean }) {
-  const { x, y } = N[id];
+function NodeIcon({ id, at, agentTranslates }: { id: NodeId; at: Point; agentTranslates?: boolean }) {
+  const { x, y } = at;
   switch (id) {
     case 'customers':
       return (
@@ -264,69 +369,69 @@ function NodeIcon({ id, agentTranslates }: { id: NodeId; agentTranslates?: boole
   }
 }
 
-export default function SystemMap({ preset, id }: { preset: PresetName; id: string }) {
-  const p: Preset = PRESETS[preset];
+function MapSvg({ layout, preset, id, className }: { layout: Layout; preset: Preset; id: string; className: string }) {
+  const p = preset;
+  const { N } = layout;
   const all = p.focus.length === 0;
   const on = (part: NodeId | EdgeId) => all || p.focus.includes(part);
   const marker = `${id}-arrow`;
-
-  const tagPos = (() => {
-    if (!p.tag) return undefined;
-    const n = N[p.tag.on];
-    const side = p.tag.side ?? 'top';
-    const off = { top: { x: 0, y: -70 }, bottom: { x: 0, y: 92 }, left: { x: -190, y: 0 }, right: { x: 150, y: 0 } }[side];
-    return { x: n.x + off.x, y: n.y + off.y };
-  })();
+  const tagAt = p.tag && layout.tags[p.tag.on];
 
   return (
-    <svg viewBox="0 0 960 560" role="img" aria-label={p.description} style={{ display: 'block', width: '100%', height: 'auto', fontFamily: 'inherit' }}>
+    <svg
+      className={className}
+      viewBox={`0 0 ${layout.width} ${layout.height}`}
+      role="img"
+      aria-label={p.description}
+      style={{ width: '100%', height: 'auto', fontFamily: 'inherit' }}
+    >
       <defs>
         <marker id={marker} viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
           <path d="M0,0 L10,5 L0,10 Z" fill={color('node-border')} />
         </marker>
       </defs>
 
-      {(Object.keys(EDGES) as EdgeId[])
-        .filter((e) => e !== 'compile')
-        .map((e) => {
-          const edge = EDGES[e];
-          return (
-            <Dim key={e} on={on(e)}>
-              <path d={edge.d} fill="none" stroke={color('node-border')} strokeWidth={2.5} strokeDasharray={edge.dashed ? '7 6' : undefined} markerEnd={`url(#${marker})`} />
-              {edge.rides && (
-                <g transform={`translate(${edge.rides.at.x} ${edge.rides.at.y})`}>
-                  <circle r={26} fill={color('surface')} />
-                  {edge.rides.icon}
-                </g>
-              )}
-            </Dim>
-          );
-        })}
-
-      {/* The coding agent's own loop: the compiler it gets for free */}
-      <Dim on={on('compile')}>
-        <path d={`M${N.coder.x + 48},286 C700,240 790,240 ${N.tests.x - 36},282`} fill="none" stroke={color('ok')} strokeWidth={3} markerEnd={`url(#${marker})`} />
-        <path d={`M${N.tests.x - 36},318 C790,360 700,360 ${N.coder.x + 48},314`} fill="none" stroke={color('ok')} strokeWidth={3} markerEnd={`url(#${marker})`} />
-      </Dim>
-
-      {(Object.keys(N) as NodeId[]).map((n) => {
-        const label = LABELS[n];
-        const text = n === 'me' && p.agentTranslates ? 'Agent + skills' : label?.text;
+      {(Object.keys(layout.edges) as (keyof Layout['edges'])[]).map((e) => {
+        const edge = layout.edges[e];
         return (
-          <Dim key={n} on={on(n)}>
-            <NodeIcon id={n} agentTranslates={p.agentTranslates} />
-            {text && (
-              <text x={N[n].x + (label!.dx ?? 0)} y={N[n].y + label!.dy} textAnchor="middle" fontSize={21} fontWeight={600} fill={color('text')}>
-                {text}
-              </text>
+          <Dim key={e} on={on(e)}>
+            <path d={edge.d} fill="none" stroke={color('node-border')} strokeWidth={2.5} strokeDasharray={edge.dashed ? '7 6' : undefined} markerEnd={`url(#${marker})`} />
+            {edge.rides && (
+              <g transform={`translate(${edge.rides.at.x} ${edge.rides.at.y})`}>
+                <circle r={26} fill={color('surface')} />
+                {edge.rides.icon === 'comment' ? <Comment x={0} y={0} /> : <Reply x={0} y={0} stroke={color('added')} scale={1.2} />}
+              </g>
             )}
-            {STEPS[n] && <Badge {...BADGE_AT[n]!} text={STEPS[n]!} />}
           </Dim>
         );
       })}
 
-      {p.tag && tagPos && (
-        <g transform={`translate(${tagPos.x} ${tagPos.y})`}>
+      {/* The coding agent's own loop: the compiler it gets for free */}
+      <Dim on={on('compile')}>
+        {layout.compile.map((d) => (
+          <path key={d} d={d} fill="none" stroke={color('ok')} strokeWidth={3} markerEnd={`url(#${marker})`} />
+        ))}
+      </Dim>
+
+      {(Object.keys(N) as NodeId[]).map((n) => {
+        const text = n === 'me' && p.agentTranslates ? 'Agent + skills' : LABELS[n];
+        const label = layout.labels[n];
+        const badge = layout.badges[n];
+        return (
+          <Dim key={n} on={on(n)}>
+            <NodeIcon id={n} at={N[n]} agentTranslates={p.agentTranslates} />
+            {text && (
+              <text x={label.x} y={label.y} textAnchor={label.anchor ?? 'middle'} fontSize={layout.labelSize ?? 21} fontWeight={600} fill={color('text')}>
+                {text}
+              </text>
+            )}
+            {STEPS[n] && badge && <Badge {...badge} text={STEPS[n]!} />}
+          </Dim>
+        );
+      })}
+
+      {p.tag && tagAt && (
+        <g transform={`translate(${tagAt.x} ${tagAt.y})`}>
           <rect x={-(p.tag.text.length * 5.6 + 22)} y={-19} width={p.tag.text.length * 11.2 + 44} height={38} rx={19} fill={color('warn')} />
           <text y={0} dy="0.35em" textAnchor="middle" fontSize={19} fontWeight={700} fill="#1f2937">
             {p.tag.text}
@@ -334,5 +439,16 @@ export default function SystemMap({ preset, id }: { preset: PresetName; id: stri
         </g>
       )}
     </svg>
+  );
+}
+
+/** Both layouts; SystemMap.astro shows the one that fits the figure's width. */
+export default function SystemMap({ preset, id }: { preset: PresetName; id: string }) {
+  const p: Preset = PRESETS[preset];
+  return (
+    <>
+      <MapSvg layout={WIDE} preset={p} id={`${id}-wide`} className="map-wide" />
+      <MapSvg layout={TALL} preset={p} id={`${id}-tall`} className="map-tall" />
+    </>
   );
 }

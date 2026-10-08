@@ -29,6 +29,6 @@ test.describe('Confluence copy of a post', () => {
   test('the post itself keeps its drawn figures', async ({ page }) => {
     await page.goto(POST);
     await expect(page.locator('.shadow-timeline svg')).toHaveCount(1);
-    await expect(page.locator('figure.system-map svg')).toHaveCount(11);
+    await expect(page.locator('figure.system-map svg.map-wide')).toHaveCount(11);
   });
 });
