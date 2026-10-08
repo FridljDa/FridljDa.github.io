@@ -26,3 +26,27 @@ const png = `/images/blog/${Astro.params.slug}/map-${preset}.png`;
     <SystemMapSvg preset={preset} id={`map-${preset}`} />
   </figure>
 )}
+
+<style>
+  /* The wide map's labels get too small below this width, so phones (and
+     narrow columns) get the two-column layout instead. */
+  .system-map {
+    container-type: inline-size;
+  }
+  .system-map :global(svg) {
+    display: block;
+  }
+  .system-map :global(.map-tall) {
+    display: none;
+  }
+  @container (max-width: 560px) {
+    .system-map :global(.map-wide) {
+      display: none;
+    }
+    .system-map :global(.map-tall) {
+      display: block;
+      max-width: 520px;
+      margin: 0 auto;
+    }
+  }
+</style>

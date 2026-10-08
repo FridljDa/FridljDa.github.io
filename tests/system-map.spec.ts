@@ -15,7 +15,8 @@ test.describe('System map in The Missing Compiler', () => {
     const greyed = (i: number) => maps.nth(i).locator('g[opacity="0.22"]').count();
     expect(await greyed(0)).toBe(0);
     expect(await greyed(1)).toBeGreaterThan(0);
-    await expect(maps.nth(4).getByText('Bottleneck')).toBeVisible();
+    // Both layouts carry the tag; only the one that fits the width is shown.
+    await expect(maps.nth(4).locator('svg:visible').getByText('Bottleneck')).toBeVisible();
   });
 
   test('the mockups follow the site theme', async ({ page }) => {
@@ -29,6 +30,19 @@ test.describe('System map in The Missing Compiler', () => {
     await page.evaluate(() => document.documentElement.classList.add('dark'));
     await expect(screen.locator('img.dark')).toBeVisible();
     await expect(screen.locator('img.light')).toBeHidden();
+  });
+
+  test('wide screens get the four-column map, phones the two-column one', async ({ page }) => {
+    const map = page.locator('figure.system-map').first();
+
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto(POST);
+    await expect(map.locator('svg.map-wide')).toBeVisible();
+    await expect(map.locator('svg.map-tall')).toBeHidden();
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    await expect(map.locator('svg.map-tall')).toBeVisible();
+    await expect(map.locator('svg.map-wide')).toBeHidden();
   });
 
   test('the post does not widen the page on a phone', async ({ page }) => {
