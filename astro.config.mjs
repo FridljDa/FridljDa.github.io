@@ -30,7 +30,12 @@ export default defineConfig({
   ],
   
   vite: {
-    plugins: [tailwind()]
+    plugins: [tailwind()],
+    // Pre-bundled at startup: otherwise the dev server discovers Remotion on a
+    // post's first visit, re-bundles it, and fails that page's requests with 504.
+    optimizeDeps: {
+      include: ['remotion', '@remotion/player'],
+    },
   },
   
   // Server configuration
