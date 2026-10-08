@@ -9,3 +9,7 @@ We intentionally **do not** use `astro:assets` (`<Image />`, `srcset`, WebP conv
 **Tradeoff accepted:** larger downloads and slightly slower loads on slow connections. **Priority:** visual sharpness over bandwidth.
 
 Assets live under `src/assets/images/` with `public/images` symlinked for stable `/images/...` URLs in MDX and frontmatter. Do not reintroduce responsive image optimization without explicit owner approval.
+
+## Reposts (LinkedIn, Confluence)
+
+Versions of blog posts for other channels live under `src/content/reposts/` and are never shown on the site. Read `src/content/reposts/AGENTS.md` before writing one.
