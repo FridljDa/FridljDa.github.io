@@ -12,8 +12,14 @@ test.describe('Intent DAG growth figure', () => {
     await expect(figure.locator('.pending')).not.toHaveCount(0);
 
     await figure.scrollIntoViewIfNeeded();
-    await page.clock.runFor(15_000);
-    await expect(figure.locator('.pending')).toHaveCount(0);
+    // The IntersectionObserver reports the scroll asynchronously, so the
+    // animation may start after a single runFor; keep advancing until it rests.
+    await expect
+      .poll(async () => {
+        await page.clock.runFor(3_000);
+        return figure.locator('.pending').count();
+      })
+      .toBe(0);
     await expect(figure.locator('.current')).toHaveCount(0);
 
     await figure.getByRole('button', { name: 'Replay' }).click();
