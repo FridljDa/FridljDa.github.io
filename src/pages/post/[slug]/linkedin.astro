@@ -1,0 +1,245 @@
+---
+/**
+ * The LinkedIn version of a blog post, for copying into LinkedIn's composer.
+ *
+ * Only posts with src/content/reposts/linkedin/<slug>.md have one; the rest are
+ * a 404. The text is the entry's raw body, since LinkedIn takes plain text.
+ * The page shows the character count against LinkedIn's limit and where "see
+ * more" cuts the text, and lists the images to upload by hand.
+ *
+ * Unlisted and noindex, like the Confluence copy.
+ */
+import { getCollection, getEntry } from 'astro:content';
+import { SITE } from '../../../data/site';
+import { LINKEDIN, countCharacters } from '../../../utils/linkedin';
+
+const { slug } = Astro.params;
+const post = (await getCollection('blog')).find((p) => p.id === slug);
+const repost = slug ? await getEntry('linkedin', slug) : undefined;
+
+if (!post || !repost) {
+  return Astro.redirect('/404', 404);
+}
+
+const postUrl = `${SITE.url}/post/${post.id}`;
+const text = (repost.body ?? '').trim();
+const length = countCharacters(text);
+const { status, postedAt, url, images, firstComment } = repost.data;
+
+// Split on code points so the fold markers sit where LinkedIn counts them.
+const chars = [...text];
+const segments = [
+  chars.slice(0, LINKEDIN.foldMobile).join(''),
+  chars.slice(LINKEDIN.foldMobile, LINKEDIN.foldDesktop).join(''),
+  chars.slice(LINKEDIN.foldDesktop).join(''),
+];
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex" />
+    <link rel="canonical" href={postUrl} />
+    <title>{post.data.title} (LinkedIn copy)</title>
+  </head>
+  <body>
+    <div class="toolbar">
+      <p>
+        LinkedIn version of <a href={postUrl}>{post.data.title}</a>.
+        {
+          status === 'posted' ? (
+            <>
+              Posted{postedAt && ` on ${postedAt.toISOString().slice(0, 10)}`}
+              {url && (
+                <>
+                  {' '}
+                  (<a href={url}>view on LinkedIn</a>)
+                </>
+              )}
+              .
+            </>
+          ) : (
+            'Draft, not posted yet.'
+          )
+        }
+      </p>
+      <div class="actions">
+        <button type="button" data-copy={text} data-what="text">Copy text</button>
+        {firstComment && <button type="button" data-copy={firstComment.trim()} data-what="first comment">Copy first comment</button>}
+        <button type="button" data-copy={postUrl} data-what="post link">Copy post link</button>
+        <span
+          id="count"
+          class:list={['count', { over: length > LINKEDIN.maxPostLength }]}
+          data-length={length}
+          data-max={LINKEDIN.maxPostLength}
+        >
+          {length.toLocaleString('en-US')} / {LINKEDIN.maxPostLength.toLocaleString('en-US')} characters
+        </span>
+        <span class="status" role="status"></span>
+      </div>
+    </div>
+
+    <main>
+      <h2>Text</h2>
+      <p class="note">
+        Marks show where "see more" cuts the text on mobile (~{LINKEDIN.foldMobile} characters) and desktop
+        (~{LINKEDIN.foldDesktop}); LinkedIn also cuts after about three lines.
+      </p>
+      {/* One line: the box keeps whitespace, so line breaks here would show. */}
+      <div id="text" class="text">{segments[0]}{segments[1] && <span class="fold" data-label="mobile fold" aria-hidden="true"></span>}{segments[1]}{segments[2] && <span class="fold" data-label="desktop fold" aria-hidden="true"></span>}{segments[2]}</div>
+
+      {
+        firstComment && (
+          <>
+            <h2>First comment</h2>
+            <div id="first-comment" class="text">{firstComment.trim()}</div>
+          </>
+        )
+      }
+
+      {
+        images.length > 0 && (
+          <>
+            <h2>Images ({images.length} / {LINKEDIN.maxImages})</h2>
+            <p class="note">Upload these by hand, in this order (left to right). Click one to download it.</p>
+            <ol id="images" class="images">
+              {images.map((src) => (
+                <li>
+                  <a href={src} download>
+                    <img src={src} alt="" />
+                  </a>
+                </li>
+              ))}
+            </ol>
+          </>
+        )
+      }
+    </main>
+
+    <script>
+      // A copy event rather than the async Clipboard API, which browsers deny
+      // without a permission grant; this only needs the click.
+      function copy(text: string): boolean {
+        const onCopy = (event: ClipboardEvent) => {
+          event.clipboardData?.setData('text/plain', text);
+          event.preventDefault();
+        };
+        document.addEventListener('copy', onCopy);
+        try {
+          return document.execCommand('copy');
+        } finally {
+          document.removeEventListener('copy', onCopy);
+        }
+      }
+
+      const status = document.querySelector('.status')!;
+      for (const button of document.querySelectorAll<HTMLButtonElement>('[data-copy]')) {
+        const what = button.dataset.what!;
+        button.addEventListener('click', () => {
+          status.textContent = copy(button.dataset.copy!)
+            ? `Copied the ${what}.`
+            : `Could not copy the ${what}; select it and copy by hand.`;
+        });
+      }
+    </script>
+
+    <style is:global>
+      :root {
+        color-scheme: light dark;
+        font-family: system-ui, sans-serif;
+        line-height: 1.6;
+      }
+      body {
+        max-width: 40rem;
+        margin: 0 auto;
+        padding: 0 1rem 4rem;
+        background: Canvas;
+        color: CanvasText;
+      }
+      .toolbar {
+        position: sticky;
+        top: 0;
+        padding: 0.75rem 0;
+        border-bottom: 1px solid color-mix(in srgb, CanvasText 20%, transparent);
+        background: Canvas;
+        font-size: 0.875rem;
+      }
+      .toolbar p {
+        margin: 0 0 0.5rem;
+      }
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.5rem;
+      }
+      button {
+        font: inherit;
+        padding: 0.375rem 0.75rem;
+        cursor: pointer;
+      }
+      .count {
+        font-variant-numeric: tabular-nums;
+      }
+      .count.over {
+        color: #c0392b;
+        font-weight: 600;
+      }
+      h2 {
+        font-size: 1rem;
+        margin: 1.5rem 0 0.25rem;
+      }
+      .note {
+        margin: 0 0 0.5rem;
+        font-size: 0.875rem;
+        opacity: 0.75;
+      }
+      .text {
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+        /* Keeps a fold label near the right edge from widening the page. */
+        overflow: hidden;
+        padding: 0.75rem 1rem;
+        border: 1px solid color-mix(in srgb, CanvasText 20%, transparent);
+        border-radius: 0.5rem;
+      }
+      /* A zero-width tick, so the text around it reads as it will on LinkedIn. */
+      .fold {
+        position: relative;
+        display: inline-block;
+        width: 0;
+        height: 1.2em;
+        vertical-align: text-bottom;
+        border-left: 2px solid #e76f51;
+      }
+      .fold::after {
+        content: attr(data-label);
+        position: absolute;
+        bottom: 100%;
+        left: -1px;
+        padding: 0 0.25rem;
+        border-radius: 0.25rem;
+        background: #e76f51;
+        color: #fff;
+        font-size: 0.625rem;
+        line-height: 1.4;
+        white-space: nowrap;
+        user-select: none;
+      }
+      .images {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
+        gap: 0.5rem;
+        padding: 0;
+        list-style: none;
+      }
+      .images img {
+        width: 100%;
+        height: auto;
+        display: block;
+      }
+    </style>
+  </body>
+</html>

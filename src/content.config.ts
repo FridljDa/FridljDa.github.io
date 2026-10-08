@@ -1,6 +1,7 @@
 import { defineCollection } from 'astro:content';
 import { z } from 'astro/zod';
 import { glob } from 'astro/loaders';
+import { LINKEDIN, countCharacters } from './utils/linkedin';
 
 const blog = defineCollection({
   loader: glob({ pattern: '**/*.{md,mdx}', base: './src/content/blog' }),
@@ -16,5 +17,25 @@ const blog = defineCollection({
   }),
 });
 
-export const collections = { blog };
+/**
+ * LinkedIn versions of blog posts, written by hand and never listed on the
+ * site. The filename is the post's slug and the body is the post text, kept
+ * as plain text. See src/content/reposts/AGENTS.md.
+ */
+const linkedin = defineCollection({
+  loader: glob({ pattern: '*.md', base: './src/content/reposts/linkedin' }),
+  schema: z.object({
+    status: z.enum(['draft', 'posted']).default('draft'),
+    postedAt: z.coerce.date().optional(),
+    url: z.url().optional(),
+    images: z.array(z.string()).max(LINKEDIN.maxImages).default([]),
+    firstComment: z
+      .string()
+      .refine((text) => countCharacters(text) <= LINKEDIN.maxCommentLength, {
+        message: `A LinkedIn comment holds at most ${LINKEDIN.maxCommentLength} characters`,
+      })
+      .optional(),
+  }),
+});
 
+export const collections = { blog, linkedin };
