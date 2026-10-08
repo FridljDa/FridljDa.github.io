@@ -96,7 +96,7 @@ The experts weren't the only people the loop waited on. A reply is only as good 
 
 We were lucky here too: IT worked API-first. I wrote the endpoint I needed as an OpenAPI spec, committed it to the repository and pointed them at it, and it was usually implemented within a day.
 
-The handoff was still manual. After committing the spec I pinged someone on Teams to look at it, and on their side that most likely meant pointing their own coding agent at it. Two coding agents, with a person on each end passing messages between them. Protocols for exactly this exist, such as [A2A](https://a2a-protocol.org/), but I haven't seen them used in practice. Until they are, every new tool costs a round trip through someone's chat, and that wait adds to the reviewers' wait instead of overlapping with it.
+The handoff was still manual. After committing the spec I pinged someone on Teams to look at it, and on their side that meant pointing their own coding agent at it. Two coding agents, with a person on each end passing messages between them. I don't know what the right fix is. Agent-to-agent protocols exist but haven't caught on; something as plain as an MCP server through which my agent files the request directly might be enough. Until then, every new tool costs a round trip through someone's chat, and that wait adds to the reviewers' wait instead of overlapping with it.
 
 ## Get into shadow deployment sooner
 
