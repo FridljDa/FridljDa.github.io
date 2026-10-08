@@ -6,7 +6,8 @@
  * built. I read the feedback there and steer the coding agent, which checks
  * itself against evals and CI (the compiler it has) and ships back into the
  * support agent. The coding agent also asks IT for endpoints, which become
- * the support agent's read tools; old tickets are the offline replay path.
+ * the support agent's read tools. Old tickets, the offline replay that got the
+ * project started, only appear on the map of the section about them.
  *
  * Each section of the post shows the same map with its part highlighted and
  * the rest greyed out, so the post reads as one system seen from different
@@ -50,7 +51,7 @@ export const PRESETS = {
   overview: {
     focus: [],
     description:
-      'The whole system: customers write to the support agent; in shadow its drafts land in the feedback store, the expert grades them in the review screen, and grade and comment go back into the store, the harness I built. I read the feedback there and steer the coding agent, which checks itself against evals and CI and ships into the support agent. The coding agent also asks IT for endpoints, the support agent’s read tools. Old tickets are the offline replay path.',
+      'The whole system: customers write to the support agent; in shadow its drafts land in the feedback store, the expert grades them in the review screen, and grade and comment go back into the store, the harness I built. I read the feedback there and steer the coding agent, which checks itself against evals and CI and ships into the support agent. The coding agent also asks IT for endpoints, the support agent’s read tools.',
   },
   'coding-agents': {
     focus: ['coder', 'compile', 'tests'],
@@ -396,6 +397,8 @@ function MapSvg({ layout, preset, id, className }: { layout: Layout; preset: Pre
   const on = (part: NodeId | EdgeId) => all || p.focus.includes(part);
   const marker = `${id}-arrow`;
   const harness = layout.harness;
+  // A one-off at the start, not part of the loop: only drawn where a section is about it.
+  const shown = (part: NodeId | EdgeId) => (part === 'tickets' || part === 'replay' ? p.focus.includes(part) : true);
 
   return (
     <svg
@@ -419,7 +422,7 @@ function MapSvg({ layout, preset, id, className }: { layout: Layout; preset: Pre
         </text>
       </Dim>
 
-      {(Object.keys(layout.edges) as (keyof Layout['edges'])[]).map((e) => {
+      {(Object.keys(layout.edges) as (keyof Layout['edges'])[]).filter(shown).map((e) => {
         const edge = layout.edges[e];
         return (
           <Dim key={e} on={on(e)}>
@@ -441,7 +444,7 @@ function MapSvg({ layout, preset, id, className }: { layout: Layout; preset: Pre
         ))}
       </Dim>
 
-      {(Object.keys(N) as NodeId[]).map((n) => {
+      {(Object.keys(N) as NodeId[]).filter(shown).map((n) => {
         const text = n === 'me' && p.agentTranslates ? 'Agent + skills' : n === 'coder' && p.meCodes ? 'Me, coding' : LABELS[n];
         const label = layout.labels[n];
         const badge = layout.badges[n];
