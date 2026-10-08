@@ -11,6 +11,7 @@ image: /images/blog/the-missing-compiler/featured.png
 ---
 
 import FeedbackLoop from '../../components/FeedbackLoop.astro';
+import LoopAnimation from '../../components/LoopAnimation.astro';
 import ShadowTimeline from '../../components/ShadowTimeline.astro';
 
 ## TL;DR
@@ -53,6 +54,13 @@ The running example is based on a real project, but the details have been change
 
 The system went live in **shadow deployment**: responses were graded by subject-matter experts but never shown to customers, so a wrong answer had little blast radius.
 
+<LoopAnimation
+  name="shadow-loop"
+  description="Customers write in one at a time. Each message runs through the intent DAG to a leaf, and a subject-matter expert grades the drafted reply. Most grades are checks. On a cross, the expert's comment goes to a coding agent, which grows the DAG: a new leaf, or a second parent for an existing one. The next customer with the same request reaches the new leaf and gets a check."
+/>
+
+*Shadow deployment, sped up: most drafts pass; a fail turns into a comment, and the coding agent grows the system.*
+
 We had a tight process to translate that external feedback into code changes:
 
 export const loop = {
@@ -84,7 +92,12 @@ Eliyahu Goldratt's [theory of constraints](https://en.wikipedia.org/wiki/Theory_
 
 AI-assisted coding moved ours. Once a decision was made, the coding agent and CI turned it into a branch, an eval case and a green build with little of my time; writing code was no longer what limited progress. What limited it was step 1: getting domain knowledge out of the heads of the people who had it. That is the missing compiler again. Where the verdict is a test suite, cheap code speeds up the whole loop; where the verdict is a person, the loop waits on them.
 
-<FeedbackLoop name="feedback-loop-bottleneck" {...loop} compact focus={1} focusLabel="Bottleneck" />
+<LoopAnimation
+  name="bottleneck-moves"
+  description="Work items circle a loop of four steps: experts grade, I translate, the code gets written, evals run. Items pile up in front of the slowest step, the code, which is marked as the bottleneck. Then a coding agent takes over the code step, which gets several times faster; its pile drains, a new pile builds in front of the experts, and the bottleneck marker moves to them."
+/>
+
+*Work piles up in front of the slowest step. Make the code cheap and the pile moves to the experts.*
 
 That knowledge is mostly tacit. The people who know a business can rarely write its rules down in advance, but shown a specific draft, they can tell you at a glance what is wrong with it. The reviewer's comment in the mockup above is exactly that: two rules nobody had written down, prompted by a single reply that broke both. Grading a concrete reply is a far cheaper way to extract a rule than asking for its specification. So the loop has a second job, and it may be the more important one: besides standing in for the verdict a coding agent gets for free, it is the extraction tool for knowledge that exists only in people's heads.
 

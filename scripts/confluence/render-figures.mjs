@@ -75,6 +75,10 @@ async function main() {
       if ((await figure.count()) !== 1) {
         throw new Error(`Expected exactly one element matching ${selector} on /post/${post}`);
       }
+      // A figure drawn by a client-side island is ready once the island marks itself so.
+      if (await figure.locator('astro-island').count()) {
+        await figure.locator('[data-ready]').waitFor();
+      }
 
       // Alone on the page, so the sticky header and the chat widget stay out of it.
       await figure.evaluate((el, width) => {
