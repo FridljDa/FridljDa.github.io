@@ -1,7 +1,7 @@
 ---
 title: "The Missing Compiler: Where the Bottleneck Goes When Code Is Cheap"
 pubDate: 2026-04-20T00:00:00.000Z
-updatedDate: 2026-10-02T00:00:00.000Z
+updatedDate: 2026-10-08T00:00:00.000Z
 tags:
   - AI
   - Customer Support
@@ -14,7 +14,7 @@ import FeedbackLoop from '../../components/FeedbackLoop.astro';
 import ShadowTimeline from '../../components/ShadowTimeline.astro';
 
 ## TL;DR
-The question hanging over coding agents is what becomes the bottleneck once code is cheap. On an LLM support automation, the answer was concrete: the subject-matter experts. Coding agents get a free verdict on every attempt from tests and compilers; a business process has none, so the only verdict is someone who knows the business reading the output. Once the code was cheap, their time limited everything. Plan the project around it: get into shadow deployment early, build the review screen rather than the plumbing, and expect the bottleneck to move again.
+The question hanging over coding agents is what becomes the bottleneck once code is cheap. On an LLM support automation, the answer was concrete: the subject-matter experts. Coding agents get a free verdict on every attempt from tests and compilers; a business process has none, so the only verdict is someone who knows the business reading the output. Once the code was cheap, their time limited everything, along with the internal IT team that had to build every endpoint the agent needed to look things up. Plan the project around it: get into shadow deployment early, build the review screen rather than the plumbing, and expect the bottleneck to move again.
 
 ## Why coding agents work
 
@@ -89,6 +89,14 @@ AI-assisted coding moved ours. Once a decision was made, the coding agent and CI
 That knowledge is mostly tacit. The people who know a business can rarely write its rules down in advance, but shown a specific draft, they can tell you at a glance what is wrong with it. The reviewer's comment in the mockup above is exactly that: two rules nobody had written down, prompted by a single reply that broke both. Grading a concrete reply is a far cheaper way to extract a rule than asking for its specification. So the loop has a second job, and it may be the more important one: besides standing in for the verdict a coding agent gets for free, it is the extraction tool for knowledge that exists only in people's heads.
 
 It also runs on their time: one more item in a day that is already full, for people who may suspect they are training their own replacement. We were fortunate on both counts — the reviewers engaged with it, and the work had visible sponsorship from the client's leadership, which kept both the quantity and the quality of the feedback up. Neither is something to count on by default. When you estimate a project of this shape, the reviewers' availability is a hard input, not a detail to sort out later, and everything else in the loop should be built to spend as little of it as possible.
+
+## The other wait: endpoints
+
+The experts weren't the only people the loop waited on. A reply is only as good as what the agent can look up, so every new kind of answer needed a read tool behind it, an endpoint to fetch a customer's account status or the branch they bank with, and those endpoints belonged to the client's internal IT.
+
+We were lucky here too: IT worked API-first. I wrote the endpoint I needed as an OpenAPI spec, committed it to the repository and pointed them at it, and it was usually implemented within a day.
+
+The handoff was still manual. After committing the spec I pinged someone on Teams to look at it, and on their side that most likely meant pointing their own coding agent at it. Two coding agents, with a person on each end passing messages between them. Protocols for exactly this exist, such as [A2A](https://a2a-protocol.org/), but I haven't seen them used in practice. Until they are, every new tool costs a round trip through someone's chat, and that wait adds to the reviewers' wait instead of overlapping with it.
 
 ## Get into shadow deployment sooner
 
