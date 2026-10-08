@@ -34,8 +34,12 @@ export type Token = keyof typeof LIGHT;
 /** A theme color, e.g. fill={color('node-bg')}. */
 export const color = (token: Token) => `var(--lv-${token}, ${LIGHT[token]})`;
 
-/** Customers and work items: mid-tones that read on light and dark backgrounds. */
-export const PALETTE = ['#2a9d8f', '#4f86c6', '#e76f51', '#8e7cc3', '#e9a23b'];
+/**
+ * Customers and work items: mid-tones that read on light and dark backgrounds.
+ * No green, red or amber, which mean approved, rejected and look-here in these
+ * figures.
+ */
+export const PALETTE = ['#4f86c6', '#8e7cc3', '#c06c9b', '#5b8fa8', '#9a7b5f'];
 
 const clamp = { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' } as const;
 
