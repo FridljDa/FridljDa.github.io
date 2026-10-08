@@ -5,7 +5,8 @@
 
   Render to PNG with:  npm run mockup:png
   That writes the whole screen (#mockup) and, separately, the customer's
-  message (#customer-message), which the posts show in place of a quote.
+  message (#customer-message), which the posts show in place of a quote,
+  each in a light and a dark version (<name>.png and <name>-dark.png).
   Everything is fictional and follows the Northstar Bank framing used in the
   posts. Keep it that way: no real vendors, intents, names or dates.
 -->
@@ -14,18 +15,34 @@
 <meta charset="utf-8">
 <title>SME review screen</title>
 <style>
+  /* The palette of the post's other figures (src/components/loop-animation.css),
+     light by default and dark with html.dark: render.mjs shoots both. */
   :root {
-    --page: #0b1726;
-    --panel: #102236;
-    --panel-inner: #15293f;
-    --border: #243b55;
-    --text: #e4ecf5;
-    --muted: #8ea3b8;
-    --chip: #4ade80;
-    --selected: #f2c014;
-    --selected-text: #10202f;
-    --customer: #e5484d;
+    --page: #ffffff;
+    --panel: #f8fafc;
+    --panel-inner: #f1f5f9;
+    --border: #cbd5e1;
+    --text: #1f2937;
+    --muted: #6b7280;
+    --avatar: #e2e8f0;
+    --chip: #2a9d8f;
+    --selected: #e9a23b;
+    --selected-text: #1f2937;
+    --customer: #e76f51;
     --width: 672px; /* the blog's desktop content column, so the PNG shows at 1:1 */
+  }
+  html.dark {
+    --page: #111827;
+    --panel: #1f2937;
+    --panel-inner: #182231;
+    --border: #374151;
+    --text: #f3f4f6;
+    --muted: #9ca3af;
+    --avatar: #374151;
+    --chip: #3bb3a4;
+    --selected: #f0b552;
+    --selected-text: #1f2937;
+    --customer: #ee8466;
   }
 
   * { box-sizing: border-box; }
@@ -88,7 +105,7 @@
     border-radius: 6px;
     display: grid;
     place-items: center;
-    background: #24384f;
+    background: var(--avatar);
     color: var(--text);
   }
   .avatar.customer { background: var(--customer); color: #fff; }

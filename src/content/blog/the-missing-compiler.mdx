@@ -10,38 +10,32 @@ description: "Once coding agents make code cheap, business automation's bottlene
 image: /images/blog/the-missing-compiler/featured.png
 ---
 
-import FeedbackLoop from '../../components/FeedbackLoop.astro';
+import SystemMap from '../../components/SystemMap.astro';
 import LoopAnimation from '../../components/LoopAnimation.astro';
 import ShadowTimeline from '../../components/ShadowTimeline.astro';
+import ThemedImage from '../../components/ThemedImage.astro';
 
 ## TL;DR
 The question hanging over coding agents is what becomes the bottleneck once code is cheap. On an LLM support automation, the answer was concrete: the subject-matter experts. Coding agents get a free verdict on every attempt from tests and compilers; a business process has none, so the only verdict is someone who knows the business reading the output. Once the code was cheap, their time limited everything, along with the internal IT team that had to build every endpoint the agent needed to look things up. Plan the project around it: get into shadow deployment early, build the review screen rather than the plumbing, and expect the bottleneck to move again.
 
+<SystemMap preset="overview" />
+
 ## Why coding agents work
+
+<SystemMap preset="coding-agents" />
 
 What makes coding agents so effective is a combination of two things:
 
 1. Software is largely composed of patterns LLMs have seen countless times during training: syntax, idioms, libraries.
 2. The [agentic loop](https://www.deeplearning.ai/the-batch/issue-359) gets a verdict on every attempt from tests, linters and compiler errors, so the agent can handle a wide range of problems without human intervention.
 
-<FeedbackLoop
-  name="coding-agent-loop"
-  people={[]}
-  tools={[
-    { label: 'Agent writes code', text: 'An attempt at the task.' },
-    { label: 'Tests and compiler judge', text: 'Tests, linters and compiler errors, on every attempt.' },
-  ]}
-  returnLabel="Next attempt"
-  compact
-  focus={2}
-  focusLabel="Verdict"
-/>
-
 ## Neither condition holds elsewhere
+
+<SystemMap preset="no-compiler" />
 
 Consider a first-level support automation. Customers write in with messages like this:
 
-![Customer message: Hi, I'm Alex Carter and I bank with your Riverton branch. My account number is NSB01234 and I can't get in any more; it keeps saying the account is locked. Can you help me get back in?](/images/blog/the-missing-compiler/customer-message.png)
+<ThemedImage src="/images/blog/the-missing-compiler/customer-message.png" alt={"Customer message: Hi, I'm Alex Carter and I bank with your Riverton branch. My account number is NSB01234 and I can't get in any more; it keeps saying the account is locked. Can you help me get back in?"} />
 
 1. LLMs haven't seen your internal escalation rules or customer records during training.
 2. There is no compiler or test suite to tell the system whether the reply it wrote was any good. The only verdict available is a human one: someone who knows the bank has to read the reply and judge it.
@@ -51,6 +45,8 @@ A read tool fixes the records, and would fix the rules too if anyone had written
 The running example is based on a real project, but the details have been changed to protect the client's privacy. The architecture the loop was attached to is in [Workflow or Agent](/post/workflow-vs-agent).
 
 ## The loop we built
+
+<SystemMap preset="loop" />
 
 The system went live in **shadow deployment**: responses were graded by subject-matter experts but never shown to customers, so a wrong answer had little blast radius.
 
@@ -63,30 +59,25 @@ The system went live in **shadow deployment**: responses were graded by subject-
 
 We had a tight process to translate that external feedback into code changes:
 
-export const loop = {
-  people: [
-    { label: 'Experts grade', text: 'A batch of shadow responses, with free-text feedback.' },
-    { label: 'I translate', text: 'The feedback into a comment on what the solution should look like technically.' },
-  ],
-  tools: [
-    { label: 'Agent implements', text: 'Usually as a new branch in the rule tree that maps an intent onto a reply.' },
-    { label: 'Agent adds an eval', text: 'The case goes into the eval set.' },
-    { label: 'CI re-runs evals', text: 'The whole suite, so earlier fixes stay fixed.' },
-  ],
-  returnLabel: 'Next batch of shadow responses',
-};
+1. **Experts grade** a batch of shadow responses, with free-text feedback.
+2. **I translate** the feedback into a comment on what the solution should look like technically.
+3. **The coding agent implements** it, usually as a new branch in the rule tree that maps an intent onto a reply.
+4. **The agent adds an eval**: the case goes into the eval set.
+5. **CI re-runs the evals**: the whole suite, so earlier fixes stay fixed.
 
-<FeedbackLoop name="feedback-loop" {...loop} />
+Then the next batch of shadow responses goes to the experts.
 
 Steps 4 and 5 are the part that looks most like a compiler, and they are the easy part. Once a case is written down, the machinery that keeps it from regressing is ordinary engineering — [Langfuse in Production](/post/langfuse-monitoring-eval-self-improvement) covers how we ran it.
 
 Step 1 is where the verdict comes from. The experts graded in a review screen that showed them the customer's message and the proposed reply, and asked what was wrong with it:
 
-![Mocked-up review screen: the customer's locked-account message, the proposed reply asking for an email address, the rejection reason "Wrong process" selected, and the reviewer's comment explaining the unwritten rules for locked accounts.](/images/blog/the-missing-compiler/sme-review-screen.png)
+<ThemedImage src="/images/blog/the-missing-compiler/sme-review-screen.png" alt={"Mocked-up review screen: the customer's locked-account message, the proposed reply asking for an email address, the rejection reason \"Wrong process\" selected, and the reviewer's comment explaining the unwritten rules for locked accounts."} />
 
 *Step 1, mocked up: a reply graded "Wrong process", with the reviewer's reasoning.*
 
 ## The bottleneck moves
+
+<SystemMap preset="bottleneck" />
 
 Eliyahu Goldratt's [theory of constraints](https://en.wikipedia.org/wiki/Theory_of_constraints) rests on a simple observation: every system has a bottleneck, and fixing it doesn't remove it, it moves it somewhere else. Time saved anywhere but at the bottleneck buys you nothing.
 
@@ -105,6 +96,8 @@ It also runs on their time: one more item in a day that is already full, for peo
 
 ## The other wait: endpoints
 
+<SystemMap preset="endpoints" />
+
 The experts weren't the only people the loop waited on. A reply is only as good as what the agent can look up, so every new kind of answer needed a read tool behind it, an endpoint to fetch a customer's account status or the branch they bank with, and those endpoints belonged to the client's internal IT.
 
 We were lucky here too: IT worked API-first. I wrote the endpoint I needed as an OpenAPI spec, committed it to the repository and pointed them at it, and it was usually implemented within a day.
@@ -112,6 +105,8 @@ We were lucky here too: IT worked API-first. I wrote the endpoint I needed as an
 The handoff was still manual. After committing the spec I pinged someone on Teams to look at it, and on their side that meant pointing their own coding agent at it. Two coding agents, with a person on each end passing messages between them. I don't know what the right fix is. Agent-to-agent protocols exist but haven't caught on; something as plain as an MCP server through which my agent files the request directly might be enough. Until then, every new tool costs a round trip through someone's chat, and that wait adds to the reviewers' wait instead of overlapping with it.
 
 ## Get into shadow deployment sooner
+
+<SystemMap preset="shadow" />
 
 The shadow deployment went live only once the offline numbers on historic tickets looked acceptable. That has it backwards.
 
@@ -125,36 +120,31 @@ We gated the trustworthy signal behind the untrustworthy one. Offline replay is 
 
 ## Build the review screen, not the plumbing
 
+<SystemMap preset="review-screen" />
+
 The external loop *is* the missing compiler, which makes it tempting to build it properly, in-house, as a first-class part of the system. Resist that.
 
 A narrow review screen for the subject-matter experts is worth writing yourself: it is the surface they touch every day, it should show exactly the ticket and the proposed reply and nothing else, and every click you remove is reviewer time handed back to the bottleneck. The machinery behind it — queues, assignment, score storage, history — is not worth writing. Langfuse's annotation queues as the backend, with a thin custom frontend on its API, is the better trade.
 
 ## The next bottleneck: who translates the feedback
 
-Step 2 was me, turning free-text feedback into an implementation plan for the coding agent. That doesn't scale, and it puts a single engineer on the critical path of every improvement: once the reviewers are grading steadily, this is where the bottleneck moves next. I have not solved this, but here is where I got.
+<SystemMap preset="next-bottleneck" />
 
-<FeedbackLoop name="feedback-loop-next-bottleneck" {...loop} compact focus={2} focusLabel="Next bottleneck" />
+Step 2 was me, turning free-text feedback into an implementation plan for the coding agent. That doesn't scale, and it puts a single engineer on the critical path of every improvement: once the reviewers are grading steadily, this is where the bottleneck moves next. I have not solved this, but here is where I got.
 
 Handing step 2 to the coding agent on the raw feedback produced worse results than doing it myself; Skill files and targeted guidelines narrowed the gap without closing it. More specific skills, or a subagent dedicated to the translation, might close the rest.
 
 The more interesting version is to hand the whole translation to an agent. One with persistent memory — something like [Hermes](https://hermes-agent.nousresearch.com/), which keeps what worked as skills — could turn graded feedback into skills itself, instead of me turning it into rules. A skill is a prompt, not a guarantee, but wired to the external feedback loop the system would keep learning from graded evidence.
 
-export const nextLoop = {
-  ...loop,
-  people: [loop.people[0]],
-  tools: [
-    { label: 'Agent translates', text: 'The feedback into a plan, using skills it kept from earlier fixes.' },
-    ...loop.tools,
-  ],
-};
+<SystemMap preset="could-be" />
 
-<FeedbackLoop name="feedback-loop-could-be" {...nextLoop} compact focus={2} focusLabel="Was me" />
-
-*What the loop could look like: step 2 moves to the tools, and the experts are the only people left in it.*
+*What the loop could look like: step 2 moves to an agent, and the experts are the only people left in it.*
 
 The risk is drift. You hand a lot of autonomy to an agent, and the thing keeping it honest is the same loop that is already your scarcest resource.
 
 ## Start at the bottleneck
+
+<SystemMap preset="start" />
 
 Coding agents didn't remove the hard part of this project; they made it obvious where it was. If I started a project of this shape again, the first thing I would build is the review screen and the shadow path that feeds it, with [the simplest agent that can draft a reply](/post/workflow-vs-agent#next-time-make-the-agent-the-default) behind it — before the rule tree, before the templates. Everything downstream is guesswork until someone who knows the business is reading output every day.
 

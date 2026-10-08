@@ -11,6 +11,9 @@
  * whole screen to sme-review-screen.png and the customer's message on its own
  * to customer-message.png, both in src/assets/images/blog/the-missing-compiler/.
  * Any other file without --out is written next to its HTML source.
+ *
+ * Each target is also rendered with html.dark to <name>-dark.png, which
+ * ThemedImage.astro shows instead when the site is in dark mode.
  */
 
 import { mkdir } from 'node:fs/promises';
@@ -63,8 +66,13 @@ async function main() {
       viewport: { width: 1200, height: 800 },
       deviceScaleFactor: opts.scale,
     });
-    for (const { selector, out } of opts.targets) {
+    const shots = opts.targets.flatMap(({ selector, out }) => [
+      { selector, out, dark: false },
+      { selector, out: out.replace(/\.png$/, '-dark.png'), dark: true },
+    ]);
+    for (const { selector, out, dark } of shots) {
       await page.goto(pathToFileURL(resolve(opts.file)).href);
+      await page.evaluate((dark) => document.documentElement.classList.toggle('dark', dark), dark);
       await page.evaluate(() => document.fonts.ready);
 
       const element = page.locator(selector);
