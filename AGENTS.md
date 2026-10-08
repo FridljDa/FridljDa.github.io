@@ -13,3 +13,7 @@ Assets live under `src/assets/images/` with `public/images` symlinked for stable
 ## Reposts (LinkedIn, Confluence)
 
 Versions of blog posts for other channels live under `src/content/reposts/` and are never shown on the site. Read `src/content/reposts/AGENTS.md` before writing one.
+
+## Animated figures (Remotion)
+
+Animations in posts are Remotion compositions in `src/remotion/`, embedded with `<LoopAnimation name="..." />` (`src/components/LoopAnimation.astro`). Every frame is a pure function of the frame number, and the last frame is the resting state: reduced motion and the Confluence copy show it as a still. Keep text inside them to short labels. After changing a composition, regenerate its PNG with `npm run confluence:figures` (dev server running) and commit only the PNGs that changed on purpose.
