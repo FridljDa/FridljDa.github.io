@@ -52,15 +52,15 @@ The system went live in **shadow deployment**: responses were graded by subject-
 
 <LoopAnimation
   name="shadow-loop"
-  description="Customers write in one at a time. Each message runs through the intent DAG to a leaf, and a subject-matter expert grades the drafted reply. Most grades are checks. On a cross, the expert's comment goes to a coding agent, which grows the DAG: a new leaf, or a second parent for an existing one. The next customer with the same request reaches the new leaf and gets a check."
+  description="Customers write in one at a time. Each message runs through the intent DAG to a leaf, and a subject-matter expert grades the drafted reply. Most grades are checks. On a cross, the expert's comment is stored with the case; I pick it up and steer a coding agent, which grows the DAG: a new leaf, or a second parent for an existing one. The next customer with the same request reaches the new leaf and gets a check."
 />
 
-*Shadow deployment, sped up: most drafts pass; a fail turns into a comment, and the coding agent grows the system.*
+*Shadow deployment, sped up: most drafts pass; a fail's comment is stored, and I steer the coding agent to grow the system.*
 
-We had a tight process to translate that external feedback into code changes:
+My part was the harness for that feedback: the review screen, its rejection categories, and the store that keeps every grade and comment with its case. The loop through it turned feedback into code changes:
 
-1. **Experts grade** a batch of shadow responses, with free-text feedback.
-2. **I translate** the feedback into a comment on what the solution should look like technically.
+1. **Experts grade** a batch of shadow responses in the review screen: a verdict, a rejection category and free-text feedback, stored with the case.
+2. **I steer the coding agent**: I read the stored feedback and turn it into a comment on what the solution should look like technically. Left to run free on the raw feedback, the agent's fixes weren't good enough.
 3. **The coding agent implements** it, usually as a new branch in the rule tree that maps an intent onto a reply.
 4. **The agent adds an eval**: the case goes into the eval set.
 5. **CI re-runs the evals**: the whole suite, so earlier fixes stay fixed.
@@ -77,18 +77,17 @@ Step 1 is where the verdict comes from. The experts graded in a review screen th
 
 ## The bottleneck moves
 
-<SystemMap preset="bottleneck" />
+<SystemMap preset="before" />
+
+*Before coding agents: every fix went through me, the code included.*
 
 Eliyahu Goldratt's [theory of constraints](https://en.wikipedia.org/wiki/Theory_of_constraints) rests on a simple observation: every system has a bottleneck, and fixing it doesn't remove it, it moves it somewhere else. Time saved anywhere but at the bottleneck buys you nothing.
 
 AI-assisted coding moved ours. Once a decision was made, the coding agent and CI turned it into a branch, an eval case and a green build with little of my time; writing code was no longer what limited progress. What limited it was step 1: getting domain knowledge out of the heads of the people who had it. That is the missing compiler again. Where the verdict is a test suite, cheap code speeds up the whole loop; where the verdict is a person, the loop waits on them.
 
-<LoopAnimation
-  name="bottleneck-moves"
-  description="Work items circle a loop of four steps: experts grade, I translate, the code gets written, evals run. Items pile up in front of the slowest step, the code, which is marked as the bottleneck. Then a coding agent takes over the code step, which gets several times faster; its pile drains, a new pile builds in front of the experts, and the bottleneck marker moves to them."
-/>
+<SystemMap preset="today" />
 
-*Work piles up in front of the slowest step. Make the code cheap and the pile moves to the experts.*
+*Today: the code is cheap. What the loop waits on is the experts' grading and the handoff to IT.*
 
 That knowledge is mostly tacit. The people who know a business can rarely write its rules down in advance, but shown a specific draft, they can tell you at a glance what is wrong with it. The reviewer's comment in the mockup above is exactly that: two rules nobody had written down, prompted by a single reply that broke both. Grading a concrete reply is a far cheaper way to extract a rule than asking for its specification. So the loop has a second job, and it may be the more important one: besides standing in for the verdict a coding agent gets for free, it is the extraction tool for knowledge that exists only in people's heads.
 
