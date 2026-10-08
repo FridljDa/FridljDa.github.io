@@ -10,7 +10,7 @@ description: "The four-step pipeline we landed on after iterating on live ticket
 image: /images/blog/first-level-support-automation/featured.png
 ---
 
-import IntentDagGrowth from '../../components/IntentDagGrowth.astro';
+import LoopAnimation from '../../components/LoopAnimation.astro';
 
 Our architecture for first-level customer support splits the problem into small steps, uses LLMs for interpretation, and keeps everything else in code. It is the full version of the workflow approach in [Workflow or Agent](/post/workflow-vs-agent), which also explains why I would now invert its default.
 
@@ -96,7 +96,12 @@ flowchart LR
 
 **Expert feedback grows the DAG.** In shadow deployment, subject-matter experts graded every draft. A request they kept flagging in an "other" bucket became a new leaf; one that needed an existing leaf's handling gave that leaf a second parent. [The Missing Compiler](/post/the-missing-compiler) covers that loop.
 
-<IntentDagGrowth />
+<LoopAnimation
+  name="shadow-loop"
+  description="Customers write in one at a time. Each message runs through the intent DAG to a leaf, and a subject-matter expert grades the drafted reply. Most grades are checks. Three are crosses: a password reset and a locked account land in Account access's Other, and a card-PIN lockout lands in Card services' Other. Each cross sends the expert's comment to a coding agent, which adds Password reset and Account locked as leaves under Account access, then gives Account locked Card services as a second parent. The next customer with the same request reaches the new leaf and gets a check."
+/>
+
+*In shadow deployment the expert grades every drafted reply. Most pass; a fail goes to the coding agent as a comment, and the DAG grows.*
 
 **Two narrow calls beat one wide classifier.** Each parent exposes only its reachable children as a typed `Literal`, avoiding confusion between unrelated categories. Shared leaves simply appear in more than one parent's options.
 

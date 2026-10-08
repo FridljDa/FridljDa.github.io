@@ -1,0 +1,48 @@
+---
+/**
+ * An animated figure drawn with Remotion (compositions in src/remotion/),
+ * played by the LoopAnimation island.
+ *
+ * The island needs JavaScript, so without it the figure shows the PNG of the
+ * last frame; so does the Confluence copy of the post, since a paste keeps
+ * images but drops the player. Regenerate the PNGs after changing a
+ * composition: npm run confluence:figures
+ */
+import LoopAnimation, { type AnimationName } from './LoopAnimation';
+
+interface Props {
+  name: AnimationName;
+  /** What the animation shows, for screen readers and as the PNG's alt text. */
+  description: string;
+}
+
+const { name, description } = Astro.props;
+const png = `/images/blog/animations/${name}.png`;
+---
+
+{Astro.locals.confluence ? (
+  <img src={png} alt={description} />
+) : (
+  <figure class="loop-animation not-prose my-8" data-confluence-png={png} aria-label={description}>
+    <LoopAnimation client:only="react" name={name}>
+      <div slot="fallback" class="loop-animation-placeholder">
+        <noscript><img src={png} alt={description} /></noscript>
+      </div>
+    </LoopAnimation>
+  </figure>
+)}
+
+<style>
+  /* The player has a minimum width of its own, which would otherwise widen the
+     post's column past a phone's screen. */
+  .loop-animation {
+    container-type: inline-size;
+  }
+  .loop-animation-placeholder {
+    aspect-ratio: 960 / 540;
+  }
+  .loop-animation-placeholder img {
+    width: 100%;
+    height: auto;
+  }
+</style>
