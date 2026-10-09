@@ -207,14 +207,15 @@ export const Grade = ({ ok, r = 18, ...place }: IconProps & { ok: boolean; r?: n
   </Place>
 );
 
+/** A node's name, as the section maps (SystemMap.tsx) write it. */
 export const Label = ({
   x,
   y,
   children,
-  size = 17,
+  size = 21,
   anchor = 'middle',
 }: Point & { children: ReactNode; size?: number; anchor?: 'middle' | 'start' | 'end' }) => (
-  <text x={x} y={y} textAnchor={anchor} fontSize={size} fill={color('muted')} fontWeight={500}>
+  <text x={x} y={y} textAnchor={anchor} fontSize={size} fontWeight={600} fill={color('text')}>
     {children}
   </text>
 );

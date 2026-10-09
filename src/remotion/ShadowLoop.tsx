@@ -38,6 +38,7 @@ import {
   Label,
   type Point,
 } from './shared';
+import { ArrowMarker } from '../components/map-parts';
 
 type Kind = 'intent' | 'other';
 
@@ -152,6 +153,10 @@ interface Layout {
   store: Point;
   me: Point;
   agent: Point;
+  /** The size of the names under the icons, as on the map of the same width. */
+  labelSize: number;
+  /** Where "Nightly" goes, next to the line from the store to the coding agent. */
+  nightly: Point & { anchor: 'start' | 'middle' };
 }
 
 export const LAYOUTS = {
@@ -164,8 +169,10 @@ export const LAYOUTS = {
     expert: { x: 846, y: 96 },
     tallyY: 178,
     store: { x: 846, y: 282 },
-    me: { x: 770, y: 430 },
-    agent: { x: 890, y: 430 },
+    me: { x: 748, y: 430 },
+    agent: { x: 868, y: 430 },
+    labelSize: 21,
+    nightly: { x: 866, y: 364, anchor: 'start' },
   },
   tall: {
     width: 540,
@@ -179,6 +186,8 @@ export const LAYOUTS = {
     // Raised, so the line from the store to the coding agent passes below me.
     me: { x: 290, y: 724 },
     agent: { x: 440, y: 820 },
+    labelSize: 25,
+    nightly: { x: 270, y: 854, anchor: 'middle' },
   },
 } satisfies Record<string, Layout>;
 
@@ -250,11 +259,12 @@ const lit = (frame: number, visit: Timed, from: number) => {
 export const ShadowLoop = ({ layout = 'wide' }: { layout?: LayoutName }) => {
   const L: Layout = LAYOUTS[layout];
   const { expert: EXPERT, agent: AGENT, store: STORE, me: ME } = L;
-  // The dashed lines from the store to me and to the coding agent, from the edge of one icon to the other's.
-  const storeToMe = toward(STORE, ME, 38);
-  const meIn = toward(ME, STORE, 34);
-  const storeToAgent = toward(STORE, AGENT, 38);
-  const agentIn = toward(AGENT, STORE, 40);
+  // The lines from the store to me and to the coding agent, from the edge of one icon to the other's.
+  const storeToMe = toward(STORE, ME, 42);
+  const meIn = toward(ME, STORE, 38);
+  const storeToAgent = toward(STORE, AGENT, 42);
+  const agentIn = toward(AGENT, STORE, 44);
+  const marker = `shadow-loop-${layout}-arrow`;
   /** A point of the DAG in this layout's coordinates. */
   const D = (p: Point): Point => ({ x: p.x + L.dag.x, y: p.y + L.dag.y });
   const frame = useCurrentFrame();
@@ -388,21 +398,37 @@ export const ShadowLoop = ({ layout = 'wide' }: { layout?: LayoutName }) => {
         })}
         </g>
 
-        {/* The expert, their grades, the store, me and the coding agent */}
-        <path
-          d={`M${EXPERT.x},${L.tallyY + 18} V${STORE.y - 40} M${storeToMe.x},${storeToMe.y} L${meIn.x},${meIn.y} M${storeToAgent.x},${storeToAgent.y} L${agentIn.x},${agentIn.y}`}
-          fill="none"
-          stroke={color('edge')}
-          strokeWidth={2}
-          strokeDasharray="4 6"
-        />
+        {/* The expert, their grades, the store, me and the coding agent, joined as on the section maps:
+            the grade and comment go into the store, comments go back and forth between it and me, and
+            the nightly run takes mine to the coding agent. */}
+        <defs>
+          <ArrowMarker id={marker} />
+        </defs>
+        {[
+          { d: `M${EXPERT.x},${L.tallyY + 18} V${STORE.y - 36}` },
+          { d: `M${storeToMe.x},${storeToMe.y} L${meIn.x},${meIn.y}`, twoWay: true },
+          { d: `M${storeToAgent.x},${storeToAgent.y} L${agentIn.x},${agentIn.y}` },
+        ].map(({ d, twoWay }) => (
+          <path
+            key={d}
+            d={d}
+            fill="none"
+            stroke={color('node-border')}
+            strokeWidth={2.5}
+            markerEnd={`url(#${marker})`}
+            markerStart={twoWay ? `url(#${marker})` : undefined}
+          />
+        ))}
+        <text x={L.nightly.x} y={L.nightly.y} textAnchor={L.nightly.anchor} fontSize={L.labelSize - 4} fontWeight={600} fill={color('muted')}>
+          Nightly
+        </text>
         <Store x={STORE.x} y={STORE.y} />
         <Person x={ME.x} y={ME.y} scale={1.4} fill={color('text')} />
-        <Label x={ME.x} y={ME.y + 50}>
+        <Label x={ME.x} y={ME.y + 52} size={L.labelSize}>
           Me
         </Label>
         <Expert x={EXPERT.x} y={EXPERT.y} scale={1.5 * (grading ? 1 + 0.06 * pop(grading.replyAt + TO_EXPERT - 6) : 1)} />
-        <Label x={EXPERT.x} y={EXPERT.y + 46}>
+        <Label x={EXPERT.x} y={EXPERT.y + 48} size={L.labelSize}>
           Expert
         </Label>
         {TIMELINE.filter((v) => frame >= v.gradeAt).map((v, i) => {
@@ -411,7 +437,7 @@ export const ShadowLoop = ({ layout = 'wide' }: { layout?: LayoutName }) => {
         })}
 
         <Agent x={AGENT.x} y={AGENT.y} scale={1.5} typing={fixing ? progress(frame, fixing.typingAt!, fixing.sparkAt! - 4) : 0} />
-        <Label x={AGENT.x} y={AGENT.y + 50}>
+        <Label x={AGENT.x} y={AGENT.y + 52} size={L.labelSize}>
           Coding agent
         </Label>
 
