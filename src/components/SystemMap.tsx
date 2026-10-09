@@ -34,9 +34,15 @@ type EdgeId =
   | 'build'
   | 'reads';
 
+/** What a preset can highlight: a node, an edge, or the harness box around the store and the review screen. */
+type Part = NodeId | EdgeId | 'harness';
+
 export interface Preset {
-  /** Parts drawn at full strength; everything else is greyed out. Empty means everything. */
-  focus: (NodeId | EdgeId)[];
+  /**
+   * Parts drawn at full strength; everything else is greyed out. Empty means
+   * everything. Only what the section's prose talks about.
+   */
+  focus: Part[];
   /** Pills next to parts, e.g. "Bottleneck". */
   tags?: { on: NodeId; text: string }[];
   /** Before coding agents: I write the code myself. */
@@ -48,7 +54,7 @@ export interface Preset {
   description: string;
 }
 
-const LOOP: Preset['focus'] = ['support', 'drafts', 'store', 'review', 'expert', 'graded', 'comment', 'me', 'nightly', 'coder', 'compile', 'tests', 'ships'];
+const LOOP: Preset['focus'] = ['support', 'drafts', 'store', 'review', 'expert', 'graded', 'harness', 'comment', 'me', 'nightly', 'coder', 'compile', 'tests', 'ships'];
 const SHADOW_PATH: Preset['focus'] = ['customers', 'messages', 'support', 'drafts', 'store', 'review', 'expert', 'graded'];
 
 export const PRESETS = {
@@ -63,9 +69,9 @@ export const PRESETS = {
     description: 'Highlighted: the coding agent and its evals and CI, the verdict it gets on every attempt.',
   },
   'no-compiler': {
-    focus: SHADOW_PATH,
+    focus: ['customers', 'messages', 'support', 'expert'],
     small: true,
-    description: 'Highlighted: customer messages, the support agent’s drafts, and the expert, the only verdict a draft can get.',
+    description: 'Highlighted: customer messages, the support agent that drafts the replies, and the expert, the only verdict a reply can get.',
   },
   loop: {
     focus: LOOP,
@@ -73,25 +79,24 @@ export const PRESETS = {
     description:
       'Highlighted: the loop. 1, the expert grades a draft in the review screen and the grade and comment are stored; 2, I read them and store a comment on how to fix it; 3, the coding agent implements it in its nightly run; 4, evals and CI check it; then it ships into the support agent.',
   },
+  // The two maps of "The bottleneck moves": who writes the code, and where the bottleneck sits.
   before: {
-    focus: ['comment', 'me', 'plan', 'coder', 'compile', 'tests', 'ships', 'spec', 'it'],
+    focus: ['me', 'plan', 'coder'],
     meCodes: true,
     tags: [{ on: 'coder', text: 'Bottleneck' }],
-    description: 'Before coding agents: I read the feedback, write the code and ask IT for endpoints myself; writing the code is the bottleneck.',
+    description: 'Before coding agents: I read the feedback, decide the fix and write the code myself; writing the code is the bottleneck.',
   },
   today: {
-    focus: ['store', 'review', 'expert', 'graded', 'coder', 'spec', 'it'],
-    tags: [
-      { on: 'expert', text: 'Bottleneck' },
-      { on: 'it', text: 'Wait' },
-    ],
-    description: 'Today: the coding agent writes the code; the bottleneck is the expert’s grading, and the handoff to IT adds a wait.',
+    focus: ['expert', 'coder'],
+    tags: [{ on: 'expert', text: 'Bottleneck' }],
+    description: 'Today: the coding agent writes the code; the bottleneck is the expert’s grading.',
   },
   endpoints: {
     focus: ['coder', 'spec', 'it', 'build', 'endpoints', 'reads', 'support'],
+    tags: [{ on: 'it', text: 'Wait' }],
     small: true,
     description:
-      'Highlighted: the coding agent writes a spec, I hand it to IT, and IT builds the endpoint, which becomes the support agent’s read tool.',
+      'Highlighted: the coding agent writes a spec, I hand it to IT, and IT builds the endpoint, which becomes the support agent’s read tool. The handoff to IT adds a wait.',
   },
   shadow: {
     focus: [...SHADOW_PATH, 'tickets', 'replay'],
@@ -99,7 +104,7 @@ export const PRESETS = {
     description: 'Highlighted: live customer messages through the support agent to the expert, and old tickets replayed offline.',
   },
   'review-screen': {
-    focus: ['expert', 'review', 'graded'],
+    focus: ['expert', 'review', 'graded', 'harness'],
     tags: [{ on: 'expert', text: 'Build this' }],
     small: true,
     description: 'Highlighted: the expert’s review screen, the part worth building. The store behind it stays greyed out.',
@@ -117,7 +122,7 @@ export const PRESETS = {
     description: 'Highlighted: an agent with skills reading the stored feedback and commenting on how to fix it, where I used to; the coding agent picks it up at night.',
   },
   start: {
-    focus: SHADOW_PATH,
+    focus: [...SHADOW_PATH, 'harness'],
     tags: [{ on: 'expert', text: 'Build first' }],
     small: true,
     description: 'Highlighted: the shadow path, the store and the expert’s review screen, the first thing to build.',
@@ -443,7 +448,7 @@ function MapSvg({ layout, preset, id, className }: { layout: Layout; preset: Pre
   const p = preset;
   const { N } = layout;
   const all = p.focus.length === 0;
-  const on = (part: NodeId | EdgeId) => all || p.focus.includes(part);
+  const on = (part: Part) => all || p.focus.includes(part);
   const marker = `${id}-arrow`;
   const harness = layout.harness;
   const shown = (part: NodeId | EdgeId) => {
@@ -470,7 +475,7 @@ function MapSvg({ layout, preset, id, className }: { layout: Layout; preset: Pre
       </defs>
 
       {/* The harness I built: the review screen and the store behind it */}
-      <Dim on={on('store') || on('expert')}>
+      <Dim on={on('harness')}>
         <rect x={harness.x} y={harness.y} width={harness.w} height={harness.h} rx={18} fill="none" stroke={color('added')} strokeWidth={2} strokeDasharray="6 6" />
         <text x={harness.label.x} y={harness.label.y} textAnchor={harness.label.anchor ?? 'middle'} fontSize={(layout.labelSize ?? 21) - 3} fontWeight={600} fill={color('added')}>
           Harness
