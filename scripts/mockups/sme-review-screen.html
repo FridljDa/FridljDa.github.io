@@ -28,11 +28,12 @@
     --border: #cbd5e1;
     --text: #1f2937;
     --muted: #6b7280;
-    --avatar: #e2e8f0;
-    --chip: #2563eb;
+    --node-border: #64748b;
+    --added: #2563eb;
     --ok: #2a9d8f;
     --bad: #e76f51;
-    --customer: #64748b;
+    /* Alex Carter, in the color customers get in the shadow loop (PALETTE[0]). */
+    --alex: #4f86c6;
     --width: 672px; /* the blog's desktop content column, so the PNG shows at 1:1 */
   }
   html.dark {
@@ -42,11 +43,10 @@
     --border: #374151;
     --text: #f3f4f6;
     --muted: #9ca3af;
-    --avatar: #374151;
-    --chip: #5b9cea;
+    --node-border: #6b7280;
+    --added: #5b9cea;
     --ok: #3bb3a4;
     --bad: #ee8466;
-    --customer: #6b7280;
   }
 
   * { box-sizing: border-box; }
@@ -93,26 +93,26 @@
   .msg p { margin: 0 0 6px; }
   .msg p:last-child { margin-bottom: 0; }
 
-  .avatar {
+  /* Each card is marked with the icon its object has in the post's other
+     figures (src/remotion/shared.tsx): the customer message an envelope, the
+     reply a page in the customer's color, the expert's comment a red speech
+     bubble and mine a blue one. */
+  .icon {
     flex: none;
-    width: 26px;
-    height: 26px;
-    border-radius: 6px;
-    display: grid;
-    place-items: center;
-    background: var(--avatar);
-    color: var(--text);
+    width: 28px;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding-top: 1px;
   }
-  .avatar.customer { background: var(--customer); color: #fff; }
-  .avatar svg { width: 16px; height: 16px; }
+  .icon svg { display: block; }
+  .icon.message svg { width: 26px; }
+  .icon.reply svg { height: 26px; color: var(--alex); }
+  .icon.comment svg { width: 28px; color: var(--bad); }
+  .icon.comment.mine svg { color: var(--added); }
 
   .meta { font-size: 12px; color: var(--muted); margin-bottom: 6px; }
   .meta b { color: var(--text); font-weight: 600; }
-  .chip {
-    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-    font-size: 11px;
-    color: var(--chip);
-  }
 
   hr { border: 0; border-top: 1px solid var(--border); margin: 18px 0; }
 
@@ -150,8 +150,9 @@
   .empty { padding: 10px 12px; color: var(--muted); font-size: 13px; }
 
   /* Stages, like the post's maps: the stage's own part at full strength, the
-     rest greyed out, and what hasn't happened yet left empty. */
-  html[class*="stage-"] .part { opacity: 0.3; filter: grayscale(1); }
+     rest greyed out as Dim in map-parts.tsx does it, and what hasn't happened
+     yet left empty. */
+  html[class*="stage-"] .part { opacity: 0.22; filter: grayscale(1); }
   html.stage-reply .part.reply,
   html.stage-graded .part.graded,
   html.stage-fix .part.fix { opacity: 1; filter: none; }
@@ -177,8 +178,8 @@
       <h3>Customer message</h3>
       <div class="panel" id="customer-message">
         <div class="msg">
-          <div class="avatar customer">
-            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="5.5" r="2.6"/><path d="M3 14c.6-2.8 2.6-4.2 5-4.2s4.4 1.4 5 4.2"/></svg>
+          <div class="icon message">
+            <svg viewBox="-16.5 -11.5 33 23"><rect x="-15" y="-10" width="30" height="20" rx="3" fill="var(--panel)" stroke="var(--node-border)" stroke-width="2"/><path d="M-15,-9 L0,2 L15,-9" fill="none" stroke="var(--node-border)" stroke-width="2" stroke-linejoin="round"/></svg>
           </div>
           <div>
             <div class="meta"><b>Customer</b> · 2026-03-12 09:41</div>
@@ -192,11 +193,11 @@
       <h3>Suggested reply</h3>
       <div class="panel">
         <div class="msg">
-          <div class="avatar">
-            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="2" y="3.5" width="12" height="9" rx="1.5"/><path d="M2.5 4.5 8 9l5.5-4.5"/></svg>
+          <div class="icon reply">
+            <svg viewBox="-12.5 -15 25 30" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M-10,-13 h13 l7,7 v19 h-20 Z" fill="var(--page)" stroke-width="2.5"/><path d="M-5,0 h10 M-5,6 h8" stroke-width="2"/></svg>
           </div>
           <div>
-            <div class="meta"><b>Support agent</b> · <span class="chip">email</span></div>
+            <div class="meta"><b>Support agent</b></div>
             <p>Dear Alex Carter,</p>
             <p>To help with your login, please reply with the email address on your account.</p>
             <p>Kind regards,<br>Northstar Bank</p>
@@ -240,20 +241,20 @@
       <div class="panel">
         <div class="empty">No comments yet</div>
         <div class="msg part graded graded-on">
-          <div class="avatar">
-            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M2.5 3.5h11v7h-6l-3 2.5v-2.5h-2z"/></svg>
+          <div class="icon comment">
+            <svg viewBox="-26.5 -15.5 53 37" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M-20,-14 h40 a5,5 0 0 1 5,5 v16 a5,5 0 0 1 -5,5 h-26 l-8,7 v-7 h-6 a5,5 0 0 1 -5,-5 v-16 a5,5 0 0 1 5,-5 Z" fill="var(--page)" stroke-width="2.5"/><path d="M-13,-5 q4,-3 8,0 t8,0 t8,0 M-13,3 q4,-3 8,0 t8,0" stroke-width="2"/></svg>
           </div>
           <div>
-            <div class="meta"><b>Jordan M.</b> · Account services</div>
+            <div class="meta"><b>Jordan M.</b> · Expert</div>
             <p>We have the account number, so look them up: never ask for what we can find. Locked accounts get the unlock link, or go to security if flagged.</p>
           </div>
         </div>
         <div class="msg part fix fix-on">
-          <div class="avatar">
-            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M2.5 3.5h11v7h-6l-3 2.5v-2.5h-2z"/></svg>
+          <div class="icon comment mine">
+            <svg viewBox="-26.5 -15.5 53 37" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M-20,-14 h40 a5,5 0 0 1 5,5 v16 a5,5 0 0 1 -5,5 h-26 l-8,7 v-7 h-6 a5,5 0 0 1 -5,-5 v-16 a5,5 0 0 1 5,-5 Z" fill="var(--page)" stroke-width="2.5"/><path d="M-13,-5 q4,-3 8,0 t8,0 t8,0 M-13,3 q4,-3 8,0 t8,0" stroke-width="2"/></svg>
           </div>
           <div>
-            <div class="meta"><b>Daniel F.</b> · Engineering</div>
+            <div class="meta"><b>Daniel F.</b></div>
             <p>For the coding agent: add an Account locked intent. Look the customer up by account number, then send the unlock link, or route to security if flagged.</p>
           </div>
         </div>
