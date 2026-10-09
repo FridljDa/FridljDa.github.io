@@ -113,26 +113,28 @@ const SCRIPT: Visit[] = [
   { path: ['payments'] },
   { path: ['access', 'accessOther'], grows: { node: 'locked', edge: ['access', 'locked'] } },
   { path: ['access', 'locked'] },
-  { path: ['cards', 'blocked'] },
   { path: ['cards', 'cardsOther'], grows: { edge: ['cards', 'locked'] } },
   { path: ['cards', 'locked'] },
-  { path: ['access', 'login'] },
 ];
 
 /** Parts of the DAG that only exist once a cross has grown them. */
 const GROWN_NODES = new Set(SCRIPT.flatMap((v) => (v.grows?.node ? [v.grows.node] : [])));
 const GROWN_EDGES = new Set(SCRIPT.flatMap((v) => (v.grows ? [edgeKey(...v.grows.edge)] : [])));
 
-// Beats, in frames.
+// Beats, in frames. The opening frame holds a moment, so the scene can be
+// read before anything moves.
+const LEAD = 30;
 const ENTER = 10;
 const HOP = 11;
 const TO_EXPERT = 14;
-const TO_STORE = 12;
-const TO_ME = 14;
-const TO_AGENT = 12;
-const TYPING = 24;
-const SPARK = 14;
-const GROW = 18;
+// A cross and the fix it leads to are what the figure is about, so they move
+// at about two thirds of the speed of the checks.
+const TO_STORE = 18;
+const TO_ME = 21;
+const TO_AGENT = 18;
+const TYPING = 36;
+const SPARK = 21;
+const GROW = 27;
 const HOLD = 60;
 
 interface Layout {
@@ -197,7 +199,7 @@ interface Timed extends Visit {
 }
 
 const TIMELINE: Timed[] = [];
-let cursor = 0;
+let cursor = LEAD;
 for (const [index, visit] of SCRIPT.entries()) {
   const start = cursor;
   const reach = visit.path.map((_, i) => start + ENTER + HOP * (i + 1));
@@ -205,13 +207,13 @@ for (const [index, visit] of SCRIPT.entries()) {
   const gradeAt = replyAt + TO_EXPERT;
   const timed: Timed = { ...visit, index, color: PALETTE[index % PALETTE.length], ok: !visit.grows, start, reach, replyAt, gradeAt };
   if (visit.grows) {
-    timed.storeAt = gradeAt + 10;
-    timed.meAt = timed.storeAt + TO_STORE + 4;
-    timed.planAt = timed.meAt + TO_ME + 6;
+    timed.storeAt = gradeAt + 15;
+    timed.meAt = timed.storeAt + TO_STORE + 6;
+    timed.planAt = timed.meAt + TO_ME + 9;
     timed.typingAt = timed.planAt + TO_AGENT;
     timed.sparkAt = timed.typingAt + TYPING;
     timed.growAt = timed.sparkAt + SPARK;
-    cursor = timed.growAt + GROW + 6;
+    cursor = timed.growAt + GROW + 9;
   } else {
     cursor = gradeAt - 10;
   }
@@ -226,6 +228,12 @@ const grownAt = (key: string) => {
   return visit?.growAt ?? 0;
 };
 
+/** The point `by` units from `from` toward `to`: where a line between two icons leaves the first. */
+const toward = (from: Point, to: Point, by: number): Point => {
+  const length = Math.hypot(to.x - from.x, to.y - from.y);
+  return mix(from, to, by / length);
+};
+
 /** How lit a visit's path is: on while the message travels and is graded, then fading out. */
 const lit = (frame: number, visit: Timed, from: number) => {
   if (frame < from) return 0;
@@ -235,6 +243,9 @@ const lit = (frame: number, visit: Timed, from: number) => {
 export const ShadowLoop = ({ layout = 'wide' }: { layout?: LayoutName }) => {
   const L: Layout = LAYOUTS[layout];
   const { expert: EXPERT, agent: AGENT, store: STORE, me: ME } = L;
+  // The dashed line from the store to me, from the edge of one icon to the other's.
+  const storeOut = toward(STORE, ME, 38);
+  const meIn = toward(ME, STORE, 34);
   /** A point of the DAG in this layout's coordinates. */
   const D = (p: Point): Point => ({ x: p.x + L.dag.x, y: p.y + L.dag.y });
   const frame = useCurrentFrame();
@@ -370,7 +381,7 @@ export const ShadowLoop = ({ layout = 'wide' }: { layout?: LayoutName }) => {
 
         {/* The expert, their grades, the store, me and the coding agent */}
         <path
-          d={`M${EXPERT.x},${L.tallyY + 18} V${STORE.y - 40} M${STORE.x + 36},${STORE.y} L${ME.x - 30},${ME.y} M${ME.x + 30},${ME.y} H${AGENT.x - 44}`}
+          d={`M${EXPERT.x},${L.tallyY + 18} V${STORE.y - 40} M${storeOut.x},${storeOut.y} L${meIn.x},${meIn.y} M${ME.x + 30},${ME.y} H${AGENT.x - 44}`}
           fill="none"
           stroke={color('edge')}
           strokeWidth={2}

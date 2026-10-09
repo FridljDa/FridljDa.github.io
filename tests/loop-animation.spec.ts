@@ -13,7 +13,7 @@ test.describe('Loop animations', () => {
     await expect(figure.getByText('Login problem')).toBeAttached();
     await expect(figure.getByText('Password reset')).toHaveCount(0);
 
-    // Plays in real time; the first cross grows its leaf about six seconds in.
+    // Plays in real time; the first cross grows its leaf about ten seconds in.
     await figure.scrollIntoViewIfNeeded();
     await expect(figure.getByText('Password reset')).toBeVisible({ timeout: 20_000 });
   });

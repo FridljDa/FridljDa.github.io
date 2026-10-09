@@ -2,8 +2,9 @@
  * Plays a Remotion composition from src/remotion/ in a blog post. Used through
  * LoopAnimation.astro, which handles the Confluence copy and the no-JS fallback.
  *
- * The animation starts the first time the figure is mostly in view, plays
- * once and rests on its last frame, which is the full picture. With
+ * The animation starts the first time the figure is almost fully in view, so
+ * the reader is looking at it rather than at the text above, plays once and
+ * rests on its last frame, which is the full picture. With
  * prefers-reduced-motion it shows only that last frame. A figure narrower
  * than NARROW (a phone, or a narrow column) gets the composition's tall layout.
  */
@@ -40,13 +41,16 @@ export default function LoopAnimation({ name }: { name: AnimationName }) {
 
   useEffect(() => {
     if (still !== false || !container.current) return;
+    // In view: 90% of the figure, or, when it is taller than the screen, most of the screen.
+    const inView = (entry: IntersectionObserverEntry) =>
+      entry.intersectionRatio >= 0.9 || entry.intersectionRect.height >= 0.8 * (entry.rootBounds?.height ?? Infinity);
     const observer = new IntersectionObserver(
       (entries) => {
-        if (!entries.some((entry) => entry.isIntersecting)) return;
+        if (!entries.some(inView)) return;
         observer.disconnect();
         player.current?.play();
       },
-      { threshold: 0.6 }
+      { threshold: [0.25, 0.5, 0.75, 0.9, 1] }
     );
     observer.observe(container.current);
     return () => observer.disconnect();

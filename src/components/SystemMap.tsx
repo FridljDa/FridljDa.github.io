@@ -5,9 +5,10 @@
  * back into the store; the store and the review screen are the harness I
  * built. I read the feedback there and steer the coding agent, which checks
  * itself against evals and CI (the compiler it has) and ships back into the
- * support agent. The coding agent also asks IT for endpoints, which become
- * the support agent's read tools. Old tickets, the offline replay that got the
- * project started, only appear on the map of the section about them.
+ * support agent. For a new read tool the coding agent writes a spec, which I
+ * hand to IT; their endpoint becomes the support agent's read tool. Old
+ * tickets, the offline replay that got the project started, only appear on
+ * the map of the section about them.
  *
  * Each section of the post shows the same map with its part highlighted and
  * the rest greyed out, so the post reads as one system seen from different
@@ -34,13 +35,14 @@ type EdgeId =
 export interface Preset {
   /** Parts drawn at full strength; everything else is greyed out. Empty means everything. */
   focus: (NodeId | EdgeId)[];
-  /** A pill next to one part, e.g. "Bottleneck". */
   /** Pills next to parts, e.g. "Bottleneck". */
   tags?: { on: NodeId; text: string }[];
   /** Before coding agents: I write the code myself. */
   meCodes?: boolean;
   /** Step 2 done by an agent with skills instead of me. */
   agentTranslates?: boolean;
+  /** Only shows where a section sits in the system, so wide screens get it smaller. */
+  small?: boolean;
   description: string;
 }
 
@@ -51,51 +53,59 @@ export const PRESETS = {
   overview: {
     focus: [],
     description:
-      'The whole system: customers write to the support agent; in shadow its drafts land in the feedback store, the expert grades them in the review screen, and grade and comment go back into the store, the harness I built. I read the feedback there and steer the coding agent, which checks itself against evals and CI and ships into the support agent. The coding agent also asks IT for endpoints, the support agent’s read tools.',
+      'The whole system: customers write to the support agent; in shadow its drafts land in the feedback store, the expert grades them in the review screen, and grade and comment go back into the store, the harness I built. I read the feedback there and steer the coding agent, which checks itself against evals and CI and ships into the support agent. For a new read tool, the coding agent writes a spec that I hand to IT, who build the endpoint.',
   },
   'coding-agents': {
     focus: ['coder', 'compile', 'tests'],
+    small: true,
     description: 'Highlighted: the coding agent and its evals and CI, the verdict it gets on every attempt.',
   },
   'no-compiler': {
     focus: SHADOW_PATH,
+    small: true,
     description: 'Highlighted: customer messages, the support agent’s drafts, and the expert, the only verdict a draft can get.',
   },
   loop: {
     focus: LOOP,
+    small: true,
     description:
-      'Highlighted: the loop. 1, the expert grades a draft in the review screen and the grade and comment are stored; 2, I read them and steer the coding agent; 3, the coding agent implements; 4 and 5, evals and CI check it; then it ships into the support agent.',
+      'Highlighted: the loop. 1, the expert grades a draft in the review screen and the grade and comment are stored; 2, I read them and steer the coding agent; 3, the coding agent implements; 4, evals and CI check it; then it ships into the support agent.',
   },
   before: {
     focus: ['comment', 'me', 'plan', 'coder', 'compile', 'tests', 'ships', 'spec', 'it'],
     meCodes: true,
-    tags: [{ on: 'me', text: 'Bottleneck' }],
-    description: 'Before coding agents: I read the feedback, write the code and ask IT for endpoints myself; everything goes through me, the bottleneck.',
+    tags: [{ on: 'coder', text: 'Bottleneck' }],
+    description: 'Before coding agents: I read the feedback, write the code and ask IT for endpoints myself; writing the code is the bottleneck.',
   },
   today: {
     focus: ['store', 'review', 'expert', 'graded', 'coder', 'spec', 'it'],
     tags: [
       { on: 'expert', text: 'Bottleneck' },
-      { on: 'it', text: 'Bottleneck' },
+      { on: 'it', text: 'Wait' },
     ],
-    description: 'Today: the coding agent writes the code; the bottlenecks are the expert’s grading and the handoff to IT.',
+    description: 'Today: the coding agent writes the code; the bottleneck is the expert’s grading, and the handoff to IT adds a wait.',
   },
   endpoints: {
     focus: ['coder', 'spec', 'it', 'build', 'endpoints', 'reads', 'support'],
-    description: 'Highlighted: the coding agent sends IT a spec; IT builds the endpoint, which becomes the support agent’s read tool.',
+    small: true,
+    description:
+      'Highlighted: the coding agent writes a spec, I hand it to IT, and IT builds the endpoint, which becomes the support agent’s read tool.',
   },
   shadow: {
     focus: [...SHADOW_PATH, 'tickets', 'replay'],
+    small: true,
     description: 'Highlighted: live customer messages through the support agent to the expert, and old tickets replayed offline.',
   },
   'review-screen': {
     focus: ['expert', 'review', 'graded'],
-    tags: [{ on: 'store', text: 'Not this' }],
-    description: 'Highlighted: the expert’s review screen. The store behind it stays greyed out.',
+    tags: [{ on: 'expert', text: 'Build this' }],
+    small: true,
+    description: 'Highlighted: the expert’s review screen, the part worth building. The store behind it stays greyed out.',
   },
   'next-bottleneck': {
     focus: ['me'],
     tags: [{ on: 'me', text: 'Next bottleneck' }],
+    small: true,
     description: 'Highlighted: me, turning feedback into steering for the coding agent, marked as the next bottleneck.',
   },
   'could-be': {
@@ -107,6 +117,7 @@ export const PRESETS = {
   start: {
     focus: SHADOW_PATH,
     tags: [{ on: 'expert', text: 'Build first' }],
+    small: true,
     description: 'Highlighted: the shadow path, the store and the expert’s review screen, the first thing to build.',
   },
 } satisfies Record<string, Preset>;
@@ -118,9 +129,11 @@ interface Layout {
   height: number;
   /** Bigger in the narrow layout, which is shown smaller. */
   labelSize?: number;
+  /** The font size of a preset's pills. */
+  tagSize?: number;
   N: Record<NodeId, Point>;
-  /** Paths for each edge; `rides` puts the comment or the plan on it. */
-  edges: Record<Exclude<EdgeId, 'compile'>, { d: string; dashed?: boolean; rides?: { at: Point; icon: 'comment' | 'plan' } }>;
+  /** Paths for each edge; `rides` puts the comment, the plan or the person passing the spec on it. */
+  edges: Record<Exclude<EdgeId, 'compile'>, { d: string; dashed?: boolean; rides?: { at: Point; icon: 'comment' | 'plan' | 'person' } }>;
   /** The coding agent's loop with evals and CI: there and back. */
   compile: [string, string];
   labels: Record<NodeId, Point & { anchor?: 'start' | 'middle' | 'end' }>;
@@ -157,7 +170,8 @@ const WIDE: Layout = (() => {
       comment: { d: 'M334,192 C470,192 520,130 578,98', rides: { at: { x: 470, y: 172 }, icon: 'comment' } },
       plan: { d: `M${N.me.x},${N.me.y + 40} V${N.coder.y - 46}`, rides: { at: { x: 620, y: 192 }, icon: 'plan' } },
       ships: { d: `M${N.coder.x - 50},300 H${N.support.x + 88}` },
-      spec: { d: `M${N.coder.x + 40},${N.coder.y + 36} C720,350 ${N.it.x},380 ${N.it.x},${N.it.y - 40}` },
+      // The spec reaches IT through me, pinging someone on Teams.
+      spec: { d: `M${N.coder.x + 40},${N.coder.y + 36} C720,350 ${N.it.x},380 ${N.it.x},${N.it.y - 40}`, rides: { at: { x: 742, y: 380 }, icon: 'person' } },
       build: { d: `M${N.it.x - 46},470 H${N.endpoints.x + 46}` },
       reads: { d: `M${N.endpoints.x},${N.endpoints.y - 34} C${N.endpoints.x},380 470,330 ${N.support.x + 88},330` },
     },
@@ -167,7 +181,7 @@ const WIDE: Layout = (() => {
     ],
     labels: {
       customers: { x: 86, y: 356 },
-      tickets: { x: 86, y: 522 },
+      tickets: { x: 86, y: 538 },
       support: { x: 300, y: 372 },
       store: { x: 0, y: 0 },
       expert: { x: 362, y: 150 },
@@ -185,11 +199,12 @@ const WIDE: Layout = (() => {
     },
     tags: {
       expert: { x: 110, y: 84 },
-      store: { x: 110, y: 196 },
-      me: { x: 770, y: 84 },
+      // Up and to the right, clear of step 2's badge in the small map's bigger pills.
+      me: { x: 792, y: 76 },
+      coder: { x: 620, y: 414 },
       it: { x: 870, y: 410 },
     },
-    harness: { x: 200, y: 30, w: 190, h: 206, label: { x: 190, y: 160, anchor: 'end' } },
+    harness: { x: 200, y: 30, w: 218, h: 206, label: { x: 190, y: 160, anchor: 'end' } },
   };
 })();
 
@@ -225,7 +240,7 @@ const TALL: Layout = (() => {
       comment: { d: 'M188,356 C320,356 400,410 440,452', rides: { at: { x: 330, y: 372 }, icon: 'comment' } },
       plan: { d: 'M480,436 V280', rides: { at: { x: 480, y: 358 }, icon: 'plan' } },
       ships: { d: 'M430,240 H240' },
-      spec: { d: 'M526,256 C618,330 618,570 528,604' },
+      spec: { d: 'M526,256 C618,330 618,570 528,604', rides: { at: { x: 592, y: 400 }, icon: 'person' } },
       build: { d: 'M434,626 H188' },
       reads: { d: 'M116,616 C36,580 28,280 60,262' },
     },
@@ -249,9 +264,10 @@ const TALL: Layout = (() => {
       tests: { x: 424, y: 76 },
     },
     tags: {
-      expert: { x: 350, y: 522 },
-      store: { x: 362, y: 424 },
-      me: { x: 384, y: 540 },
+      expert: { x: 372, y: 520 },
+      // Under the label, clear of the spec's curve on the right.
+      me: { x: 436, y: 578 },
+      coder: { x: 335, y: 266 },
       it: { x: 340, y: 664 },
     },
     harness: { x: 70, y: 318, w: 236, h: 196, label: { x: 74, y: 548, anchor: 'start' } },
@@ -270,7 +286,7 @@ const LABELS: Partial<Record<NodeId, string>> = {
   endpoints: 'Endpoints',
 };
 
-const STEPS: Partial<Record<NodeId, string>> = { expert: '1', me: '2', coder: '3', tests: '4 5' };
+const STEPS: Partial<Record<NodeId, string>> = { expert: '1', me: '2', coder: '3', tests: '4' };
 
 function Dim({ on, children }: { on: boolean; children: ReactNode }) {
   return (
@@ -427,10 +443,17 @@ function MapSvg({ layout, preset, id, className }: { layout: Layout; preset: Pre
         return (
           <Dim key={e} on={on(e)}>
             <path d={edge.d} fill="none" stroke={color('node-border')} strokeWidth={2.5} strokeDasharray={edge.dashed ? '7 6' : undefined} markerEnd={`url(#${marker})`} />
-            {edge.rides && (
+            {/* Before coding agents the spec comes from me already, so nobody passes it on. */}
+            {edge.rides && !(edge.rides.icon === 'person' && p.meCodes) && (
               <g transform={`translate(${edge.rides.at.x} ${edge.rides.at.y})`}>
                 <circle r={26} fill={color('surface')} />
-                {edge.rides.icon === 'comment' ? <Comment x={0} y={0} /> : <Reply x={0} y={0} stroke={color('added')} scale={1.2} />}
+                {edge.rides.icon === 'comment' ? (
+                  <Comment x={0} y={0} />
+                ) : edge.rides.icon === 'person' ? (
+                  <Person x={0} y={0} scale={1.1} fill={color('text')} />
+                ) : (
+                  <Reply x={0} y={0} stroke={color('added')} scale={1.2} />
+                )}
               </g>
             )}
           </Dim>
@@ -463,10 +486,12 @@ function MapSvg({ layout, preset, id, className }: { layout: Layout; preset: Pre
 
       {(p.tags ?? []).map((t) => {
         const at = layout.tags[t.on]!;
+        const size = layout.tagSize ?? 19;
+        const width = t.text.length * size * 0.59 + 44;
         return (
           <g key={t.on} transform={`translate(${at.x} ${at.y})`}>
-            <rect x={-(t.text.length * 5.6 + 22)} y={-19} width={t.text.length * 11.2 + 44} height={38} rx={19} fill={color('warn')} />
-            <text y={0} dy="0.35em" textAnchor="middle" fontSize={19} fontWeight={700} fill="#1f2937">
+            <rect x={-width / 2} y={-size} width={width} height={size * 2} rx={size} fill={color('warn')} />
+            <text y={0} dy="0.35em" textAnchor="middle" fontSize={size} fontWeight={700} fill="#1f2937">
               {t.text}
             </text>
           </g>
@@ -476,12 +501,23 @@ function MapSvg({ layout, preset, id, className }: { layout: Layout; preset: Pre
   );
 }
 
+/**
+ * The wide map drawn at about two thirds of the column: bigger type, so it
+ * stays readable, with two labels nudged clear of the lines next to them.
+ */
+const WIDE_SMALL: Layout = {
+  ...WIDE,
+  labelSize: 25,
+  tagSize: 23,
+  labels: { ...WIDE.labels, expert: { x: 368, y: 150 }, coder: { x: 610, y: 368 } },
+};
+
 /** Both layouts; SystemMap.astro shows the one that fits the figure's width. */
 export default function SystemMap({ preset, id }: { preset: PresetName; id: string }) {
   const p: Preset = PRESETS[preset];
   return (
     <>
-      <MapSvg layout={WIDE} preset={p} id={`${id}-wide`} className="map-wide" />
+      <MapSvg layout={p.small ? WIDE_SMALL : WIDE} preset={p} id={`${id}-wide`} className="map-wide" />
       <MapSvg layout={TALL} preset={p} id={`${id}-tall`} className="map-tall" />
     </>
   );
