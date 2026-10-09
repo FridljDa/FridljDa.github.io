@@ -8,15 +8,17 @@
  * light and dark themes.
  *
  * With no arguments, renders every mockup in DEFAULT_TARGETS:
- * scripts/mockups/sme-review-screen.html twice, the whole screen to
- * sme-review-screen.png and the customer's message on its own to
- * customer-message.png, both in src/assets/images/blog/the-missing-compiler/;
- * and scripts/mockups/support-message.html, its customer message and the
+ * scripts/mockups/sme-review-screen.html at each stage of the loop to
+ * review-screen-<stage>.png, and the customer's message on its own to
+ * customer-message.png, both in src/assets/images/blog/the-missing-compiler/,
+ * plus the whole screen, light only, for the post's LinkedIn repost; and
+ * scripts/mockups/support-message.html, its customer message and the
  * extraction figure, to src/assets/images/blog/first-level-support-automation/.
  * Any other file without --out is written next to its HTML source.
  *
- * Each target is also rendered with html.dark to <name>-dark.png, which
- * ThemedImage.astro shows instead when the site is in dark mode.
+ * A target's stage is set as the class stage-<stage> on <html>. Each target
+ * is also rendered with html.dark to <name>-dark.png, which ThemedImage.astro
+ * shows instead when the site is in dark mode, unless it is lightOnly.
  */
 
 import { mkdir } from 'node:fs/promises';
@@ -29,7 +31,13 @@ const COMPILER_DIR = 'src/assets/images/blog/the-missing-compiler';
 const SUPPORT_FILE = 'scripts/mockups/support-message.html';
 const SUPPORT_DIR = 'src/assets/images/blog/first-level-support-automation';
 const DEFAULT_TARGETS = [
-  { file: DEFAULT_FILE, selector: '#mockup', out: `${COMPILER_DIR}/sme-review-screen.png` },
+  ...['reply', 'graded', 'fix'].map((stage) => ({
+    file: DEFAULT_FILE,
+    selector: '#mockup',
+    stage,
+    out: `${COMPILER_DIR}/review-screen-${stage}.png`,
+  })),
+  { file: DEFAULT_FILE, selector: '#mockup', out: `${COMPILER_DIR}/linkedin/review-screen.png`, lightOnly: true },
   { file: DEFAULT_FILE, selector: '#customer-message', out: `${COMPILER_DIR}/customer-message.png` },
   { file: SUPPORT_FILE, selector: '#customer-message', out: `${SUPPORT_DIR}/customer-message.png` },
   { file: SUPPORT_FILE, selector: '#extraction', out: `${SUPPORT_DIR}/extraction.png` },
@@ -72,13 +80,20 @@ async function main() {
       viewport: { width: 1200, height: 800 },
       deviceScaleFactor: opts.scale,
     });
-    const shots = opts.targets.flatMap(({ file, selector, out }) => [
-      { file, selector, out, dark: false },
-      { file, selector, out: out.replace(/\.png$/, '-dark.png'), dark: true },
+    const shots = opts.targets.flatMap(({ file, selector, stage, out, lightOnly }) => [
+      { file, selector, stage, out, dark: false },
+      ...(lightOnly ? [] : [{ file, selector, stage, out: out.replace(/\.png$/, '-dark.png'), dark: true }]),
     ]);
-    for (const { file, selector, out, dark } of shots) {
+    for (const { file, selector, stage, out, dark } of shots) {
       await page.goto(pathToFileURL(resolve(file)).href);
-      await page.evaluate((dark) => document.documentElement.classList.toggle('dark', dark), dark);
+      await page.evaluate(
+        ({ stage, dark }) => {
+          const { classList } = document.documentElement;
+          if (stage) classList.add(`stage-${stage}`);
+          classList.toggle('dark', dark);
+        },
+        { stage, dark },
+      );
       await page.evaluate(() => document.fonts.ready);
 
       const element = page.locator(selector);

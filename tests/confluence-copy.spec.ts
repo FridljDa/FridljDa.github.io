@@ -22,8 +22,8 @@ test.describe('Confluence copy of a post', () => {
     expect(urls).toContain('https://danielfridljand.de/images/blog/the-missing-compiler/shadow-timeline.png');
     expect(urls).toContain('https://danielfridljand.de/images/blog/the-missing-compiler/map-grade.png');
     // Themed figures paste their light version only.
-    expect(urls).toContain('https://danielfridljand.de/images/blog/the-missing-compiler/sme-review-screen.png');
-    expect(urls).not.toContain('https://danielfridljand.de/images/blog/the-missing-compiler/sme-review-screen-dark.png');
+    expect(urls).toContain('https://danielfridljand.de/images/blog/the-missing-compiler/review-screen-graded.png');
+    expect(urls).not.toContain('https://danielfridljand.de/images/blog/the-missing-compiler/review-screen-graded-dark.png');
   });
 
   test('the post itself keeps its drawn figures', async ({ page }) => {
