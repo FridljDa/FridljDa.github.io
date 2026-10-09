@@ -16,7 +16,7 @@ import ShadowTimeline from '../../components/ShadowTimeline.astro';
 import ThemedImage from '../../components/ThemedImage.astro';
 
 ## TL;DR
-The question hanging over coding agents is what becomes the bottleneck once code is cheap. On an LLM support automation, the answer was concrete: the subject-matter experts. Coding agents get a free verdict on every attempt from tests and compilers; a business process has none, so the only verdict is someone who knows the business reading the output. Once code was cheap, their time set the pace, and so, to a lesser degree, did the IT team that built every endpoint the agent needed. Plan the project around it: get into shadow deployment early, build the review screen rather than the plumbing, and expect the bottleneck to move again.
+The question hanging over coding agents is what becomes the bottleneck once code is cheap. On an LLM support automation, the answer was concrete: the subject-matter experts. Coding agents get a free verdict on every attempt from tests and compilers; a business process has none, so the only verdict is someone who knows the business reading the output. Once code was cheap, their time set the pace. Plan the project around it: get into shadow deployment early, and build the review screen rather than the plumbing.
 
 <SystemMap preset="overview" />
 
@@ -56,11 +56,17 @@ My part was the harness for that feedback: the review screen, its rejection cate
 
 <SystemMap preset="grade" />
 
-Experts grade a batch of shadow responses in a review screen that shows them the customer's message and the proposed reply, and asks what is wrong with it: a verdict, a rejection category and free-text feedback, stored with the case.
+Experts grade a batch of shadow responses in a review screen that shows them the customer's message and the proposed reply:
 
-<ThemedImage src="/images/blog/the-missing-compiler/sme-review-screen.png" alt={"Mocked-up review screen: the customer's locked-account message, the proposed reply asking for an email address, the verdict Reject with the rejection reason \"Wrong process\" selected, the reviewer's comment explaining the unwritten rules for locked accounts, and my comment for the coding agent describing the fix: a new Account locked intent that looks the customer up and branches on the security flag."} />
+<ThemedImage src="/images/blog/the-missing-compiler/review-screen-reply.png" alt={"Mocked-up review screen: the customer's locked-account message and the proposed reply, which asks for the email address on the account. The verdict, rejection reason and comments below are still empty."} />
 
-*Steps 1 and 2, mocked up: a reply graded "Wrong process", the reviewer's reasoning, and my comment for the coding agent.*
+*The review screen, mocked up: a draft waiting for its grade.*
+
+It asks what is wrong with the reply: a verdict, a rejection category and free-text feedback, stored with the case.
+
+<ThemedImage src="/images/blog/the-missing-compiler/review-screen-graded.png" alt={"The same review screen, graded: verdict Reject, rejection reason \"Wrong process\", and the reviewer's comment: we have the account number, so look them up and never ask for what we can find; locked accounts get the unlock link, or go to security if flagged."} />
+
+*The expert's grade: "Wrong process", and why.*
 
 This is where the verdict comes from, and the knowledge in it is mostly tacit. The people who know a business can rarely write its rules down in advance, but shown a specific draft, they can tell you at a glance what is wrong with it. The reviewer's comment above is exactly that: two rules nobody had written down, prompted by a single reply that broke both. Grading a concrete reply is a far cheaper way to extract a rule than asking for its specification. So the loop has a second job: besides standing in for the verdict a coding agent gets for free, it is the extraction tool for knowledge that exists only in people's heads.
 
@@ -68,7 +74,11 @@ This is where the verdict comes from, and the knowledge in it is mostly tacit. T
 
 <SystemMap preset="specify" />
 
-I read the stored feedback and add my own comment to the ticket, next to the expert's, saying at a high level what the solution should look like: the last comment in the mockup above.
+I read the stored feedback and add my own comment to the ticket, next to the expert's, saying at a high level what the solution should look like:
+
+<ThemedImage src="/images/blog/the-missing-compiler/review-screen-fix.png" alt={"The same review screen with my comment added below the reviewer's: for the coding agent, add an Account locked intent that looks the customer up by account number, then sends the unlock link, or routes to security if the account is flagged."} />
+
+*My comment for the coding agent.*
 
 ### 3. The coding agent implements it overnight
 

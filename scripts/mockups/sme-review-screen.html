@@ -4,9 +4,13 @@
   (the-missing-compiler, "The loop we built", step 1).
 
   Render to PNG with:  npm run mockup:png
-  That writes the whole screen (#mockup) and, separately, the customer's
-  message (#customer-message), which the posts show in place of a quote,
-  each in a light and a dark version (<name>.png and <name>-dark.png).
+  That writes the screen (#mockup) at three stages of the loop, set as a
+  class on <html>: stage-reply (the drafted reply), stage-graded (the
+  expert's grade and comment) and stage-fix (my comment for the coding
+  agent). Without a stage class it shows everything at full strength, which
+  is what the LinkedIn repost uses. It also writes the customer's message
+  (#customer-message) on its own, which the posts show in place of a quote.
+  Each in a light and a dark version (<name>.png and <name>-dark.png).
   Everything is fictional and follows the Northstar Bank framing used in the
   posts. Keep it that way: no real vendors, intents, names or dates.
 -->
@@ -62,15 +66,6 @@
     border-radius: 12px;
     overflow: hidden;
   }
-
-  .details-header {
-    padding: 8px 16px;
-    background: var(--panel);
-    border-bottom: 1px solid var(--border);
-    font-size: 13px;
-    color: var(--muted);
-  }
-  .details-header .chevron { display: inline-block; margin-right: 6px; }
 
   .body { padding: 16px 16px 18px; }
 
@@ -152,18 +147,34 @@
   .verdict .btn svg { width: 14px; height: 14px; }
   .btn.approve { color: var(--ok); border-color: var(--ok); }
   .rejected { color: var(--bad); font-weight: 650; }
-  .btn.small { display: inline-block; padding: 6px 10px; }
-  .actions { margin-top: 10px; }
+  .empty { padding: 10px 12px; color: var(--muted); font-size: 13px; }
+
+  /* Stages, like the post's maps: the stage's own part at full strength, the
+     rest greyed out, and what hasn't happened yet left empty. */
+  html[class*="stage-"] .part { opacity: 0.3; filter: grayscale(1); }
+  html.stage-reply .part.reply,
+  html.stage-graded .part.graded,
+  html.stage-fix .part.fix { opacity: 1; filter: none; }
+  html.stage-reply .graded-on,
+  html.stage-reply .fix-on,
+  html.stage-graded .fix-on { display: none; }
+  html:not(.stage-reply) .empty { display: none; }
+  html.stage-reply .btn.selected {
+    background: var(--panel);
+    border-color: var(--border);
+    color: var(--text);
+    font-weight: inherit;
+  }
+  html.stage-reply .verdict .btn.selected { font-weight: 650; }
+  html.stage-reply .btn.reject { color: var(--bad); border-color: var(--bad); }
 
 </style>
 </head>
 <body>
 <div id="mockup">
-  <div class="details-header"><span class="chevron">&#9662;</span>Details</div>
-
   <div class="body">
-    <div class="section">
-      <h3>Conversation history</h3>
+    <div class="section part reply">
+      <h3>Customer message</h3>
       <div class="panel" id="customer-message">
         <div class="msg">
           <div class="avatar customer">
@@ -177,7 +188,7 @@
       </div>
     </div>
 
-    <div class="section">
+    <div class="section part reply">
       <h3>Suggested reply</h3>
       <div class="panel">
         <div class="msg">
@@ -185,11 +196,10 @@
             <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="2" y="3.5" width="12" height="9" rx="1.5"/><path d="M2.5 4.5 8 9l5.5-4.5"/></svg>
           </div>
           <div>
-            <div class="meta"><b>Proposed reply</b> · <span class="chip">email</span></div>
+            <div class="meta"><b>Support agent</b> · <span class="chip">email</span></div>
             <p>Dear Alex Carter,</p>
-            <p>Thank you for your message.</p>
-            <p>To help you with your login problem, we need the email address you used when you opened your account. Please send it to us in reply to this message.</p>
-            <p>Kind regards,<br>Northstar Bank Customer Support</p>
+            <p>To help with your login, please reply with the email address on your account.</p>
+            <p>Kind regards,<br>Northstar Bank</p>
           </div>
         </div>
       </div>
@@ -197,68 +207,57 @@
 
     <hr>
 
-    <div class="section">
+    <div class="section part graded">
       <h3>Verdict</h3>
       <div class="verdict">
         <div class="btn approve">
           <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7.2l2.6 2.6L11 4.2"/></svg>
           Approve
         </div>
-        <div class="btn selected">
+        <div class="btn reject selected">
           <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3.5 3.5l7 7M10.5 3.5l-7 7"/></svg>
           Reject
         </div>
       </div>
     </div>
 
-    <div class="section">
+    <div class="section part graded">
       <h3>Rejection reason</h3>
       <div class="grid">
-        <div class="btn">Uncategorized rejection</div>
-        <div class="btn">Wording discrepancies</div>
+        <div class="btn">Uncategorized</div>
+        <div class="btn">Wording</div>
         <div class="btn selected">Wrong process</div>
-        <div class="btn">Long tail / niche</div>
-        <div class="btn">Staff found the record, AI could not</div>
-        <div class="btn">AI found data, staff cannot verify</div>
+        <div class="btn">Long tail</div>
+        <div class="btn">AI missed record</div>
+        <div class="btn">Unverifiable data</div>
       </div>
-      <div class="actions"><span class="btn small">Resubmit</span></div>
     </div>
 
     <hr>
 
-    <div class="section">
+    <div class="section part graded fix">
       <h3>Comments</h3>
       <div class="panel">
-        <div class="msg">
+        <div class="empty">No comments yet</div>
+        <div class="msg part graded graded-on">
           <div class="avatar">
             <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M2.5 3.5h11v7h-6l-3 2.5v-2.5h-2z"/></svg>
           </div>
           <div>
-            <div class="meta"><b>Jordan M.</b> · Account services · 2026-03-12 14:05</div>
-            <p>They already gave us their account number, so we can look them up. Never ask for something we can find ourselves. And we don't sort out locked accounts by email: if there's no security flag, send the self-service unlock link; if there is one, it goes to the security team, not back to the customer.</p>
+            <div class="meta"><b>Jordan M.</b> · Account services</div>
+            <p>We have the account number, so look them up: never ask for what we can find. Locked accounts get the unlock link, or go to security if flagged.</p>
           </div>
         </div>
-        <div class="msg">
-          <div class="avatar">
-            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M2.5 2.5h5.2l5.8 5.8-5.2 5.2-5.8-5.8z"/><circle cx="5.3" cy="5.3" r="0.9"/></svg>
-          </div>
-          <div>
-            <div class="meta"><b>Jordan M.</b> · 2026-03-12 14:05</div>
-            <p><b>Annotation:</b> Wrong process</p>
-            <p><b>Verdict:</b> <span class="rejected">Rejected</span></p>
-          </div>
-        </div>
-        <div class="msg">
+        <div class="msg part fix fix-on">
           <div class="avatar">
             <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M2.5 3.5h11v7h-6l-3 2.5v-2.5h-2z"/></svg>
           </div>
           <div>
-            <div class="meta"><b>Daniel F.</b> · Engineering · 2026-03-13 09:20</div>
-            <p>For the coding agent: this needs its own intent, Account locked, under Account access. Look the customer up by the account number in the message and check the security flag. No flag: reply with the self-service unlock link. Flag: route it to the security team instead of replying. Never ask for anything the lookup already returns. Add this ticket to the evals.</p>
+            <div class="meta"><b>Daniel F.</b> · Engineering</div>
+            <p>For the coding agent: add an Account locked intent. Look the customer up by account number, then send the unlock link, or route to security if flagged.</p>
           </div>
         </div>
       </div>
-
     </div>
   </div>
 </div>

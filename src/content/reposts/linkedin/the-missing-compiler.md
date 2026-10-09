@@ -1,7 +1,7 @@
 ---
 status: draft
 images:
-  - /images/blog/the-missing-compiler/sme-review-screen.png
+  - /images/blog/the-missing-compiler/linkedin/review-screen.png
 firstComment: |
   The full post, with the feedback loop we built and what I would do differently: https://danielfridljand.de/post/the-missing-compiler
 ---
