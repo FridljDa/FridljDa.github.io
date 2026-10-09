@@ -34,7 +34,7 @@ test.describe('Loop animations', () => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto(SUPPORT);
     await expect(page.locator('figure.loop-animation [data-ready]')).toBeAttached();
-    // Polled: until the post's Mermaid diagrams render, their source widens the page on its own.
+    // Polled: until the post's figures settle, the page can be briefly wider.
     await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
   });
 

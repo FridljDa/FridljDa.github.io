@@ -1,0 +1,36 @@
+---
+/**
+ * One of the step figures of first-level-support-automation (see
+ * PipelineFigures.tsx). Rendered on the server, no JavaScript.
+ *
+ * A paste into Confluence drops inline SVG, so the Confluence copy shows a PNG
+ * of the figure, <name>.png in the post's image folder. Regenerate them after
+ * changing a figure: npm run confluence:figures
+ */
+import { FIGURES, type FigureName } from './PipelineFigures';
+import './loop-animation.css';
+
+interface Props {
+  name: FigureName;
+}
+
+const { name } = Astro.props;
+const { component: Figure, description, width } = FIGURES[name];
+const png = `/images/blog/${Astro.params.slug}/${name}.png`;
+---
+
+{Astro.locals.confluence ? (
+  <img src={png} alt={description} />
+) : (
+  <figure class="pipeline-figure not-prose my-8" data-confluence-png={png}>
+    <div class="frame" style={`max-width: ${width}px`}>
+      <Figure />
+    </div>
+  </figure>
+)}
+
+<style>
+  .pipeline-figure .frame {
+    margin: 0 auto;
+  }
+</style>

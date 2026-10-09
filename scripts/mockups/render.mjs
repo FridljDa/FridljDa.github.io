@@ -7,9 +7,12 @@
  * transparent background outside it, so rounded corners sit cleanly on both
  * light and dark themes.
  *
- * With no arguments, renders scripts/mockups/sme-review-screen.html twice: the
- * whole screen to sme-review-screen.png and the customer's message on its own
- * to customer-message.png, both in src/assets/images/blog/the-missing-compiler/.
+ * With no arguments, renders every mockup in DEFAULT_TARGETS:
+ * scripts/mockups/sme-review-screen.html twice, the whole screen to
+ * sme-review-screen.png and the customer's message on its own to
+ * customer-message.png, both in src/assets/images/blog/the-missing-compiler/;
+ * and scripts/mockups/support-message.html, its customer message and the
+ * extraction figure, to src/assets/images/blog/first-level-support-automation/.
  * Any other file without --out is written next to its HTML source.
  *
  * Each target is also rendered with html.dark to <name>-dark.png, which
@@ -22,10 +25,14 @@ import { pathToFileURL } from 'node:url';
 import { chromium } from 'playwright';
 
 const DEFAULT_FILE = 'scripts/mockups/sme-review-screen.html';
-const DEFAULT_DIR = 'src/assets/images/blog/the-missing-compiler';
+const COMPILER_DIR = 'src/assets/images/blog/the-missing-compiler';
+const SUPPORT_FILE = 'scripts/mockups/support-message.html';
+const SUPPORT_DIR = 'src/assets/images/blog/first-level-support-automation';
 const DEFAULT_TARGETS = [
-  { selector: '#mockup', out: `${DEFAULT_DIR}/sme-review-screen.png` },
-  { selector: '#customer-message', out: `${DEFAULT_DIR}/customer-message.png` },
+  { file: DEFAULT_FILE, selector: '#mockup', out: `${COMPILER_DIR}/sme-review-screen.png` },
+  { file: DEFAULT_FILE, selector: '#customer-message', out: `${COMPILER_DIR}/customer-message.png` },
+  { file: SUPPORT_FILE, selector: '#customer-message', out: `${SUPPORT_DIR}/customer-message.png` },
+  { file: SUPPORT_FILE, selector: '#extraction', out: `${SUPPORT_DIR}/extraction.png` },
 ];
 
 function parseArgs(argv) {
@@ -45,15 +52,14 @@ function parseArgs(argv) {
     throw new Error('--scale must be a positive number');
   }
   if (!opts.file && !opts.out && !opts.selector) {
-    return { file: DEFAULT_FILE, scale: opts.scale, targets: DEFAULT_TARGETS };
+    return { scale: opts.scale, targets: DEFAULT_TARGETS };
   }
   opts.file ??= DEFAULT_FILE;
   opts.out ??= opts.file.replace(/\.html?$/, '') + '.png';
   opts.selector ??= '#mockup';
   return {
-    file: opts.file,
     scale: opts.scale,
-    targets: [{ selector: opts.selector, out: opts.out }],
+    targets: [{ file: opts.file, selector: opts.selector, out: opts.out }],
   };
 }
 
@@ -66,12 +72,12 @@ async function main() {
       viewport: { width: 1200, height: 800 },
       deviceScaleFactor: opts.scale,
     });
-    const shots = opts.targets.flatMap(({ selector, out }) => [
-      { selector, out, dark: false },
-      { selector, out: out.replace(/\.png$/, '-dark.png'), dark: true },
+    const shots = opts.targets.flatMap(({ file, selector, out }) => [
+      { file, selector, out, dark: false },
+      { file, selector, out: out.replace(/\.png$/, '-dark.png'), dark: true },
     ]);
-    for (const { selector, out, dark } of shots) {
-      await page.goto(pathToFileURL(resolve(opts.file)).href);
+    for (const { file, selector, out, dark } of shots) {
+      await page.goto(pathToFileURL(resolve(file)).href);
       await page.evaluate((dark) => document.documentElement.classList.toggle('dark', dark), dark);
       await page.evaluate(() => document.fonts.ready);
 

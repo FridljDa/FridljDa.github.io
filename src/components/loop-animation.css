@@ -1,8 +1,10 @@
-/* Theme for the Remotion compositions in src/remotion/ and the system map,
-   which read these variables and fall back to the light values when rendered
-   elsewhere. */
+/* Theme for the Remotion compositions in src/remotion/ and the drawn figures
+   (system map, pipeline map, pipeline figures), which read these variables and
+   fall back to the light values when rendered elsewhere. */
 .loop-animation,
-.system-map {
+.system-map,
+.pipeline-map,
+.pipeline-figure {
   --lv-surface: #ffffff;
   --lv-text: #1f2937;
   --lv-muted: #6b7280;
@@ -18,7 +20,9 @@
   --lv-warn: #e9a23b;
 }
 .dark .loop-animation,
-.dark .system-map {
+.dark .system-map,
+.dark .pipeline-map,
+.dark .pipeline-figure {
   --lv-surface: #111827;
   --lv-text: #f3f4f6;
   --lv-muted: #9ca3af;

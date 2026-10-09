@@ -1,0 +1,59 @@
+---
+/**
+ * The pipeline map of first-level-support-automation, with one section's part
+ * highlighted (see PipelineMap.tsx for the presets). Rendered on the server,
+ * no JavaScript.
+ *
+ * A paste into Confluence drops inline SVG, so the Confluence copy shows a PNG
+ * of each preset, map-<preset>.png in the post's image folder. Regenerate them
+ * after changing the map: npm run confluence:figures
+ */
+import PipelineMapSvg, { PRESETS, type Preset, type PresetName } from './PipelineMap';
+import './loop-animation.css';
+
+interface Props {
+  preset: PresetName;
+}
+
+const { preset } = Astro.props;
+const { description, small }: Preset = PRESETS[preset];
+const png = `/images/blog/${Astro.params.slug}/map-${preset}.png`;
+---
+
+{Astro.locals.confluence ? (
+  <img src={png} alt={description} />
+) : (
+  <figure class:list={['pipeline-map not-prose my-8', { small }]} data-confluence-png={png}>
+    <div class="frame">
+      <PipelineMapSvg preset={preset} id={`map-${preset}`} />
+    </div>
+  </figure>
+)}
+
+<style>
+  /* As in SystemMap.astro: below this width the wide map's labels get too
+     small, so phones get the top-to-bottom layout instead. */
+  .pipeline-map {
+    container-type: inline-size;
+  }
+  .pipeline-map :global(svg) {
+    display: block;
+  }
+  .pipeline-map :global(.map-tall) {
+    display: none;
+  }
+  :global(.prose) .pipeline-map.small .frame {
+    max-width: 440px;
+    margin: 0 auto;
+  }
+  @container (max-width: 560px) {
+    .pipeline-map :global(.map-wide) {
+      display: none;
+    }
+    .pipeline-map :global(.map-tall) {
+      display: block;
+      max-width: 400px;
+      margin: 0 auto;
+    }
+  }
+</style>
