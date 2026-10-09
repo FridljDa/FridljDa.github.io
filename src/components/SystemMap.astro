@@ -7,7 +7,7 @@
  * of each preset, map-<preset>.png in the post's image folder. Regenerate them
  * after changing the map: npm run confluence:figures
  */
-import SystemMapSvg, { PRESETS, type PresetName } from './SystemMap';
+import SystemMapSvg, { PRESETS, type Preset, type PresetName } from './SystemMap';
 import './loop-animation.css';
 
 interface Props {
@@ -15,15 +15,17 @@ interface Props {
 }
 
 const { preset } = Astro.props;
-const { description } = PRESETS[preset];
+const { description, small }: Preset = PRESETS[preset];
 const png = `/images/blog/${Astro.params.slug}/map-${preset}.png`;
 ---
 
 {Astro.locals.confluence ? (
   <img src={png} alt={description} />
 ) : (
-  <figure class="system-map not-prose my-8" data-confluence-png={png}>
-    <SystemMapSvg preset={preset} id={`map-${preset}`} />
+  <figure class:list={['system-map not-prose my-8', { small }]} data-confluence-png={png}>
+    <div class="frame">
+      <SystemMapSvg preset={preset} id={`map-${preset}`} />
+    </div>
   </figure>
 )}
 
@@ -38,6 +40,12 @@ const png = `/images/blog/${Astro.params.slug}/map-${preset}.png`;
   }
   .system-map :global(.map-tall) {
     display: none;
+  }
+  /* A map that only shows where a section sits is drawn smaller. Only in the
+     post's column: the Confluence PNG of it stays full size. */
+  :global(.prose) .system-map.small .frame {
+    max-width: 440px;
+    margin: 0 auto;
   }
   @container (max-width: 560px) {
     .system-map :global(.map-wide) {
