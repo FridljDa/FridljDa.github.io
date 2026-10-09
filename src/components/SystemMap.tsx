@@ -54,8 +54,6 @@ export interface Preset {
   description: string;
 }
 
-const LOOP: Preset['focus'] = ['support', 'drafts', 'store', 'review', 'expert', 'graded', 'harness', 'comment', 'me', 'nightly', 'coder', 'compile', 'tests', 'ships'];
-const SHADOW_PATH: Preset['focus'] = ['customers', 'messages', 'support', 'drafts', 'store', 'review', 'expert', 'graded'];
 
 export const PRESETS = {
   overview: {
@@ -73,11 +71,31 @@ export const PRESETS = {
     small: true,
     description: 'Highlighted: customer messages, the support agent that drafts the replies, and the expert, the only verdict a reply can get.',
   },
-  loop: {
-    focus: LOOP,
+  // "The loop we built": where the drafts land, then one map per step.
+  harness: {
+    focus: ['support', 'drafts', 'store', 'harness'],
     small: true,
-    description:
-      'Highlighted: the loop. 1, the expert grades a draft in the review screen and the grade and comment are stored; 2, I read them and store a comment on how to fix it; 3, the coding agent implements it in its nightly run; 4, evals and CI check it; then it ships into the support agent.',
+    description: 'Highlighted: in shadow, the support agent’s drafts land in the feedback store, inside the harness I built around it and the review screen.',
+  },
+  grade: {
+    focus: ['expert', 'review', 'graded', 'store'],
+    small: true,
+    description: 'Highlighted: step 1, the expert grades a draft in the review screen; grade and comment go into the store.',
+  },
+  specify: {
+    focus: ['store', 'comment', 'me'],
+    small: true,
+    description: 'Highlighted: step 2, I read the expert’s comment from the store and store my own on how to fix it.',
+  },
+  implement: {
+    focus: ['store', 'nightly', 'coder'],
+    small: true,
+    description: 'Highlighted: step 3, the coding agent’s nightly run takes the tickets I commented on from the store and implements them.',
+  },
+  check: {
+    focus: ['coder', 'compile', 'tests'],
+    small: true,
+    description: 'Highlighted: step 4, evals and CI check the coding agent’s change, the same check a coding agent gets on every attempt.',
   },
   // The two maps of "The bottleneck moves": who writes the code, and where the bottleneck sits.
   before: {
@@ -99,9 +117,9 @@ export const PRESETS = {
       'Highlighted: the coding agent writes a spec, I hand it to IT, and IT builds the endpoint, which becomes the support agent’s read tool. The handoff to IT adds a wait.',
   },
   shadow: {
-    focus: [...SHADOW_PATH, 'tickets', 'replay'],
+    focus: ['tickets', 'replay', 'support'],
     small: true,
-    description: 'Highlighted: live customer messages through the support agent to the expert, and old tickets replayed offline.',
+    description: 'Highlighted: old tickets replayed through the support agent offline, with no expert to grade the replies.',
   },
   'review-screen': {
     focus: ['expert', 'review', 'graded', 'harness'],
@@ -122,7 +140,7 @@ export const PRESETS = {
     description: 'Highlighted: an agent with skills reading the stored feedback and commenting on how to fix it, where I used to; the coding agent picks it up at night.',
   },
   start: {
-    focus: [...SHADOW_PATH, 'harness'],
+    focus: ['customers', 'messages', 'support', 'drafts', 'store', 'review', 'expert', 'graded', 'harness'],
     tags: [{ on: 'expert', text: 'Build first' }],
     small: true,
     description: 'Highlighted: the shadow path, the store and the expert’s review screen, the first thing to build.',
