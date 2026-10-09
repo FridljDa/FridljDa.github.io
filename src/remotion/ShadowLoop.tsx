@@ -11,8 +11,9 @@
  * DAG on top and the expert, store, me and the coding agent below it.
  *
  * The DAG ends as drawn in first-level-support-automation ("Step 1: Intent
- * recognition"). Nodes never move: every later node already has its slot, so
- * growing only fades in a node or draws in an edge.
+ * recognition"), whose static figure (PipelineFigures.tsx) imports the same
+ * geometry from here. Nodes never move: every later node already has its
+ * slot, so growing only fades in a node or draws in an edge.
  *
  * Everything is a function of the frame, so any frame renders the same way
  * every time; the last one is the resting state (full DAG, all grades).
@@ -48,16 +49,16 @@ interface DagNode {
   w: number;
 }
 
-const NODE_H = 42;
+export const NODE_H = 42;
 const row = (i: number) => 64 + 56 * i;
-const PARENT = { x: 262, w: 172 };
-const LEAF = { x: 514, w: 184 };
+export const PARENT = { x: 262, w: 172 };
+export const LEAF = { x: 514, w: 184 };
 
 const parent = (label: string, y: number, kind: Kind = 'intent'): DagNode => ({ label, kind, ...PARENT, y });
 const leaf = (label: string, i: number, kind: Kind = 'intent'): DagNode => ({ label, kind, ...LEAF, y: row(i) });
 
 // Parents sit level with the middle of their leaves; the shared leaf sits between its two parents.
-const NODES = {
+export const NODES = {
   access: parent('Account access', (row(0) + row(3)) / 2),
   cards: parent('Card services', (row(3) + row(5)) / 2),
   payments: parent('Payments', row(6)),
@@ -70,11 +71,11 @@ const NODES = {
   cardsOther: leaf('Other', 5, 'other'),
 } satisfies Record<string, DagNode>;
 
-type Id = keyof typeof NODES | 'root';
+export type Id = keyof typeof NODES | 'root';
 
-const ROOT: Point & { r: number } = { x: 196, y: (NODES.access.y + NODES.rootOther.y) / 2, r: 30 };
+export const ROOT: Point & { r: number } = { x: 196, y: (NODES.access.y + NODES.rootOther.y) / 2, r: 30 };
 
-const EDGES = [
+export const EDGES = [
   ['root', 'access'],
   ['root', 'cards'],
   ['root', 'payments'],
@@ -90,9 +91,9 @@ const EDGES = [
 
 const edgeKey = (from: Id, to: Id) => `${from}>${to}`;
 
-const outPoint = (id: Id): Point =>
+export const outPoint = (id: Id): Point =>
   id === 'root' ? { x: ROOT.x + ROOT.r, y: ROOT.y } : { x: NODES[id].x + NODES[id].w, y: NODES[id].y };
-const inPoint = (id: Exclude<Id, 'root'>): Point => ({ x: NODES[id].x, y: NODES[id].y });
+export const inPoint = (id: Exclude<Id, 'root'>): Point => ({ x: NODES[id].x, y: NODES[id].y });
 
 /** What a cross teaches the system: a new leaf, or a second parent for an existing one. */
 interface Growth {

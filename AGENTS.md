@@ -16,7 +16,7 @@ Versions of blog posts for other channels live under `src/content/reposts/` and 
 
 ## Figures: one style per post
 
-All figures within a blog post share one visual style: the palette in `src/components/loop-animation.css`, the icons in `src/remotion/shared.tsx`, and short labels instead of explanatory text inside figures. Explanations go in the post's prose or a caption. Raster mockups are rendered in a light and a dark version and shown with `<ThemedImage>`. The Missing Compiler opens every section with `<SystemMap preset="..." />`, the same map with that section's part highlighted.
+All figures within a blog post share one visual style: the palette in `src/components/loop-animation.css`, the icons in `src/remotion/shared.tsx`, and short labels instead of explanatory text inside figures. Explanations go in the post's prose or a caption. Raster mockups are rendered in a light and a dark version and shown with `<ThemedImage>`. The Missing Compiler opens every section with `<SystemMap preset="..." />`, the same map with that section's part highlighted. Architecture of a First-Level Support Automation does the same with `<PipelineMap preset="..." />`, and follows its running example through each step with `<PipelineFigure name="..." />` (`src/components/PipelineFigures.tsx`). Mockups come from `scripts/mockups/` via `npm run mockup:png`; Confluence PNGs of the drawn figures via `npm run confluence:figures`.
 
 ## Animated figures (Remotion)
 

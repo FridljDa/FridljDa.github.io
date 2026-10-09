@@ -15,8 +15,8 @@
  * the rest greyed out, so the post reads as one system seen from different
  * angles. Static: rendered on the server, no JavaScript.
  */
-import type { ReactNode } from 'react';
 import { color, PALETTE, Person, Expert, Agent, Developer, Evals, Comment, Reply, type Point } from '../remotion/shared';
+import { Dim, Badge, Tag, ArrowMarker } from './map-parts';
 
 type NodeId = 'customers' | 'tickets' | 'support' | 'store' | 'expert' | 'me' | 'coder' | 'tests' | 'it' | 'endpoints';
 type EdgeId =
@@ -344,26 +344,6 @@ const LABELS: Partial<Record<NodeId, string>> = {
 
 const STEPS: Partial<Record<NodeId, string>> = { expert: '1', me: '2', coder: '3', tests: '4' };
 
-function Dim({ on, children }: { on: boolean; children: ReactNode }) {
-  return (
-    <g opacity={on ? 1 : 0.22} style={on ? undefined : { filter: 'grayscale(1)' }}>
-      {children}
-    </g>
-  );
-}
-
-const Badge = ({ x, y, text }: Point & { text: string }) => {
-  const w = text.length > 1 ? 40 : 24;
-  return (
-    <g>
-      <rect x={x - w / 2} y={y - 12} width={w} height={24} rx={12} fill={color('added')} />
-      <text x={x} y={y} dy="0.35em" textAnchor="middle" fontSize={15} fontWeight={700} fill="#fff">
-        {text}
-      </text>
-    </g>
-  );
-};
-
 function NodeIcon({ id, at, agentTranslates, meCodes }: { id: NodeId; at: Point; agentTranslates?: boolean; meCodes?: boolean }) {
   const { x, y } = at;
   switch (id) {
@@ -487,9 +467,7 @@ function MapSvg({ layout, preset, id, className }: { layout: Layout; preset: Pre
       style={{ width: '100%', height: 'auto', fontFamily: 'inherit' }}
     >
       <defs>
-        <marker id={marker} viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-          <path d="M0,0 L10,5 L0,10 Z" fill={color('node-border')} />
-        </marker>
+        <ArrowMarker id={marker} />
       </defs>
 
       {/* The harness I built: the review screen and the store behind it */}
@@ -562,19 +540,9 @@ function MapSvg({ layout, preset, id, className }: { layout: Layout; preset: Pre
         );
       })}
 
-      {(p.tags ?? []).map((t) => {
-        const at = layout.tags[t.on]!;
-        const size = layout.tagSize ?? 19;
-        const width = t.text.length * size * 0.59 + 44;
-        return (
-          <g key={t.on} transform={`translate(${at.x} ${at.y})`}>
-            <rect x={-width / 2} y={-size} width={width} height={size * 2} rx={size} fill={color('warn')} />
-            <text y={0} dy="0.35em" textAnchor="middle" fontSize={size} fontWeight={700} fill="#1f2937">
-              {t.text}
-            </text>
-          </g>
-        );
-      })}
+      {(p.tags ?? []).map((t) => (
+        <Tag key={t.on} {...layout.tags[t.on]!} text={t.text} size={layout.tagSize ?? 19} />
+      ))}
     </svg>
   );
 }

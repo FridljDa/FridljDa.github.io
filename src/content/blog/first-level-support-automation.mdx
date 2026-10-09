@@ -1,7 +1,7 @@
 ---
 title: "Architecture of a First-Level Support Automation"
 pubDate: 2026-05-16T00:00:00.000Z
-updatedDate: 2026-07-24T00:00:00.000Z
+updatedDate: 2026-10-09T00:00:00.000Z
 tags:
   - AI
   - Customer Support
@@ -10,91 +10,44 @@ description: "The four-step pipeline we landed on after iterating on live ticket
 image: /images/blog/first-level-support-automation/featured.png
 ---
 
+import PipelineMap from '../../components/PipelineMap.astro';
+import PipelineFigure from '../../components/PipelineFigure.astro';
 import LoopAnimation from '../../components/LoopAnimation.astro';
+import ThemedImage from '../../components/ThemedImage.astro';
 
 Our architecture for first-level customer support splits the problem into small steps, uses LLMs for interpretation, and keeps everything else in code. It is the full version of the workflow approach in [Workflow or Agent](/post/workflow-vs-agent), which also explains why I would now invert its default.
 
 The system turns a customer message into a reply, possibly with attachments, and any required tool calls: updating a record, filing a follow-up ticket, or escalating to a human. A preprocessing layer first normalises inbound attachments.
 
-In the diagrams, **🤖 Agent** is autonomous, **🧠 LLM-assisted step** is a constrained model call, **⚙️ Code step** is deterministic logic, and **🔌 External tool/API** is an external dependency.
+<PipelineMap preset="overview" />
 
-The pipeline has four steps, run as a DAG:
-
-```mermaid
-flowchart TD
-    INPUT(["Customer message<br/>+ attachments"])
-    L1["🧠 LLM-assisted step<br/>intent recognition"]
-    L2["🧠 LLM-assisted step<br/>information extraction"]
-    C1["⚙️ Code step<br/>fetch and score records"]
-    C2["⚙️ Code step<br/>dispatch and plan generation"]
-    A1["🤖 Agent<br/>fallback for an 'other' intent"]
-    OUT(["Reply + tool calls"])
-
-    INPUT -->|"message"| L1
-    INPUT -->|"message"| L2
-    L2 -->|"structured fields"| C1
-    L1 -->|"resolved intent leaf"| C2
-    C1 -->|"candidate records"| C2
-    C2 -->|"known leaf"| OUT
-    C2 -.->|"'other' leaf"| A1
-    A1 -->|"proposed plan"| OUT
-
-    classDef agent fill:#f3e8ff,stroke:#7c3aed,stroke-width:2px,color:#1f2937
-    classDef llm fill:#dbeafe,stroke:#2563eb,stroke-width:2px,color:#1f2937
-    classDef code fill:#dcfce7,stroke:#16a34a,stroke-width:2px,color:#1f2937
-    classDef terminal fill:#f8fafc,stroke:#64748b,stroke-width:1.5px,color:#1f2937
-    class A1 agent
-    class L1,L2 llm
-    class C1,C2 code
-    class INPUT,OUT terminal
-```
-
-Intent recognition and extraction run in parallel. Fetch uses the extracted fields; plan generation combines its results with the resolved intent. Known intents follow code, while an "other" intent uses the fallback agent.
+*The four steps. Intent recognition and extraction are LLM calls and run in parallel; fetch and plan generation are code. An intent of "Other" goes to a fallback agent. Each section below highlights its step.*
 
 We will trace this message through all four steps:
 
-> *I bank with Northstar Bank's Riverton branch. My name is Alex Carter, and my partner is Jamie Carter. Our account number is NSBO1234. We can no longer access the account; it keeps saying it is locked.*
+<ThemedImage src="/images/blog/first-level-support-automation/customer-message.png" alt={"Customer message: I bank with Northstar Bank's Riverton branch. My name is Alex Carter, and my partner is Jamie Carter. Our account number is NSBO1234. We can no longer access the account; it keeps saying it is locked."} />
 
-All details are fictional. The example contains three common complications: an ambiguous intent, two named people, and a `0`/`O` ambiguity in the account number (`NSBO1234` or `NSB01234`).
-
----
+All details are fictional. The message has three common complications: an ambiguous intent, two named people, and a `0`/`O` mix-up in the account number (`NSBO1234` or `NSB01234`).
 
 ## Step 1: Intent recognition
 
-We classify the message against a **rooted DAG of intents, biased toward depth 2**. The root contains broad intents ("account access", "payments", "card services", …) and an explicit "other"; most parents contain a few sub-intents and another "other". One constrained LLM call selects the parent, then another selects among its children. These Pydantic AI `Agent` calls have no tools or open-ended loop and return typed outputs. [Type-Safe Hybrid Workflows with Pydantic AI](/post/pydantic-ai-type-safe-hybrid-workflows) covers the mechanics.
+<PipelineMap preset="intent" />
 
-```mermaid
-flowchart LR
-    R(["Customer message"])
-    R --> P1["Account access"]
-    R --> P2["Payments"]
-    R --> P3["Card services"]
-    R --> POT["Other"]
+We classify the message against a **rooted DAG of intents, biased toward depth 2**. The root holds broad intents and an explicit "Other"; most parents hold a few leaves and another "Other". One constrained LLM call picks the parent, a second picks among its children. These Pydantic AI `Agent` calls have no tools or open-ended loop and return typed outputs; [Type-Safe Hybrid Workflows with Pydantic AI](/post/pydantic-ai-type-safe-hybrid-workflows) covers the mechanics.
 
-    P1 --> P1A["Login problem"]
-    P1 --> P1B["Password reset"]
-    P1 --> LOCKED["Account locked"]
-    P1 --> P1OT["Other"]
+<PipelineFigure name="intent-dag" />
 
-    P3 --> P3A["Card blocked"]
-    P3 --> LOCKED
-    P3 --> P3OT["Other"]
+*Alex's message (blue) takes Account access to Account locked. A card-PIN lockout (pink) reaches the same leaf through Card services.*
 
-    classDef intent fill:#f8fafc,stroke:#64748b,stroke-width:1.5px,color:#1f2937
-    classDef selected fill:#dbeafe,stroke:#2563eb,stroke-width:2px,color:#1f2937
-    classDef fallback fill:#fff7ed,stroke:#ea580c,stroke-width:2px,stroke-dasharray:4 4,color:#1f2937
-    class R,P1,P2,P3,P1A,P1B,P3A intent
-    class LOCKED selected
-    class POT,P1OT,P3OT fallback
-```
+**Depth 2 is a bias, not a rule.** Specific parents can resolve at depth 1; rare branches may need a third level. Two is usually deep enough to keep each classification narrow without making the labels hard to maintain.
 
-**Depth 2 is a bias, not a rule.** Specific parents can resolve at depth 1; rare branches may need a third level. Two is usually deep enough to keep each classification narrow without over-classifying or making labels harder to maintain.
-
-**Shared leaves make this a DAG, not a tree.** **Account locked** belongs under both **Account access** and **Card services**. Once either path reaches that leaf, handling is identical. A tree would duplicate the unlock flow; a DAG keeps one plan and makes downstream logic depend on the leaf, not the route.
+**Shared leaves make it a DAG, not a tree.** Whichever route reaches Account locked, the handling is identical. A tree would duplicate the unlock flow; the DAG keeps one plan, and everything downstream depends on the leaf, not the route.
 
 **"Other" makes coverage gaps explicit.** Requests outside the taxonomy land in a visible queue for future intents and route cleanly to less structured handling.
 
-**Expert feedback grows the DAG.** In shadow deployment, subject-matter experts graded every draft. A request they kept flagging in an "other" bucket became a new leaf; one that needed an existing leaf's handling gave that leaf a second parent. [The Missing Compiler](/post/the-missing-compiler) covers that loop.
+**Two narrow calls beat one wide classifier.** Each parent exposes only its own children as a typed `Literal`, so unrelated categories never compete. A shared leaf simply appears in more than one parent's options.
+
+**Expert feedback grows the DAG.** In shadow deployment, subject-matter experts graded every draft. A request they kept flagging in an "Other" bucket became a new leaf; one that needed an existing leaf's handling gave that leaf a second parent. [The Missing Compiler](/post/the-missing-compiler) covers that loop.
 
 <LoopAnimation
   name="shadow-loop"
@@ -103,185 +56,71 @@ flowchart LR
 
 *In shadow deployment the expert grades every drafted reply. Most pass. A fail's comment is stored, I store mine on how to fix it, and the coding agent's nightly run grows the DAG.*
 
-**Two narrow calls beat one wide classifier.** Each parent exposes only its reachable children as a typed `Literal`, avoiding confusion between unrelated categories. Shared leaves simply appear in more than one parent's options.
-
 Intent recognition is also the pipeline's cleanest eval target: labelled conversations yield precision, recall, and a confusion matrix.
-
-Our example resolves to **account access → account locked**, the same leaf a card-PIN lockout could reach through **card services**.
-
----
 
 ## Step 2: Information extraction
 
-In parallel with intent recognition, separate LLM-assisted steps extract **groups** of related fields. Our example uses `People` (names) and `Account` (identifiers and branch). Each group has its own prompt and Pydantic output model, including validation and retries. [The Pydantic AI post](/post/pydantic-ai-type-safe-hybrid-workflows) shows the wiring.
+<PipelineMap preset="extract" />
 
-```mermaid
-flowchart TD
-    MSG(["Customer message"])
+In parallel with intent recognition, separate LLM calls extract **groups** of related fields, each with its own prompt and Pydantic output model, validation and retries. [The Pydantic AI post](/post/pydantic-ai-type-safe-hybrid-workflows) shows the wiring.
 
-    subgraph people["People group"]
-        P_STEP["🧠 LLM-assisted step<br/>People prompt<br/>output: PeopleOutput"]
-        P_FIELDS["Given name · Family name"]
-        P_STEP -->|"typed fields"| P_FIELDS
-    end
+<ThemedImage src="/images/blog/first-level-support-automation/extraction.png" alt={"The customer message with Riverton and NSBO1234 marked for the Account group, and Alex Carter and Jamie Carter for the People group. Below it, the two groups: People with the given names Alex and Jamie and the family name Carter; Account with the account number NSBO1234 and its 0/O variant NSB01234, and the branch Riverton."} />
 
-    subgraph account["Account group"]
-        A_STEP["🧠 LLM-assisted step<br/>Account prompt<br/>output: AccountOutput"]
-        A_FIELDS["Account number · Branch"]
-        A_STEP -->|"typed fields"| A_FIELDS
-    end
+*The example's two groups: People finds both names; Account finds the branch and the account number, and adds its `0`/`O` variant.*
 
-    MSG -->|"message"| P_STEP
-    MSG -->|"message"| A_STEP
-    P_FIELDS --> OUT(["Extracted information"])
-    A_FIELDS --> OUT
-
-    classDef llm fill:#dbeafe,stroke:#2563eb,stroke-width:2px,color:#1f2937
-    classDef data fill:#f8fafc,stroke:#64748b,stroke-width:1.5px,color:#1f2937
-    class P_STEP,A_STEP llm
-    class MSG,P_FIELDS,A_FIELDS,OUT data
-```
-
-**Groups preserve field relationships.** A single prompt can partition "Northstar Bank's Riverton branch" consistently instead of extracting the bank and branch independently and duplicating or losing information.
+**Groups preserve field relationships.** One prompt can split "Northstar Bank's Riverton branch" consistently, instead of extracting the bank and the branch independently and duplicating or losing information.
 
 **Groups are independent eval targets.** A regression is isolated to one dataset and component, which can be tuned, moved to another model, or replaced with NER without affecting the rest.
 
-Across groups, we use the same patterns:
+Every group follows the same rules, all biased toward false positives, because a spurious match is easier to filter out downstream than a lost one is to recover:
 
-| Pattern | Why |
-|---|---|
-| All fields optional | Customers rarely include everything; we extract what is there |
-| List-valued where ambiguous | If two emails are mentioned, both get returned; downstream disambiguates |
-| Automatic alphanumeric variants | `NSBO1234` is stored as `[NSBO1234, NSB01234]` to handle 0/O, 1/I, 5/S confusions |
-| Bias toward false positives | Easier to filter spurious matches downstream than to recover lost signal |
-
-We deliberately over-extract: fetch treats every field as fallible and scores the combined evidence.
-
-The example yields:
-
-- `People`: `Given name: [Alex, Jamie]`, `Family name: [Carter]`
-- `Account`: `Account number: [NSBO1234, NSB01234]`, `Branch: [Riverton]`
-
----
+- **All fields optional:** customers rarely include everything, so we extract what is there.
+- **Lists where ambiguous:** both names come back, and fetch sorts them out.
+- **Automatic variants:** `NSBO1234` also yields `NSB01234`, covering `0`/`O`, `1`/`I` and `5`/`S` mix-ups.
 
 ## Step 3: Fetch
 
-Fetch uses a **weighted-scoring fan-out** to absorb extraction's false positives. Each field triggers a parallel API query; candidate lists are merged by primary ID, adding a field-specific weight for every hit. Strong records accumulate evidence while spurious fields contribute little.
+<PipelineMap preset="fetch" />
 
-```mermaid
-flowchart TD
-    EX(["Extracted information"])
-    Q1["🔌 External tool/API<br/>given_name=Alex<br/>given_name=Jamie"]
-    Q2["🔌 External tool/API<br/>family_name=Carter"]
-    Q3["🔌 External tool/API<br/>account_number=NSBO1234<br/>account_number=NSB01234"]
-    Q4["🔌 External tool/API<br/>branch=Riverton"]
-    C1["⚙️ Code step<br/>merge by primary ID<br/>and sum signal strengths"]
-    C2["⚙️ Code step<br/>keep the maximum score<br/>above the threshold"]
-    OUT(["Candidate records"])
+Fetch uses a **weighted-scoring fan-out** to absorb extraction's false positives. Each field triggers its own API query, in parallel; the hits are merged by record ID, and every field a record matches adds that field's weight to its score. The weights reflect how discriminating a field is: a given name matches many customers, an account number one or none.
 
-    EX -->|"parallel queries"| Q1
-    EX -->|"parallel queries"| Q2
-    EX -->|"parallel queries"| Q3
-    EX -->|"parallel queries"| Q4
-    Q1 -->|"candidate hits"| C1
-    Q2 -->|"candidate hits"| C1
-    Q3 -->|"candidate hits"| C1
-    Q4 -->|"candidate hits"| C1
-    C1 -->|"scored records"| C2
-    C2 --> OUT
+<PipelineFigure name="fetch-scores" />
 
-    classDef code fill:#dcfce7,stroke:#16a34a,stroke-width:2px,color:#1f2937
-    classDef tool fill:#fef3c7,stroke:#d97706,stroke-width:2px,color:#1f2937
-    classDef terminal fill:#f8fafc,stroke:#64748b,stroke-width:1.5px,color:#1f2937
-    class C1,C2 code
-    class Q1,Q2,Q3,Q4 tool
-    class EX,OUT terminal
-```
+*Each candidate record's score, stacked from the fields it matched. Only `acc_001` clears the threshold.*
 
-Weights reflect how discriminating each field is: a first name matches many customers, while an account number matches one or none.
-
-| Field | Weight |
-|---|---|
-| Given name | 1 |
-| Family name | 2 |
-| Branch | 2 |
-| Account number | 5 |
-
-The example produces these simplified hits:
-
-| Record ID | Matched on | Score |
-|---|---|---|
-| `acc_001` | Given name=Alex, Family name=Carter, Branch=Riverton, Account number=NSB01234 | 1 + 2 + 2 + 5 = **10** |
-| `acc_017` | Given name=Jamie, Family name=Carter | 1 + 2 = 3 |
-| `acc_204` | Family name=Carter | 2 |
-| `acc_388` | Given name=Alex | 1 |
-
-`acc_001` is the sole maximum above the threshold, so it wins. Its account-number hit comes from the generated `0`/`O` variant: the customer wrote `NSBO1234`, while the record contains `NSB01234`.
-
-If nothing clears the threshold, fetch returns no record and the plan can request more information.
-
----
+`acc_001` wins on all four fields, and its account-number hit comes from the generated variant: the customer wrote `NSBO1234`, the record says `NSB01234`. Jamie's name and the shared family name pull in three more candidates, none of them close. If nothing clears the threshold, fetch returns no record and the plan can ask for more information.
 
 ## Step 4: Plan generation
 
-Plan generation receives the **resolved intent leaf**, extracted fields, fetched records, and fetch metadata. Dispatch is therefore a keyed lookup, not another classification: converging paths share one plan, so `account_locked` behaves the same whether reached through account access or card services.
+<PipelineMap preset="plan" />
 
-Each known leaf owns a small decision tree over the fetched data: was a record found, is there one candidate, is it flagged? Branches end in a pre-written template plus any tool calls. These trees encode the business logic and grow as patterns emerge. [Workflow or Agent](/post/workflow-vs-agent) explains why we kept them in code, and why I would now make the agent the default instead.
+Plan generation receives the **resolved intent leaf**, the extracted fields, the fetched records and fetch's metadata. Dispatch is a keyed lookup, not another classification, so `account_locked` behaves the same whether the message reached it through account access or card services.
 
-```mermaid
-flowchart TD
-    ROOT(["Resolved intent leaf<br/>+ fetched data"])
-    C1["⚙️ Code step<br/>dispatch on resolved leaf"]
-    A1["🤖 Agent<br/>propose fallback plan"]
-    D1{"Account<br/>found?"}
-    D2{"Exactly one<br/>candidate?"}
-    D3{"Security flag<br/>set?"}
-    C2["⚙️ Code step<br/>request account information"]
-    C3["⚙️ Code step<br/>request account disambiguation"]
-    C4["⚙️ Code step<br/>send unlock instructions"]
-    C5["⚙️ Code step<br/>escalate to security"]
+Each known leaf owns a small decision tree over the fetched data, and each branch ends in a pre-written template plus any tool calls. These trees encode the business logic and grow as patterns emerge. [Workflow or Agent](/post/workflow-vs-agent) explains why we kept them in code, and why I would now make the agent the default instead.
 
-    ROOT --> C1
-    C1 -.->|"'other' leaf"| A1
-    C1 -->|"account_locked"| D1
-    D1 -->|"no"| C2
-    D1 -->|"yes"| D2
-    D2 -->|"no"| C3
-    D2 -->|"yes"| D3
-    D3 -->|"no"| C4
-    D3 -->|"yes"| C5
+<PipelineFigure name="plan-tree" />
 
-    classDef agent fill:#f3e8ff,stroke:#7c3aed,stroke-width:2px,color:#1f2937
-    classDef code fill:#dcfce7,stroke:#16a34a,stroke-width:2px,color:#1f2937
-    classDef decision fill:#fff7ed,stroke:#ea580c,stroke-width:2px,color:#1f2937
-    classDef terminal fill:#f8fafc,stroke:#64748b,stroke-width:1.5px,color:#1f2937
-    class A1 agent
-    class C1,C2,C3,C4,C5 code
-    class D1,D2,D3 decision
-    class ROOT terminal
-```
+*Account locked's tree. Alex's message finds one unflagged record, `acc_001`, and gets the unlock steps, a parametrised template.*
 
-**"Other" leaves are the exception.** With no hardcoded plan, the pipeline's only autonomous agent inspects the fetched data and proposes one using constrained tools. Repeated patterns are promoted to hardcoded leaves through an observe, label, generalise, hardcode loop, reducing LLM dependence over time.
-
-Our `account_locked` example finds one unflagged record, `acc_001`, and lands on the parametrised "unlock instructions" template.
+**"Other" leaves are the exception.** With no plan in code, the pipeline's only autonomous agent inspects the fetched data and proposes one using constrained tools. Patterns that repeat are promoted to hardcoded leaves through an observe, label, generalise, hardcode loop, so LLM dependence shrinks over time.
 
 Plans involving money, account access, or side effects require human review. [Temporal for Human-in-the-Loop](/post/temporal-human-in-the-loop) covers durable waits, signals, and recovery across restarts.
 
----
-
 ## The practical payoff: local evals
+
+<PipelineMap preset="evals" />
 
 Each step has its own evaluation:
 
-- **Intent:** precision, recall, and a confusion matrix over labelled parent/sub-intents.
-- **Extraction:** field-level precision and recall for each group, allowing the intended false-positive bias.
+- **Intent:** precision, recall, and a confusion matrix over labelled parents and leaves.
+- **Extraction:** field-level precision and recall for each group, allowing for the intended false-positive bias.
 - **Fetch:** integration tests over extracted fields, fixed API responses, weights, and thresholds.
 - **Plan:** unit tests for known leaves; a labelled golden set for fallback plans.
 
 A monolithic agent is mostly judged end to end, which makes regressions hard to locate. Decomposition isolates them.
 
----
-
 ## Where the pattern fits
 
-Typed steps make regressions easy to locate, and "other" makes coverage gaps visible. Which path should be the default is a separate question. Here it is code, and the agent gets whatever code hasn't reached; [Workflow or Agent](/post/workflow-vs-agent#next-time-make-the-agent-the-default) argues for the opposite.
+<PipelineMap preset="default" />
+
+Typed steps make regressions easy to locate, and "Other" makes coverage gaps visible. Which path should be the default is a separate question. Here it is code, and the agent gets whatever code hasn't reached; [Workflow or Agent](/post/workflow-vs-agent#next-time-make-the-agent-the-default) argues for the opposite.
