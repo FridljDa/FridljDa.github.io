@@ -176,18 +176,18 @@ export const Reply = ({ stroke, ...place }: IconProps & { stroke: string }) => (
   </Place>
 );
 
-/** An expert's comment: a speech bubble with scribbled lines. */
-export const Comment = (place: IconProps) => (
+/** A comment on a ticket: a speech bubble with scribbled lines, the expert's in red, mine in blue. */
+export const Comment = ({ stroke = color('bad'), ...place }: IconProps & { stroke?: string }) => (
   <Place {...place}>
     <path
       d="M-20,-14 h40 a5,5 0 0 1 5,5 v16 a5,5 0 0 1 -5,5 h-26 l-8,7 v-7 h-6 a5,5 0 0 1 -5,-5 v-16 a5,5 0 0 1 5,-5 Z"
       fill={color('surface')}
-      stroke={color('bad')}
+      stroke={stroke}
       strokeWidth={2.5}
       strokeLinejoin="round"
     />
-    <path d="M-13,-5 q4,-3 8,0 t8,0 t8,0" fill="none" stroke={color('bad')} strokeWidth={2} strokeLinecap="round" />
-    <path d="M-13,3 q4,-3 8,0 t8,0" fill="none" stroke={color('bad')} strokeWidth={2} strokeLinecap="round" />
+    <path d="M-13,-5 q4,-3 8,0 t8,0 t8,0" fill="none" stroke={stroke} strokeWidth={2} strokeLinecap="round" />
+    <path d="M-13,3 q4,-3 8,0 t8,0" fill="none" stroke={stroke} strokeWidth={2} strokeLinecap="round" />
   </Place>
 );
 

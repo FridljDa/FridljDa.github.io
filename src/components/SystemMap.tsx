@@ -3,9 +3,10 @@
  * to the support agent, and in shadow its drafts land in the feedback store.
  * The expert grades them in the review screen, and the grade and comment go
  * back into the store; the store and the review screen are the harness I
- * built. I read the feedback there and steer the coding agent, which checks
- * itself against evals and CI (the compiler it has) and ships back into the
- * support agent. For a new read tool the coding agent writes a spec, which I
+ * built. I read the feedback there and add a comment of my own on how to fix
+ * it. Each night the coding agent implements the tickets I have commented on,
+ * checks itself against evals and CI (the compiler it has) and ships back
+ * into the support agent. For a new read tool the coding agent writes a spec, which I
  * hand to IT; their endpoint becomes the support agent's read tool. Old
  * tickets, the offline replay that got the project started, only appear on
  * the map of the section about them.
@@ -26,6 +27,7 @@ type EdgeId =
   | 'graded'
   | 'comment'
   | 'plan'
+  | 'nightly'
   | 'compile'
   | 'ships'
   | 'spec'
@@ -46,14 +48,14 @@ export interface Preset {
   description: string;
 }
 
-const LOOP: Preset['focus'] = ['support', 'drafts', 'store', 'review', 'expert', 'graded', 'comment', 'me', 'plan', 'coder', 'compile', 'tests', 'ships'];
+const LOOP: Preset['focus'] = ['support', 'drafts', 'store', 'review', 'expert', 'graded', 'comment', 'me', 'nightly', 'coder', 'compile', 'tests', 'ships'];
 const SHADOW_PATH: Preset['focus'] = ['customers', 'messages', 'support', 'drafts', 'store', 'review', 'expert', 'graded'];
 
 export const PRESETS = {
   overview: {
     focus: [],
     description:
-      'The whole system: customers write to the support agent; in shadow its drafts land in the feedback store, the expert grades them in the review screen, and grade and comment go back into the store, the harness I built. I read the feedback there and steer the coding agent, which checks itself against evals and CI and ships into the support agent. For a new read tool, the coding agent writes a spec that I hand to IT, who build the endpoint.',
+      'The whole system: customers write to the support agent; in shadow its drafts land in the feedback store, the expert grades them in the review screen, and grade and comment go back into the store, the harness I built. I read the feedback there and add a comment on how to fix it. Each night the coding agent implements the tickets I commented on, checks itself against evals and CI and ships into the support agent. For a new read tool, the coding agent writes a spec that I hand to IT, who build the endpoint.',
   },
   'coding-agents': {
     focus: ['coder', 'compile', 'tests'],
@@ -69,7 +71,7 @@ export const PRESETS = {
     focus: LOOP,
     small: true,
     description:
-      'Highlighted: the loop. 1, the expert grades a draft in the review screen and the grade and comment are stored; 2, I read them and steer the coding agent; 3, the coding agent implements; 4, evals and CI check it; then it ships into the support agent.',
+      'Highlighted: the loop. 1, the expert grades a draft in the review screen and the grade and comment are stored; 2, I read them and store a comment on how to fix it; 3, the coding agent implements it in its nightly run; 4, evals and CI check it; then it ships into the support agent.',
   },
   before: {
     focus: ['comment', 'me', 'plan', 'coder', 'compile', 'tests', 'ships', 'spec', 'it'],
@@ -106,13 +108,13 @@ export const PRESETS = {
     focus: ['me'],
     tags: [{ on: 'me', text: 'Next bottleneck' }],
     small: true,
-    description: 'Highlighted: me, turning feedback into steering for the coding agent, marked as the next bottleneck.',
+    description: 'Highlighted: me, turning feedback into a comment the coding agent can implement, marked as the next bottleneck.',
   },
   'could-be': {
-    focus: ['comment', 'me', 'plan'],
+    focus: ['comment', 'me', 'nightly'],
     agentTranslates: true,
     tags: [{ on: 'me', text: 'Was me' }],
-    description: 'Highlighted: an agent with skills reading the stored feedback and steering the coding agent, where I used to.',
+    description: 'Highlighted: an agent with skills reading the stored feedback and commenting on how to fix it, where I used to; the coding agent picks it up at night.',
   },
   start: {
     focus: SHADOW_PATH,
@@ -124,6 +126,11 @@ export const PRESETS = {
 
 export type PresetName = keyof typeof PRESETS;
 
+interface Ride {
+  at: Point;
+  icon: 'comment' | 'mine' | 'plan' | 'person';
+}
+
 interface Layout {
   width: number;
   height: number;
@@ -132,8 +139,15 @@ interface Layout {
   /** The font size of a preset's pills. */
   tagSize?: number;
   N: Record<NodeId, Point>;
-  /** Paths for each edge; `rides` puts the comment, the plan or the person passing the spec on it. */
-  edges: Record<Exclude<EdgeId, 'compile'>, { d: string; dashed?: boolean; rides?: { at: Point; icon: 'comment' | 'plan' | 'person' } }>;
+  /**
+   * Paths for each edge. `rides` puts icons on it: the expert's comment, mine,
+   * the plan, or the person passing the spec; `twoWay` gives it an arrowhead at
+   * both ends, and `label` a short word next to it.
+   */
+  edges: Record<
+    Exclude<EdgeId, 'compile'>,
+    { d: string; dashed?: boolean; twoWay?: boolean; rides?: Ride[]; label?: Point & { text: string } }
+  >;
   /** The coding agent's loop with evals and CI: there and back. */
   compile: [string, string];
   labels: Record<NodeId, Point & { anchor?: 'start' | 'middle' | 'end' }>;
@@ -167,11 +181,21 @@ const WIDE: Layout = (() => {
       drafts: { d: `M${N.support.x},${N.support.y - 50} V${N.store.y + 36}` },
       review: { d: 'M288,162 V132' },
       graded: { d: 'M312,128 V158' },
-      comment: { d: 'M334,192 C470,192 520,130 578,98', rides: { at: { x: 470, y: 172 }, icon: 'comment' } },
-      plan: { d: `M${N.me.x},${N.me.y + 40} V${N.coder.y - 46}`, rides: { at: { x: 620, y: 192 }, icon: 'plan' } },
+      // Both comments live in the store: the expert's goes out to me, mine comes back.
+      comment: {
+        d: 'M334,192 C470,192 520,130 578,98',
+        twoWay: true,
+        rides: [
+          { at: { x: 449, y: 173 }, icon: 'comment' },
+          { at: { x: 528, y: 130 }, icon: 'mine' },
+        ],
+      },
+      // Before coding agents only: I go from the feedback straight to the code.
+      plan: { d: `M${N.me.x},${N.me.y + 40} V${N.coder.y - 46}`, rides: [{ at: { x: 620, y: 192 }, icon: 'plan' }] },
+      nightly: { d: 'M332,222 C440,232 540,236 586,266', label: { x: 470, y: 262, text: 'Nightly' } },
       ships: { d: `M${N.coder.x - 50},300 H${N.support.x + 88}` },
       // The spec reaches IT through me, pinging someone on Teams.
-      spec: { d: `M${N.coder.x + 40},${N.coder.y + 36} C720,350 ${N.it.x},380 ${N.it.x},${N.it.y - 40}`, rides: { at: { x: 742, y: 380 }, icon: 'person' } },
+      spec: { d: `M${N.coder.x + 40},${N.coder.y + 36} C720,350 ${N.it.x},380 ${N.it.x},${N.it.y - 40}`, rides: [{ at: { x: 742, y: 380 }, icon: 'person' }] },
       build: { d: `M${N.it.x - 46},470 H${N.endpoints.x + 46}` },
       reads: { d: `M${N.endpoints.x},${N.endpoints.y - 34} C${N.endpoints.x},380 470,330 ${N.support.x + 88},330` },
     },
@@ -194,7 +218,8 @@ const WIDE: Layout = (() => {
     badges: {
       expert: { x: N.expert.x - 98, y: N.expert.y - 50 },
       me: { x: N.me.x + 48, y: N.me.y + 32 },
-      coder: { x: N.coder.x - 52, y: N.coder.y - 40 },
+      // Top right, so the nightly run can come in at the top left.
+      coder: { x: N.coder.x + 56, y: N.coder.y - 48 },
       tests: { x: N.tests.x + 52, y: N.tests.y - 40 },
     },
     tags: {
@@ -237,10 +262,18 @@ const TALL: Layout = (() => {
       drafts: { d: 'M150,292 V324' },
       review: { d: 'M138,398 V426' },
       graded: { d: 'M162,430 V402' },
-      comment: { d: 'M188,356 C320,356 400,410 440,452', rides: { at: { x: 330, y: 372 }, icon: 'comment' } },
-      plan: { d: 'M480,436 V280', rides: { at: { x: 480, y: 358 }, icon: 'plan' } },
+      comment: {
+        d: 'M188,356 C320,356 400,410 440,452',
+        twoWay: true,
+        rides: [
+          { at: { x: 330, y: 372 }, icon: 'comment' },
+          { at: { x: 411, y: 426 }, icon: 'mine' },
+        ],
+      },
+      plan: { d: 'M480,436 V322', rides: [{ at: { x: 480, y: 380 }, icon: 'plan' }] },
+      nightly: { d: 'M180,338 C260,300 360,282 436,266', label: { x: 306, y: 284, text: 'Nightly' } },
       ships: { d: 'M430,240 H240' },
-      spec: { d: 'M526,256 C618,330 618,570 528,604', rides: { at: { x: 592, y: 400 }, icon: 'person' } },
+      spec: { d: 'M524,240 C620,300 618,570 528,604', rides: [{ at: { x: 593, y: 384 }, icon: 'person' }] },
       build: { d: 'M434,626 H188' },
       reads: { d: 'M116,616 C36,580 28,280 60,262' },
     },
@@ -252,7 +285,7 @@ const TALL: Layout = (() => {
       store: { x: 0, y: 0 },
       expert: { x: 238, y: 548 },
       me: { x: 480, y: 540 },
-      coder: { x: 428, y: 306, anchor: 'end' },
+      coder: { x: 468, y: 306 },
       tests: { x: 480, y: 40 },
       it: { x: 480, y: 690 },
       endpoints: { x: 150, y: 690 },
@@ -413,8 +446,14 @@ function MapSvg({ layout, preset, id, className }: { layout: Layout; preset: Pre
   const on = (part: NodeId | EdgeId) => all || p.focus.includes(part);
   const marker = `${id}-arrow`;
   const harness = layout.harness;
-  // A one-off at the start, not part of the loop: only drawn where a section is about it.
-  const shown = (part: NodeId | EdgeId) => (part === 'tickets' || part === 'replay' ? p.focus.includes(part) : true);
+  const shown = (part: NodeId | EdgeId) => {
+    // A one-off at the start, not part of the loop: only drawn where a section is about it.
+    if (part === 'tickets' || part === 'replay') return p.focus.includes(part);
+    // Before coding agents I went from the feedback straight to the code; since, the agent's nightly run picks it up.
+    if (part === 'plan') return !!p.meCodes;
+    if (part === 'nightly') return !p.meCodes;
+    return true;
+  };
 
   return (
     <svg
@@ -440,21 +479,37 @@ function MapSvg({ layout, preset, id, className }: { layout: Layout; preset: Pre
 
       {(Object.keys(layout.edges) as (keyof Layout['edges'])[]).filter(shown).map((e) => {
         const edge = layout.edges[e];
+        // Before coding agents nobody passes my spec on, and I write no comments for an agent.
+        const rides = (edge.rides ?? []).filter((r) => !(p.meCodes && (r.icon === 'person' || r.icon === 'mine')));
         return (
           <Dim key={e} on={on(e)}>
-            <path d={edge.d} fill="none" stroke={color('node-border')} strokeWidth={2.5} strokeDasharray={edge.dashed ? '7 6' : undefined} markerEnd={`url(#${marker})`} />
-            {/* Before coding agents the spec comes from me already, so nobody passes it on. */}
-            {edge.rides && !(edge.rides.icon === 'person' && p.meCodes) && (
-              <g transform={`translate(${edge.rides.at.x} ${edge.rides.at.y})`}>
+            <path
+              d={edge.d}
+              fill="none"
+              stroke={color('node-border')}
+              strokeWidth={2.5}
+              strokeDasharray={edge.dashed ? '7 6' : undefined}
+              markerEnd={`url(#${marker})`}
+              markerStart={edge.twoWay && !p.meCodes ? `url(#${marker})` : undefined}
+            />
+            {rides.map((r) => (
+              <g key={r.icon} transform={`translate(${r.at.x} ${r.at.y})`}>
                 <circle r={26} fill={color('surface')} />
-                {edge.rides.icon === 'comment' ? (
+                {r.icon === 'comment' ? (
                   <Comment x={0} y={0} />
-                ) : edge.rides.icon === 'person' ? (
+                ) : r.icon === 'mine' ? (
+                  <Comment x={0} y={0} stroke={color('added')} />
+                ) : r.icon === 'person' ? (
                   <Person x={0} y={0} scale={1.1} fill={color('text')} />
                 ) : (
                   <Reply x={0} y={0} stroke={color('added')} scale={1.2} />
                 )}
               </g>
+            ))}
+            {edge.label && (
+              <text x={edge.label.x} y={edge.label.y} textAnchor="middle" fontSize={(layout.labelSize ?? 21) - 4} fontWeight={600} fill={color('muted')}>
+                {edge.label.text}
+              </text>
             )}
           </Dim>
         );

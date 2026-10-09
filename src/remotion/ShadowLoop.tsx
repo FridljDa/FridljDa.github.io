@@ -2,8 +2,9 @@
  * The shadow-deployment loop: customers write in one at a time, each message
  * runs through the intent DAG to a leaf, and the subject-matter expert grades
  * the drafted reply. Most grades are a check. On a cross the expert's comment
- * is stored with the case; I pick it up from the store and steer the coding
- * agent, which grows the DAG, and the next customer with that request reaches
+ * is stored with the case; I pick it up from the store and store a comment of
+ * my own on how to fix it. The coding agent's nightly run takes mine from the
+ * store and grows the DAG, and the next customer with that request reaches
  * the new leaf.
  *
  * Two layouts of the same scene: `wide` (16:9) and `tall` for phones, with the
@@ -174,7 +175,8 @@ export const LAYOUTS = {
     expert: { x: 112, y: 650 },
     tallyY: 726,
     store: { x: 112, y: 820 },
-    me: { x: 290, y: 820 },
+    // Raised, so the line from the store to the coding agent passes below me.
+    me: { x: 290, y: 724 },
     agent: { x: 440, y: 820 },
   },
 } satisfies Record<string, Layout>;
@@ -192,7 +194,10 @@ interface Timed extends Visit {
   gradeAt: number;
   storeAt?: number;
   meAt?: number;
-  planAt?: number;
+  /** My comment on the fix goes back into the store... */
+  mineAt?: number;
+  /** ...and the nightly run takes it to the coding agent. */
+  nightlyAt?: number;
   typingAt?: number;
   sparkAt?: number;
   growAt?: number;
@@ -209,8 +214,9 @@ for (const [index, visit] of SCRIPT.entries()) {
   if (visit.grows) {
     timed.storeAt = gradeAt + 15;
     timed.meAt = timed.storeAt + TO_STORE + 6;
-    timed.planAt = timed.meAt + TO_ME + 9;
-    timed.typingAt = timed.planAt + TO_AGENT;
+    timed.mineAt = timed.meAt + TO_ME + 9;
+    timed.nightlyAt = timed.mineAt + TO_ME + 9;
+    timed.typingAt = timed.nightlyAt + TO_AGENT;
     timed.sparkAt = timed.typingAt + TYPING;
     timed.growAt = timed.sparkAt + SPARK;
     cursor = timed.growAt + GROW + 9;
@@ -243,9 +249,11 @@ const lit = (frame: number, visit: Timed, from: number) => {
 export const ShadowLoop = ({ layout = 'wide' }: { layout?: LayoutName }) => {
   const L: Layout = LAYOUTS[layout];
   const { expert: EXPERT, agent: AGENT, store: STORE, me: ME } = L;
-  // The dashed line from the store to me, from the edge of one icon to the other's.
-  const storeOut = toward(STORE, ME, 38);
+  // The dashed lines from the store to me and to the coding agent, from the edge of one icon to the other's.
+  const storeToMe = toward(STORE, ME, 38);
   const meIn = toward(ME, STORE, 34);
+  const storeToAgent = toward(STORE, AGENT, 38);
+  const agentIn = toward(AGENT, STORE, 40);
   /** A point of the DAG in this layout's coordinates. */
   const D = (p: Point): Point => ({ x: p.x + L.dag.x, y: p.y + L.dag.y });
   const frame = useCurrentFrame();
@@ -381,7 +389,7 @@ export const ShadowLoop = ({ layout = 'wide' }: { layout?: LayoutName }) => {
 
         {/* The expert, their grades, the store, me and the coding agent */}
         <path
-          d={`M${EXPERT.x},${L.tallyY + 18} V${STORE.y - 40} M${storeOut.x},${storeOut.y} L${meIn.x},${meIn.y} M${ME.x + 30},${ME.y} H${AGENT.x - 44}`}
+          d={`M${EXPERT.x},${L.tallyY + 18} V${STORE.y - 40} M${storeToMe.x},${storeToMe.y} L${meIn.x},${meIn.y} M${storeToAgent.x},${storeToAgent.y} L${agentIn.x},${agentIn.y}`}
           fill="none"
           stroke={color('edge')}
           strokeWidth={2}
@@ -452,7 +460,7 @@ export const ShadowLoop = ({ layout = 'wide' }: { layout?: LayoutName }) => {
           return <g key={v.index}>{parts}</g>;
         })}
 
-        {/* A cross: the comment is stored, I pick it up and steer the agent, and its fix grows the DAG. */}
+        {/* A cross: the comment is stored, I pick it up and store mine on the fix, and the agent's nightly run grows the DAG. */}
         {TIMELINE.filter((v) => v.grows && frame >= v.storeAt! && frame < v.growAt! + 4).map((v) => {
           const parts = [];
           const travel = (from: Point, to: Point, start: number, end: number) => mix(from, to, progress(frame, start, end));
@@ -464,9 +472,14 @@ export const ShadowLoop = ({ layout = 'wide' }: { layout?: LayoutName }) => {
                 : travel({ x: STORE.x + 30, y: STORE.y - 10 }, { x: ME.x - 10, y: ME.y - 44 }, v.meAt!, v.meAt! + TO_ME);
             parts.push(<Comment key="comment" x={p.x} y={p.y} scale={1.1} opacity={1 - progress(frame, v.meAt! + TO_ME - 2, v.meAt! + TO_ME + 2)} />);
           }
-          if (frame >= v.planAt! && frame < v.typingAt! + 4) {
-            const p = travel({ x: ME.x + 26, y: ME.y - 30 }, { x: AGENT.x - 40, y: AGENT.y - 30 }, v.planAt!, v.typingAt!);
-            parts.push(<Reply key="plan" x={p.x} y={p.y} scale={1.2} stroke={color('added')} opacity={1 - progress(frame, v.typingAt!, v.typingAt! + 4)} />);
+          if (frame >= v.mineAt! && frame < v.typingAt! + 4) {
+            // My comment on the fix: into the store, and at night out of it to the coding agent.
+            const p =
+              frame < v.nightlyAt!
+                ? travel({ x: ME.x + 10, y: ME.y - 44 }, { x: STORE.x - 10, y: STORE.y + 30 }, v.mineAt!, v.mineAt! + TO_ME)
+                : travel({ x: STORE.x + 10, y: STORE.y + 30 }, { x: AGENT.x - 10, y: AGENT.y - 44 }, v.nightlyAt!, v.typingAt!);
+            const fade = frame < v.nightlyAt! ? 1 : 1 - progress(frame, v.typingAt!, v.typingAt! + 4);
+            parts.push(<Comment key="mine" x={p.x} y={p.y} scale={1.1} stroke={color('added')} opacity={fade} />);
           }
           if (frame >= v.sparkAt!) {
             const g = v.grows!;
