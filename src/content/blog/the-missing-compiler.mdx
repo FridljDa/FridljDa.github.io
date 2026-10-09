@@ -53,7 +53,7 @@ The system went live in **shadow deployment**: responses were graded by subject-
 My part was the harness for that feedback: the review screen, its rejection categories, and the store that keeps every grade and comment with its case. The loop through it turned feedback into code changes:
 
 1. **Experts grade** a batch of shadow responses in the review screen: a verdict, a rejection category and free-text feedback, stored with the case.
-2. **I steer the coding agent**: I read the stored feedback and turn it into a comment on what the solution should look like technically.
+2. **I steer the coding agent**: I read the stored feedback and add my own comment to the ticket: what the solution should look like, at a high level.
 3. **The coding agent implements** it, usually as a new intent in the [intent DAG](/post/first-level-support-automation#step-1-intent-recognition) or a new branch in the rules behind one.
 4. **The agent adds an eval, and CI re-runs the suite**: the case joins the eval set, and the whole suite runs so earlier fixes stay fixed.
 
@@ -70,9 +70,9 @@ Step 4 is the part that looks most like a compiler, and it is the easy part. Onc
 
 Step 1 is where the verdict comes from. The experts graded in a review screen that showed them the customer's message and the proposed reply, and asked what was wrong with it:
 
-<ThemedImage src="/images/blog/the-missing-compiler/sme-review-screen.png" alt={"Mocked-up review screen: the customer's locked-account message, the proposed reply asking for an email address, the verdict Reject with the rejection reason \"Wrong process\" selected, and the reviewer's comment explaining the unwritten rules for locked accounts."} />
+<ThemedImage src="/images/blog/the-missing-compiler/sme-review-screen.png" alt={"Mocked-up review screen: the customer's locked-account message, the proposed reply asking for an email address, the verdict Reject with the rejection reason \"Wrong process\" selected, the reviewer's comment explaining the unwritten rules for locked accounts, and my comment for the coding agent describing the fix: a new Account locked intent that looks the customer up and branches on the security flag."} />
 
-*Step 1, mocked up: a reply graded "Wrong process", with the reviewer's reasoning.*
+*Steps 1 and 2, mocked up: a reply graded "Wrong process", the reviewer's reasoning, and my comment for the coding agent.*
 
 The knowledge the experts supply is mostly tacit. The people who know a business can rarely write its rules down in advance, but shown a specific draft, they can tell you at a glance what is wrong with it. The reviewer's comment above is exactly that: two rules nobody had written down, prompted by a single reply that broke both. Grading a concrete reply is a far cheaper way to extract a rule than asking for its specification. So the loop has a second job: besides standing in for the verdict a coding agent gets for free, it is the extraction tool for knowledge that exists only in people's heads.
 
@@ -130,7 +130,7 @@ A narrow review screen for the subject-matter experts is worth writing yourself:
 
 <SystemMap preset="next-bottleneck" />
 
-Step 2 was me, turning free-text feedback into an implementation plan for the coding agent. That doesn't scale, and it puts a single engineer on the critical path of every improvement: once the reviewers are grading steadily, this is where the bottleneck moves next. I have not solved this, but here is where I got.
+Step 2 was me, turning free-text feedback into a comment the coding agent could implement. That doesn't scale, and it puts a single engineer on the critical path of every improvement: once the reviewers are grading steadily, this is where the bottleneck moves next. I have not solved this, but here is where I got.
 
 Handing step 2 to the coding agent on the raw feedback produced worse results than doing it myself; skill files and targeted guidelines I wrote narrowed the gap without closing it. More specific skills, or a subagent dedicated to the translation, might close the rest.
 
