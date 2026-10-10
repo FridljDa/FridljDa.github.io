@@ -102,7 +102,7 @@ export const PRESETS = {
     focus: ['me', 'plan', 'coder'],
     meCodes: true,
     tags: [{ on: 'coder', text: 'Bottleneck' }],
-    description: 'Before coding agents: I read the feedback, decide the fix and write the code myself; writing the code is the bottleneck.',
+    description: 'Without coding agents: I would read the feedback, decide the fix and write the code myself, and writing the code would be the bottleneck.',
   },
   today: {
     focus: ['expert', 'coder'],
