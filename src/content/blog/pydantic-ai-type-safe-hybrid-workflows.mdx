@@ -1,7 +1,7 @@
 ---
 title: "Type-Safe Hybrid Workflows with Pydantic AI"
 pubDate: 2026-02-25T00:00:00.000Z
-updatedDate: 2026-10-02T00:00:00.000Z
+updatedDate: 2026-10-10T00:00:00.000Z
 tags:
   - AI
   - Python
@@ -9,7 +9,7 @@ description: "Pydantic models as the contract between deterministic, LLM-assiste
 image: /images/blog/pydantic-ai-type-safe-hybrid-workflows/featured.png
 ---
 
-In [Workflow or Agent](/post/workflow-vs-agent) I weigh keeping code in charge of a business automation against handing it to an agent. Either way the result is usually a mixed pipeline, and it needs clean seams between deterministic, LLM-assisted, and agentic steps. Pydantic models provide those seams.
+In [Workflow or Agent](/post/workflow-vs-agent) I weigh keeping code in charge of a business automation against handing it to an agent. Either way the result is usually a mixed pipeline of deterministic, LLM-assisted and agentic steps, and each step must hand the next one data in a fixed shape, whatever kind of step produced it. Pydantic models define that shape.
 
 [Pydantic AI](https://ai.pydantic.dev/) gives you one primitive — `Agent` — and lets you scale it across the spectrum:
 
@@ -17,7 +17,7 @@ In [Workflow or Agent](/post/workflow-vs-agent) I weigh keeping code in charge o
 - **LLM-assisted**: an `Agent` with no tools. One LLM call, one validated output.
 - **Agentic**: an `Agent` with tools, timeouts, and a typed fallback.
 
-The pipeline contract is the same in all three cases. Each step returns a Pydantic model, declared as `output_type` for the LLM-assisted and agentic variants. Whether the instance came from regular code, a single LLM call, or an agent that looped through five tool calls is local to that step.
+The pipeline contract is the same in all three cases. Each step returns a Pydantic model, declared as `output_type` for the LLM-assisted and agentic variants. Whether the instance came from regular code, a single LLM call, or an agent that looped through five tool calls, only that step knows; the next step gets the same type either way.
 
 ## LLM-assisted: a typed contract for a single call
 
@@ -40,7 +40,7 @@ result = await extractor.run(message_text)
 # result.output is already a ContactInfo instance
 ```
 
-If the model returns malformed JSON or a value that violates the schema, Pydantic validation fails and Pydantic AI retries — feeding the validation error back into the prompt so the model can correct itself. If it keeps failing, Pydantic AI raises, and the step's runner catches it, as in the agentic example below. Downstream code doesn't care whether the model nailed it first try or needed three attempts — it only ever sees a validated `ContactInfo`.
+If the model returns malformed JSON or a value that violates the schema, Pydantic validation fails and Pydantic AI retries — feeding the validation error back into the prompt so the model can correct itself. If it keeps failing, Pydantic AI raises, and the function that runs the step (its runner) catches it, as in the agentic example below. Downstream code doesn't care whether the model nailed it first try or needed three attempts — it only ever sees a validated `ContactInfo`.
 
 ## Agentic: same contract, more machinery
 
@@ -82,8 +82,8 @@ From the caller's perspective, `fetch_deterministic` and `fetch_agent_run` are i
 
 ## What the shared contract buys you
 
-Failure modes become typed values. Every way an LLM call can go wrong — malformed output, timeout, refusal, repeated validation failure — gets caught by the runner and turned into an instance of the step's output type, like the `FetchResult` with an `error_code` above. The blast radius of "the LLM did something weird" stops at the runner for that step.
+Failure modes become typed values. Every way an LLM call can fail outright — malformed output, timeout, refusal, repeated validation failure — gets caught by the runner and turned into an instance of the step's output type, like the `FetchResult` with an `error_code` above. The blast radius of a failed LLM call stops at the runner for that step. A well-formed but wrong answer still gets through: the types only check its shape.
 
-The agency-level decision becomes local. When a step you thought needed an agent turns out to be solvable with deterministic code, you delete the agent and keep the same `output_type`. When a step you thought was deterministic starts failing on edge cases, you swap in an agent without touching anything around it. The unit of change is one function.
+Whether a step is plain code, one LLM call or an agent only matters inside that step. When a step you thought needed an agent turns out to be solvable with deterministic code, you delete the agent and keep the same `output_type`. When a step you thought was deterministic starts failing on edge cases, you swap in an agent without touching anything around it. The unit of change is one function.
 
 If you're curious what this looks like in a non-toy pipeline — one with intent classification, structured extraction, deterministic lookups, and an LLM-fallback planner all wired together — see [Architecture of a First-Level Support Automation](/post/first-level-support-automation).

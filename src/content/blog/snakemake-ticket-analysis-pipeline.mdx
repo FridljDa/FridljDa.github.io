@@ -1,7 +1,7 @@
 ---
 title: "Orchestrating an LLM Ticket-Classification Pipeline with Snakemake"
 pubDate: 2026-02-06
-updatedDate: 2026-10-02
+updatedDate: 2026-10-10T00:00:00.000Z
 tags:
   - Data Engineering
   - Python
@@ -23,7 +23,7 @@ The Snakemake pipeline has 19+ stages. At a high level it:
 2. **Cleans and normalises** tickets (flag conversation-style tickets, fix malformed records, extract a consistent set of fields).
 3. **Censors sensitive data** so downstream steps and training data never see PII.
 4. **Classifies comment authors** (customer vs agent vs unknown) using an LLM where metadata was missing.
-5. **Labels tickets by intent** with an LLM, using the same chunk structure for efficiency.
+5. **Labels tickets by intent** with an LLM, split into chunks that run in parallel, as in the censoring step described below.
 6. **Produces two outputs**: a censored dataset for training, and an uncensored (in-memory/view-only) path for inspection in a Streamlit app.
 7. **Prepares training data**: filter to labelled tickets, drop non-actionable intents, balanced subsample per intent, truncate agent resolution, and transform into the final training format.
 
@@ -31,7 +31,7 @@ The rule graph below gives a bird’s-eye view of the workflow and its dependenc
 
 ![Snakemake rule graph for the ticket analysis pipeline](/images/blog/snakemake-ticket-analysis-pipeline/rulegraph.png)
 
-*Drawn before the checkpoint has run, so the per-chunk rules described below don't appear; Snakemake adds them once the split has written its manifest.*
+*Drawn before the pipeline has split the tickets into chunks, so the per-chunk rules described below don't appear yet; Snakemake adds them once it knows how many chunks there are.*
 
 ## The ticket shape
 
@@ -63,7 +63,7 @@ The pipeline first reduced each ticket to a fixed set of fields (IDs, channel, s
 }
 ```
 
-This structure, one record per ticket with a list of comments containing roles and text, determined how we split the work into chunks and merged it again.
+Because each ticket is one record holding all of its comments, the chunks below are sets of whole tickets: a ticket's comments never end up in two different chunks.
 
 ## Three ways Snakemake helped
 
