@@ -1,17 +1,6 @@
 {
-  "lastUpdated": "2026-03-30T07:48:13.220Z",
+  "lastUpdated": "2026-10-10T07:48:11.963Z",
   "models": [
-    {
-      "name": "Claude 4 Sonnet",
-      "provider": "Anthropic",
-      "inputCost": 3,
-      "outputCost": 15,
-      "weightedCost": 6.6,
-      "bigCodeBenchScore": null,
-      "arenaCodeElo": 1523,
-      "lmsysArenaElo": null,
-      "recommended": "planning"
-    },
     {
       "name": "Claude 4.5 Haiku",
       "provider": "Anthropic",
@@ -19,7 +8,7 @@
       "outputCost": 5,
       "weightedCost": 2.2,
       "bigCodeBenchScore": 46.1,
-      "arenaCodeElo": 1309,
+      "arenaCodeElo": null,
       "lmsysArenaElo": null,
       "recommended": null
     },
@@ -30,8 +19,8 @@
       "outputCost": 25,
       "weightedCost": 11,
       "bigCodeBenchScore": null,
-      "arenaCodeElo": 1465,
-      "lmsysArenaElo": null,
+      "arenaCodeElo": null,
+      "lmsysArenaElo": 1470,
       "recommended": null
     },
     {
@@ -41,19 +30,8 @@
       "outputCost": 15,
       "weightedCost": 6.6,
       "bigCodeBenchScore": null,
-      "arenaCodeElo": 1386,
-      "lmsysArenaElo": null,
-      "recommended": null
-    },
-    {
-      "name": "Claude 4.6 Opus",
-      "provider": "Anthropic",
-      "inputCost": 5,
-      "outputCost": 25,
-      "weightedCost": 11,
-      "bigCodeBenchScore": null,
-      "arenaCodeElo": 1549,
-      "lmsysArenaElo": null,
+      "arenaCodeElo": null,
+      "lmsysArenaElo": 1386,
       "recommended": null
     },
     {
@@ -65,7 +43,7 @@
       "bigCodeBenchScore": null,
       "arenaCodeElo": null,
       "lmsysArenaElo": 1206,
-      "recommended": null
+      "recommended": "execution"
     },
     {
       "name": "Gemini 3 Flash",
@@ -74,8 +52,8 @@
       "outputCost": 3,
       "weightedCost": 1.25,
       "bigCodeBenchScore": null,
-      "arenaCodeElo": 1437,
-      "lmsysArenaElo": null,
+      "arenaCodeElo": null,
+      "lmsysArenaElo": 1443,
       "recommended": "planning"
     },
     {
@@ -85,20 +63,9 @@
       "outputCost": 12,
       "weightedCost": 5,
       "bigCodeBenchScore": null,
-      "arenaCodeElo": 1438,
-      "lmsysArenaElo": null,
-      "recommended": null
-    },
-    {
-      "name": "Gemini 3 Pro Image Preview",
-      "provider": "Google",
-      "inputCost": 2,
-      "outputCost": 12,
-      "weightedCost": 5,
-      "bigCodeBenchScore": null,
-      "arenaCodeElo": 1438,
-      "lmsysArenaElo": null,
-      "recommended": null
+      "arenaCodeElo": null,
+      "lmsysArenaElo": 1453,
+      "recommended": "planning"
     },
     {
       "name": "GPT-5",
@@ -107,9 +74,9 @@
       "outputCost": 10,
       "weightedCost": 3.88,
       "bigCodeBenchScore": null,
-      "arenaCodeElo": 1457,
-      "lmsysArenaElo": null,
-      "recommended": "planning"
+      "arenaCodeElo": null,
+      "lmsysArenaElo": 1350,
+      "recommended": null
     },
     {
       "name": "GPT-5 Mini",
@@ -123,48 +90,15 @@
       "recommended": null
     },
     {
-      "name": "GPT-5.1 Codex",
-      "provider": "OpenAI",
-      "inputCost": 1.25,
-      "outputCost": 10,
-      "weightedCost": 3.88,
-      "bigCodeBenchScore": null,
-      "arenaCodeElo": 1328,
-      "lmsysArenaElo": null,
-      "recommended": null
-    },
-    {
-      "name": "GPT-5.1 Codex Max",
-      "provider": "OpenAI",
-      "inputCost": 1.25,
-      "outputCost": 10,
-      "weightedCost": 3.88,
-      "bigCodeBenchScore": null,
-      "arenaCodeElo": 1339,
-      "lmsysArenaElo": null,
-      "recommended": null
-    },
-    {
-      "name": "GPT-5.1 Codex Mini",
-      "provider": "OpenAI",
-      "inputCost": 0.25,
-      "outputCost": 2,
-      "weightedCost": 0.77,
-      "bigCodeBenchScore": null,
-      "arenaCodeElo": 1238,
-      "lmsysArenaElo": null,
-      "recommended": "execution"
-    },
-    {
       "name": "GPT-5.2",
       "provider": "OpenAI",
       "inputCost": 1.75,
       "outputCost": 14,
       "weightedCost": 5.43,
       "bigCodeBenchScore": null,
-      "arenaCodeElo": 1403,
-      "lmsysArenaElo": null,
-      "recommended": null
+      "arenaCodeElo": null,
+      "lmsysArenaElo": 1472,
+      "recommended": "planning"
     },
     {
       "name": "GPT-5.2 Codex",
@@ -173,8 +107,8 @@
       "outputCost": 14,
       "weightedCost": 5.43,
       "bigCodeBenchScore": null,
-      "arenaCodeElo": 1336,
-      "lmsysArenaElo": null,
+      "arenaCodeElo": null,
+      "lmsysArenaElo": 1333,
       "recommended": null
     },
     {
@@ -184,63 +118,8 @@
       "outputCost": 1.5,
       "weightedCost": 0.59,
       "bigCodeBenchScore": null,
-      "arenaCodeElo": 1138,
-      "lmsysArenaElo": null,
-      "recommended": null
-    },
-    {
-      "name": "Gemini 3.1 Pro",
-      "provider": "Google",
-      "inputCost": 2,
-      "outputCost": 12,
-      "weightedCost": 5,
-      "bigCodeBenchScore": null,
-      "arenaCodeElo": 1455,
-      "lmsysArenaElo": null,
-      "recommended": null
-    },
-    {
-      "name": "GPT-5.3 Codex",
-      "provider": "OpenAI",
-      "inputCost": 1.75,
-      "outputCost": 14,
-      "weightedCost": 5.43,
-      "bigCodeBenchScore": null,
-      "arenaCodeElo": 1407,
-      "lmsysArenaElo": null,
-      "recommended": null
-    },
-    {
-      "name": "GPT-5.4",
-      "provider": "OpenAI",
-      "inputCost": 2.5,
-      "outputCost": 15,
-      "weightedCost": 6.25,
-      "bigCodeBenchScore": null,
-      "arenaCodeElo": 1457,
-      "lmsysArenaElo": null,
-      "recommended": null
-    },
-    {
-      "name": "Grok 4.20",
-      "provider": "xAI",
-      "inputCost": 2,
-      "outputCost": 6,
-      "weightedCost": 3.2,
-      "bigCodeBenchScore": null,
-      "arenaCodeElo": 1378,
-      "lmsysArenaElo": null,
-      "recommended": null
-    },
-    {
-      "name": "Kimi K2.5",
-      "provider": "Moonshot",
-      "inputCost": 0.6,
-      "outputCost": 3,
-      "weightedCost": 1.32,
-      "bigCodeBenchScore": null,
-      "arenaCodeElo": 1430,
-      "lmsysArenaElo": null,
+      "arenaCodeElo": null,
+      "lmsysArenaElo": 1141,
       "recommended": null
     }
   ]
