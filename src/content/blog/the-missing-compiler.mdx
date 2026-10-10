@@ -48,9 +48,9 @@ A read tool lets the agent look up the customer's records, and would cover the r
 
 <SystemMap preset="harness" />
 
-The system went live in **shadow deployment**: responses were graded by subject-matter experts but never shown to customers, so a wrong answer reached a reviewer, never a customer. [Workflow or Agent](/post/workflow-vs-agent) describes the system that drafted them.
+The system went live in **shadow deployment**: responses were graded by subject-matter experts but never shown to customers, so a wrong answer reached a reviewer, never a customer.
 
-My part was the harness for that feedback: the review screen, its rejection categories, and the store that keeps every grade and comment with its case, mine included. The loop through it turned feedback into code changes in four steps.
+My job had two parts. The first was the system's overall structure: which decisions the code makes and which the model makes, described in [Workflow or Agent](/post/workflow-vs-agent). It took a few rounds to balance reliability against flexibility, but that is mostly work done up front. The second, and the subject of this post, was the loop that improves the system once it runs, and the harness it runs through: the review screen, its rejection categories, and a store that keeps every grade and comment with its ticket. The loop turned feedback into code changes in four steps.
 
 ### 1. Experts grade
 
@@ -74,7 +74,7 @@ This is where the verdict comes from, and the knowledge in it is mostly tacit. T
 
 <SystemMap preset="specify" />
 
-I read the stored feedback and add my own comment to the ticket, next to the expert's, saying at a high level what the solution should look like:
+I read the stored feedback and add my own comment to the ticket, next to the expert's. It is a high-level implementation plan that steers the coding agent: where in the system the fix goes, and what it should do.
 
 <ThemedImage src="/images/blog/the-missing-compiler/review-screen-fix.png" alt={"The same review screen with my comment added below the reviewer's: for the coding agent, add an Account locked intent that looks the customer up by account number, then sends the unlock link, or routes to security if the account is flagged."} />
 
@@ -155,7 +155,7 @@ A narrow review screen for the subject-matter experts is worth writing yourself:
 
 <SystemMap preset="next-bottleneck" />
 
-Step 2 was me, turning free-text feedback into a comment the coding agent could implement. That doesn't scale, and it puts a single engineer on the critical path of every improvement: once the reviewers are grading steadily, this is where the bottleneck moves next. I have not solved this, but here is where I got.
+Step 2 was me, steering the coding agent with an implementation plan for each piece of feedback. That doesn't scale, and it puts a single engineer on the critical path of every improvement: once the reviewers are grading steadily, this is where the bottleneck moves next. I haven't solved it yet, but I think it is solvable, most likely with a better loop rather than more of my time. Here is where I got.
 
 Handing step 2 to the coding agent on the raw feedback produced worse results than doing it myself; skill files and targeted guidelines I wrote narrowed the gap without closing it. More specific skills, or a subagent dedicated to the translation, might close the rest.
 
