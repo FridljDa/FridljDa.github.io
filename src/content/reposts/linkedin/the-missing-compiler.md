@@ -7,24 +7,17 @@ firstComment: |
 ---
 A coding agent wrote our fixes overnight, so our customer support automation moved only as fast as domain experts could grade its replies.
 
-A coding agent learns whether its code works on every attempt: tests, linters and the compiler tell it. A reply to a customer has no compiler. The only way to know whether it is right is for someone who knows the business to read it.
+The agent learns on every attempt whether its code works: tests, linters and the compiler tell it. A reply to a customer has no compiler. The only check is someone who knows the business reading it.
 
-So the system went live in shadow mode: it drafted replies to real customer messages, experts graded them, and no customer saw any of them. Every fix went round the same loop:
+Those people can rarely list their rules up front, but shown a wrong reply, they can tell you at a glance what is wrong. The expert's comment in the picture holds two rules nobody had written down.
 
-1. An expert grades a draft and says what is wrong.
-2. I steer the coding agent with a high-level plan for the fix.
-3. A coding agent implements it overnight.
-4. Evals and CI check it.
+Once I had written a high-level plan for a fix, the agent implemented it overnight and evals and CI checked it, with little of my time. The grading set the pace.
 
-Steps 3 and 4 took little of my time. Step 1 set the pace. What I took from it:
+So if you estimate a project like this, the experts' availability is a hard input, not a detail to sort out later. Two things follow:
 
-→ Have the experts grade real drafts as early as possible. We waited until replays of old tickets looked good. The grades the experts could have given in those weeks are lost for good, and a replayed ticket runs against today's records, not the ones the customer had when they wrote.
+→ Get them grading real drafts as early as possible, before any reply reaches a customer. We waited until replays of old tickets looked good, and the grades the experts could have given in those weeks are lost for good.
 
-→ Build the screen the experts grade in, and make each grade quick to give. I also built the storage behind it myself; I wouldn't again. Langfuse's annotation queues cover that part.
-
-→ Grading is how the rules get written down. Experts can rarely list their rules up front, but shown one wrong reply, they say what is wrong. The expert's comment in the picture holds two rules nobody had written down.
-
-If you estimate a project like this, the experts' availability is a hard input, not a detail to sort out later.
+→ Make each grade quick to give. A narrow review screen that shows the ticket and the draft and nothing else is worth building yourself; every click you remove gives the experts time back.
 
 Full post in the first comment.
 
