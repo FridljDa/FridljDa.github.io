@@ -1,7 +1,7 @@
 ---
 title: "On the Future of Pull Requests in the Age of Agentic Coding"
 pubDate: 2026-05-08T00:00:00.000Z
-updatedDate: 2026-05-08T00:00:00.000Z
+updatedDate: 2026-10-10T00:00:00.000Z
 tags:
   - AI
   - Software Engineering
@@ -10,7 +10,7 @@ description: "Once agents write the code and AI reviewers iterate on it, a line-
 image: /images/blog/future-of-pull-requests/featured.png
 ---
 
-Several people have been arguing publicly that pull request review breaks down when an agent wrote the code. Thomas Dohmke makes the case when pitching Entire. Peter Steinberger has been pushing a "prompt request" framing. CodeRabbit has weighed in on the prompt-vs-PR debate. Most of this discussion either argues that a new primitive is needed (without specifying the UX) or proposes reviewing the prompt upstream of code generation. This post is about the third option: what the downstream review surface should look like once the agent transcript is part of it.
+Several people have been arguing publicly that pull request review breaks down when an agent wrote the code. Thomas Dohmke makes the case when pitching Entire, a tool that saves the agent's session alongside each commit. Peter Steinberger has been pushing a "prompt request" framing. CodeRabbit has weighed in on the prompt-vs-PR debate. Most of this discussion either argues that we need a new building block like Entire's, without saying what a reviewer would actually see, or proposes reviewing the prompt instead of the code it produces. This post is about a third option: what a reviewer should see once the agent transcript is part of the pull request.
 
 The argument assumes:
 
@@ -23,11 +23,11 @@ This is not hypothetical. The pieces exist today, and many repositories are alre
 
 One caveat: the iterative loop does not yet close reliably. Agents still miss obvious bugs ten iterations in. The argument that follows is conditional on that gap closing. If you do not believe it ever will, none of what follows will apply.
 
-Even then, someone still needs to review the change before merging; the point is to make that review start from better context than a raw wall of changed lines.
+Even once that loop works, someone still needs to review the change before merging; the point is to make that review start from better context than a raw wall of changed lines.
 
-## The current PR view is for a workflow we no longer have
+## The current PR view was built for code written by people
 
-GitHub's PR view is a diff with inline comments. That UI was built for a world where a human wrote those lines and another human inspected the patch before merge. Scrutinizing each line for off-by-ones and missed edge cases was the right job. In 2026 it is unfair to expect human reviewers to be that first reader, and it does not scale. The diff is the output. The interesting object is the process that produced it.
+GitHub's PR view is a diff with inline comments. That UI was built for a world where a human wrote those lines and another human inspected the patch before merge. Scrutinizing each line for off-by-ones and missed edge cases was the right job. In 2026 it is unfair to expect human reviewers to be that first reader, and it does not scale. The diff shows what changed. To review it well, you need to see how the agent got there: what it was asked, what it tried, and what it left out.
 
 ## Attach the conversation, not just the diff
 
@@ -49,8 +49,8 @@ You still approve or reject based on the change that gets merged. The reasoning 
 
 ### Already being built
 
-The concrete primitive behind this idea is already being built by Entire.
+Entire is already building the piece this idea needs.
 
-Entire is building a CLI that hooks into your git workflow, captures the agent session on every push, and indexes those sessions alongside commits in the repo itself rather than in some external service. They support Claude Code, Cursor, Gemini CLI, OpenCode, GitHub Copilot CLI, and others. Entire frames this today as a way to read the history of *why* code was written a certain way. But the same plumbing is exactly what a PR review built around better review context would sit on top of.
+Entire is building a CLI that hooks into your git workflow, captures the agent session on every push, and indexes those sessions alongside commits in the repo itself rather than in some external service. They support Claude Code, Cursor, Gemini CLI, OpenCode, GitHub Copilot CLI, and others. Entire frames this today as a way to read the history of *why* code was written a certain way. But those stored sessions are exactly what the summarizing agent described above would read when a pull request is opened.
 
 The diff is not going away; reviewers still approve or reject the code that will be merged. But review should start with the conversation, then move to the parts of the diff that need human attention.

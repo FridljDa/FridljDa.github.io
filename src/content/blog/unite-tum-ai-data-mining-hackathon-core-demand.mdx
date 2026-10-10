@@ -1,11 +1,12 @@
 ---
 title: "Unite x TUM.ai Data Mining Hackathon: Core Demand Prediction"
 pubDate: 2026-03-08
+updatedDate: 2026-10-10T00:00:00.000Z
 tags:
   - Data
   - ML
   - Hackathon
-description: "How we tackled Challenge 2 at the Unite x TUM.ai Data Mining Hackathon: fee-aware portfolio optimization for recurring procurement demand, from raw PLI data to a two-stage model and NACE-informed cold start."
+description: "How we tackled Challenge 2 at the Unite x TUM.ai Data Mining Hackathon: choosing which recurring purchases to recommend when each recommendation costs a fee, from raw procurement line items to a two-stage model, with industry-based picks for buyers who have no history."
 image: /images/blog/unite-tum-ai-data-mining-hackathon-core-demand/featured.png
 math: true
 ---
@@ -14,20 +15,20 @@ I took part in the [Unite](https://unite.eu/) x [TUM.ai](https://www.tum-ai.com/
 
 ## Prediction with a price tag
 
-Every recommended item incurred a fixed monthly fee (€10 in the scoring setup), while savings applied only when that item recurred. Too many predictions let fees dominate; too few left savings on the table. The task was therefore an economic portfolio problem, with cold-start buyers, duplicate SKUs, missing attributes, and inconsistent descriptions complicating the predictions.
+Every recommended item incurred a fixed monthly fee (€10 in the scoring setup), while savings applied only when that item recurred. Too many predictions let fees dominate; too few left savings on the table. The task was therefore an economic portfolio problem, with cold-start buyers (buyers with no purchase history in the training data), duplicate SKUs, missing attributes, and inconsistent descriptions complicating the predictions.
 
 ## Challenge setup and scoring
 
 - **Objective:** For each buyer, recommend a set of “Core Demand” elements (recurring needs). Submissions are scored as **Net Score = Total Savings − Total Fees** across all buyers.
 - **Savings:** When a recommended (buyer, product) pair matches actual core demand in the holdout period, savings are generated (in the provided setup, 10% of historical spend on matched items; the exact formula was a black box).
 - **Fees:** €10 per predicted element per month, regardless of correctness.
-- **Levels:** Level 1 = E-Class only; Level 2 = E-Class + Manufacturer; Level 3 = methodology-focused (clustered feature combinations). We optimized for Level 1 and Level 2.
+- **Levels:** Level 1 = E-Class only (the product category under the eCl@ss classification standard); Level 2 = E-Class + Manufacturer; Level 3 = methodology-focused (clustered feature combinations). We optimized for Level 1 and Level 2.
 
-The scoring therefore rewarded precision and portfolio discipline as much as recall.
+The scoring therefore made leaving items out as important as catching the recurring ones: an item was only worth recommending if its expected savings beat the €10 monthly fee.
 
 ## Data and pipeline
 
-We had anonymized procurement line items (PLIs): order date, buyer, eclass, manufacturer, quantity, unit value, NACE and company metadata. Cold buyers had all PLIs removed from training; warm buyers used a temporal split (lookback for features, post-cutoff for targets and evaluation).
+We had anonymized procurement line items (PLIs): order date, buyer, eclass, manufacturer, quantity, unit value, NACE code (the buyer's industry in the EU's NACE classification) and company metadata. Cold buyers had all PLIs removed from training; warm buyers used a temporal split (lookback for features, post-cutoff for targets and evaluation).
 
 The pipeline was staged:
 
@@ -41,7 +42,7 @@ We used several approaches and tuned selection (threshold + per-buyer cap) on th
 
 - **Baseline (v1):** Hand-crafted score: activity/frequency + √(spend) − recency penalty, then threshold and top-K per buyer.
 - **Two-stage (v2) — main workhorse:** Stage A: classifier for recurrence probability; Stage B: regressor for expected future spend *given* recurrence. Combined expected value ≈ P(recur) × E(spend | recur); then subtract fee and apply threshold + top-K. Implemented with LightGBM.
-- **Phase3-style (phase3_repro):** Heuristic score from lookback orders, recency decay, and spend (with optional monthlyized rates for tenure fairness), useful as a fallback and in the hybrid.
+- **Heuristic (phase3_repro):** Score from lookback orders, recency decay, and spend (optionally divided by the buyer's months of history so newer buyers aren't penalized), useful as a fallback and in the hybrid.
 - **Hybrid:** Primary portfolio from the two-stage model, backfilled from phase3_repro up to a target per-buyer size when we were under-submitting.
 
 Selection depended on the score threshold (including negative thresholds to allow more predictions), a per-buyer top-K cap, and guardrails (min orders, min months, high-spend exception). We swept the threshold and top-K values, then archived runs to compare total score, fees, hits, and spend capture.
@@ -51,7 +52,7 @@ Selection depended on the score threshold (including negative thresholds to allo
 - **Fee-aware framing helped.** Treating the problem as portfolio optimization (expected utility minus fee) kept us from blindly maximizing recall.
 - **Cold start:** Using NACE-based rankings and a separate `cold_start_top_k` cap kept cold recommendations sensible and fee-controlled.
 - **Under-submission was the main bottleneck.** Our two-stage model was conservative; leaders had higher spend capture (e.g. 76–79% at Level 1). Our best runs came from relaxing the score threshold and/or increasing top-K and from the hybrid when we needed more breadth.
-- **Tuning and ops:** Reusing existing scores and running selection-only sweeps (Snakemake from portfolio through submission) let us iterate quickly. Archiving runs and comparing metrics (total score, savings, fees, spend capture, prediction volume) made it clear that the issue was selection breadth, not candidate set size.
+- **Tuning and ops:** Reusing existing scores and running selection-only sweeps (Snakemake from portfolio through submission) let us iterate quickly. Archiving runs and comparing metrics (total score, savings, fees, spend capture, prediction volume) made it clear that we were submitting too few of the candidates we already had, not generating too few candidates.
 
 ## Results
 

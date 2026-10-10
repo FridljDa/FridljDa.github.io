@@ -1,7 +1,7 @@
 ---
 title: "Strategic Model Selection in Cursor: Balancing Cost and Performance"
 pubDate: 2026-02-06
-updatedDate: 2026-10-02
+updatedDate: 2026-10-10T00:00:00.000Z
 tags:
   - AI
   - Productivity
@@ -45,7 +45,7 @@ The figure above shows that request volume and spend are distributed very uneven
 
 ![Token usage per request by model](/images/blog/cursor-model-selection-strategy/token-usage-per-request-by-model.png)
 
-Tokens per request vary by orders of magnitude within each model, and the typical request differs severalfold between models. Almost all of those tokens are cached input re-read on every request, not generated code. These are real requests rather than identical tasks, so part of the gap between models reflects the work, not the model. When you experiment with alternative models, watch price per token and Elo alongside response length and context use; that combination is what shows up on your bill.
+Tokens per request vary by orders of magnitude within each model, and the typical request differs severalfold between models. Almost all of those tokens are cached input re-read on every request, not generated code. These are real requests from 12 January to 10 February 2026 rather than identical tasks, so part of the gap between models reflects the work, not the model. When you experiment with alternative models, compare Arena scores, but estimate cost as price per token times the tokens a typical request uses, context included; that product is what shows up on your bill.
 
 ## Recommended pairings
 

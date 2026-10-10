@@ -1,7 +1,7 @@
 ---
 title: "Architecture of a First-Level Support Automation"
 pubDate: 2026-05-16T00:00:00.000Z
-updatedDate: 2026-10-09T00:00:00.000Z
+updatedDate: 2026-10-10T00:00:00.000Z
 tags:
   - AI
   - Customer Support
@@ -43,7 +43,7 @@ We classify the message against a **rooted DAG of intents, biased toward depth 2
 
 **Shared leaves make it a DAG, not a tree.** Whichever route reaches Account locked, the handling is identical. A tree would duplicate the unlock flow; the DAG keeps one plan, and everything downstream depends on the leaf, not the route.
 
-**"Other" makes coverage gaps explicit.** Requests outside the taxonomy land in a visible queue for future intents and route cleanly to less structured handling.
+**"Other" makes coverage gaps explicit.** Requests outside the taxonomy land in a visible queue for future intents and go to the fallback agent.
 
 **Two narrow calls beat one wide classifier.** Each parent exposes only its own children as a typed `Literal`, so unrelated categories never compete. A shared leaf simply appears in more than one parent's options.
 
@@ -102,7 +102,7 @@ Each known leaf owns a small decision tree over the fetched data, and each branc
 
 *Account locked's tree. Alex's message finds one unflagged record, `acc_001`, and gets the unlock steps, a parametrised template.*
 
-**"Other" leaves are the exception.** With no plan in code, the pipeline's only autonomous agent inspects the fetched data and proposes one using constrained tools. Patterns that repeat are promoted to hardcoded leaves through an observe, label, generalise, hardcode loop, so LLM dependence shrinks over time.
+**"Other" leaves are the exception.** With no plan in code, the pipeline's only autonomous agent inspects the fetched data and proposes one using constrained tools. Requests that keep landing in an "Other" leaf become hardcoded leaves through the expert feedback loop above, so fewer of them depend on the agent over time.
 
 Plans involving money, account access, or side effects require human review. [Temporal for Human-in-the-Loop](/post/temporal-human-in-the-loop) covers durable waits, signals, and recovery across restarts.
 
@@ -123,4 +123,4 @@ A monolithic agent is mostly judged end to end, which makes regressions hard to 
 
 <PipelineMap preset="default" />
 
-Typed steps make regressions easy to locate, and "Other" makes coverage gaps visible. Which path should be the default is a separate question. Here it is code, and the agent gets whatever code hasn't reached; [Workflow or Agent](/post/workflow-vs-agent#next-time-make-the-agent-the-default) argues for the opposite.
+Typed steps make regressions easy to locate, and "Other" makes coverage gaps visible. Which path should be the default is a separate question. Here it is code, and the agent gets only the requests that land in an "Other" leaf; [Workflow or Agent](/post/workflow-vs-agent#next-time-make-the-agent-the-default) argues for the opposite.
