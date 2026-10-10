@@ -1,7 +1,7 @@
 ---
 title: "Deep Learning-Based Diabetic Retinopathy Detection in Fundus Images"
 pubDate: 2024-05-01
-updatedDate: 2024-05-01
+updatedDate: 2026-10-10T00:00:00.000Z
 tags:
   - Science
   - AI
@@ -61,7 +61,7 @@ The best results were obtained using a learning rate of $0.0001$, a batch size o
 - **Testing recall**: 0.935
 - **Testing accuracy**: 0.921
 
-Almost all configurations produced high testing recall, with 10 out of 18 experiments achieving a testing recall above 0.9. The oversampling method achieved the highest testing precision, while the weighted cross-entropy improved testing recall. The SGD optimizer generally outperformed the Adam optimizer for the default hyperparameter configurations. Training converged after 35 epochs, indicating stable learning.
+10 of 18 configurations reached a testing recall above 0.9. The oversampling method achieved the highest testing precision, while the weighted cross-entropy improved testing recall. The SGD optimizer generally outperformed the Adam optimizer for the default hyperparameter configurations. Training converged after 35 epochs.
 
 ## Image segmentation with U-Net
 
@@ -84,7 +84,7 @@ We used the VGG Image Annotator software to label DR images accurately, creating
 
 After labeling, we exported a CSV file containing positions of each hemorrhage and exudate, including x and y coordinates and height and width of rectangles. We created ground truth masks with two channels—one for hemorrhages and one for exudates—serving as pixel-wise representations for training the U-Net model.
 
-![Fig. 4: Vizualisation of ground truth masks (in green exudates and in red hemorrhages)](/images/blog/diabetic-retinopathy-detection/ground-truth-masks.png)
+![Visualization of ground truth masks (in green exudates and in red hemorrhages)](/images/blog/diabetic-retinopathy-detection/ground-truth-masks.png)
 
 ### Data augmentation
 
@@ -126,7 +126,7 @@ Our segmentation model achieved:
 - **Jaccard Index (IoU)**: 0.4753
 - **Dice Coefficient**: 0.6696
 
-Accuracy was high, but the moderate recall and overlap metrics show the model's limits. It detected hemorrhages more accurately than exudates, with recall and accuracy close to 1 for hemorrhages. Even specialists can mistake exudates for cotton wool spots or camera artifacts.
+Accuracy was high (0.97), but recall (0.72) and IoU (0.48) show that the model misses many lesion pixels and its masks match the labelled regions only partly. It detected hemorrhages more accurately than exudates, with recall and accuracy close to 1 for hemorrhages. Even specialists can mistake exudates for cotton wool spots or camera artifacts.
 
 ## Limitations and next steps
 
