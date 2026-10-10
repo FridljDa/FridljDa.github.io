@@ -12,7 +12,7 @@ A coding agent learns whether its code works on every attempt: tests, linters an
 So the system went live in shadow mode: it drafted replies to real customer messages, experts graded them, and no customer saw any of them. Every fix went round the same loop:
 
 1. An expert grades a draft and says what is wrong.
-2. I write down what the fix should look like.
+2. I steer the coding agent with a high-level plan for the fix.
 3. A coding agent implements it overnight.
 4. Evals and CI check it.
 
