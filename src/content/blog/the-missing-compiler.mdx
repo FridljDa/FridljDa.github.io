@@ -16,11 +16,11 @@ import ShadowTimeline from '../../components/ShadowTimeline.astro';
 import ThemedImage from '../../components/ThemedImage.astro';
 
 ## TL;DR
-The question hanging over coding agents is what becomes the bottleneck once code is cheap. On an LLM support automation, the answer was concrete: the subject-matter experts. Coding agents get a free verdict on every attempt from tests and compilers; a business process has none, so the only check is someone who knows the business reading the output, and their time set the pace. Plan the project around it: have them grading the system's replies to real tickets as early as possible, before any reply reaches a customer, and make each grade quick to give.
+The question hanging over coding agents is what becomes the bottleneck once code is cheap. On a customer support automation I built, the bottleneck was the subject-matter experts. Coding agents get a free verdict on every attempt from tests and compilers; a business process has none, so the only check is someone who knows the business reading the output, and their time set the pace. Plan the project around it: have them grading the system's replies to real tickets as early as possible, before any reply reaches a customer, and make each grade quick to give.
 
 <SystemMap preset="overview" />
 
-*The whole system. The numbers mark the four steps from an expert's grade to a shipped fix, explained below; each section highlights its part.*
+*The whole system. The numbers mark the four steps from an expert's grade to a shipped fix; each section highlights its part.*
 
 ## Why coding agents work
 
@@ -42,7 +42,7 @@ Consider a first-level support automation, from a real project with the details 
 1. LLMs haven't seen your internal escalation rules or customer records during training.
 2. There is no compiler or test suite to tell the system whether the reply it wrote was any good. That is the missing compiler: the only check available is someone who knows the bank reading the reply and judging it.
 
-A read tool, an endpoint the agent can call, lets it look up the customer's records, and would cover the rules too if anyone had written them down. Usually nobody has: they live in the heads of the people who handle the tickets. So the effort belongs on the second condition. No compiler will check a reply, but you can make it easy for the people who know the bank to check each one, and what they write while checking is the best way to get those rules written down.
+A read tool, an endpoint the system can call, lets it look up the customer's records, and would cover the rules too if anyone had written them down. Usually nobody has: they live in the heads of the people who handle the tickets. So the effort belongs on the second condition: make it easy for the people who know the bank to check each reply.
 
 ## The loop we built
 
@@ -50,7 +50,7 @@ A read tool, an endpoint the agent can call, lets it look up the customer's reco
 
 The system went live in **shadow deployment**: it drafted replies to real tickets, subject-matter experts graded them, and no customer saw any of them.
 
-My job had two parts. The first was the system's overall structure: which decisions the code makes and which the model makes, described in [Workflow or Agent](/post/workflow-vs-agent). It took a few rounds to balance reliability against flexibility, but that is mostly work done up front. The second, and the subject of this post, was the loop that improves the system once it runs, and the harness it runs through: the review screen, its rejection categories, and a store that keeps every grade and comment with its ticket. The loop turned feedback into code changes in four steps.
+My job had two parts. The first was the system's overall structure: which decisions the code makes and which the model makes, described in [Workflow or Agent](/post/workflow-vs-agent). It took a few rounds to balance reliability against flexibility, but that is mostly work done up front. The second was the loop that improves the system once it runs, and the harness it runs through: the review screen, its rejection categories, and a store that keeps every grade and comment with its ticket. The loop turned feedback into code changes in four steps.
 
 ### 1. Experts grade
 
@@ -66,7 +66,7 @@ The expert rejects it and says why:
 
 <ThemedImage src="/images/blog/the-missing-compiler/review-screen-graded.png" alt={"The same review screen, graded: verdict Reject, rejection reason \"Wrong process\", and the reviewer's comment: we have the account number, so look them up and never ask for what we can find; locked accounts get the unlock link, or go to security if flagged."} />
 
-This grade is the only check a reply gets, and most of what the expert needs to know to give it isn't written down anywhere. The people who know a business can rarely write its rules down in advance, but shown a specific draft, they can tell you at a glance what is wrong with it. The reviewer's comment above holds two rules nobody had written down, prompted by a single reply that broke both. So grading does two jobs: it is the check a coding agent gets for free from its compiler, and it is how rules that exist only in people's heads get written down.
+The people who know a business can rarely write its rules down in advance, but shown a draft, they can tell you at a glance what is wrong with it. The reviewer's comment above holds two rules nobody had written down, prompted by a single reply that broke both. So grading does two jobs: it is the check a coding agent gets for free from its compiler, and it is how those rules get written down.
 
 ### 2. I specify the fix
 
@@ -103,9 +103,9 @@ Then the fix ships, and the next batch of shadow responses goes to the experts.
 
 *Before coding agents.*
 
-Eliyahu Goldratt's [theory of constraints](https://en.wikipedia.org/wiki/Theory_of_constraints) starts from one observation: every system has a bottleneck, and fixing it doesn't remove it, it moves it somewhere else. Time saved anywhere but at the bottleneck buys you nothing.
+Eliyahu Goldratt's [theory of constraints](https://en.wikipedia.org/wiki/Theory_of_constraints) starts from one observation: every system has a bottleneck, and fixing it doesn't remove it, it moves it somewhere else.
 
-AI-assisted coding moved ours. Before, every fix went through me, the code included. With a coding agent, a fix I had specified was a branch, an eval case and a green build by the next morning, with little of my time. What limited progress now was step 1: getting domain knowledge out of the experts' heads. That is what the missing compiler costs: a coding agent's tests tell it at once whether its code works, and we learned whether a reply was right only when an expert had time to read it.
+AI-assisted coding moved ours. Before, every fix went through me, the code included. With a coding agent, a fix I had specified was a branch, an eval case and a green build by the next morning, with little of my time. What limited progress now was step 1: getting domain knowledge out of the experts' heads. That is what the missing compiler costs: we learned whether a reply was right only when an expert had time to read it.
 
 <SystemMap preset="today" />
 
@@ -135,33 +135,33 @@ Replaying old tickets is good for checking that fixes stay fixed once you know w
 
 The review screen and the store behind it are where the experts' check happens, which makes it tempting to build all of it in-house, as a first-class part of the system. I built ours that way, store included; I wouldn't again.
 
-A narrow review screen for the subject-matter experts is worth writing yourself: it is the surface they touch every day, it should show the ticket and the proposed reply and nothing else, and every click you remove gives the reviewers time back, which is the time the whole project waits on. The machinery behind it — queues, assignment, score storage, history — is not worth writing. Langfuse's annotation queues as the backend, with a thin custom frontend on its API, is the better trade.
+A narrow review screen for the subject-matter experts is worth writing yourself: it is the surface they touch every day, it should show the ticket and the proposed reply and nothing else, and every click you remove gives the reviewers time back. The machinery behind it — queues, assignment, score storage, history — is not worth writing. Langfuse's annotation queues as the backend, with a thin custom frontend on its API, is the better trade.
 
 ## The other wait: endpoints
 
 <SystemMap preset="endpoints" />
 
-The experts weren't the only people the loop waited on. A reply is only as good as what the agent can look up, so every new kind of answer needed a read tool behind it, an endpoint to fetch a customer's account status or the branch they bank with, and those endpoints belonged to the client's internal IT.
+The experts weren't the only people the loop waited on. A reply is only as good as what the system can look up, so every new kind of answer needed a new endpoint, such as one for a customer's account status, and those belonged to the client's internal IT.
 
-IT worked API-first: I wrote the endpoint I needed as an OpenAPI spec, committed it to the repository and pointed them at it, and it was usually implemented within a day.
+IT worked API-first: I wrote the endpoint I needed as an OpenAPI spec and committed it to the repository, and it was usually implemented within a day.
 
-The handoff was still manual. After committing the spec I pinged someone on Teams, and on their side that meant pointing their own coding agent at it: two coding agents, with a person on each end passing messages between them. I don't know the right fix; something as plain as an MCP server through which my agent files the request directly might be enough. Until then, every new tool costs a round trip through someone's chat, and a fix that needs one can't go to the reviewers until the endpoint exists.
+The handoff was still manual: I pinged someone on Teams, who pointed their own coding agent at the spec — two coding agents, with a person on each end passing messages between them. I don't know the right fix; something as plain as an MCP server through which my agent files the request directly might be enough. Until then, a fix that needs a new endpoint waits for IT before the reviewers see it.
 
 ## The next bottleneck: who translates the feedback
 
 <SystemMap preset="next-bottleneck" />
 
-Step 2 was me, steering the coding agent with an implementation plan for each piece of feedback. That puts one engineer on the critical path of every improvement, and once the reviewers grade steadily, it is the next bottleneck. I haven't solved it yet, but I think it is solvable, most likely with a better loop rather than more of my time. Here is where I got.
+Step 2 was me, steering the coding agent with an implementation plan for each piece of feedback. That puts one engineer on the critical path of every improvement, and once the reviewers grade steadily, it is the next bottleneck. I haven't solved it yet, but I think it is solvable, most likely with a better loop rather than more of my time.
 
 Handing step 2 to the coding agent on the raw feedback produced worse results than doing it myself; skill files and targeted guidelines I wrote narrowed the gap without closing it. More specific skills, or a subagent dedicated to the translation, might close the rest.
 
-The more interesting version changes who writes the skills. An agent with persistent memory — something like [Hermes](https://hermes-agent.nousresearch.com/), which keeps what worked as skills — could write them itself from the graded feedback. A skill is only a prompt, not a guarantee, but if the agent rewrote its skills from each new batch of grades, the system would keep improving without me in step 2.
+The more interesting version changes who writes the skills. An agent with persistent memory — something like [Hermes](https://hermes-agent.nousresearch.com/), which keeps what worked as skills — could rewrite them from each new batch of grades, and the system would keep improving without me in step 2. A skill is only a prompt, not a guarantee.
 
 <SystemMap preset="could-be" />
 
-*What the loop could look like: step 2 moves to an agent, and the experts are the only people left in it.*
+*What the loop could look like: the experts are the only people left in it.*
 
-The risk is drift: the skills the agent writes could slowly stop matching how the business actually works. The only thing that would catch it is the experts' grading, and their time is already the scarcest thing in the project.
+The risk is drift: the skills the agent writes could slowly stop matching how the business actually works. The only thing that would catch it is the experts' grading, which is already the bottleneck.
 
 ## Start at the bottleneck
 
