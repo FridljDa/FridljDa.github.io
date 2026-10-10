@@ -1,7 +1,7 @@
 ---
 title: "An Approval Rate Is Not a Cost Reduction"
 pubDate: 2026-04-21T00:00:00.000Z
-updatedDate: 2026-10-02T00:00:00.000Z
+updatedDate: 2026-10-10T00:00:00.000Z
 tags:
   - AI
   - Customer Support
@@ -11,7 +11,7 @@ image: /images/blog/approval-rate-is-not-savings/featured.png
 ---
 
 ## TL;DR
-An approval rate is not a cost reduction. Unless someone can tell in advance *which* answers are the bad ones, a human still reads all of them, and the saving is a fraction of what the headline number suggests. Do that arithmetic, queue volume included, before the project starts.
+An approval rate is not a cost reduction. Unless someone can tell in advance *which* answers are the bad ones, a human still reads all of them, and the saving is a fraction of what the headline number suggests. Before the project starts, work out what it would actually save: ticket volume, minutes to write a reply against minutes to review one, and what a wrong reply costs.
 
 ## The number everyone reaches for
 
@@ -41,7 +41,7 @@ A headline approval rate measures none of these. It is often a proxy for a proxy
 
 Even with all of that fixed, the arithmetic has a second term: how many tickets there are.
 
-Take a low-volume queue. Even a flawless system is competing for a small slice of one person's time, against the cost of building and maintaining it — and maintenance is not optional, since the business rules the system encodes keep changing.
+Take a low-volume queue. Even a flawless system can save at most a small slice of one person's time, and that has to pay for building and maintaining it — and maintenance is not optional, since the business rules the system encodes keep changing.
 
 ## Do the arithmetic first
 
@@ -50,7 +50,7 @@ Whether an automation like this pays for itself is an ROI calculation. The param
 - **Volume.** Tickets per day in the queue you are actually automating, not the whole support inbox.
 - **Handling time.** Minutes per ticket today, and minutes per ticket to *review* a generated draft.
 - **The cost of being wrong.** What happens to a bad reply that goes out, and who carries it.
-- **Reviewer availability.** [The feedback loop](/post/the-missing-compiler) runs on subject-matter expert time, both during the build and afterwards.
+- **Reviewer availability.** Grading drafts takes subject-matter experts' time, both during the build and afterwards, and [every improvement waits on it](/post/the-missing-compiler).
 - **Maintenance.** Who edits the rules when the business changes them, and how often that is.
 
 None of this is hard. It is uncomfortable, because the honest version of the calculation sometimes says the project shouldn't happen — which is exactly the value of doing it before rather than after.

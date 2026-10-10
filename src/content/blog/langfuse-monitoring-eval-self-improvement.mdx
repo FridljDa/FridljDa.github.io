@@ -1,7 +1,7 @@
 ---
 title: "Langfuse in Production: From Failing Evals to Targeted Fixes"
 pubDate: 2026-02-25
-updatedDate: 2026-10-02
+updatedDate: 2026-10-10T00:00:00.000Z
 tags:
   - AI
   - Python
@@ -11,7 +11,7 @@ image: /images/blog/langfuse-monitoring-eval-self-improvement/featured.png
 math: false
 ---
 
-In [a recent AI-powered support project](/post/first-level-support-automation), [Langfuse](https://langfuse.com/) connected production monitoring, evaluation history, and a Cursor-based triage loop. What mattered was keeping enough context to turn an evaluation failure into the right kind of fix.
+In [a recent AI-powered support project](/post/first-level-support-automation), [Langfuse](https://langfuse.com/) connected production monitoring, evaluation history, and a Cursor-based triage loop. What mattered was keeping the full trace of every failed eval case, tied to a commit, so we could tell whether to fix the eval data, a mock, a prompt or the code.
 
 ## 1. Monitoring production and evaluation flows
 
@@ -79,9 +79,11 @@ The analyzer is prohibited from editing raw customer-interaction fixtures: they 
 
 ## 4. Fix eval data before prompts
 
+Some of our eval data is a set of patterns in JSONL files: ground-truth patterns for outputs that count as correct, and false-positive patterns for outputs known to be wrong. A model output that matches neither is an *unknown positive*.
+
 Each failure still requires a choice: fix the *evaluation data* (ground truth and false-positive patterns) or the *model behavior* (prompts and system behavior). Mixing them wastes time and can make the metrics less trustworthy.
 
-Fix eval data first. If the ground truth is wrong or the pattern matching is too strict, any metric you compute is misleading. You might "improve" precision by tightening a prompt when the real fix is correcting an over-broad ground-truth pattern. Symptoms include a high unknown-positive count (model outputs that don't match any pattern), or patterns that are too narrow or too loose.
+Fix eval data first. If the ground truth is wrong or the pattern matching is too strict, any metric you compute is misleading. You might "improve" precision by tightening a prompt when the real fix is correcting a pattern that counts correct outputs as wrong. One sign is a high unknown-positive count: many model outputs match no pattern at all.
 
 Fix prompts after the eval data reflects what the model *should* do. Low precision or recall then points to the prompt: the model consistently misses a class of real issues (false negatives) or flags things it shouldn't (false positives), while the patterns are already correct.
 

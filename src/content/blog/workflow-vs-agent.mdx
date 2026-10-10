@@ -1,19 +1,19 @@
 ---
 title: "Workflow or Agent: Where the Decisions Live"
 pubDate: 2026-04-19T00:00:00.000Z
-updatedDate: 2026-10-02T00:00:00.000Z
+updatedDate: 2026-10-10T00:00:00.000Z
 tags:
   - AI
   - Customer Support
   - Architecture
-description: "An agent holding every tool, or a workflow that keeps code in charge of the order of operations? Why I'd now make the agent the default and harden proven paths into code."
+description: "An agent holding every tool, or a workflow that keeps code in charge of the order of operations? Why I'd now make the agent the default, and move a request type into code only once it is common and the agent gets it wrong, or the action can't be undone."
 image: /images/blog/workflow-vs-agent/featured.png
 ---
 
 import ThemedImage from '../../components/ThemedImage.astro';
 
 ## TL;DR
-The first architectural decision in an LLM automation is how much of the work the model does and how much code does. We put code in charge of sequencing and gave the LLM one narrow job. That was right for the few request types that make up most tickets and wrong for the long tail. Next time I would make the agent the default and carve code paths out of it.
+The first architectural decision in an LLM automation is how much of the work the model does and how much code does. We put code in charge of sequencing and gave the LLM one narrow job. That worked for the commonest cases and broke down on the rest: rarer requests, and common ones on accounts in states we had no rule for. Next time I would make the agent the default and carve code paths out of it.
 
 ## The task
 
@@ -23,7 +23,7 @@ Customers wrote in to our first-level support team at Northstar Bank with messag
 
 The running example is based on a real project, but the details have been changed to protect the client's privacy.
 
-Two facts pushed us toward code. The first is that LLMs haven't seen your internal escalation rules or customer records during training. The second is that nothing here plays the role a compiler or test suite plays for a coding agent: no automatic verdict tells the system whether the reply it wrote was any good, so someone who knows the bank has to read it and judge. That second fact has [a post of its own](/post/the-missing-compiler); this one is about who decides the order of operations.
+Two facts pushed us toward code. First, no model was trained on Northstar's escalation rules or on Alex's account. Second, no test can tell us whether a reply to Alex is right, the way a test suite tells a coding agent its code works; someone who knows the bank has to read the reply. [The Missing Compiler](/post/the-missing-compiler) makes the longer argument for the second; this post is about who decides the order of operations.
 
 ---
 
@@ -63,7 +63,7 @@ flowchart TD
 ```
 
 This looks elegant, but nothing in it guarantees that the agent checks the security flag *before* sending unlock instructions.
-That would be an expensive mistake, and a system that decides the order of its own safety checks in free text is exposed to prompt injection — unless the check lives inside the unlock tool, which is code deciding the order again.
+That would be an expensive mistake. And if the model chooses the order, a customer's message can talk it out of the flag check (prompt injection) — unless the check lives inside the unlock tool, which is code deciding the order again.
 As the ServiceNow CEO [put it](https://open.spotify.com/episode/11xeL3QCAF77z1vxOp0am0?si=fc70f33f0dd64ab4): people forgive other people for making mistakes. They don't forgive software.
 
 In practice, though, a different complaint drove the decision: stakeholders said the agent's replies didn't match the established message templates.
@@ -113,7 +113,7 @@ flowchart TD
     class INPUT,OUT1,OUT2 terminal
 ```
 
-For this one intent, the workflow was the clear fit: explicit logic, a small state space, and — because code selects the reply — a template that is guaranteed rather than prompted for.
+For this one intent, the workflow was the clear fit: explicit logic, few cases (the account is flagged or it isn't), and — because code selects the reply — a template that is guaranteed rather than prompted for.
 
 Two consequences:
 
@@ -122,7 +122,7 @@ Two consequences:
 
 The full version of this pattern, scaled up to a four-step pipeline, is in [Architecture of a First-Level Support Automation](/post/first-level-support-automation); the typing that holds the seams together is in [Type-Safe Hybrid Workflows with Pydantic AI](/post/pydantic-ai-type-safe-hybrid-workflows).
 
-## The state space wasn't bounded
+## Too many cases to write down
 
 We ran that pipeline in shadow deployment — it drafted a reply to every incoming ticket, subject-matter experts graded the drafts, and nothing went to a customer. Each round of their feedback landed a new branch in the tree, and for a while that worked.
 
@@ -137,7 +137,7 @@ That mapping is a grid: every message shape against every state the record behin
 | **Change of details** | ? | ? | ? |
 
 Every question mark is a business rule someone has to decide, write down, and keep current. Even this 3×3 toy leaves seven open cells, and we had many more than three of each.
-A handful of intents covered most *messages*, not most *cells*: each intent still fanned out across every state its record could be in, and every new state meant another branch and another template, so the tree grew faster than its coverage.
+A handful of intents covered most *messages*, not most *cells*: each intent still fanned out across every state its record could be in, and every new state meant another branch and another template, so the number of branches grew faster than the share of tickets the tree could answer.
 
 ## Bolting an agent onto the tree
 
@@ -175,7 +175,7 @@ purely for departing from a template. We were asking the agent to be a worse wor
 
 ## Next time: make the agent the default
 
-Invert the default, following Will Larson's [Building an internal agent](https://lethain.com/agents-coordinators/), which starts every workflow with the LLM. A path graduates into a workflow only once it shows up often and the agent handles it unreliably, or when the action is irreversible enough that you don't want a model deciding it.
+Invert the default, following Will Larson's [Building an internal agent](https://lethain.com/agents-coordinators/), which starts every workflow with the LLM in charge. A path graduates into a workflow only once it shows up often and the agent handles it unreliably, or when the action is irreversible enough that you don't want a model deciding it.
 
 Flip the default in the [diagram above](#bolting-an-agent-onto-the-tree): the agent becomes the solid path, and code the dashed exception, carved out one hardened branch at a time.
 
@@ -189,7 +189,7 @@ flowchart TD
 
     INPUT --> D
     D -->|"no"| A
-    D -.->|"proven or irreversible"| C
+    D -.->|"common and unreliable, or irreversible"| C
     A --> OUT
     C --> OUT
 
@@ -214,4 +214,4 @@ The caveats are real, though:
 
 ## What actually settles it
 
-Neither design tells you which cells of that grid matter. A workflow makes you guess them up front; an agent lets you skip writing them down. Only evidence from people who know the business settles which paths are worth freezing into code — which is why I'd now build [that loop](/post/the-missing-compiler) before committing to a tree, and check that [the arithmetic works at all](/post/approval-rate-is-not-savings) before building anything.
+Neither design tells you which cells of that grid matter. A workflow makes you guess them up front; an agent lets you skip writing them down. Only the people who know the business can settle which paths are worth freezing into code, and they settle it by grading the system's drafts. So next time I'd [get them grading](/post/the-missing-compiler) before committing to a tree, and [work out what the automation would actually save](/post/approval-rate-is-not-savings) before building anything.

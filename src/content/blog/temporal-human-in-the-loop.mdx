@@ -1,7 +1,7 @@
 ---
 title: "Temporal for Human-in-the-Loop: When You Don't Know How Long to Wait"
 pubDate: 2026-02-25
-updatedDate: 2026-10-02
+updatedDate: 2026-10-10T00:00:00.000Z
 tags:
   - Software Engineering
   - Workflows
@@ -23,7 +23,7 @@ Temporal gives you:
 - **Durable waits** — The workflow can `await` a condition for hours or days without holding a thread or a DB connection. The workflow is persisted; when the condition is satisfied (e.g. via a signal), execution resumes.
 - **Signals** — External actors (e.g. your approval UI) send decisions into the workflow as signals. The workflow reacts when the signal arrives; no polling from inside the workflow.
 - **Queries** — Read-only views of workflow state so UIs can show "waiting for approval" or "approved by X" without affecting execution.
-- **Deterministic replay** — After a crash or deploy, Temporal rebuilds the workflow's state by replaying its event history, without re-running activities that already completed.
+- **Deterministic replay** — After a crash or deploy, Temporal rebuilds the workflow's state by replaying its event history, without re-running activities (the steps that do external or non-deterministic work) that already completed.
 
 These features let you model "do work → wait for human → continue" as one workflow that survives restarts without guessing how long the human will take.
 
@@ -66,7 +66,7 @@ Without a timeout, a workflow could wait indefinitely if the human never respond
 
 ### 3. Polling external systems with unknown completion time
 
-The same problem appears with an external API that completes asynchronously (e.g. a job queue). Start the job in an activity, then have the workflow check its status through another activity. If the job is neither done nor failed, call `workflow.sleep(interval)` and retry within an overall time budget. The sleeps and branches are deterministic, so replay remains safe. Each iteration adds events to the workflow history, though, so for long budgets let the status activity's retry policy do the polling, or use continue-as-new.
+The same problem appears with an external API that completes asynchronously (e.g. a job queue). Start the job in an activity, then have the workflow check its status through another activity. If the job is neither done nor failed, call `workflow.sleep(interval)` and retry within an overall time budget. The sleeps and branches are deterministic, so on replay the loop takes exactly the path it took the first time. Each iteration adds events to the workflow history, though, so for long budgets let the status activity's retry policy do the polling, or use continue-as-new, which restarts the workflow with a fresh history.
 
 ```python
 # Conceptual: poll until done or timeout
@@ -83,7 +83,7 @@ while True:
 
 Humans (or UIs) may send the same signal more than once. Making the signal handler idempotent—e.g. "if we already have a decision, return"—avoids race conditions and duplicate side effects when a reviewer clicks twice or the client retries.
 
-## What the model buys you
+## What Temporal buys you
 
 Workflow code orchestrates and waits; non-deterministic or external actions live in activities. Explicit states such as `AWAITING_APPROVAL` and bounded waits make stuck workflows visible, while deterministic replay handles restarts without re-running completed activities. Activities themselves run at least once, so the side effects inside them still need to be idempotent.
 
