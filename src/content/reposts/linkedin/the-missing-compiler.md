@@ -4,6 +4,8 @@ images:
   - /images/blog/the-missing-compiler/linkedin/review-screen.png
 firstComment: |
   The full post, with the loop step by step, the other thing we waited on (endpoints from the client's IT) and where I expect the bottleneck to move next: https://danielfridljand.de/post/the-missing-compiler
+
+  On whether SaaS survives cheap code, Jamin Ball's "Build vs Buy": https://cloudedjudgement.substack.com/p/clouded-judgement-21326-build-vs
 ---
 A coding agent wrote our fixes overnight, so our customer support automation moved only as fast as domain experts could grade its replies.
 
