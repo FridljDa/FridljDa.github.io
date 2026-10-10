@@ -1,7 +1,7 @@
 ---
 title: "Book Review: Agentic Design Patterns"
 pubDate: 2026-03-29
-updatedDate: 2026-10-02
+updatedDate: 2026-10-10T00:00:00.000Z
 tags:
   - AI
 description: "A chapter-by-chapter verdict on Antonio Gullí's Agentic Design Patterns: which ideas hold up, which chapters to skip, and what has changed since publication."
@@ -19,7 +19,7 @@ Useful concept, although LangChain Expression Language feels like overkill here.
 
 ## Chapter 2: Routing
 
-Very useful concept: divide and conquer.
+Very useful concept: classify each request first, then send it to the prompt, tool or agent built for that kind of request.
 
 ## Chapter 3: Parallelization
 
@@ -27,7 +27,7 @@ Useful for reducing latency, though the value depends on how important latency i
 
 ## Chapter 4: Reflection
 
-Useful for advanced agentic systems, though reasoning models have absorbed the classic self-critique loop in many settings.
+Useful for advanced agentic systems, though in many settings reasoning models already critique and revise their own draft before answering, which covers the classic self-critique loop.
 
 ## Chapter 5: Tool Use
 
@@ -35,7 +35,7 @@ When the book was written, agent skills were still in their infancy, which makes
 
 ## Chapter 6: Planning
 
-Useful for advanced agentic systems. If the steps are known in advance, a fixed chain (Chapter 1) is often enough; Cursor's "Plan Mode" is a good example of when planning earns its place.
+Useful for advanced agentic systems. If the steps are known in advance, a fixed chain (Chapter 1) is often enough; when they aren't, planning pays off, as in Cursor's "Plan Mode".
 
 ## Chapter 7: Multi-Agent 
 
@@ -56,7 +56,7 @@ This seems overhyped and of little use in production.
 
 The distinction between tool use and MCP is not explained clearly. Conceptually, MCP is a structured way to implement tool use: it defines a protocol for how an agent interacts with tools, while tool use can also be implemented ad hoc.
 
-In practice, the conceptual difference between the two is not very important, especially if you use agentic coding.
+In practice, the conceptual difference between the two is not very important.
 
 Since publication, several projects have the model write code that calls tools, instead of calling tools one at a time:
 

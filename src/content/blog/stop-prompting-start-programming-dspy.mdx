@@ -1,9 +1,10 @@
 ---
 title: "Stop Prompting, Start Programming with DSPy"
 pubDate: 2026-01-02
+updatedDate: 2026-10-10T00:00:00.000Z
 tags:
   - AI
-description: "DSPy is a framework that separates the 'what' from the 'how' in LLM development, moving from brittle prompt engineering to robust software engineering."
+description: "With DSPy you declare an LLM call's inputs and outputs in code, and the framework writes the prompt, parses the reply and can tune the prompt against a metric. A movie-review example, with and without it."
 image: /images/blog/stop-prompting-start-programming-dspy/featured.png
 math: false
 ---
@@ -63,7 +64,7 @@ print(f"Sentiment: {s}\nReason: {r}")
 
 The prompt has to insist on "Return ONLY JSON" and constrain the sentiment values. The application then strips possible Markdown, calls `json.loads`, and handles missing keys. Improving accuracy means manually rewriting the English instructions in `PROMPT_TEMPLATE`.
 
-## With DSPy: declare the contract
+## With DSPy: declare inputs and outputs
 
 With DSPy, you define the input and output structure and let the framework handle prompt creation and parsing.
 
@@ -187,4 +188,4 @@ Unlike simpler optimizers that search for examples, GEPA cycles through **reflec
 3. **Mutation (Evolution):** It "mutates" the prompt instructions to fix those specific errors. For example, it might rewrite `"Explain why"` to `"Extract a concise substring proving the sentiment"` if the descriptions were too vague.
 4. **Selection:** Instead of keeping only the single best prompt, it keeps a Pareto front: every candidate that is the best on at least one validation example survives. New mutations are drawn from that front, so ideas that solve different subsets of the data are not discarded too early.
 
-The resulting `compiled_analyzer` has the same interface as the original object, but contains optimized instructions. The contract stays in code; the prompt becomes an artifact produced against the metric.
+The resulting `compiled_analyzer` has the same interface as the original object, but contains optimized instructions. You maintain only the signature; the optimizer writes the prompt text and keeps the version that scores best on your metric.
