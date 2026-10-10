@@ -3,22 +3,29 @@ status: draft
 images:
   - /images/blog/the-missing-compiler/linkedin/review-screen.png
 firstComment: |
-  The full post, with the feedback loop we built and what I would do differently: https://danielfridljand.de/post/the-missing-compiler
+  The full post, with the loop step by step, the other thing we waited on (endpoints from the client's IT) and where I expect the bottleneck to move next: https://danielfridljand.de/post/the-missing-compiler
 ---
-Coding agents made the code cheap. On our LLM support automation, that moved the bottleneck to the people who know the business.
+Once a coding agent wrote our fixes overnight, our LLM support automation moved only as fast as domain experts could grade its replies.
 
-A coding agent gets a verdict on every attempt for free: tests, linters, compiler errors. A business process has no compiler. The only verdict on a reply to a customer is someone who knows the bank reading it.
+A coding agent learns whether its code works on every attempt: tests, linters and the compiler tell it. A reply to a customer has no compiler. The only way to know whether it is right is for someone who knows the business to read it.
 
-So once the code was cheap, the subject-matter experts' time limited everything. What I learned from it:
+So the system went live in shadow mode: it drafted replies to real customer messages, experts graded them, and no customer saw any of them. Every fix went round the same loop:
 
-→ Get into shadow deployment early. Replaying historic tickets replays the message, not the state of the records at the time. Shadow was the only place the pipeline ran against real data.
+1. An expert grades a draft and says what is wrong.
+2. I write down what the fix should look like.
+3. A coding agent implements it overnight.
+4. Evals and CI check it.
 
-→ Build the review screen, not the plumbing. Every click you remove from the experts' screen is time handed back to the bottleneck. Queues and score storage are not worth writing yourself.
+Steps 3 and 4 took little of my time. Step 1 set the pace. What I took from it:
 
-→ Grading is how you get the rules written down. Experts rarely write the rules in advance, but shown one wrong reply, they name two rules nobody had documented.
+→ Have the experts grade real drafts as early as possible. We waited until replays of old tickets looked good. The grading the experts could have done in those weeks never comes back, and an old ticket can't replay the customer's records as they were then.
 
-→ Expect the bottleneck to move again. Once the experts graded steadily, the next one was me, translating their feedback into changes for the coding agent.
+→ Build the screen the experts grade in, and make each grade quick. I also built the storage behind it myself; I wouldn't again. Langfuse's annotation queues cover that part.
 
-If you estimate a project like this, the reviewers' availability is a hard input, not a detail to sort out later.
+→ Grading is how the rules get written down. Experts can rarely list their rules up front, but shown one wrong reply, they say what is wrong. The expert's comment in the picture holds two rules nobody had written down.
 
-#AI #LLM #CustomerSupport #AIEngineering
+If you estimate a project like this, the experts' availability is a hard input, not a detail to sort out later.
+
+Full post in the first comment.
+
+#AIAgents #LLM #Evals #CustomerSupport
