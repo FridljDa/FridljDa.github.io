@@ -1,7 +1,7 @@
 ---
 title: "Encoder, Decoder, Both: The Three Transformer Architectures"
 pubDate: 2026-05-03T00:00:00.000Z
-updatedDate: 2026-10-02T00:00:00.000Z
+updatedDate: 2026-10-10T00:00:00.000Z
 tags:
   - AI
 math: true
@@ -27,7 +27,7 @@ This is BERT ([Devlin et al., 2018](https://arxiv.org/abs/1810.04805)) and its s
 
 Bidirectional attention works well for *understanding* tasks such as sentence classification, named entity recognition, and embedding generation. Classifying a word benefits from seeing what comes after it as well as before.
 
-There is no open-ended generation here. BERT is pre-trained by *masked language modelling*: about 15% of the input tokens are hidden, mostly behind a `[MASK]` token, and the model predicts them from both sides. Because the targets are hidden in the input itself, bidirectional attention has nothing to copy, so the [leakage problem](/post/masks-and-cross-attention#1-the-leakage-problem) that forces a causal mask on GPT does not arise. The model produces representations, not tokens.
+There is no open-ended generation here. BERT is pre-trained by *masked language modelling*: about 15% of the input tokens are hidden, mostly behind a `[MASK]` token, and the model predicts them from both sides. Because the targets are hidden in the input itself, bidirectional attention has nothing to copy, so the [leakage problem](/post/masks-and-cross-attention#1-the-leakage-problem) that forces a causal mask on GPT does not arise. Predicting the hidden tokens is only the training task; in use, the model outputs a vector per token, not text.
 
 ---
 

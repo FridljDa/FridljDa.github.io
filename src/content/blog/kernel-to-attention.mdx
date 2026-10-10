@@ -1,7 +1,7 @@
 ---
 title: "From Kernel Regression to Self-Attention: A Line-by-Line Derivation"
 pubDate: 2026-04-20
-updatedDate: 2026-10-02
+updatedDate: 2026-10-10T00:00:00.000Z
 tags:
   - AI
   - Math
@@ -101,7 +101,7 @@ $$
 \tag{9}
 $$
 
-This is mostly a rename: $\boldsymbol{k}_i = \boldsymbol{x}_i$ and $\boldsymbol{v}_i = y_i$. The split earns its keep in [§8](#8-making-it-parametric-learned-projections), where learned projections will let keys and values diverge.
+For now this is only a rename: $\boldsymbol{k}_i = \boldsymbol{x}_i$ and $\boldsymbol{v}_i = y_i$. In [§7](#7-self-attention), the key and the value will both be the token $\boldsymbol{x}_j$, and [§8](#8-making-it-parametric-learned-projections) separates them again with learned projections.
 
 ---
 
@@ -200,7 +200,7 @@ $$
 \tag{14}
 $$
 
-This lets the model build **context-dependent representations**: the embedding of the word *it* can depend on whether the surrounding sentence is about an animal or a street. And because there are no recurrences, all $n$ outputs $\boldsymbol{y}_1, \ldots, \boldsymbol{y}_n$ can be computed in parallel — this is what makes Transformers so much faster to train than RNNs.
+This lets the model build **context-dependent representations**: in "the animal didn't cross the street because it was too tired", the output for *it* can draw mostly on *animal*, and with "too wide" mostly on *street*. And because there are no recurrences, all $n$ outputs $\boldsymbol{y}_1, \ldots, \boldsymbol{y}_n$ can be computed in parallel — this is what makes Transformers so much faster to train than RNNs.
 
 ---
 
@@ -220,7 +220,7 @@ $$
 \tag{16}
 $$
 
-This is the step that turns nonparametric kernel regression into a *trained* attention mechanism. The key/value split from [§3](#3-naming-the-pieces-queries-keys-values) now earns its keep: because $W^{(k)}$ and $W^{(v)}$ are independent matrices, a token can be matched on one aspect of itself and return another.
+This is the step that turns nonparametric kernel regression into a *trained* attention mechanism. The key/value split from [§3](#3-naming-the-pieces-queries-keys-values) now earns its keep: because $W^{(k)}$ and $W^{(v)}$ are independent matrices, the vector a token is scored on, $W^{(k)} \boldsymbol{x}$, can differ from the vector it adds to the output, $W^{(v)} \boldsymbol{x}$.
 
 ---
 

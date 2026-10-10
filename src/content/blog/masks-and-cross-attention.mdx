@@ -1,7 +1,7 @@
 ---
 title: "Masks and Cross-Attention: Extending Self-Attention"
 pubDate: 2026-05-03T00:00:00.000Z
-updatedDate: 2026-10-02T00:00:00.000Z
+updatedDate: 2026-10-10T00:00:00.000Z
 tags:
   - AI
   - Math
@@ -21,7 +21,7 @@ Both are small modifications to equation (13) of the previous post. The mechanis
 
 ## 1. The leakage problem
 
-A decoder-only language model is trained on next-token prediction: given tokens $\boldsymbol{x}_1, \ldots, \boldsymbol{x}_n$, it should predict $\boldsymbol{x}_{i+1}$ from the output $\boldsymbol{y}_i$ at position $i$, for every $i < n$.
+A decoder-only language model such as GPT ([the next post](/post/transformer-architectures) explains the name) is trained on next-token prediction: given tokens $\boldsymbol{x}_1, \ldots, \boldsymbol{x}_n$, it should predict $\boldsymbol{x}_{i+1}$ from the output $\boldsymbol{y}_i$ at position $i$, for every $i < n$. For that to be a real prediction, $\boldsymbol{y}_i$ may depend only on $\boldsymbol{x}_1, \ldots, \boldsymbol{x}_i$.
 
 At inference time, this constraint is automatic — when generating token $i+1$, only tokens $1, \ldots, i$ exist. There is nothing to leak. At training time, the situation is different. The point of a Transformer is parallelism: we want to compute $\boldsymbol{y}_1, \ldots, \boldsymbol{y}_n$ in a single forward pass, with all targets visible. But equation (16) from the previous post says
 
@@ -66,7 +66,7 @@ The mask is asymmetric. Position $i$ no longer sees positions $j > i$, but posit
 
 ![Causal-mask asymmetry: position 3 reads 3 positions (1–3, itself included) but is read by 6 (positions 3–8). Same matrix, same position, asymmetric reach.](/images/blog/masks-and-cross-attention/causal_mask_asymmetry.png)
 
-Parallelism is preserved. All $n$ outputs are still computed with the same matrix multiplications, just with a triangular attention pattern instead of a full one. This is what lets decoder-only Transformers train at the same speed as bidirectional ones, despite the stricter information constraint.
+Parallelism is preserved. All $n$ outputs are still computed with the same matrix multiplications, just with a triangular attention pattern instead of a full one. This is what lets decoder-only Transformers train at the same speed as bidirectional ones (no causal mask, so every position sees every other), despite the stricter information constraint.
 
 ---
 
@@ -74,7 +74,7 @@ Parallelism is preserved. All $n$ outputs are still computed with the same matri
 
 A second, more mundane use of masking comes from batching. Real training batches contain sequences of different lengths. To pack them into a single tensor, shorter sequences are padded with a special token up to the length of the longest. These padding tokens carry no meaning and should not contribute to any output.
 
-The same trick handles them. Build a padding mask $M^{\text{pad}}$ where $M^{\text{pad}}_{ij} = -\infty$ whenever key $j$ is a padding token, and $0$ otherwise. Add it to the scores before softmax. Only key columns are masked: the rows for padding queries still produce outputs, and the loss simply ignores them. In a decoder, both masks combine: $M^{\text{total}} = M^{\text{causal}} + M^{\text{pad}}$, which is still $-\infty$ wherever either is.
+The same trick handles them. Build a padding mask $M^{\text{pad}}$ where $M^{\text{pad}}_{ij} = -\infty$ whenever key $j$ is a padding token, and $0$ otherwise. Add it to the scores before softmax. Only key columns are masked: the rows for padding queries still produce outputs, and the loss simply ignores them. With a causal mask, both masks combine: $M^{\text{total}} = M^{\text{causal}} + M^{\text{pad}}$, which is still $-\infty$ wherever either is.
 
 ---
 
@@ -104,7 +104,7 @@ $$
 
 Masks carry over with one change. A padding mask over the keys of $B$ becomes an $n \times m$ matrix; the causal mask is not used, because every position in $A$ may read the whole of $B$.
 
-The most prominent use is in encoder–decoder Transformers, where decoder positions attend to the encoder's output — that is what lets a translation model align "die Katze saß" with "the cat sat." But the mechanism is general: it shows up wherever a model needs to condition one sequence on another.
+The most prominent use is in encoder–decoder Transformers ([next post](/post/transformer-architectures)), where decoder positions attend to the encoder's output — that is what lets a translation model align "die Katze saß" with "the cat sat." But the mechanism is general: it shows up wherever a model needs to condition one sequence on another.
 
 ---
 

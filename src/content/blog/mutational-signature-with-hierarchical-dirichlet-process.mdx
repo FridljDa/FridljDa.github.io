@@ -1,10 +1,10 @@
 ---
 title: "Mutational Signature Estimation with the Hierarchical Dirichlet Process"
 pubDate: 2024-09-15
-updatedDate: 2024-09-15
+updatedDate: 2026-10-10T00:00:00.000Z
 tags:
   - Science
-description: "A mathematically rigorous introduction to mutational signature estimation using Hierarchical Dirichlet Processes, bridging the gap between biological applications and statistical methodology."
+description: "A mathematically rigorous introduction to mutational signature estimation using Hierarchical Dirichlet Processes, deriving the steps that papers applying the model leave out."
 math: true
 image: /images/blog/mutational-signature-with-hierarchical-dirichlet-process/featured.png
 ---
@@ -39,13 +39,13 @@ A mutational signature $\theta$ can be visualised as in the following.
 
 The framework for studying somatic mutations through mutational signatures was introduced in a landmark study by Alexandrov et al. (2013), where over 7,000 bulk-sequenced cancer samples were analyzed. Conceptually, a mutational signature represents a biological process acting on the genome, leaving a distinct imprint captured in a probability vector, $\theta$. The [COSMIC project](https://cancer.sanger.ac.uk/signatures/sbs/) maintains a list of mutational signatures and their proposed underlying biological processes. Some of the signatures and their probability vectors $\theta$ are consistently identifiable across most examined cohorts and signature identification algorithms [(cite)](https://pubmed.ncbi.nlm.nih.gov/34316057/).
 
-To estimate mutational signatures and their activities, [Alexandrov et al.](https://pubmed.ncbi.nlm.nih.gov/23318258/) employed Non-Negative Matrix Factorization (NMF). NMF and its variations remain the most widely used methods for estimating mutational signatures and mutational signature activities.
+To estimate mutational signatures and their activities (the share of a sample's mutations that each signature produced), [Alexandrov et al.](https://pubmed.ncbi.nlm.nih.gov/23318258/) employed Non-Negative Matrix Factorization (NMF). NMF and its variations remain the most widely used methods for estimating mutational signatures and mutational signature activities.
 
 ## Dirichlet Process
 
 The Dirichlet Process (DP), denoted $\mathrm{DP}(\alpha, H)$, is a distribution over probability measures. Sampling $G \sim \mathrm{DP}(\alpha, H)$ gives a probability measure $G$. Its two parameters are the concentration $\alpha>0$ and the base measure $H$; the support of $G$ is a subset of the support of $H$.
 
-To sample from the Dirichlet process, we begin by drawing an infinite sequence of i.i.d. samples $\tilde{\theta}_1, \tilde{\theta}_2, \ldots \sim H$. Then, we draw a vector $\boldsymbol{e} = \{e_1, e_2, \ldots\} \sim \operatorname{Stick}(\alpha)$, where $\operatorname{Stick}(\alpha)$ refers to the stick-breaking process. Intuitively, the stick-breaking process works by repeatedly breaking off and discarding a random fraction of a "stick" that is initially of length $1$. Each broken off part of the stick has a length $e_k$. The stick-breaking process generates a sequence $\boldsymbol{e} \in \Delta^\infty$, where the total length of all the broken pieces is 1.
+To sample from the Dirichlet process, we begin by drawing an infinite sequence of i.i.d. samples $\tilde{\theta}_1, \tilde{\theta}_2, \ldots \sim H$. Then, we draw a vector $\boldsymbol{e} = \{e_1, e_2, \ldots\} \sim \operatorname{Stick}(\alpha)$, where $\operatorname{Stick}(\alpha)$ refers to the stick-breaking process. Intuitively, the stick-breaking process works by repeatedly breaking off a random fraction of what remains of a "stick" that is initially of length $1$. Each broken off part of the stick has a length $e_k$. The stick-breaking process generates a sequence $\boldsymbol{e} \in \Delta^\infty$, where the total length of all the broken pieces is 1.
 
 Finally, we construct the random measure $G$ as:
 
@@ -215,7 +215,7 @@ $$
 \end{aligned}
 $$
 
-Intuitively, the stick-breaking process works by repeatedly breaking off and discarding a random fraction of a "stick" that is initially of length $1$. Each broken off part of the stick has a length $e_k$. The stick-breaking process generates a sequence $\boldsymbol{e} \in \Delta^\infty$, where the total length of all the broken pieces is $1$. Consequently, the mixture distribution $G$, which previously had finite support, now has countably infinite support $\left\{\tilde{\theta}_1, \tilde{\theta}_2, \ldots\right\}$ and takes the form:
+Intuitively, the stick-breaking process works by repeatedly breaking off a random fraction of what remains of a "stick" that is initially of length $1$. Each broken off part of the stick has a length $e_k$. The stick-breaking process generates a sequence $\boldsymbol{e} \in \Delta^\infty$, where the total length of all the broken pieces is $1$. Consequently, the mixture distribution $G$, which previously had finite support, now has countably infinite support $\left\{\tilde{\theta}_1, \tilde{\theta}_2, \ldots\right\}$ and takes the form:
 
 $$
 \begin{aligned}
@@ -263,8 +263,8 @@ We can visualise the Dirichlet process as a graphical model:
 
 <figure>
 <img src="/images/blog/mutational-signature-with-hierarchical-dirichlet-process/dirichlet-process-graphical-model.png"
- alt="ThegraphicalmodelofaDirichletProcess." />
-<figcaption aria-hidden="true">ThegraphicalmodelofaDirichletProcess.</figcaption>
+ alt="The graphical model of a Dirichlet Process." />
+<figcaption aria-hidden="true">The graphical model of a Dirichlet Process.</figcaption>
 </figure>
 
 ## Hierarchical Dirichlet Process
@@ -285,7 +285,7 @@ G_j \mid G_0 &\sim \mathrm{DP}(\alpha_j, G_0) \text{ for } j = 1,2,\ldots N.
 \end{aligned}
 $$
 
-The Dirichlet Process $G_0$ sits at the top, with the processes $G_j$ below it. Each $G_j$ varies around $G_0$, allowing samples to share information through the common base distribution. If we observe $M_j$ mutations in sample $j$, we draw them as before:
+The Dirichlet Process $G_0$ sits at the top, with the processes $G_j$ below it. Each $G_j$ varies around $G_0$. Since $G_0$ is discrete, every $G_j$ puts its weight on signatures in the support of $G_0$, so all samples draw from the same set of signatures; only their activities differ. If we observe $M_j$ mutations in sample $j$, we draw them as before:
 
 
 $$

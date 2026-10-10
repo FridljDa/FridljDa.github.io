@@ -1,7 +1,7 @@
 ---
 title: "Extending HDP for Mutational Signatures: Incorporating Evolutionary Trees"
 pubDate: 2024-09-20
-updatedDate: 2024-09-20
+updatedDate: 2026-10-10T00:00:00.000Z
 tags:
   - Science
 description: "An extension of the Hierarchical Dirichlet Process model that incorporates phylogenetic tree structures to capture evolutionary relationships in mutational signature activities."
@@ -45,7 +45,7 @@ The nodes can have different numbers of cells, including none. Dropping the cell
 
 Let $\mathcal{T}$ represent the topology of the tree. Without loss of generality, we assume a single tree for our input data. If multiple trees exist, such as when separate trees are constructed for different tumors, we can combine them by introducing a new root node and connecting the root nodes of the individual trees to this new root. 
 
-This tree consists of nodes $V(\mathcal{T})=\{\color{#BEBEBE} v_1, \color{#BB6438} v_2, \color{#B25870} v_3, \color{#7630A9} v_4, \color{#6672C9} v_5\}$. Each node can represent a subclone or serve as a connecting node. For each node $v_j$ we observe trinucleotide mutations $x_{j,1},\ldots, x_{j,M_j}\in \{1,\ldots,96\}$. Note that $M_j=0$ is allowed. Let $e_{\cdot j}\in \Delta^{\infty}$ denote the activity catalogue in node $j$.   
+This tree consists of nodes $V(\mathcal{T})=\{\color{#BEBEBE} v_1, \color{#BB6438} v_2, \color{#B25870} v_3, \color{#7630A9} v_4, \color{#6672C9} v_5\}$. Each node can represent a subclone or serve as a connecting node with no cells of its own. For each node $v_j$ we observe trinucleotide mutations $x_{j,1},\ldots, x_{j,M_j}\in \{1,\ldots,96\}$. Note that $M_j=0$ is allowed. Let $e_{\cdot j}\in \Delta^{\infty}$ denote the mutational signature activities in node $j$.   
 
 Subclones with a closer evolutionary history should have more similar mutational signature activity. Let $d$ be a measure of dissimilarity on $\Delta^{\infty}$. In the above example we expect that $d(\color{#7630A9} e_{\cdot 4}, \color{#6672C9} e_{\cdot 5}) \leq d(\color{#BB6438} e_{\cdot 2}, \color{#6672C9} e_{\cdot 5})$. When we have access to tree topology $\mathcal{T}$, we can incorporate $\mathcal{T}$ into our model as prior knowledge when inferring $\hat{z}_{ji}$ and consequently $\hat{\theta}_k$ and $\hat{e}_{kj}$.
 
@@ -65,7 +65,7 @@ Each variable $G$ is a Dirichlet Process. For simplicity, we have omitted the sc
 
 Because $G_4$ and $G_5$ vary around $G_3$, while $G_2$ and $G_3$ vary around $G_1$, the prior makes $G_5$ more similar to $G_4$ than to $G_2$. This induces the same relationship among $\color{#6672C9} e_{\cdot 5}$, $\color{#7630A9} e_{\cdot 4}$, and $\color{#BB6438} e_{\cdot 2}$ that motivated the extension.
 
-In the above example, $G_2$ is the base probability distribution of $G_1$. Therefore, the support of $G_2$ is a subset of the support of $G_1$, i.e., $\operatorname{supp}(G_2) \subset \operatorname{supp}(G_1) = {\tilde{\theta}_1^{G_1}, \tilde{\theta}_2^{G_1}, \dots}$. A major shift in signature activity from node $v_1$ to $v_2$ could present a challenge for the model. It would be valuable to investigate whether such a shift is biologically plausible and, if so, to test the model in that scenario.
+In the above example, $G_1$ is the base probability distribution of $G_2$. Therefore, the support of $G_2$ is a subset of the support of $G_1$, i.e., $\operatorname{supp}(G_2) \subset \operatorname{supp}(G_1) = {\tilde{\theta}_1^{G_1}, \tilde{\theta}_2^{G_1}, \dots}$. A major shift in signature activity from node $v_1$ to $v_2$ could present a challenge for the model. It would be valuable to investigate whether such a shift is biologically plausible and, if so, to test the model in that scenario.
 
 ## Mathematical formulation
 
@@ -83,11 +83,11 @@ The change is in the sampling of $G_j$. Consider a tree topology $\mathcal{T}$. 
 
 $$
 \begin{aligned}
-G_j \mid G_s &\sim \mathrm{DP}(\alpha_j, G_s) \text{ for } (v_i,v_s)\in \mathcal{T}.
+G_j \mid G_s &\sim \mathrm{DP}(\alpha_j, G_s) \text{ for } (v_j,v_s)\in \mathcal{T}.
 \end{aligned}
 $$
 
-In words, at each node of the tree we draw $G_j$ from a Dirichlet Process with an individual scaling parameter $\alpha_j$ and the base probability distribution $G_s$ from the parent node. By the mathematical properties of the Dirichlet Process, $G_j$ varies around the probability distribution $G_s$ of its parent node. Hence, distribution properties of $G_s$ get propagated to $G_j$ and further down the tree, ensuring that evolutionarily related nodes have similar mutational signature activities.     
+In words, at each node of the tree we draw $G_j$ from a Dirichlet Process with an individual scaling parameter $\alpha_j$ and the base probability distribution $G_s$ from the parent node. By the mathematical properties of the Dirichlet Process, $G_j$ varies around the probability distribution $G_s$ of its parent node. Hence a node's signature activities are pulled toward its parent's, and the parent's toward the grandparent's, so the prior favors similar activities in evolutionarily related nodes.     
 
 ## Data requirements
 
@@ -107,14 +107,14 @@ The tree-structured HDP also needs to be benchmarked against standard approaches
 2. **Method Comparison**: Estimate mutational signatures using:
    - Classical NMF approach: $\Theta^{\text{NMF}}$ and $E^{\text{NMF}}$
    - Tree-structured HDP: $\Theta^{\text{Tree-HDP}}$ and $E^{\text{Tree-HDP}}$
-3. **Evaluation**: Compare how well the estimated signature activities $D^{\text{NMF}}$ and $D^{\text{Tree-HDP}}$ respect the known tree topology $\mathcal{T}$
+3. **Evaluation**: Compare how well the estimated signature activities $E^{\text{NMF}}$ and $E^{\text{Tree-HDP}}$ respect the known tree topology $\mathcal{T}$, i.e. whether nodes that are close in $\mathcal{T}$ get more similar activities
 
 ### Alternative approaches
 
 Instead of the Hierarchical Dirichlet Process approach, we could use variations of Non-negative Matrix Factorization. Given observed mutation catalogue $X$ and a constructed tree topology $\mathcal{T}$, we could introduce a penalization term $R_{\mathcal{T}}(E)$ to ensure that the tree topology is respected:
 
 $$
-\min_{S, E \geq 0} D(X, S E) + \lambda R_{\mathcal{T}}(E).
+\min_{\Theta, E \geq 0} D(X, \Theta E) + \lambda R_{\mathcal{T}}(E).
 $$
 
 A desirable property of the function $R_{\mathcal{T}}$ would be that for samples $i,j\in \{1,...,l \}$ attached to nodes in the graph $\mathcal{T}$ which are close to each other, we have similar $E_{\cdot i}$ and $E_{\cdot j}$. 
@@ -151,6 +151,6 @@ The proposed approach should also be compared with existing work such as [Alam e
 
 The tree-structured HDP encodes the expectation that evolutionarily related cells should have more similar mutational signature activities.
 
-Each node has its own Dirichlet Process based on its parent, so distribution properties propagate down the tree instead of treating samples independently.
+Each node's Dirichlet Process varies around its parent's instead of around one shared $G_0$, so the prior favors more similar activities for nodes that are close in the tree than for distant ones.
 
 Making the model practical still requires suitable data, an implementation, and benchmarks against the alternatives described above.
