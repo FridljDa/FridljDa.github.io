@@ -133,9 +133,9 @@ Replaying old tickets is good for checking that fixes stay fixed once you know w
 
 <SystemMap preset="review-screen" />
 
-The review screen and the store behind it are where the experts' check happens, which makes it tempting to build all of it in-house. I built ours that way, store included; I wouldn't again.
+The review screen and the store behind it are where the experts' check happens, and with a coding agent it is tempting to build all of it from scratch. I built ours that way, store included; I wouldn't again.
 
-A narrow review screen is worth writing yourself: it is the surface the experts touch every day, it should show the ticket and the proposed reply and nothing else, and every click you remove gives the reviewers time back. The machinery behind it — queues, assignment, score storage, history — is not worth writing. Langfuse's annotation queues as the backend, with a thin custom frontend on its API, is the better trade.
+A narrow review screen is worth writing yourself: it is the surface the experts touch every day, it should show the ticket and the proposed reply and nothing else, and every click you remove gives the reviewers time back. The machinery behind it — queues, assignment, score storage, history — is not: it is quick to write, but getting its details right takes time that existing tools have already spent. Build the screen on top of one, such as Langfuse's annotation queues. It is the same reason SaaS isn't dead, however cheap code gets.
 
 ## The other wait: endpoints
 

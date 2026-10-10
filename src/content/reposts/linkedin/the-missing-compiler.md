@@ -19,6 +19,8 @@ So if you estimate a project like this, the experts' availability is a hard inpu
 
 → Make each grade quick to give. A narrow review screen that shows the ticket and the draft and nothing else is worth building yourself; every click you remove gives the experts time back.
 
+Build that screen on an existing tool, though, not from scratch. With a coding agent I could write the storage behind it myself, and did; I wouldn't again. The code was quick to write, the details were not. It's the same reason SaaS isn't dead, however cheap code gets.
+
 Full post in the first comment.
 
 #AIAgents #LLM #Evals #CustomerSupport
