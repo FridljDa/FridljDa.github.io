@@ -101,6 +101,8 @@ Neither step reverses. Each claim is weaker than the one before it, so a test of
 
 We answered the question five ways. Each tests one implication of the independence, and that tells you what each can miss. $X$ without an index stands for all signals together.
 
+Every method that needed a regression model got three: XGBoost, a random forest, and [TabICL](https://arxiv.org/abs/2502.05564), a pretrained transformer for tables that predicts from the training rows in context instead of being fitted to them. Their results were pretty consistent.
+
 | Method | Tests | Can miss |
 |---|---|---|
 | The best model we could train, explained with SHAP and permutation importance | Whether the model's predictions depend on $X_i$ | Small effects, and signals whose credit goes to correlated ones |
@@ -163,6 +165,7 @@ That is why there are five methods. Each has a blind spot, the last column of th
 - The test misses links that aren't straight lines; the flexible models behind feature importance, the model comparison and the residual model fit them.
 - The model comparison reads a small gain off the difference between two noisy fits; the residual model fits only what the ball type leaves over, and the scatter plot shows the result directly.
 - The test averages over ball types, so effects of opposite sign in different types cancel; the models per ball type look at each type alone.
+- Any model can miss a shape its learner can't fit; every method that used one ran with three learners of different kinds, and they agreed.
 - The models per ball type each see few orders; the others use all of them.
 
 A null from one method leaves its blind spot open. The same null from all five closes most of them.
