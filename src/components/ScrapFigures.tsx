@@ -2,7 +2,7 @@
  * The figures of scrap-conditional-independence:
  *
  * - line: the production line, orders of three ball types passing four
- *   machines, each with a sensor, and good balls and scrap at the end.
+ *   machines, each recording three signals, and good balls and scrap at the end.
  * - question: ball type Z drives both a signal X_i and scrap Y; the post asks
  *   whether X_i and Y are linked beyond that.
  * - pooled: made-up orders where temperature tracks scrap across all orders,
@@ -10,8 +10,10 @@
  * - u-shape: made-up basketball orders where scrap rises as temperature leaves
  *   its set point either way, so the best straight line is flat.
  * - residual: made-up orders, the residual left after the ball type against a
- *   model's prediction of it from the signals: flat, where a signal would put
- *   the orders on the diagonal.
+ *   model's prediction of it from the signals: flat, where a link would tilt
+ *   the orders towards the diagonal.
+ * - forest: made-up results, each signal's effect on scrap with its 95%
+ *   interval, against a band of effects too small to act on.
  *
  * Drawn in the style of the site's other figures (palette, icons, short
  * labels); the prose explains them. Static: rendered on the server, no
@@ -54,8 +56,19 @@ const Var = ({ name, sub }: { name: string; sub?: string }) => (
   </>
 );
 
+/** A range of signals, X_a–X_b, with the baseline restored after each subscript. */
+const SignalRange = ({ from, to }: { from: number; to: number }) => (
+  <>
+    <tspan fontStyle="italic">X</tspan>
+    <tspan dy="0.3em" fontSize="0.7em">{from}</tspan>
+    <tspan dy="-0.3em">–</tspan>
+    <tspan fontStyle="italic">X</tspan>
+    <tspan dy="0.3em" fontSize="0.7em">{to}</tspan>
+  </>
+);
+
 const LineDescription =
-  'The production line: orders of footballs, volleyballs and basketballs, the ball type Z, pass machines M1 to M4 in turn. Each machine has a sensor recording a signal, X1 to X4. At the end of the line, balls are either good or scrap, Y.';
+  'The production line: orders of footballs, volleyballs and basketballs, the ball type Z, pass machines M1 to M4 in turn. Each machine records three signals: X1 to X3 at M1, X4 to X6 at M2, X7 to X9 at M3, X10 to X12 at M4. At the end of the line, balls are either good or scrap.';
 
 function Line() {
   const arrow = 'scrap-line-arrow';
@@ -88,8 +101,8 @@ function Line() {
             </text>
             <line x1={cx} x2={cx} y1={machine.y + machine.h / 2} y2={125} stroke={color('node-border')} strokeWidth={2} />
             <Gauge x={cx} y={136} />
-            <text x={cx} y={172} textAnchor="middle" fontSize={18} fill={color('text')}>
-              <Var name="X" sub={String(k + 1)} />
+            <text x={cx} y={172} textAnchor="middle" fontSize={17} fill={color('text')}>
+              <SignalRange from={3 * k + 1} to={3 * k + 3} />
             </text>
           </g>
         );
@@ -104,7 +117,7 @@ function Line() {
       </text>
       <Grade ok={false} x={506} y={110} r={12} />
       <text x={506} y={144} textAnchor="middle" fontSize={15} fontWeight={600} fill={color('text')}>
-        Scrap <Var name="Y" />
+        Scrap
       </text>
     </Svg>
   );
@@ -258,10 +271,10 @@ const POOLED_ORDERS = (() => {
 })();
 
 const PooledDescription =
-  'Made-up orders: scrap rate against the temperature at machine 2, one dot per order, colored by ball type. Footballs run coolest and have the least scrap, basketballs run hottest and have the most. A dashed line through all orders rises steeply. Within each ball type, the best line is flat: temperature says nothing about scrap once the ball type is known.';
+  'Made-up orders: scrap rate against the temperature at machine M2, one dot per order, colored by ball type. Footballs run coolest and have the least scrap, basketballs run hottest and have the most. A dashed line through all orders rises steeply. Within each ball type, the best line, drawn solid in that type\'s color, is flat: temperature says nothing about scrap once the ball type is known.';
 
 function Pooled() {
-  const box = { left: 56, top: 92, right: 452, bottom: 330 };
+  const box = { left: 56, top: 70, right: 452, bottom: 308 };
   const x: Axis = { min: 148, max: 192, ticks: [150, 160, 170, 180, 190], format: (v) => `${v}`, label: 'Temperature at M2 (°C)' };
   const y = scrapAxis(8);
   const { sx, sy } = scales(box, x, y);
@@ -273,7 +286,7 @@ function Pooled() {
 
 
   return (
-    <Svg viewBox="0 0 560 384" label={PooledDescription}>
+    <Svg viewBox="0 0 560 362" label={PooledDescription}>
       <g fontSize={15} fill={color('text')}>
         {KINDS.map((kind, i) => (
           <g key={kind} transform={`translate(${box.left + i * 116} 18)`}>
@@ -283,16 +296,6 @@ function Pooled() {
             </text>
           </g>
         ))}
-        <g transform={`translate(${box.left} 46)`}>
-          <line x1={0} x2={26} y1={0} y2={0} stroke={color('text')} strokeWidth={2} strokeDasharray="6 4" />
-          <text x={34} y={0} dy="0.35em">
-            All orders
-          </text>
-          <line x1={136} x2={162} y1={0} y2={0} stroke={color('text')} strokeWidth={3} />
-          <text x={170} y={0} dy="0.35em">
-            Within each ball type
-          </text>
-        </g>
       </g>
 
       <Axes box={box} x={x} y={y} />
@@ -311,12 +314,17 @@ function Pooled() {
           <g key={kind}>
             <path d={d} stroke={color('surface')} strokeWidth={7} strokeLinecap="round" />
             <path d={d} stroke={BALLS[kind].fill} strokeWidth={3} strokeLinecap="round" />
+            {kind === 'basketball' && (
+              <text x={sx(b) + 8} y={sy(line(b)) + 6} dy="0.35em" fontSize={15} fill={color('text')}>
+                Within type
+              </text>
+            )}
           </g>
         );
       })}
 
       <path d={`M${sx(lo)},${sy(pooled(lo))} L${sx(hi)},${sy(pooled(hi))}`} stroke={color('text')} strokeWidth={2} strokeDasharray="6 4" />
-      <text x={sx(hi) + 8} y={sy(pooled(hi))} dy="0.35em" fontSize={15} fill={color('text')}>
+      <text x={sx(hi) + 8} y={sy(pooled(hi)) - 6} dy="0.35em" fontSize={15} fill={color('text')}>
         All orders
       </text>
     </Svg>
@@ -382,15 +390,96 @@ function Residual() {
   const y = axis('Predicted residual');
   const { sx, sy } = scales(box, x, y);
   return (
-    <Svg viewBox="0 0 560 396" label={ResidualDescription}>
+    <Svg viewBox="0 0 384 396" label={ResidualDescription}>
       <Axes box={box} x={x} y={y} />
       <path d={`M${sx(-2)},${sy(-2)} L${sx(2)},${sy(2)}`} stroke={color('text')} strokeWidth={2} strokeDasharray="6 4" />
       {RESIDUAL_ORDERS.map((o, i) => (
         <Dot key={i} x={sx(o.x)} y={sy(o.y)} fill={PALETTE[3]} />
       ))}
-      <text x={sx(2) + 8} y={sy(2)} dy="0.35em" fontSize={15} fill={color('text')}>
+      <text x={sx(1.6) - 10} y={sy(1.6)} dy="0.35em" textAnchor="end" fontSize={15} fill={color('text')}>
         Predicted = actual
       </text>
+    </Svg>
+  );
+}
+
+/**
+ * Made-up results of the GCM, one row per signal: the estimated effect on scrap,
+ * in percentage points per within-type standard deviation of the signal, and
+ * the half-width of its 95% interval. X7 is the one rejection at 5% (p = 0.02),
+ * X11 the one interval wider than the band. The post quotes these numbers.
+ */
+const FOREST: { estimate: number; halfWidth: number }[] = [
+  { estimate: -0.021, halfWidth: 0.058 },
+  { estimate: 0.034, halfWidth: 0.061 },
+  { estimate: 0.008, halfWidth: 0.057 },
+  { estimate: -0.045, halfWidth: 0.066 },
+  { estimate: 0.012, halfWidth: 0.059 },
+  { estimate: 0.027, halfWidth: 0.071 },
+  { estimate: 0.075, halfWidth: 0.063 },
+  { estimate: -0.03, halfWidth: 0.06 },
+  { estimate: 0.041, halfWidth: 0.064 },
+  { estimate: -0.016, halfWidth: 0.062 },
+  { estimate: -0.03, halfWidth: 0.165 },
+  { estimate: 0.019, halfWidth: 0.058 },
+];
+/** Effects inside ±BAND percentage points per standard deviation are too small to act on. */
+const BAND = 0.15;
+const LOOK_HERE = new Set([7, 11]);
+
+const ForestDescription =
+  'Made-up results: for each of the twelve signals, grouped by machine M1 to M4, the estimated change in scrap rate per standard deviation of the signal, with its 95% interval, on a scale from −0.25 to +0.25 percentage points. A shaded band from −0.15 to +0.15 marks effects too small to act on. Every interval but one lies inside the band. X7 at M3 is the only interval that excludes zero, from 0.01 to 0.14. X11 at M4 has a wide interval, from −0.20 to +0.14, reaching past the band.';
+
+function Forest() {
+  const box = { left: 112, top: 56, right: 528, bottom: 400 };
+  const row = 24;
+  const gap = 12;
+  const min = -0.25;
+  const max = 0.25;
+  const sx = (v: number) => box.left + ((v - min) / (max - min)) * (box.right - box.left);
+  const rowY = (i: number) => box.top + 10 + i * row + Math.floor(i / 3) * gap + row / 2;
+  const signed = (v: number) => (v > 0 ? `+${v}` : `${v}`.replace('-', '−'));
+
+  return (
+    <Svg viewBox="0 0 560 464" label={ForestDescription}>
+      <rect x={sx(-BAND)} y={box.top} width={sx(BAND) - sx(-BAND)} height={box.bottom - box.top} fill={color('edge')} fillOpacity={0.4} />
+      <text x={sx(0)} y={box.top - 14} textAnchor="middle" fontSize={15} fontWeight={600} fill={color('text')}>
+        Too small to act on
+      </text>
+
+      <g fontSize={14} fill={color('muted')}>
+        {[-0.2, -0.1, 0, 0.1, 0.2].map((t) => (
+          <g key={t}>
+            <line x1={sx(t)} x2={sx(t)} y1={box.top} y2={box.bottom} stroke={color(t === 0 ? 'node-border' : 'edge')} strokeWidth={t === 0 ? 1.5 : 1} />
+            <text x={sx(t)} y={box.bottom + 20} textAnchor="middle">
+              {signed(t)}
+            </text>
+          </g>
+        ))}
+      </g>
+      <text x={(box.left + box.right) / 2} y={box.bottom + 46} textAnchor="middle" fontSize={15} fontWeight={600} fill={color('text')}>
+        Scrap rate (percentage points) per standard deviation
+      </text>
+
+      {[0, 1, 2, 3].map((m) => (
+        <text key={m} x={20} y={(rowY(3 * m) + rowY(3 * m + 2)) / 2} dy="0.35em" fontSize={15} fontWeight={600} fill={color('text')}>
+          M{m + 1}
+        </text>
+      ))}
+
+      {FOREST.map(({ estimate, halfWidth }, i) => {
+        const y = rowY(i);
+        const fill = LOOK_HERE.has(i + 1) ? color('warn') : PALETTE[3];
+        return (
+          <g key={i}>
+            <text x={box.left - 14} y={y} dy="0.35em" textAnchor="end" fontSize={16} fill={color('text')}>
+              <Var name="X" sub={String(i + 1)} />
+            </text>
+            <line x1={sx(estimate - halfWidth)} x2={sx(estimate + halfWidth)} y1={y} y2={y} stroke={fill} strokeWidth={3} strokeLinecap="round" />
+            <circle cx={sx(estimate)} cy={y} r={5.5} fill={fill} stroke={color('surface')} strokeWidth={1.5} />
+          </g>
+        );
+      })}
     </Svg>
   );
 }
@@ -404,7 +493,8 @@ export const FIGURES = {
   question: { component: Question, description: QuestionDescription, width: 440 },
   pooled: { component: Pooled, description: PooledDescription, width: 600 },
   'u-shape': { component: UShape, description: UShapeDescription, width: 600 },
-  residual: { component: Residual, description: ResidualDescription, width: 560 },
+  residual: { component: Residual, description: ResidualDescription, width: 420 },
+  forest: { component: Forest, description: ForestDescription, width: 600 },
 } satisfies Record<string, { component: ComponentType; description: string; width: number }>;
 
 export type FigureName = keyof typeof FIGURES;
