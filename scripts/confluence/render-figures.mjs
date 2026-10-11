@@ -25,7 +25,7 @@ const FIGURES = [
   },
 ];
 
-const POSTS = ['the-missing-compiler', 'first-level-support-automation'];
+const POSTS = ['the-missing-compiler', 'first-level-support-automation', 'scrap-conditional-independence'];
 
 // Figures are drawn at 720px wide; the rest is the white margin around them.
 const FIGURE_WIDTH = 768;

@@ -1,0 +1,136 @@
+---
+title: "Condition on What the Client Already Knows"
+pubDate: 2026-10-11T00:00:00.000Z
+tags:
+  - Data
+  - Statistics
+  - Math
+math: true
+description: "Ball type predicted scrap, but the client knew that and couldn't change it. So we asked whether each sensor signal is independent of scrap given the ball type, and found that most methods test one consequence of that."
+image: /images/blog/scrap-conditional-independence/featured.png
+---
+
+import ScrapFigure from '../../components/ScrapFigure.astro';
+
+## TL;DR
+In a factory's sensor data, the strongest predictor of scrap was the product type: true, already known, and not something the client can change. Instead of asking which signals predict scrap, we asked which are linked to scrap *given* the product type: is $X_i \perp\!\!\!\perp Y \mid Z$? Most methods for answering that test one consequence of it, and knowing which one tells you what the method can miss.
+
+## The factory
+
+On a current data science project, a client wants to know where its scrap comes from. I have changed every detail of the setting; what carries over is the structure.
+
+A factory makes balls: footballs, volleyballs, basketballs. Every order runs through the same machines, one after the other, and each machine records its own signals: one a temperature, another a spin speed, another a pressure. Some balls come off the line below standard and are thrown away. That is the scrap.
+
+<ScrapFigure name="line" />
+
+*Orders of three ball types pass four machines. Each machine has a sensor; at the end, some balls are scrap.*
+
+We look at orders, not single balls: each order has a ball type, a scrap rate, and a value for each signal over the time the order was on the line.
+
+## The obvious answer
+
+One thing predicted scrap well, and we found it quickly: the ball type. Basketballs are scrapped more often than footballs.
+
+For the client, that is neither news nor help. They knew it already, and they can't act on it: an order for basketballs has to be filled with basketballs.
+
+It also gets in the way. The machines run differently for each ball type, so nearly every signal tracks the ball type, and through it, scrap. Ask which signals predict scrap, and the data keeps answering with the ones that give away the ball type.
+
+<ScrapFigure name="pooled" />
+
+*Made-up orders. Across all orders, a hotter machine 2 goes with more scrap. Within each ball type, temperature says nothing about scrap: the trend across all orders is the ball type.*
+
+## The question we asked instead
+
+Write $Z$ for an order's ball type, $Y$ for its scrap rate, and $X_i$ for its $i$-th signal. The question is not whether $X_i$ predicts $Y$, but whether it says anything about $Y$ that $Z$ doesn't already: is the signal independent of scrap given the ball type,
+
+$$
+X_i \perp\!\!\!\perp Y \mid Z \;?
+$$
+
+Because $Z$ takes only a few values, this reads concretely: among basketball orders, $X_i$ says nothing about scrap, and the same among footballs and among volleyballs.
+
+<ScrapFigure name="question" />
+
+*The ball type drives both the machine settings and the scrap rate. The question is whether a signal is linked to scrap beyond that.*
+
+A signal for which the data rejects this independence is a candidate source of scrap. A signal for which it doesn't is, as far as the data can tell, explained by the product mix.
+
+## What independence implies
+
+Conditional independence is a statement about whole distributions. For every value of the signal and every ball type,
+
+$$
+p(y \mid x_i, z) = p(y \mid z).
+$$
+
+That is rarely what gets tested directly. Most methods test something it implies, usually one of these two:
+
+1. **The best prediction doesn't change.** Once the ball type is known, knowing the signal doesn't change the expected scrap:
+
+   $$
+   \mathbb{E}[Y \mid X_i, Z] = \mathbb{E}[Y \mid Z].
+   $$
+
+2. **The conditional covariance is zero.** Within each ball type, signal and scrap are uncorrelated:
+
+   $$
+   \operatorname{Cov}(X_i, Y \mid Z) = 0.
+   $$
+
+Each follows from the one before. Independence gives the first by taking expectations. For the second, write $\mu(Z) = \mathbb{E}[X_i \mid Z]$ and condition on $X_i$ inside:
+
+$$
+\begin{aligned}
+\operatorname{Cov}(X_i, Y \mid Z)
+&= \mathbb{E}\big[(X_i - \mu(Z))\, Y \mid Z\big] \\
+&= \mathbb{E}\big[(X_i - \mu(Z))\, \mathbb{E}[Y \mid X_i, Z] \mid Z\big] \\
+&= \mathbb{E}[Y \mid Z]\; \mathbb{E}\big[X_i - \mu(Z) \mid Z\big] = 0.
+\end{aligned}
+$$
+
+Neither step reverses. Each claim is weaker than the one before it, so a test of it can pass while the signal still matters:
+
+- **Zero covariance, but the mean moves.** Scrap often rises when a temperature drifts from its set point in either direction. Within a ball type that is a U, and if drifts both ways are about equally common, the covariance is near zero. A correlation sees nothing; the conditional mean does.
+- **The same mean, but not the same distribution.** A signal can make scrap more erratic from order to order without moving its average. A comparison of mean predictions sees nothing.
+
+<ScrapFigure name="u-shape" />
+
+*Made-up basketball orders. Scrap rises as the temperature leaves its set point either way. The best straight line is flat, so the covariance is about zero; the conditional mean $\mathbb{E}[Y \mid X_i, Z]$ is not.*
+
+## Methods as tests
+
+Read this way, the usual tools sort themselves by the implication they test, and that tells you what each can miss:
+
+| Method | Tests | Weakness |
+|---|---|---|
+| Correlation of $X_i$ and scrap over all orders | $X_i \perp\!\!\!\perp Y$, ignoring $Z$ | Answers a different question, and flags every signal that tracks the ball type |
+| Correlation within each ball type; partial correlation | $\operatorname{Cov}(X_i, Y \mid Z) = 0$ | Misses links that aren't straight lines, like the U |
+| A model of scrap from the ball type against one from the ball type and $X_i$, compared on squared error | $\mathbb{E}[Y \mid X_i, Z] = \mathbb{E}[Y \mid Z]$ | Misses changes in spread, and shapes the model can't fit |
+| The same comparison on log-likelihood | $p(y \mid x_i, z) = p(y \mid z)$ | Misses shapes the model can't fit |
+| The signal in high- against low-scrap orders, compared within each ball type | $p(x_i \mid y, z) = p(x_i \mid z)$ | Misses whatever the comparison ignores: a $t$-test compares only means |
+
+The model comparisons need held-out orders: on the orders it was fitted to, the bigger model always fits at least as well. The last row is the independence itself, read from the other side; splitting scrap into high and low tests a consequence of it.
+
+Permutation importance shows how small the step from the wrong question to the right one can be. Shuffling $X_i$ across all orders also breaks its link to the ball type, so a signal that only stands in for the ball type looks important. Shuffling it *within* each ball type keeps that link and breaks only what $X_i$ adds. If the independence holds, the shuffled orders are distributed exactly like the real ones, so repeating the shuffle gives an exact test: the model's loss on the real orders should look like one more draw from its losses on the shuffled ones. As with the model comparison, squared error tests the mean and log-likelihood the distribution.
+
+## Why a categorical Z helps
+
+Conditional independence is hard to test in general. [Shah and Peters (2020)](https://arxiv.org/abs/1804.07203) show that when $Z$ is continuous, no test can keep its false-positive rate in check for every distribution where the independence holds and still have power against any alternative. Every practical test buys its power with assumptions about how $X_i$ and $Y$ depend on $Z$.
+
+With a handful of ball types, that problem doesn't arise. The question splits into one ordinary independence question per ball type, and each needs only enough orders of that type.
+
+## What a rejection tells you
+
+Rejecting $X_i \perp\!\!\!\perp Y \mid Z$ makes a signal a candidate, not a cause. Three things produce a dependence:
+
+- **The machine behind $X_i$ causes scrap.** The answer everyone hopes for.
+- **Something else moves both.** A batch of raw material, a shift, the humidity in the hall.
+- **The signal sits downstream of the defect.** On a line, a ball damaged at machine 2 can still look different to the sensor at machine 4.
+
+With many signals, two more things matter. Some signals reject by chance; a false discovery rate correction such as Benjamini–Hochberg keeps that in check. And two signals that track the same thing, like two thermometers on one oven, are flagged together. Asking whether a signal adds anything beyond all the others means conditioning on them too, $X_i \perp\!\!\!\perp Y \mid Z, X_{-i}$, and since the other signals are continuous, that brings back the hardness result above.
+
+So the analysis hands the people who know the machines a short list of candidates, not a verdict.
+
+## The general move
+
+The strongest predictor is often something the client already knows and can't change: the product, the site, the season. Reporting it again is easy and worthless. Condition on it, and ask what is left.
