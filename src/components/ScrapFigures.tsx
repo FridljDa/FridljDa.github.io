@@ -294,12 +294,10 @@ function Pooled() {
   const lo = Math.min(...xs);
   const hi = Math.max(...xs);
   const pooled = fit(POOLED_ORDERS);
-  /** Each type's name sits above its cluster, the volleyballs' below, clear of the other clusters. */
+  /** Each type's name sits above its cluster, starting at its leftmost order, clear of the next cluster's line. */
   const clusterLabel = (kind: BallKind) => {
     const orders = POOLED_ORDERS.filter((o) => o.kind === kind);
-    const cx = orders.reduce((s, o) => s + o.x, 0) / orders.length;
-    const ys = orders.map((o) => o.y);
-    return kind === 'volleyball' ? { x: cx, y: sy(Math.min(...ys)) + 24 } : { x: cx, y: sy(Math.max(...ys)) - 16 };
+    return { x: Math.min(...orders.map((o) => o.x)), y: sy(Math.max(...orders.map((o) => o.y))) - 16 };
   };
 
   return (
@@ -325,7 +323,7 @@ function Pooled() {
                 Within type
               </text>
             )}
-            <text x={sx(clusterLabel(kind).x)} y={clusterLabel(kind).y} textAnchor="middle" fontSize={16} fontWeight={600} fill={BALLS[kind].fill}>
+            <text x={sx(clusterLabel(kind).x)} y={clusterLabel(kind).y} fontSize={16} fontWeight={600} fill={BALLS[kind].fill}>
               {BALLS[kind].label}
             </text>
           </g>
@@ -426,13 +424,16 @@ function Cancel() {
         <Dot key={i} x={sx(o.x)} y={sy(o.y)} fill={BALLS[o.kind].fill} />
       ))}
       {(['football', 'volleyball'] as BallKind[]).map((kind) => {
-        const line = fit(CANCEL_ORDERS.filter((o) => o.kind === kind));
-        const d = `M${sx(-end)},${sy(line(-end))} L${sx(end)},${sy(line(end))}`;
+        const orders = CANCEL_ORDERS.filter((o) => o.kind === kind);
+        const line = fit(orders);
+        const a = Math.min(...orders.map((o) => o.x));
+        const b = Math.max(...orders.map((o) => o.x));
+        const d = `M${sx(a)},${sy(line(a))} L${sx(b)},${sy(line(b))}`;
         return (
           <g key={kind}>
             <path d={d} stroke={color('surface')} strokeWidth={7} strokeLinecap="round" />
             <path d={d} stroke={BALLS[kind].fill} strokeWidth={3} strokeLinecap="round" />
-            <text x={sx(end) + 10} y={sy(line(end))} dy="0.35em" fontSize={16} fontWeight={600} fill={BALLS[kind].fill}>
+            <text x={sx(b) + 10} y={sy(line(b))} dy="0.35em" fontSize={16} fontWeight={600} fill={BALLS[kind].fill}>
               {BALLS[kind].label}
             </text>
           </g>
@@ -499,10 +500,17 @@ const FOREST: { estimate: number; halfWidth: number }[] = [
 /** Slopes inside ±BAND percentage points per within-type standard deviation are too small to act on. */
 const BAND = 0.15;
 /** Signals to look at, with the short note the figure gives each. */
-const LOOK_HERE: Record<number, string> = { 7: 'p = 0.02', 11: 'Past the band' };
+const LOOK_HERE: Record<number, ReactNode> = {
+  7: (
+    <>
+      <tspan fontStyle="italic">p</tspan> = 0.02
+    </>
+  ),
+  11: 'Wide interval',
+};
 
 const ForestDescription =
-  'For each of the twelve signals, grouped by machine M1 to M4, the slope of scrap on the signal in percentage points per within-type standard deviation of the signal, with its 95% interval, on a scale from −0.25 to +0.25. A shaded band from −0.15 to +0.15 marks slopes too small to act on. Every interval but one lies inside the band. X7 at M3 is the only interval that excludes zero, from 0.01 to 0.14, with p = 0.02. X11 at M4 has a wide interval, from −0.20 to +0.14, reaching past the band.';
+  'For each of the twelve signals, grouped by machine M1 to M4, the slope of scrap on the signal in percentage points per within-type standard deviation of the signal, with its 95% interval, on a scale from −0.25 to +0.25. A shaded band from −0.15 to +0.15 marks slopes too small to act on. Every interval but one lies inside the band. X7 at M3 is the only interval that excludes zero, from 0.01 to 0.14, with p = 0.02. X11 at M4 has a wide interval, from −0.20 to +0.14, reaching past the band on the left.';
 
 function Forest() {
   const box = { left: 104, top: 56, right: 470, bottom: 400 };
@@ -535,7 +543,7 @@ function Forest() {
           Percentage points of scrap
         </text>
         <text x={(box.left + box.right) / 2} y={box.bottom + 72}>
-          per within-type standard deviation
+          per within-type standard deviation of the signal
         </text>
       </g>
 
