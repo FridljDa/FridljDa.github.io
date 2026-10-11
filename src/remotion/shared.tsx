@@ -219,3 +219,39 @@ export const Label = ({
     {children}
   </text>
 );
+
+export type BallKind = 'basketball' | 'football' | 'volleyball';
+
+/** A ball in its type's color, with the seams that tell the types apart. 28 units across. */
+export const Ball = ({ kind, fill, ...place }: IconProps & { kind: BallKind; fill: string }) => {
+  const seam = { fill: 'none', stroke: '#1f2937', strokeOpacity: 0.55, strokeWidth: 1.6, strokeLinecap: 'round' } as const;
+  const corners = [0, 1, 2, 3, 4].map((k) => (-90 + 72 * k) * (Math.PI / 180));
+  return (
+    <Place {...place}>
+      <circle r={14} fill={fill} />
+      {kind === 'basketball' && (
+        <>
+          <path d="M0,-14 V14 M-14,0 H14" {...seam} />
+          <path d="M-9.5,-10.3 Q-3.5,0 -9.5,10.3 M9.5,-10.3 Q3.5,0 9.5,10.3" {...seam} />
+        </>
+      )}
+      {kind === 'football' && (
+        <>
+          <path d={corners.map((a, i) => `${i ? 'L' : 'M'}${5 * Math.cos(a)},${5 * Math.sin(a)}`).join(' ') + ' Z'} fill="#1f2937" fillOpacity={0.55} />
+          <path d={corners.map((a) => `M${5 * Math.cos(a)},${5 * Math.sin(a)} L${13.5 * Math.cos(a)},${13.5 * Math.sin(a)}`).join(' ')} {...seam} />
+        </>
+      )}
+      {kind === 'volleyball' &&
+        [0, 120, 240].map((angle) => <path key={angle} d="M0,0 Q7,-6 3,-13.6" transform={`rotate(${angle})`} {...seam} />)}
+    </Place>
+  );
+};
+
+/** A sensor on a machine: a dial with its needle. */
+export const Gauge = (place: IconProps) => (
+  <Place {...place}>
+    <circle r={11} fill={color('node-bg')} stroke={color('node-border')} strokeWidth={2} />
+    <line x1={0} y1={0} x2={5.5} y2={-6} stroke={color('text')} strokeWidth={2} strokeLinecap="round" />
+    <circle r={2} fill={color('text')} />
+  </Place>
+);
