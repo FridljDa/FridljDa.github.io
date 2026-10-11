@@ -6,14 +6,14 @@ tags:
   - Statistics
   - Math
 math: true
-description: "Ball type predicted scrap, but the client knew that and couldn't change it. So we asked whether each sensor signal is independent of scrap given the ball type, answered it four ways, and found where a hypothesis test and feature importance disagree."
+description: "Ball type predicted scrap, but the client knew that and couldn't change it. So we asked whether each sensor signal is independent of scrap given the ball type, answered it four ways, and pretty consistently found no evidence. Why four methods, and what a null result like that still says."
 image: /images/blog/scrap-conditional-independence/featured.png
 ---
 
 import ScrapFigure from '../../components/ScrapFigure.astro';
 
 ## TL;DR
-In a factory's sensor data, the strongest predictor of scrap was the product type: true, already known, and not something the client can change. Instead of asking which signals predict scrap, we asked which are linked to scrap *given* the product type: is $X_i \perp\!\!\!\perp Y \mid Z$? We answered that four ways, and each tests a different consequence of the independence. A direct test of it had two advantages over feature importance: with enough data it finds small effects, and correlated signals don't dilute it.
+In a factory's sensor data, the strongest predictor of scrap was the product type: true, already known, and not something the client can change. Instead of asking which signals predict scrap, we asked which are linked to scrap *given* the product type: is $X_i \perp\!\!\!\perp Y \mid Z$? We answered that four ways, each testing a different consequence of the independence, and pretty consistently found no evidence that the signals affect scrap beyond the ball type. The methods' blind spots barely overlap, which is what makes the null worth something. A direct test of the independence also has two advantages over feature importance: given enough data it finds small effects, and correlated signals don't dilute it.
 
 ## The factory
 
@@ -130,7 +130,7 @@ $$
 
 where $n$ is the number of orders and $\hat\sigma_R$ the standard deviation of the $R_k$. Under the independence, $T$ is approximately standard normal, so $|T| > 1.96$ rejects at the 5% level. It tests the covariance implication, which is why it shares that implication's blind spot for the U.
 
-## Where the test and feature importance disagree
+## Where the test and feature importance differ
 
 ### Small effects
 
@@ -146,18 +146,32 @@ Feature importance divides credit among the features of one model. Correlated si
 
 A test per signal doesn't have this problem in that form. Each test conditions only on the ball type, so correlated signals don't compete for anything. The flip side is that both thermometers are flagged. Asking whether a signal adds anything beyond all the others means conditioning on them too, $X_i \perp\!\!\!\perp Y \mid Z, X_{-i}$, and since the other signals are continuous, that brings back the hardness result above.
 
-## What a rejection tells you
+## What we found
 
-Rejecting $X_i \perp\!\!\!\perp Y \mid Z$ makes a signal a candidate, not a cause. Three things produce a dependence:
+Pretty consistently, a lack of evidence. Across the four methods, the measured signals showed no sign of affecting scrap beyond what the ball type already explains.
 
-- **The machine behind $X_i$ causes scrap.** The answer everyone hopes for.
-- **Something else moves both.** A batch of raw material, or a shift.
-- **The signal sits downstream of the defect.** On a line, a ball damaged at machine 2 can still look different to the sensor at machine 4.
+That is why there are four methods. Each has a blind spot, the last column of the table, and the blind spots barely overlap:
 
-With many signals, some reject by chance; a false discovery rate correction such as Benjamini–Hochberg keeps that in check.
+- Feature importance misses small effects and dilutes correlated signals; the test per signal does neither.
+- The test misses links that aren't straight lines; the flexible models behind feature importance and the model comparison fit them.
+- The test averages over ball types, so effects of opposite sign in different types cancel; the models per ball type look at each type alone.
+- The models per ball type each see few orders; the other three use all of them.
 
-So the analysis hands the people who know the machines a short list of candidates, not a verdict.
+A null from one method leaves its blind spot open. The same null from all four closes most of them.
+
+A signal that one method flags and the others don't is weak evidence: with many signals, some reject by chance, which a false discovery rate correction such as Benjamini–Hochberg accounts for. Even a consistent flag would only make a signal a candidate, not a cause. A change of shift could move both the signal and scrap, or the signal could sit downstream of the defect: a ball damaged at machine 2 can still look different to the sensor at machine 4.
+
+## What no evidence means
+
+Absence of evidence is not evidence of absence, but a null result still says something. The arithmetic that lets the test find small effects also bounds the ones it didn't find: the interval $\bar R \pm 1.96\,\hat\sigma_R/\sqrt{n}$ contains zero, and its width says how large a linear effect could still hide in the data. Feature importance gives no such bound: a signal at the bottom of the ranking may have no effect, or one too small for the model to bother with.
+
+What the null leaves open:
+
+- **Effects below that bound.** If one exists, more orders would find it, and the question becomes whether it is large enough to matter.
+- **Causes no sensor measures.** The raw material, or handling between machines. If scrap comes from there, no analysis of the recorded signals will find it.
+
+That makes the null a result in its own right: it points away from the signals already recorded and towards what isn't measured yet.
 
 ## The general move
 
-The strongest predictor is often something the client already knows and can't change: the product, the site, the season. Reporting it again is easy and worthless. Condition on it, and ask what is left.
+The strongest predictor is often something the client already knows and can't change: the product, the site, the season. Reporting it again is easy and worthless. Condition on it, and ask what is left. Sometimes the answer is nothing the data can see, and that is worth knowing too.
