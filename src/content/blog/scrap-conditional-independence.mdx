@@ -6,14 +6,14 @@ tags:
   - Statistics
   - Math
 math: true
-description: "Ball type predicted scrap, but the client knew that and couldn't change it. So we asked whether each sensor signal is independent of scrap given the ball type, and found that most methods test one consequence of that."
+description: "Ball type predicted scrap, but the client knew that and couldn't change it. So we asked whether each sensor signal is independent of scrap given the ball type, answered it four ways, and found where a hypothesis test and feature importance disagree."
 image: /images/blog/scrap-conditional-independence/featured.png
 ---
 
 import ScrapFigure from '../../components/ScrapFigure.astro';
 
 ## TL;DR
-In a factory's sensor data, the strongest predictor of scrap was the product type: true, already known, and not something the client can change. Instead of asking which signals predict scrap, we asked which are linked to scrap *given* the product type: is $X_i \perp\!\!\!\perp Y \mid Z$? Most methods for answering that test one consequence of it, and knowing which one tells you what the method can miss.
+In a factory's sensor data, the strongest predictor of scrap was the product type: true, already known, and not something the client can change. Instead of asking which signals predict scrap, we asked which are linked to scrap *given* the product type: is $X_i \perp\!\!\!\perp Y \mid Z$? We answered that four ways, and each tests a different consequence of the independence. A direct test of it had two advantages over feature importance: with enough data it finds small effects, and correlated signals don't dilute it.
 
 ## The factory
 
@@ -65,7 +65,7 @@ $$
 
 That is rarely what gets tested directly. Most methods test something it implies, usually one of these two:
 
-1. **The best prediction doesn't change.** Once the ball type is known, knowing the signal doesn't change the expected scrap:
+1. **The best prediction doesn't change.** Once the ball type is known, knowing the signal doesn't improve the best prediction of scrap. Which prediction is best depends on the error you measure: the conditional mean for squared error, the conditional median for absolute error. For the mean:
 
    $$
    \mathbb{E}[Y \mid X_i, Z] = \mathbb{E}[Y \mid Z].
@@ -77,7 +77,7 @@ That is rarely what gets tested directly. Most methods test something it implies
    \operatorname{Cov}(X_i, Y \mid Z) = 0.
    $$
 
-Each follows from the one before. Independence gives the first by taking expectations. For the second, write $\mu(Z) = \mathbb{E}[X_i \mid Z]$ and condition on $X_i$ inside:
+Each follows from the one before. Independence gives the first, for the mean and the median alike, since both are read off the same conditional distribution. For the second, write $\mu(Z) = \mathbb{E}[X_i \mid Z]$ and condition on $X_i$ inside:
 
 $$
 \begin{aligned}
@@ -97,37 +97,64 @@ Neither step reverses. Each claim is weaker than the one before it, so a test of
 
 *Made-up basketball orders. Scrap rises as the temperature leaves its set point either way. The best straight line is flat, so the covariance is about zero; the conditional mean $\mathbb{E}[Y \mid X_i, Z]$ is not.*
 
-## Methods as tests
+## Four methods, four implications
 
-Read this way, the usual tools sort themselves by the implication they test, and that tells you what each can miss:
+We answered the question four ways. Each tests one implication of the independence, and that tells you what each can miss. $X$ without an index stands for all signals together.
 
-| Method | Tests | Weakness |
+| Method | Tests | Can miss |
 |---|---|---|
-| Correlation of $X_i$ and scrap over all orders | $X_i \perp\!\!\!\perp Y$, ignoring $Z$ | Answers a different question, and flags every signal that tracks the ball type |
-| Correlation within each ball type; partial correlation | $\operatorname{Cov}(X_i, Y \mid Z) = 0$ | Misses links that aren't straight lines, like the U |
-| A model of scrap from the ball type against one from the ball type and $X_i$, compared on squared error | $\mathbb{E}[Y \mid X_i, Z] = \mathbb{E}[Y \mid Z]$ | Misses changes in spread, and shapes the model can't fit |
-| The same comparison on log-likelihood | $p(y \mid x_i, z) = p(y \mid z)$ | Misses shapes the model can't fit |
-| The signal in high- against low-scrap orders, compared within each ball type | $p(x_i \mid y, z) = p(x_i \mid z)$ | Misses whatever the comparison ignores: a $t$-test compares only means |
+| The best model we could train, explained with SHAP and permutation importance | Whether the model's predictions depend on $X_i$ | Small effects, and signals whose credit goes to correlated ones |
+| Models that see only the signals, only the ball type, or both, compared on mean absolute error | $\operatorname{median}(Y \mid X, Z) = \operatorname{median}(Y \mid Z)$, for all signals at once | Which signal it is, and effects smaller than the noise between fits |
+| A separate model per ball type, compared across ball types | Whether the signals predict scrap within each ball type | Ball types with few orders |
+| A test of $X_i \perp\!\!\!\perp Y \mid Z$ for each signal | $\mathbb{E}[\operatorname{Cov}(X_i, Y \mid Z)] = 0$ | Links that aren't straight lines, like the U, and links of opposite sign in different ball types, which cancel |
 
-The model comparisons need held-out orders: on the orders it was fitted to, the bigger model always fits at least as well. The last row is the independence itself, read from the other side; splitting scrap into high and low tests a consequence of it.
+**Feature importance** reads the first implication off one fitted model: if the independence holds, the best model has no use for $X_i$. It comes with no threshold, though, and no sense of how much evidence there is.
 
-Permutation importance shows how small the step from the wrong question to the right one can be. Shuffling $X_i$ across all orders also breaks its link to the ball type, so a signal that only stands in for the ball type looks important. Shuffling it *within* each ball type keeps that link and breaks only what $X_i$ adds. If the independence holds, the shuffled orders are distributed exactly like the real ones, so repeating the shuffle gives an exact test: the model's loss on the real orders should look like one more draw from its losses on the shuffled ones. As with the model comparison, squared error tests the mean and log-likelihood the distribution.
+Permutation importance, as usually computed, shuffles $X_i$ across all orders. If the model leans on $X_i$ in place of the ball type, that shuffle also breaks the link to the ball type, and the signal looks important. Shuffling *within* each ball type keeps that link and breaks only what $X_i$ adds. If the independence holds, the shuffled orders are distributed exactly like the real ones, so repeating the shuffle turns importance into an exact test: the model's error on the real orders should look like one more draw from its errors on the shuffled ones.
 
-## Why a categorical Z helps
+**The model comparison** tests the median version of the first implication, since the prediction that minimises absolute error is the median. The comparison that tests the independence is the model with both against the one with only the ball type; the model with only the signals shows how much of the ball type they carry. All of it has to be measured on held-out orders: on the orders it was fitted to, the bigger model always fits at least as well.
+
+**The models per ball type** condition on $Z$ by construction: each sees orders of one ball type only, so it can only find what the signals add within that type. Comparing them shows whether a signal matters for every ball type or for one.
+
+## Testing it directly
 
 Conditional independence is hard to test in general. [Shah and Peters (2020)](https://arxiv.org/abs/1804.07203) show that when $Z$ is continuous, no test can keep its false-positive rate in check for every distribution where the independence holds and still have power against any alternative. Every practical test buys its power with assumptions about how $X_i$ and $Y$ depend on $Z$.
 
-With a handful of ball types, that problem doesn't arise. The question splits into one ordinary independence question per ball type, and each needs only enough orders of that type.
+With a handful of ball types, that problem doesn't arise: the question splits into one ordinary independence question per ball type.
+
+The same paper proposes the test we used, the generalised covariance measure. With a categorical $Z$ it is short. For order $k$ with signal value $x_k$, scrap rate $y_k$ and ball type $z_k$, subtract the averages of its ball type, multiply, and check whether the products average to zero:
+
+$$
+R_k = \big(x_k - \bar x_{z_k}\big)\big(y_k - \bar y_{z_k}\big), \qquad T = \sqrt{n}\,\frac{\bar R}{\hat\sigma_R},
+$$
+
+where $n$ is the number of orders and $\hat\sigma_R$ the standard deviation of the $R_k$. Under the independence, $T$ is approximately standard normal, so $|T| > 1.96$ rejects at the 5% level. It tests the covariance implication, which is why it shares that implication's blind spot for the U.
+
+## Where the test and feature importance disagree
+
+### Small effects
+
+Under a real effect, $\bar R$ settles at $\mathbb{E}[\operatorname{Cov}(X_i, Y \mid Z)]$, and $T$ grows like $\sqrt{n}$ times it. Roughly, the test rejects once $\sqrt{n}$ times the effect size clears a threshold, so any conditional covariance that isn't exactly zero is found once there are enough orders.
+
+If outside humidity raises scrap by 0.01%, the test finds it, given enough orders. Feature importance doesn't: a signal that moves every prediction by 0.01% sits at the bottom of any importance ranking, next to the signals with no effect at all, and more orders don't change that.
+
+Whether 0.01% is worth acting on is the client's call. The test makes sure the question comes up; the effect size, reported next to the p-value, answers it.
+
+### Correlated signals
+
+Feature importance divides credit among the features of one model. Correlated signals, like two thermometers on one oven, share credit, and each can look less important than it is. How they share it depends on the learner: a random forest tends to spread credit over all of them, while gradient boosting and the lasso tend to pick one and leave the rest near zero. SHAP explains whichever model it is given, so it inherits the split.
+
+A test per signal doesn't have this problem in that form. Each test conditions only on the ball type, so correlated signals don't compete for anything. The flip side is that both thermometers are flagged. Asking whether a signal adds anything beyond all the others means conditioning on them too, $X_i \perp\!\!\!\perp Y \mid Z, X_{-i}$, and since the other signals are continuous, that brings back the hardness result above.
 
 ## What a rejection tells you
 
 Rejecting $X_i \perp\!\!\!\perp Y \mid Z$ makes a signal a candidate, not a cause. Three things produce a dependence:
 
 - **The machine behind $X_i$ causes scrap.** The answer everyone hopes for.
-- **Something else moves both.** A batch of raw material, a shift, the humidity in the hall.
+- **Something else moves both.** A batch of raw material, or a shift.
 - **The signal sits downstream of the defect.** On a line, a ball damaged at machine 2 can still look different to the sensor at machine 4.
 
-With many signals, two more things matter. Some signals reject by chance; a false discovery rate correction such as Benjamini–Hochberg keeps that in check. And two signals that track the same thing, like two thermometers on one oven, are flagged together. Asking whether a signal adds anything beyond all the others means conditioning on them too, $X_i \perp\!\!\!\perp Y \mid Z, X_{-i}$, and since the other signals are continuous, that brings back the hardness result above.
+With many signals, some reject by chance; a false discovery rate correction such as Benjamini–Hochberg keeps that in check.
 
 So the analysis hands the people who know the machines a short list of candidates, not a verdict.
 
