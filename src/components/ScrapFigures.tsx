@@ -9,13 +9,16 @@
  *   but not within any ball type.
  * - u-shape: made-up basketball orders where scrap rises as temperature leaves
  *   its set point either way, so the best straight line is flat.
+ * - residual: made-up orders, the residual left after the ball type against a
+ *   model's prediction of it from the signals: flat, where a signal would put
+ *   the orders on the diagonal.
  *
  * Drawn in the style of the site's other figures (palette, icons, short
  * labels); the prose explains them. Static: rendered on the server, no
  * JavaScript. ScrapFigure.astro wraps them.
  */
 import type { ComponentType, ReactNode } from 'react';
-import { color, edgePath, Ball, Gauge, Grade, type BallKind } from '../remotion/shared';
+import { color, edgePath, Ball, Gauge, Grade, PALETTE, type BallKind } from '../remotion/shared';
 import { ArrowMarker } from './map-parts';
 
 /**
@@ -362,6 +365,36 @@ function UShape() {
   );
 }
 
+/** Held-out orders: what the ball type leaves of each order's scrap rate, and a model's guess at it from the signals, which know nothing about it. */
+const RESIDUAL_ORDERS = (() => {
+  const rand = random(5);
+  return Array.from({ length: 70 }, () => ({ x: 0.6 * normal(rand), y: 0.08 * normal(rand) })).filter((o) => Math.abs(o.x) < 1.9);
+})();
+
+const ResidualDescription =
+  'Made-up held-out orders: the residual left after a model of scrap from the ball type, against a second model\'s prediction of that residual from the signals, both in percentage points from −2 to +2. The orders form a flat band around zero. A dashed diagonal marks where they would lie if the signals predicted the residual.';
+
+function Residual() {
+  const box = { left: 64, top: 40, right: 364, bottom: 340 };
+  const signed = (v: number) => (v > 0 ? `+${v}` : `${v}`.replace('-', '−'));
+  const axis = (label: string): Axis => ({ min: -2, max: 2, ticks: [-2, -1, 0, 1, 2], format: signed, label });
+  const x = axis('Actual residual (percentage points)');
+  const y = axis('Predicted residual');
+  const { sx, sy } = scales(box, x, y);
+  return (
+    <Svg viewBox="0 0 560 396" label={ResidualDescription}>
+      <Axes box={box} x={x} y={y} />
+      <path d={`M${sx(-2)},${sy(-2)} L${sx(2)},${sy(2)}`} stroke={color('text')} strokeWidth={2} strokeDasharray="6 4" />
+      {RESIDUAL_ORDERS.map((o, i) => (
+        <Dot key={i} x={sx(o.x)} y={sy(o.y)} fill={PALETTE[3]} />
+      ))}
+      <text x={sx(2) + 8} y={sy(2)} dy="0.35em" fontSize={15} fill={color('text')}>
+        Predicted = actual
+      </text>
+    </Svg>
+  );
+}
+
 /**
  * `width` caps the figure on wide screens, about its own size, so its type
  * doesn't grow past the post's body text.
@@ -371,6 +404,7 @@ export const FIGURES = {
   question: { component: Question, description: QuestionDescription, width: 440 },
   pooled: { component: Pooled, description: PooledDescription, width: 600 },
   'u-shape': { component: UShape, description: UShapeDescription, width: 600 },
+  residual: { component: Residual, description: ResidualDescription, width: 560 },
 } satisfies Record<string, { component: ComponentType; description: string; width: number }>;
 
 export type FigureName = keyof typeof FIGURES;
