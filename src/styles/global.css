@@ -136,6 +136,13 @@
   .prose {
     @apply text-gray-700 dark:text-gray-300;
   }
+
+  /* A display equation or table wider than a phone scrolls on its own instead of widening the page. */
+  .prose .katex-display,
+  .prose .table-scroll {
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
   
   /* Regular links in prose (not heading links) */
   .prose a:not(.heading-link) {
