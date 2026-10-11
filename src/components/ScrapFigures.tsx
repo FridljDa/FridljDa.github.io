@@ -416,7 +416,8 @@ function Cancel() {
   const y: Axis = { min: -1, max: 1, ticks: [-1, 0, 1], format: signed, label: 'Scrap rate − type average (percentage points)' };
   const { sx, sy } = scales(box, x, y);
   const common = fit(CANCEL_ORDERS);
-  const end = 7.5;
+  const lo = Math.min(...CANCEL_ORDERS.map((o) => o.x));
+  const hi = Math.max(...CANCEL_ORDERS.map((o) => o.x));
   return (
     <Svg viewBox="0 0 560 352" label={CancelDescription}>
       <Axes box={box} x={x} y={y} />
@@ -439,8 +440,8 @@ function Cancel() {
           </g>
         );
       })}
-      <path d={`M${sx(-end)},${sy(common(-end))} L${sx(end)},${sy(common(end))}`} stroke={color('text')} strokeWidth={2} strokeDasharray="6 4" />
-      <text x={sx(end) + 10} y={sy(common(end))} dy="0.35em" fontSize={16} fill={color('text')}>
+      <path d={`M${sx(lo)},${sy(common(lo))} L${sx(hi)},${sy(common(hi))}`} stroke={color('text')} strokeWidth={2} strokeDasharray="6 4" />
+      <text x={sx(hi) + 10} y={sy(common(hi))} dy="0.35em" fontSize={16} fill={color('text')}>
         Common slope
       </text>
     </Svg>

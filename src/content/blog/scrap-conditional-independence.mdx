@@ -13,7 +13,7 @@ image: /images/blog/scrap-conditional-independence/featured.png
 import ScrapFigure from '../../components/ScrapFigure.astro';
 
 ## TL;DR
-In a factory's sensor data, the strongest predictor of scrap was the ball type: already known, and not something the client can change. So instead of asking which signals predict scrap, we asked which are linked to scrap once the ball type is known. Five methods answered, and after correcting for testing twelve signals, none found evidence of such a link. Each method misses different kinds of link, so together they cover more kinds than any one of them. The one method that tests each signal on its own also bounds what it didn't find: for eleven of the twelve signals, the data rule out an average within-type slope steep enough to matter.
+In a factory's sensor data, the strongest predictor of scrap was the ball type: already known, and not something the client can change. So instead of asking which signals predict scrap, we asked which are linked to scrap once the ball type is known. Five methods answered, and after correcting for testing twelve signals, none found evidence of such a link. The methods miss different kinds of link, so together they cover more kinds than any one of them. The one method that tests each signal on its own also bounds what it didn't find: for eleven of the twelve signals, the data rule out an average within-type slope steep enough to matter.
 
 ## The factory
 
@@ -112,7 +112,7 @@ Every method that needed a regression model ran with three learners: XGBoost, a 
 | **Models per ball type:** a model of $Y$ on $X$ for each ball type $z$ | ${\mathbb{E}[Y \mid X, Z = z]} = {\mathbb{E}[Y \mid Z = z]}$ for each $z$ |
 | **GCM:** the generalised covariance measure, for each signal | ${\mathbb{E}[\operatorname{Cov}(X_i, Y \mid Z)]} = 0$ |
 
-The residual model and the models per ball type test the same equation, $\mathbb{E}[Y \mid X, Z] = \mathbb{E}[Y \mid Z]$, written two ways; the model comparison tests its median version. All three take the signals together. Each of their equations holds if $X \perp\!\!\!\perp Y \mid Z$, which implies $X_i \perp\!\!\!\perp Y \mid Z$ for every $i$, but not conversely: two signals can be linked to scrap together while each alone is independent of it. So a rejection by these three would say that the signals together are linked, not which one, and perhaps no single one. They differ in how they estimate the equation, and so in what they miss. Only the GCM takes one signal at a time, and feature importance answers a neighbouring question.
+The residual model and the models per ball type test the same equation, $\mathbb{E}[Y \mid X, Z] = \mathbb{E}[Y \mid Z]$, written two ways; the model comparison tests its median version. All three take the signals together. Each of their equations holds if $X \perp\!\!\!\perp Y \mid Z$, which implies $X_i \perp\!\!\!\perp Y \mid Z$ for every $i$, but not conversely: two signals can be linked to scrap together while each alone is independent of it. So a rejection by these three would say that the signals together are linked, not which one, and perhaps no single one. They differ in how they estimate the equation, and so in how much noise they carry. Only the GCM takes one signal at a time, and feature importance answers a neighbouring question.
 
 **Feature importance** asks whether a model of $Y$ on $(X, Z)$ uses $X_i$. For a perfect model, that is whether $\mathbb{E}[Y \mid X, Z]$ changes with $X_i$ while the other signals stay fixed: whether $X_i$ adds anything to the other signals, not to the ball type alone. That is a neighbouring question, not an implication of ours, and the two differ in both directions. Two thermometers on one machine make each other redundant, so each can score low while both are linked to scrap. And a signal independent of scrap given the ball type can score high. Say a thermometer reads too high on hot days, while the machine's true temperature, which drives scrap, doesn't depend on the weather. If the outside temperature is recorded, a model uses it to correct the thermometer, although it is independent of scrap given the ball type.
 
@@ -172,7 +172,7 @@ A model has a harder job with the same orders: it has to find that link among tw
 
 Feature importance divides credit among the inputs of one model, and how correlated signals share it depends on the learner: a random forest tends to spread credit over all of them, while XGBoost tends to pick one and leave the rest near zero. SHAP explains whichever model it is given, so it inherits the split.
 
-The GCM doesn't have this problem. Each test conditions only on the ball type, so correlated signals don't compete. The flip side is that both thermometers are flagged. Asking which of them matters means conditioning on the other signals too, $X_i \perp\!\!\!\perp Y \mid (Z, X_{-i})$, and since they are continuous, that brings back the hardness result above.
+The GCM doesn't have this problem. Each test conditions only on the ball type, so correlated signals don't compete. The flip side is that both of two correlated signals are flagged, like the two thermometers above. Asking which of them matters means conditioning on the other signals too, $X_i \perp\!\!\!\perp Y \mid (Z, X_{-i})$, and since they are continuous, that brings back the hardness result above.
 
 ## Why five methods
 
@@ -187,12 +187,11 @@ Each method misses some kinds of link, and a null result from one method leaves 
 | a large link whose covariances cancel across types | Yes | Yes | Yes | Yes | No |
 | a small link with $\beta = 0$ | No | No | No | No | No |
 | a link only in the spread, with mean and median unchanged | No | No | No | No | No |
-| which signal is linked | Yes | No | No | No | Yes |
-| both of two near-identical linked signals | No | No | No | No | Yes |
+| which signal is linked | No | No | No | No | Yes |
 
 </div>
 
-A Yes for a model-based method assumes that at least one of the three learners can fit the link's shape. The comparison, the residual model and the models per ball type see the same kinds of link; they differ in how much noise they carry, so each checks the others. Two kinds of link have no Yes: one only in the spread matters less to the client, as above, and the small one with $\beta = 0$ is listed below.
+A Yes for a model-based method assumes that at least one of the three learners can fit the link's shape. Feature importance does name signals, but the ones a model uses given the other signals, which can differ from the linked ones in both directions. The comparison, the residual model and the models per ball type see the same kinds of link in this grid, the comparison through the median and the other two through the mean; they differ in how much noise they carry, so each checks the others. Two kinds of link have no Yes: one only in the spread matters less to the client, as above, and the small one with $\beta = 0$ is listed below.
 
 ## What we found
 
@@ -227,7 +226,7 @@ What the null leaves open:
 - **Small links with zero average covariance.** The bound covers $\beta$ only, and the models miss small links of any shape. More orders would help the models; the GCM misses such a link at any $n$.
 - **Causes no sensor measures.** The raw material, or handling between machines. If scrap comes from there, no analysis of the recorded signals will find it, unless it leaves a trace in them.
 
-On held-out orders, no model predicted any of the variance of scrap within a ball type. That variance comes from something the signals don't measure, from links too small or oddly shaped for these methods, or from chance; a straight-line link just below the client's bar would account for about 6% of it. So the null points the client towards what isn't measured yet.
+On held-out orders, no model predicted any of the variance of scrap within a ball type. That variance comes from something the signals don't measure, from links too small or oddly shaped for these methods, or from chance; a straight-line link just below the client's bar would account for about 6% of it. So the next place to look is outside the twelve signals: what isn't measured yet, and how much of the spread is chance.
 
 ## The general move
 
