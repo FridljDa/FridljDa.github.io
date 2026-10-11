@@ -6,14 +6,14 @@ tags:
   - Statistics
   - Math
 math: true
-description: "Ball type predicted scrap, but the client knew that and couldn't change it. So we asked whether each sensor signal is independent of scrap given the ball type, answered it four ways, and pretty consistently found no evidence. Why four methods, and what a null result like that still says."
+description: "Ball type predicted scrap, but the client knew that and couldn't change it. So we asked whether each sensor signal is independent of scrap given the ball type, answered it five ways, and pretty consistently found no evidence. Why five methods, and what a null result like that still says."
 image: /images/blog/scrap-conditional-independence/featured.png
 ---
 
 import ScrapFigure from '../../components/ScrapFigure.astro';
 
 ## TL;DR
-In a factory's sensor data, the strongest predictor of scrap was the product type: true, already known, and not something the client can change. Instead of asking which signals predict scrap, we asked which are linked to scrap *given* the product type: is $X_i \perp\!\!\!\perp Y \mid Z$? We answered that four ways, each testing a different consequence of the independence, and pretty consistently found no evidence that the signals affect scrap beyond the ball type. The methods' blind spots barely overlap, which is what makes the null worth something. A direct test of the independence also has two advantages over feature importance: given enough data it finds small effects, and correlated signals don't dilute it.
+In a factory's sensor data, the strongest predictor of scrap was the product type: true, already known, and not something the client can change. Instead of asking which signals predict scrap, we asked which are linked to scrap *given* the product type: is $X_i \perp\!\!\!\perp Y \mid Z$? We answered that five ways, each testing a different consequence of the independence, and pretty consistently found no evidence that the signals affect scrap beyond the ball type. The methods' blind spots barely overlap, which is what makes the null worth something. A direct test of the independence also has two advantages over feature importance: given enough data it finds small effects, and correlated signals don't dilute it.
 
 ## The factory
 
@@ -97,14 +97,15 @@ Neither step reverses. Each claim is weaker than the one before it, so a test of
 
 *Made-up basketball orders. Scrap rises as the temperature leaves its set point either way. The best straight line is flat, so the covariance is about zero; the conditional mean $\mathbb{E}[Y \mid X_i, Z]$ is not.*
 
-## Four methods, four implications
+## Five methods, five implications
 
-We answered the question four ways. Each tests one implication of the independence, and that tells you what each can miss. $X$ without an index stands for all signals together.
+We answered the question five ways. Each tests one implication of the independence, and that tells you what each can miss. $X$ without an index stands for all signals together.
 
 | Method | Tests | Can miss |
 |---|---|---|
 | The best model we could train, explained with SHAP and permutation importance | Whether the model's predictions depend on $X_i$ | Small effects, and signals whose credit goes to correlated ones |
 | Models that see only the signals, only the ball type, or both, compared on mean absolute error | $\operatorname{median}(Y \mid X, Z) = \operatorname{median}(Y \mid Z)$, for all signals at once | Which signal it is, and effects smaller than the noise between fits |
+| A model of what the ball type leaves over, from the signals, the ball type, or both | $\mathbb{E}[Y - \mathbb{E}[Y \mid Z] \mid X, Z] = 0$, for all signals at once | Which signal it is, and changes in spread |
 | A separate model per ball type, compared across ball types | Whether the signals predict scrap within each ball type | Ball types with few orders |
 | A test of $X_i \perp\!\!\!\perp Y \mid Z$ for each signal | $\mathbb{E}[\operatorname{Cov}(X_i, Y \mid Z)] = 0$ | Links that aren't straight lines, like the U, and links of opposite sign in different ball types, which cancel |
 
@@ -115,6 +116,12 @@ Permutation importance, as usually computed, shuffles $X_i$ across all orders. I
 **The model comparison** tests the median version of the first implication, since the prediction that minimises absolute error is the median. The comparison that tests the independence is the model with both against the one with only the ball type; the model with only the signals shows how much of the ball type they carry. All of it has to be measured on held-out orders: on the orders it was fitted to, the bigger model always fits at least as well.
 
 **The models per ball type** condition on $Z$ by construction: each sees orders of one ball type only, so it can only find what the signals add within that type. Comparing them shows whether a signal matters for every ball type or for one.
+
+**The residual model** removes the ball type first. A model that sees only $Z$ predicts scrap; what it gets wrong is the residual. If it learned $\mathbb{E}[Y \mid Z]$, the residual is $\varepsilon = Y - \mathbb{E}[Y \mid Z]$, and the first implication says $\mathbb{E}[\varepsilon \mid X, Z] = 0$: nothing should predict it. A second model then tries anyway, from the signals, the ball type, or both. The version that sees only the ball type is a placebo: the first model already used everything the ball type says, so if the placebo finds something, the first model was underfit. Plotting the second model's predictions against the actual residuals on held-out orders shows the answer at a glance. A signal would put the orders on the diagonal; ours lay flat.
+
+<ScrapFigure name="residual" />
+
+*Made-up orders, shaped like ours. If the signals explained what the ball type leaves over, the orders would lie along the dashed line. They lie flat: whatever the residual, the prediction stays near zero.*
 
 ## Testing it directly
 
@@ -148,16 +155,17 @@ A test per signal doesn't have this problem in that form. Each test conditions o
 
 ## What we found
 
-Pretty consistently, a lack of evidence. Across the four methods, the measured signals showed no sign of affecting scrap beyond what the ball type already explains.
+Pretty consistently, a lack of evidence. Across the five methods, the measured signals showed no sign of affecting scrap beyond what the ball type already explains.
 
-That is why there are four methods. Each has a blind spot, the last column of the table, and the blind spots barely overlap:
+That is why there are five methods. Each has a blind spot, the last column of the table, and the blind spots barely overlap:
 
 - Feature importance misses small effects and dilutes correlated signals; the test per signal does neither.
-- The test misses links that aren't straight lines; the flexible models behind feature importance and the model comparison fit them.
+- The test misses links that aren't straight lines; the flexible models behind feature importance, the model comparison and the residual model fit them.
+- The model comparison reads a small gain off the difference between two noisy fits; the residual model fits only what the ball type leaves over, and the scatter plot shows the result directly.
 - The test averages over ball types, so effects of opposite sign in different types cancel; the models per ball type look at each type alone.
-- The models per ball type each see few orders; the other three use all of them.
+- The models per ball type each see few orders; the others use all of them.
 
-A null from one method leaves its blind spot open. The same null from all four closes most of them.
+A null from one method leaves its blind spot open. The same null from all five closes most of them.
 
 A signal that one method flags and the others don't is weak evidence: with many signals, some reject by chance, which a false discovery rate correction such as Benjamini–Hochberg accounts for. Even a consistent flag would only make a signal a candidate, not a cause. A change of shift could move both the signal and scrap, or the signal could sit downstream of the defect: a ball damaged at machine 2 can still look different to the sensor at machine 4.
 
