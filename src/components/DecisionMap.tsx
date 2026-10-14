@@ -41,7 +41,7 @@ export const PRESETS = {
     focus: [],
     guard: true,
     description:
-      'The system as one map: a customer message goes to intent recognition, an LLM call, which routes it either to a workflow in code or to an agent. Both act only through the same tools, which are code and can hold rules of their own, shown as a shield. The tools send the reply, and experts grade every reply; their grades feed back into the workflow.',
+      'The system as one map: a customer message goes to intent recognition, an LLM call, which routes it either to a workflow in code or to an agent that follows the bank’s policies. Both act only through the same tools, which are code and hold the rules that must never be broken, shown as a shield. The tools send the reply, and experts grade every reply; their grades feed back into the workflow.',
   },
   'agent-first': {
     focus: ['message', 'direct', 'agent', 'agentTools', 'tools', 'send', 'reply'],
@@ -51,21 +51,21 @@ export const PRESETS = {
     description:
       'Highlighted: the first design. The customer message goes straight to one agent holding every tool, which calls them in any order it chooses and sends the reply. Nothing makes it check the security flag before sending unlock instructions.',
   },
+  // Before the fallback agent existed: no default, since there was no other route yet.
   workflow: {
     focus: ['message', 'toIntent', 'intent', 'known', 'workflow', 'workflowTools', 'tools', 'send', 'reply'],
-    default: 'code',
-    tags: [{ on: 'workflow', text: 'Default' }],
+    tags: [{ on: 'intent', text: 'One job' }],
     small: true,
     description:
-      'Highlighted: the workflow. An LLM call reads the message, recognising the intent and extracting the identifier; code does the rest, looking up the account, checking the flag and sending the template, always in that order.',
+      'Highlighted: the workflow. The LLM has one job, reading the message: it recognises the intent and extracts the identifier. Code does the rest, looking up the account, checking the flag and sending the template, always in that order.',
   },
   tree: {
     focus: ['workflow', 'feedback', 'experts'],
     default: 'code',
-    tags: [{ on: 'workflow', text: 'Every cell' }],
+    tags: [{ on: 'workflow', text: 'Grows' }],
     small: true,
     description:
-      'Highlighted: the workflow, with the experts’ feedback adding a new branch to it each round. It needs a rule for every request on every account state.',
+      'Highlighted: the workflow, which grows a new branch each round of the experts’ feedback. It needs a branch for every request on every account state.',
   },
   fallback: {
     focus: ['intent', 'known', 'workflow', 'other', 'agent', 'reply', 'grade', 'experts'],
@@ -73,7 +73,7 @@ export const PRESETS = {
     tags: [{ on: 'workflow', text: 'Default' }],
     small: true,
     description:
-      'Highlighted: code is the default; only requests that land in an Other leaf go, by the dashed route, to the fallback agent. The experts grade every reply.',
+      'Highlighted: code is the default; only requests the tree doesn’t recognise land in an Other leaf and go, by the dashed route, to the fallback agent. The experts grade every reply.',
   },
   guards: {
     focus: ['tools', 'workflowTools', 'agentTools', 'workflow', 'agent'],
@@ -81,7 +81,7 @@ export const PRESETS = {
     tags: [{ on: 'tools', text: 'Must hold' }],
     small: true,
     description:
-      'Highlighted: the tools, with a guard in them, and both routes into them: whether the workflow or the agent calls a tool, the rule inside it holds.',
+      'Highlighted: the tools, with a rule inside them, and both routes into them: whether the workflow or the agent calls a tool, the rule holds. Anything a single mistake would make an incident is a rule and goes here; the rest is policy, for the agent to follow.',
   },
   // The end state, full size and all of it: the overview's parts, with the default swapped.
   'next-time': {
@@ -90,16 +90,16 @@ export const PRESETS = {
     guard: true,
     tags: [{ on: 'agent', text: 'Default' }],
     description:
-      'Next time: the agent is the default route, and a request type takes the dashed route to a workflow in code only once the experts’ grades say it should graduate. The guard stays in the tools on both routes.',
+      'Next time: the agent is the default route, following the bank’s policies, and the rules stay in the tools on both routes. A request type takes the dashed route to a workflow in code only once it graduates: the experts’ grades show it is common and the agent gets it wrong, or its action can’t be undone.',
   },
   start: {
-    focus: ['tools', 'agentTools', 'agent', 'send', 'reply', 'grade', 'experts', 'feedback', 'workflow'],
+    focus: ['experts', 'grade', 'feedback', 'workflow', 'agent', 'agentTools', 'tools', 'send', 'reply'],
     default: 'agent',
     guard: true,
-    tags: [{ on: 'tools', text: 'Build first' }],
+    tags: [{ on: 'experts', text: 'Fill the grid' }],
     small: true,
     description:
-      'Highlighted: what to build first. The rules in the tools, an agent behind them drafting replies, and the experts grading those replies; their grades decide which request types graduate into a workflow in code.',
+      'Highlighted: the experts, grading the agent’s replies from the first week. Their grades are how the bank’s unwritten policy gets written down, and they decide which request types graduate into a workflow in code: common ones the agent gets wrong. The rules stay in the tools.',
   },
 } satisfies Record<string, Preset>;
 
@@ -122,6 +122,8 @@ interface Layout {
   width: number;
   height: number;
   labelSize: number;
+  /** The words on the edges: as big as the node names in the small and the phone maps, which are shown smaller. */
+  edgeSize: number;
   tagSize: number;
   N: Record<NodeId, Point>;
   /** Paths for each edge; `twoWay` gives it an arrowhead at both ends, `label` is where its word goes if the preset gives it one. */
@@ -140,6 +142,7 @@ const WIDE: Layout = {
   width: 960,
   height: 510,
   labelSize: 21,
+  edgeSize: 19,
   tagSize: 19,
   N: {
     message: { x: 60, y: 270 },
@@ -161,7 +164,7 @@ const WIDE: Layout = {
     workflowTools: { d: 'M564,152 C612,152 596,252 632,252', twoWay: true },
     agentTools: { d: 'M531,388 C600,388 596,288 632,288', twoWay: true },
     send: { d: 'M800,270 H858' },
-    grade: { d: 'M892,230 V168', label: { x: 880, y: 206, anchor: 'end' } },
+    grade: { d: 'M892,230 V168', label: { x: 882, y: 198, anchor: 'end' } },
     // Along the top, above the tools, crossing nothing.
     feedback: { d: 'M848,130 C740,130 660,108 564,108', label: { x: 704, y: 104 } },
   },
@@ -177,6 +180,7 @@ const WIDE: Layout = {
   },
   guard: { x: 790, y: 228 },
   tags: {
+    intent: { x: 232, y: 192 },
     workflow: { x: 480, y: 46 },
     // Left of the agent, below the route coming in.
     agent: { x: 346, y: 456 },
@@ -187,7 +191,7 @@ const WIDE: Layout = {
 };
 
 /** Bigger type for the small section maps, drawn at about two thirds of the column. */
-const WIDE_SMALL: Layout = { ...WIDE, labelSize: 25, tagSize: 23 };
+const WIDE_SMALL: Layout = { ...WIDE, labelSize: 25, edgeSize: 25, tagSize: 23 };
 
 /**
  * The same map for phones, top to bottom: the message and intent, the
@@ -198,6 +202,7 @@ const TALL: Layout = {
   width: 620,
   height: 850,
   labelSize: 25,
+  edgeSize: 23,
   tagSize: 23,
   N: {
     message: { x: 310, y: 48 },
@@ -230,6 +235,8 @@ const TALL: Layout = {
   },
   guard: { x: 384, y: 568 },
   tags: {
+    // Under its labels, between the two routes.
+    intent: { x: 310, y: 322 },
     workflow: { x: 150, y: 496 },
     agent: { x: 470, y: 496 },
     tools: { x: 506, y: 616 },
@@ -401,9 +408,9 @@ function MapSvg({ layout, preset, id, className }: { layout: Layout; preset: Pre
                 x={edge.label.x}
                 y={edge.label.y}
                 textAnchor={edge.label.anchor ?? 'middle'}
-                fontSize={layout.labelSize - 4}
-                fontWeight={600}
-                fill={color('muted')}
+                fontSize={layout.edgeSize}
+                fontWeight={500}
+                fill={color('text')}
               >
                 {label}
               </text>
