@@ -10,7 +10,8 @@ const slugs = (dir: string, ext: RegExp) =>
     .filter((file) => ext.test(file))
     .map((file) => file.replace(ext, ''));
 
-const reposts = slugs('src/content/reposts/linkedin', /\.md$/);
+// AGENTS.md holds the notes on writing a repost, not a repost.
+const reposts = slugs('src/content/reposts/linkedin', /\.md$/).filter((slug) => slug !== 'AGENTS');
 const withoutRepost = slugs('src/content/blog', /\.mdx?$/).find((slug) => !reposts.includes(slug));
 
 test.describe('LinkedIn copy of a post', () => {

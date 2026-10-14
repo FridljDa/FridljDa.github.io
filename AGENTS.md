@@ -1,5 +1,7 @@
 # Agent notes
 
+This file holds rules that span the repo. Details live in an `AGENTS.md` in the directory they cover, as deep as fits; read the one nearest to the files you change, and put new details there rather than here. Don't put one under `src/pages/`: Astro turns every `.md` file there into a page.
+
 ## Images: full resolution, no Astro Image pipeline
 
 Raster images are served as **original files** via plain `<img src="/images/...">` tags. The browser downscales in CSS (`object-cover`, Tailwind width classes).
@@ -12,7 +14,7 @@ Assets live under `src/assets/images/` with `public/images` symlinked for stable
 
 ## Reposts (LinkedIn, Confluence)
 
-LinkedIn versions of blog posts are written by hand under `src/content/reposts/linkedin/` and never shown on the site. The Confluence copy is generated from the post by code and never rewritten. Read `src/content/reposts/AGENTS.md` before working on either.
+LinkedIn versions of blog posts are written by hand: read `src/content/reposts/linkedin/AGENTS.md` before writing one. The Confluence copy is generated from the post by code and never rewritten: see `src/content/reposts/AGENTS.md`.
 
 ## Figures: one style per post
 
