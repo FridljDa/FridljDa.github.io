@@ -58,7 +58,7 @@ export const PRESETS = {
   overview: {
     focus: [],
     description:
-      'The whole system: customers write to the support agent; in shadow its drafts land in the review tool I built, a review screen with a store behind it. A team of experts grades them there, each in their own time, and I read their comments there in batches and add my own on how to fix each one; nobody messages anybody directly. Each night the coding agent implements the tickets I commented on, checks itself against evals and CI and ships into the support agent. For a new read tool, the coding agent writes a spec that I hand to IT, the one handoff outside the review tool, and IT build the endpoint.',
+      'The whole system: customers write to the support agent; in shadow its drafts land in the review tool I built, a review screen with a store behind it. A team of experts, the support staff who answer those tickets, grades each draft there as they pick up its ticket, and I read their comments there in batches and add my own on how to fix each one; nobody messages anybody directly. Each night the coding agent implements the tickets I commented on, checks itself against evals and CI and ships into the support agent. For a new read tool, the coding agent writes a spec that I hand to IT, the one handoff outside the review tool, and IT build the endpoint.',
   },
   'coding-agents': {
     focus: ['coder', 'checks', 'tests'],
