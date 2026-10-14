@@ -19,7 +19,7 @@ Two things looked like that check and weren't:
 
 → Replays of old tickets. They run against today's records, not the ones the customer had when they wrote. Only drafts for live tickets, in shadow deployment, see the records the customer has, and I waited too long to start one.
 
-So the experts' time is a hard input to the estimate. We made it go further with a shared annotation queue: one developer, ten experts, no direct messages. They graded a batch when their day had room, my follow-up questions waited next to the ticket, and a nightly run picked up every fix at once.
+So the experts' time is a hard input to the estimate. We made it go further with a shared annotation queue: one developer, ten experts, no direct messages. They were the support staff answering those tickets anyway: they graded each draft as they picked up its ticket and pasted the good ones into their reply. My follow-up questions waited next to the ticket, and a nightly run picked up every fix at once.
 
 Coding agents didn't remove the hard part. They made it obvious where it was.
 
