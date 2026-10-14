@@ -8,7 +8,7 @@ firstComment: |
 ---
 Coding agents made code cheap. On a support automation I built, that moved the bottleneck to the experts who could tell if a reply was right.
 
-A coding agent gets a free verdict on every attempt from tests and linters, so it can work through a problem without anyone watching. A reply to a customer has no test suite. The only check is an expert who knows the business reading it.
+In code, tests and linters catch much of what can go wrong, and a coding agent gets their verdict on every attempt for free. A reply to a customer has nothing comparable: the only check is an expert who knows the business reading it.
 
 Goldratt's theory of constraints says fixing a bottleneck doesn't remove it; it moves it somewhere else. Without a coding agent, every fix would have gone through me, code included. With one, a fix I had planned was a branch, an eval case and a green build by the next morning, with little of my time. What limited progress was finding out what to fix, and that ran on the experts' time.
 
