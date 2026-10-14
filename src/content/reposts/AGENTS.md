@@ -9,8 +9,15 @@ Not every post gets a repost. A post has a LinkedIn version only when
 
 ## Confluence
 
-Nothing to write: `/post/<slug>/confluence` renders any blog post as plain HTML
-for pasting into Confluence (see `src/pages/post/[slug]/confluence.astro`).
+The Confluence copy is the blog post itself, converted by code and never
+rewritten. `/post/<slug>/confluence` (`src/pages/post/[slug]/confluence.astro`)
+renders any post as plain HTML for pasting into Confluence, and
+`npm run confluence:figures` renders the drawn figures to PNGs for it.
+
+Don't write a Confluence version of a post. When something comes out wrong in
+the copy, fix the page or the component's Confluence branch (it checks
+`Astro.locals.confluence`), so every post gets the fix. Text that should read
+differently is a change to the blog post.
 
 ## LinkedIn
 
