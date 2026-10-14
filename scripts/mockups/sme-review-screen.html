@@ -1,7 +1,8 @@
 <!doctype html>
 <!--
   Mockup of the screen subject-matter experts used to grade shadow replies
-  (the-missing-compiler, "The loop we built", step 1).
+  (the-missing-compiler, "The loop we built", step 1). The queue bar on top
+  shows that each expert works through a batch, not single tickets.
 
   Render to PNG with:  npm run mockup:png
   That writes the screen (#mockup) at three stages of the loop, set as a
@@ -68,6 +69,20 @@
   }
 
   .body { padding: 16px 16px 18px; }
+
+  /* The queue: experts work through a batch of drafts at their own pace. */
+  .queue {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 16px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+  }
+  .queue .title { font-weight: 650; }
+  .queue .count { color: var(--muted); margin-left: auto; }
+  .queue .btn { padding: 4px 10px; }
 
   h3 {
     margin: 0 0 8px;
@@ -173,6 +188,12 @@
 </head>
 <body>
 <div id="mockup">
+  <div class="queue">
+    <span class="title">Shadow replies</span>
+    <span class="count">7 of 40</span>
+    <span class="btn">Previous</span>
+    <span class="btn">Next</span>
+  </div>
   <div class="body">
     <div class="section part reply">
       <h3>Customer message</h3>

@@ -1,7 +1,7 @@
 ---
 title: "The Missing Compiler: Where the Bottleneck Goes When Code Is Cheap"
 pubDate: 2026-04-20T00:00:00.000Z
-updatedDate: 2026-10-10T00:00:00.000Z
+updatedDate: 2026-10-14T00:00:00.000Z
 tags:
   - AI
   - Customer Support
@@ -16,7 +16,7 @@ import ShadowTimeline from '../../components/ShadowTimeline.astro';
 import ThemedImage from '../../components/ThemedImage.astro';
 
 ## TL;DR
-The question hanging over coding agents is what becomes the bottleneck once code is cheap. On a customer support automation I built, the bottleneck was the subject-matter experts. Coding agents get a free verdict on every attempt from tests and compilers; a business process has none, so the only check is someone who knows the business reading the output, and their time set the pace. Plan the project around it: have them grading the system's replies to real tickets as early as possible, before any reply reaches a customer, and make each grade quick to give.
+The question hanging over coding agents is what becomes the bottleneck once code is cheap. On a customer support automation I built, the bottleneck was the subject-matter experts. Coding agents get a free verdict on every attempt from tests and compilers; a business process has none, so the only check is someone who knows the business reading the output, and their time set the pace. Ours graded in batches, in a shared store, which let me work with ten of them asynchronously instead of over direct messages. Plan the project around it: have them grading the system's replies to real tickets as early as possible, before any reply reaches a customer, and make each grade quick to give.
 
 <SystemMap preset="overview" />
 
@@ -52,11 +52,13 @@ The system went live in **shadow deployment**: it drafted replies to real ticket
 
 My job had two parts. The first was the system's structure: which decisions the code makes and which the model makes, described in [Workflow or Agent](/post/workflow-vs-agent). It took a few rounds to balance reliability against flexibility, but that is mostly work done up front. The second was the loop that improves the system once it runs, and the harness it runs through: the review screen, its rejection categories, and a store that keeps every grade and comment with its ticket. The loop turned feedback into code changes in four steps.
 
+The store is also what let one developer work with ten experts. Nobody messaged anybody. Each expert graded a batch whenever their day had room; I went through the comments in one sitting, asked follow-up questions in the store next to the ticket, and the experts answered there when they got to it. A comment in a direct message is about one ticket, gets lost a week later, and needs an answer now. A comment in the store stays with its ticket and waits until someone is ready, so every step below runs in batches.
+
 ### 1. Experts grade
 
 <SystemMap preset="grade" />
 
-Experts grade a batch of shadow responses in a review screen that shows them the customer's message and the proposed reply:
+Each expert grades a batch of shadow responses, whenever they have time, in a review screen that shows them the customer's message and the proposed reply:
 
 <ThemedImage src="/images/blog/the-missing-compiler/review-screen-reply.png" alt={"Mocked-up review screen: the customer's locked-account message and the proposed reply, which asks for the email address on the account. The verdict, rejection reason and comments below are still empty."} />
 
@@ -72,7 +74,7 @@ The people who know a business can rarely write its rules down in advance, but s
 
 <SystemMap preset="specify" />
 
-I read the stored feedback and add my own comment next to the expert's: a high-level implementation plan for the coding agent, saying where in the system the fix goes and what it should do.
+I go through a batch of stored feedback in one sitting and add my own comment next to each expert's: a high-level implementation plan for the coding agent, saying where in the system the fix goes and what it should do.
 
 <ThemedImage src="/images/blog/the-missing-compiler/review-screen-fix.png" alt={"The same review screen with my comment added below the reviewer's: for the coding agent, add an Account locked intent that looks the customer up by account number, then sends the unlock link, or routes to security if the account is flagged."} />
 
@@ -135,7 +137,7 @@ Replaying old tickets is good for checking that fixes stay fixed once you know w
 
 The review screen and the store behind it are where the experts' check happens, and with a coding agent it is tempting to build all of it from scratch. I built ours that way, store included; I wouldn't again.
 
-A narrow review screen is worth writing yourself: it is the surface the experts touch every day, it should show the ticket and the proposed reply and nothing else, and every click you remove gives the reviewers time back. The machinery behind it — queues, assignment, score storage, history — is not: it is quick to write, but getting its details right takes time that existing tools have already spent. Build the screen on top of one, such as Langfuse's annotation queues. It is the same reason SaaS isn't dead, however cheap code gets. When [software stocks fell this February](https://finance.yahoo.com/news/anthropics-ai-tools-deepen-selloff-054551832.html) on fears that AI would make them obsolete, [Jamin Ball argued](https://cloudedjudgement.substack.com/p/clouded-judgement-21326-build-vs) that cheaper building leaves the build-or-buy calculus intact: what software costs to own, how soon you need it, and whether it is what sets you apart.
+A narrow review screen is worth writing yourself: it is the surface the experts touch every day and their only channel to you, it should show the ticket and the proposed reply and nothing else, and every click you remove gives the reviewers time back. The machinery behind it — queues, assignment, score storage, history — is not: it is quick to write, but getting its details right takes time that existing tools have already spent. Build the screen on top of one, such as Langfuse's annotation queues. It is the same reason SaaS isn't dead, however cheap code gets. When [software stocks fell this February](https://finance.yahoo.com/news/anthropics-ai-tools-deepen-selloff-054551832.html) on fears that AI would make them obsolete, [Jamin Ball argued](https://cloudedjudgement.substack.com/p/clouded-judgement-21326-build-vs) that cheaper building leaves the build-or-buy calculus intact: what software costs to own, how soon you need it, and whether it is what sets you apart.
 
 ## The other wait: endpoints
 
@@ -145,7 +147,7 @@ The experts weren't the only people the loop waited on. A reply is only as good 
 
 IT worked API-first: I wrote the endpoint I needed as an OpenAPI spec and committed it to the repository, and it was usually implemented within a day.
 
-The handoff was still manual: I pinged someone on Teams, who pointed their own coding agent at the spec — two coding agents, with a person on each end passing messages between them. I don't know the right fix; something as plain as an MCP server through which my agent files the request directly might be enough. Until then, a fix that needs a new endpoint waits for IT before the reviewers see it.
+This was the one handoff that ran outside the store, and it showed: I pinged someone on Teams, who pointed their own coding agent at the spec — two coding agents, with a person on each end passing messages between them. I don't know the right fix; something as plain as an MCP server through which my agent files the request directly might be enough. Until then, a fix that needs a new endpoint waits for IT before the reviewers see it.
 
 ## The next bottleneck: who translates the feedback
 

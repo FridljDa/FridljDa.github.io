@@ -16,9 +16,9 @@ So grading did two jobs. It was the check a coding agent gets for free. And it w
 
 Their time set the pace. Grading is one more task in a day that is already full, for people who may suspect they're training their own replacement.
 
-The experts weren't the only wait. Every new kind of answer needed a new endpoint from the client's IT. I wrote the spec, and they usually implemented it within a day. The handoff: I pinged someone on Teams, who pointed their own coding agent at my spec.
+We built the loop around their time. One developer, ten experts, and no direct messages: every grade and comment went into a store next to its ticket. Each expert graded a batch when their day had room. I went through the comments in one sitting, asked follow-up questions right there, and they answered when they got to it. A nightly run picked up every fix at once.
 
-Two coding agents, with a person on each end passing messages between them.
+The one handoff outside the store, endpoints from IT, ran over Teams: two coding agents, with a person on each end passing messages between them.
 
 Coding agents didn't remove the hard part. They made it obvious where it was.
 
