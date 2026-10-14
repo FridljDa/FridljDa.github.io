@@ -10,18 +10,20 @@ description: "Which decisions in an LLM automation belong in code, and which wit
 image: /images/blog/workflow-vs-agent/featured.png
 ---
 
+import DecisionMap from '../../components/DecisionMap.astro';
+import DecisionFigure from '../../components/DecisionFigure.astro';
 import ThemedImage from '../../components/ThemedImage.astro';
 
 ## TL;DR
 The first design question in an LLM automation is where each decision lives: in code or with the model. On a support automation for a bank, we put nearly all of them in code, for one good reason and one bad one. The good one: a security check has to come before any unlock, every time. The bad one: replies were graded on whether they matched the bank's templates, a test only code passes every time. The workflow we built answered the common requests and ran out on the rest, because it needed a rule for every kind of request on every state an account could be in. The security check never needed the workflow; it fits inside the unlock tool. Next time I would put the rules that must always hold in the tools, let an agent decide what to do next, and move a request type into code only once it is common and the agent gets it wrong, or the action can't be undone.
 
-{/* FIGURE map preset=overview: everything at full strength, both routes solid, no Default tag, guard drawn on Tools */}
+<DecisionMap preset="overview" />
 
 *Where a decision can live: in a workflow in code, or with an agent. Both act through the same tools, and experts grade every reply. Each section highlights its part.*
 
 ## A good reason for code, and a bad one
 
-{/* FIGURE map preset=agent-first: Message straight to Agent, Agent and Tools to Reply highlighted; Intent and Workflow not drawn; no guard; tag "Any order" on Agent */}
+<DecisionMap preset="agent-first" />
 
 Customers wrote in to our first-level support team at Northstar Bank with messages like this:
 
@@ -41,7 +43,7 @@ That was the bad reason. No test can tell you whether a reply to Alex is right, 
 
 ## For a locked account, the workflow was right
 
-{/* FIGURE map preset=workflow: Message, Intent, Workflow, Tools, Reply highlighted; Agent greyed; tag "Default" on Workflow */}
+<DecisionMap preset="workflow" />
 
 We labelled and clustered a sample of past tickets with [an AI-assisted, iterative process](/post/snakemake-ticket-analysis-pipeline). A handful of intents accounted for the large majority of them, which encouraged us to try a workflow.
 
@@ -53,13 +55,13 @@ The full version of this pattern is the four-step pipeline in [Architecture of a
 
 ## A workflow needs a rule for every cell
 
-{/* FIGURE map preset=tree: Workflow and the feedback edge from Experts ("New branch") highlighted, rest greyed; tag "Every cell" on Workflow */}
+<DecisionMap preset="tree" />
 
 We ran the pipeline in shadow deployment: it drafted a reply to every incoming ticket, subject-matter experts graded the drafts, and nothing went to a customer. Each round of their feedback landed a new branch in the tree, and for a while that worked.
 
 But a workflow is only deterministic if it maps every combination of intent and [fetched data](/post/first-level-support-automation#step-3-fetch) to a reply. That mapping is a grid: every kind of request against every state its record can be in.
 
-{/* FIGURE grid: three intents x three account states; Alex's cell (Locked account x No flags, "Unlock steps") outlined in Alex's colour; Locked x Flagged "Escalate"; the other seven cells "?" in the Other style */}
+<DecisionFigure name="grid" />
 
 *Three intents against three account states. Alex's request is the top-left cell; had Alex's account been closed, it would be the top-right one.*
 
@@ -69,7 +71,7 @@ In a running tree, a question mark isn't even a blank. A tree asks only the ques
 
 ## The agent got the leftovers
 
-{/* FIGURE map preset=fallback: Intent to Workflow solid ("Known"), Intent to Agent dashed ("Other"), Reply and the grade edge to Experts highlighted; tag "Default" on Workflow */}
+<DecisionMap preset="fallback" />
 
 Eventually the workflow just wasn't expressive enough, so we bolted an agent onto the tree as a fallback for the requests it couldn't cover, the ones that landed in an "Other" leaf ([the fallback in the plan-generation step](/post/first-level-support-automation#step-4-plan-generation)). Code stayed the default. A locked account like Alex's had its own branch, so the agent never saw one. It got only the scraps the code hadn't reached yet, and each new branch took some of those away.
 
@@ -77,11 +79,11 @@ The grading still worked against it. We scored drafts on template match rather t
 
 ## Rules that must hold belong in the tools
 
-{/* FIGURE map preset=guards: Tools with its guard highlighted, plus both edges into it (from Workflow and from Agent); rest greyed; tag "Must hold" on Tools */}
+<DecisionMap preset="guards" />
 
 Go back to the good reason. The rule was never that code must decide the order of every step. It was narrower: no unlock instructions go to a flagged account. A tree is one way to enforce that. A check inside the unlock tool is another: the tool reads the flag itself and refuses if it is set, whatever the agent asked for and whatever the customer wrote. That is still code deciding the order, but for one rule only, and on every path, the agent's included.
 
-{/* FIGURE unlock-tool: Workflow and Agent both call the unlock tool; inside it one question, "Flagged?": no to "Unlock steps", yes to "Refuse"; Alex's route from the Agent to "Unlock steps" in Alex's colour */}
+<DecisionFigure name="unlock-tool" />
 
 *The flag check inside the unlock tool. Whoever calls it, a flagged account gets no unlock steps.*
 
@@ -93,7 +95,7 @@ Templates fall on both sides of that line. A sentence every reply must contain, 
 
 ## Next time: make the agent the default
 
-{/* FIGURE map preset=next-time: Intent to Agent solid, Intent to Workflow dashed ("Graduated"), guard on Tools, feedback edge from Experts ("Graduate"); tag "Default" on Agent */}
+<DecisionMap preset="next-time" />
 
 Next time I would invert the default, following Will Larson's [Building an internal agent](https://lethain.com/agents-coordinators/), which starts every workflow with the LLM in charge. The agent decides what to do next and acts only through tools that enforce the rules. A request type graduates into a path in code only once it shows up often and the agent handles it unreliably, or when the action is irreversible enough that you don't want a model deciding it at all, not even behind a guard.
 
@@ -103,7 +105,7 @@ It is also the shortest path into shadow deployment. An agent with a set of tool
 
 ## The agent still doesn't know the bank
 
-{/* FIGURE map preset=rules: Agent, Tools and Experts highlighted, rest greyed; tag "Know the rules" on Experts */}
+<DecisionMap preset="rules" />
 
 Inverting the default doesn't shrink the grid. It spares you enumerating it, which is exactly where we hit the wall, but skipping a cell is not the same as answering it correctly.
 
@@ -113,7 +115,7 @@ The obvious shortcut is to point the agent at resolved tickets, and it isn't a c
 
 ## Let the experts decide what goes into code
 
-{/* FIGURE map preset=start: Tools with guard, Agent, Reply, grade edge, Experts and the feedback edge ("Graduate") to Workflow highlighted; tag "Build first" on Tools */}
+<DecisionMap preset="start" />
 
 Neither design tells you which cells of the grid matter. A workflow makes you guess them up front; an agent lets you skip writing them down. Only the people who know the business can settle which paths are worth freezing into code, and they settle it by grading the system's drafts. What they grade for decides the outcome. Graded on template match, code wins every time, whatever the customer needed. Graded on whether the customer's problem was solved, the drafts show where the agent goes wrong, and those are the cells worth writing down.
 

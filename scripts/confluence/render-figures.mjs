@@ -30,7 +30,7 @@ const FIGURES = [
   },
 ];
 
-const POSTS = ['the-missing-test-suite', 'first-level-support-automation', 'scrap-conditional-independence'];
+const POSTS = ['the-missing-test-suite', 'first-level-support-automation', 'scrap-conditional-independence', 'workflow-vs-agent'];
 
 // Figures are drawn at 720px wide; the rest is the white margin around them.
 const FIGURE_WIDTH = 768;
