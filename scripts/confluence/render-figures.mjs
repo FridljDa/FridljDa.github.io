@@ -23,6 +23,11 @@ const FIGURES = [
     selector: '.shadow-timeline',
     out: 'src/assets/images/blog/the-missing-compiler/shadow-timeline.png',
   },
+  {
+    post: 'the-missing-compiler',
+    selector: '.approval-curve',
+    out: 'src/assets/images/blog/the-missing-compiler/approval-curve.png',
+  },
 ];
 
 const POSTS = ['the-missing-compiler', 'first-level-support-automation', 'scrap-conditional-independence'];
