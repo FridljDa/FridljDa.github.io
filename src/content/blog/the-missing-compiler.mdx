@@ -16,7 +16,7 @@ import ShadowTimeline from '../../components/ShadowTimeline.astro';
 import ThemedImage from '../../components/ThemedImage.astro';
 
 ## TL;DR
-The question hanging over coding agents is what becomes the bottleneck once code is cheap. On a customer support automation I built, the bottleneck was the subject-matter experts. Coding agents get a free verdict on every attempt from tests and compilers; a business process has none, so the only check is someone who knows the business reading the output, and their time set the pace. Ours graded in batches, in a shared store, which let me work with ten of them asynchronously instead of over direct messages. Plan the project around it: have them grading the system's replies to real tickets as early as possible, before any reply reaches a customer, and make each grade quick to give.
+The question hanging over coding agents is what becomes the bottleneck once code is cheap. On a customer support automation I built, the bottleneck was the subject-matter experts. Coding agents get a free verdict on every attempt from tests and compilers; a business process has none, so the only check is someone who knows the business reading the output, and their time set the pace. Ours graded in batches, in a shared review tool, which let me work with ten of them asynchronously instead of over direct messages. Plan the project around it: have them grading the system's replies to real tickets as early as possible, before any reply reaches a customer, and make each grade quick to give.
 
 <SystemMap preset="overview" />
 
@@ -46,13 +46,13 @@ A read tool, an endpoint the system can call, lets it look up the customer's rec
 
 ## The loop we built
 
-<SystemMap preset="harness" />
+<SystemMap preset="review-tool" />
 
 The system went live in **shadow deployment**: it drafted replies to real tickets, subject-matter experts graded them, and no customer saw any of them.
 
-My job had two parts. The first was the system's structure: which decisions the code makes and which the model makes, described in [Workflow or Agent](/post/workflow-vs-agent). It took a few rounds to balance reliability against flexibility, but that is mostly work done up front. The second was the loop that improves the system once it runs, and the harness it runs through: the review screen, its rejection categories, and a store that keeps every grade and comment with its ticket. The loop turned feedback into code changes in four steps.
+My job had two parts. The first was the system's structure: which decisions the code makes and which the model makes, described in [Workflow or Agent](/post/workflow-vs-agent). It took a few rounds to balance reliability against flexibility, but that is mostly work done up front. The second was the loop that improves the system once it runs, and the review tool it runs through: a review screen with its rejection categories, and a store behind it that keeps every grade and comment with its ticket. The loop turned feedback into code changes in four steps.
 
-The store is also what let one developer work with ten experts. Nobody messaged anybody. Each expert graded a batch whenever their day had room; I went through the comments in one sitting, asked follow-up questions in the store next to the ticket, and the experts answered there when they got to it. A comment in a direct message is about one ticket, gets lost a week later, and needs an answer now. A comment in the store stays with its ticket and waits until someone is ready, so every step below runs in batches.
+The review tool is also what let one developer work with ten experts. Nobody messaged anybody. Each expert graded a batch whenever their day had room; I went through the comments in one sitting, asked follow-up questions in the tool next to the ticket, and the experts answered there when they got to it. A comment in a direct message is about one ticket, gets lost a week later, and needs an answer now. A comment in the tool stays with its ticket and waits until someone is ready, so every step below runs in batches.
 
 ### 1. Experts grade
 
@@ -94,10 +94,10 @@ Then the fix ships, and the next batch of shadow responses goes to the experts.
 
 <LoopAnimation
   name="shadow-loop"
-  description="Customers write in one at a time. Each message runs through the intent DAG to a leaf, and a subject-matter expert grades the drafted reply. Most grades are checks. On a cross, the expert's comment is stored with the case; I pick it up and store a comment of my own on how to fix it. A coding agent's nightly run takes my comment from the store and grows the DAG: a new leaf, or a second parent for an existing one. The next customer with the same request reaches the new leaf and gets a check."
+  description="Day 1: customers write in, several at once. Each message runs through the intent DAG to a leaf, and a team of subject-matter experts grades the drafted replies whenever they have time. Most grades are checks. The comments on the crosses pile up in the store next to their tickets. I take the whole pile in one sitting and store a fix plan for each. For one of them I first store a question, and an expert answers it in the store while I plan another fix. At night the coding agent's run takes all my plans at once and grows the DAG: two new leaves, Password reset and Account locked, and a second parent for Account locked. Day 2: customers with the same requests reach the new leaves and get checks."
 />
 
-*Steps 1–4, sped up: one night's fix turns the next customer with the same request from a cross into a check.*
+*Steps 1–4, sped up: the experts grade a batch whenever they have time, I turn the pile of comments into plans in one sitting, and one nightly run turns every one of those crosses into a check.*
 
 ## The bottleneck moves
 
@@ -147,7 +147,7 @@ The experts weren't the only people the loop waited on. A reply is only as good 
 
 IT worked API-first: I wrote the endpoint I needed as an OpenAPI spec and committed it to the repository, and it was usually implemented within a day.
 
-This was the one handoff that ran outside the store, and it showed: I pinged someone on Teams, who pointed their own coding agent at the spec — two coding agents, with a person on each end passing messages between them. I don't know the right fix; something as plain as an MCP server through which my agent files the request directly might be enough. Until then, a fix that needs a new endpoint waits for IT before the reviewers see it.
+This was the one handoff that ran outside the review tool, and it showed: I pinged someone on Teams, who pointed their own coding agent at the spec — two coding agents, with a person on each end passing messages between them. I don't know the right fix; something as plain as an MCP server through which my agent files the request directly might be enough. Until then, a fix that needs a new endpoint waits for IT before the reviewers see it.
 
 ## The next bottleneck: who translates the feedback
 
