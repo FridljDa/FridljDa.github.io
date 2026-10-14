@@ -2,14 +2,14 @@ import { test, expect } from '@playwright/test';
 
 const POST = '/post/workflow-vs-agent';
 
-const PRESETS = ['overview', 'agent-first', 'workflow', 'tree', 'fallback', 'guards', 'next-time', 'rules', 'start'];
+const PRESETS = ['overview', 'agent-first', 'workflow', 'tree', 'fallback', 'guards', 'next-time', 'start'];
 
 test.describe('Figures in Workflow or Agent', () => {
   test('every section opens with the decision map, its part highlighted', async ({ page }) => {
     await page.goto(POST);
     const headings = page.locator('.prose h2');
     const maps = page.locator('figure.decision-map');
-    await expect(maps).toHaveCount(9);
+    await expect(maps).toHaveCount(8);
     // One under every section heading; the TL;DR's is the overview.
     expect(await maps.count()).toBe(await headings.count());
 

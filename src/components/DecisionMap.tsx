@@ -92,15 +92,6 @@ export const PRESETS = {
     description:
       'Next time: the agent is the default route, and a request type takes the dashed route to a workflow in code only once the experts’ grades say it should graduate. The guard stays in the tools on both routes.',
   },
-  rules: {
-    focus: ['agent', 'agentTools', 'tools', 'experts'],
-    default: 'agent',
-    guard: true,
-    tags: [{ on: 'experts', text: 'Know the rules' }],
-    small: true,
-    description:
-      'Highlighted: the agent, which can read records through its tools, and the experts, who know the bank’s rules that nobody has written down.',
-  },
   start: {
     focus: ['tools', 'agentTools', 'agent', 'send', 'reply', 'grade', 'experts', 'feedback', 'workflow'],
     default: 'agent',
