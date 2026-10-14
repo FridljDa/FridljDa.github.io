@@ -10,7 +10,7 @@
  * Narrow diagrams are upscaled to --min-width CSS pixels before the
  * screenshot so they do not come out visually smaller than wide ones.
  *
- * Defaults to src/content/blog/workflow-vs-agent.mdx, writing to
+ * Defaults to src/content/blog/langfuse-monitoring-eval-self-improvement.mdx, writing to
  * diagrams/<slug>/<slug>-01.png ...
  */
 
@@ -18,7 +18,7 @@ import { readFile, mkdir, writeFile, rm } from 'node:fs/promises';
 import { basename, extname, join, resolve } from 'node:path';
 import { chromium } from 'playwright';
 
-const DEFAULT_FILE = 'src/content/blog/workflow-vs-agent.mdx';
+const DEFAULT_FILE = 'src/content/blog/langfuse-monitoring-eval-self-improvement.mdx';
 const MERMAID_BUNDLE = 'node_modules/mermaid/dist/mermaid.min.js';
 
 function parseArgs(argv) {

@@ -1,11 +1,13 @@
 /* Theme for the Remotion compositions in src/remotion/ and the drawn figures
-   (system map, pipeline map, pipeline figures, scrap figures), which read these variables and
+   (system map, pipeline map, pipeline figures, scrap figures, decision map and figures), which read these variables and
    fall back to the light values when rendered elsewhere. */
 .loop-animation,
 .system-map,
 .pipeline-map,
 .pipeline-figure,
-.scrap-figure {
+.scrap-figure,
+.decision-map,
+.decision-figure {
   --lv-surface: #ffffff;
   --lv-text: #1f2937;
   --lv-muted: #6b7280;
@@ -24,7 +26,9 @@
 .dark .system-map,
 .dark .pipeline-map,
 .dark .pipeline-figure,
-.dark .scrap-figure {
+.dark .scrap-figure,
+.dark .decision-map,
+.dark .decision-figure {
   --lv-surface: #111827;
   --lv-text: #f3f4f6;
   --lv-muted: #9ca3af;
