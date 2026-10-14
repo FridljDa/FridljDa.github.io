@@ -6,7 +6,7 @@ tags:
   - AI
   - Customer Support
   - Architecture
-description: "Which decisions in an LLM automation belong in code, and which with the model? Put the rules that must always hold in the tools, let an agent choose what to do next, and move a request type into code once the experts' grades show it is common and the agent gets it wrong, or once its action can't be undone."
+description: "Which decisions in an LLM automation belong in code? Ask what one mistake would be: if it would be an incident, it is a rule and goes inside a tool; everything else goes to an agent by default, and the experts' grades decide which request types move into code."
 image: /images/blog/workflow-vs-agent/featured.png
 ---
 
@@ -15,7 +15,7 @@ import DecisionFigure from '../../components/DecisionFigure.astro';
 import ThemedImage from '../../components/ThemedImage.astro';
 
 ## TL;DR
-The first question in an LLM automation is where each decision lives: in code or with the model. On a bank's support automation, we put nearly all in code. The good reason: a security check must come before every unlock. The bad one: the first agent was judged on matching the bank's templates, and code always picks the template. The workflow handled the commonest requests and broke down on the rest: rarer requests, and common ones on accounts in states we had no rule for. The check never needed the workflow; it fits inside the unlock tool. Next time I would put such rules in the tools, let an agent do the rest, and move a request type into code once the experts' grades show it is common and the agent gets it wrong, or its action can't be undone.
+Every decision in an LLM automation lives in code or with the model. On a bank's support automation we put nearly all of them in code, for a good reason (a security check before every unlock) and a bad one (an agent judged on matching templates). The workflow ran out on rarer requests, and on common ones on accounts in states we had no rule for. Yet the check fits inside the unlock tool. Ask what one mistake would be. An incident means a rule, inside a tool. Everything else goes to an agent by default, and the experts' grades decide which request types move into code.
 
 <DecisionMap preset="overview" />
 
@@ -31,15 +31,15 @@ Customers wrote in to our first-level support team at Northstar Bank with messag
 
 The running example is based on a real project, with the details changed to protect the client's privacy.
 
-To answer Alex, something has to decide what Alex wants, which account is theirs, whether it is safe to help, and what to send. Each can live in code or with the model.
+To answer Alex, something has to decide what Alex wants, which account is theirs, whether it is safe to help, and what to send. Each can live in code or with the model, and one question sorts them: what would one mistake be?
 
 The first design we tried left all of them with the model: a single support agent that held every tool (account lookup, security-flag check, send unlock instructions, escalate to security) and wrote the reply itself.
 
 Nothing in that design guarantees that the agent checks the security flag before it sends unlock instructions. That would be an expensive mistake. And if the model chooses the order, a customer's message can talk it out of the check: that is [prompt injection](/post/prompt-injection). As the ServiceNow CEO [put it](https://open.spotify.com/episode/11xeL3QCAF77z1vxOp0am0?si=fc70f33f0dd64ab4): people forgive other people for making mistakes. They don't forgive software. That was the good reason to put code in charge, and a narrow one: a single rule about the order of two tool calls.
 
-In practice, a different complaint drove the decision: stakeholders said the agent's replies didn't match the established message templates. We tried to fix that with prompt engineering, but asking an LLM to be reliably deterministic works against its nature.
+In practice, a different complaint drove the decision: stakeholders said the agent's replies didn't match the established message templates. We tried to fix that with prompt engineering, but asking an LLM to be reliably deterministic works against its nature. In hindsight, a send tool holding the approved wording would have answered the complaint.
 
-That was the bad reason. No test can tell you whether a reply to Alex is right; someone who knows the bank has to read it ([The Missing Test Suite](/post/the-missing-test-suite) makes the longer argument). What they check for becomes the specification, and for the first design it was template match. Graded that way, code can't lose, because code picks the template. The grading, more than the task, picked the architecture.
+That was the bad reason. No test can tell you whether a reply to Alex is right; someone who knows the bank has to read it ([The Missing Test Suite](/post/the-missing-test-suite) makes the longer argument). What they check for becomes the specification, and for the first design it was template match. Judged that way, code can't lose, because code picks the template. The grading, more than the task, picked the architecture.
 
 ## For a locked account, the workflow works
 
@@ -47,37 +47,41 @@ That was the bad reason. No test can tell you whether a reply to Alex is right; 
 
 We labelled and clustered a sample of past tickets with [an AI-assisted, iterative process](/post/snakemake-ticket-analysis-pipeline). A handful of intents accounted for the large majority of them, which encouraged us to try a workflow.
 
-It kept code in charge of the sequence and gave the LLM one job: reading the message. With an *Account locked* intent in the tree, the LLM recognises Alex's message as one and pulls out the identifier, the account number or the name and branch. Everything after that is a small decision tree in code: look up the account, check the flag, then send the unlock-instructions template or escalate to security. The flag check comes before any unlock instructions, every time, and the reply matches the template because code chose it.
+It kept code in charge of the sequence and gave the LLM one job: reading the message. Once the tree has an *Account locked* intent, the LLM recognises Alex's message as one and pulls out the identifier, the account number or the name and branch. Everything after that is a small decision tree in code: look up the account, check the flag, then send the unlock-instructions template or escalate to security. The flag check comes before any unlock instructions, every time, and the reply matches the template because code chose it.
 
 Here it is a good design. The logic is explicit and the cases are few: the account is flagged or it isn't. The LLM's part is narrow enough to have its own evals and to hand to a cheaper model, and a fix is local: you know what the next message of that shape will do.
 
 The full version is the four-step pipeline in [Architecture of a First-Level Support Automation](/post/first-level-support-automation), with the typing that holds its seams together in [Type-Safe Hybrid Workflows with Pydantic AI](/post/pydantic-ai-type-safe-hybrid-workflows).
 
-## A workflow needs a rule for every cell
+## A workflow needs a branch for every cell
 
 <DecisionMap preset="tree" />
 
 We ran the pipeline in shadow deployment: it drafted a reply to every incoming ticket, subject-matter experts graded the drafts, and nothing was sent automatically. Each round of their feedback landed a new branch in the tree, and for a while that worked.
 
-But a workflow can only answer a request if someone has written a rule for its intent and the [fetched data](/post/first-level-support-automation#step-3-fetch) behind it. Those rules form a grid: every kind of request against every state its record can be in.
+But a workflow can only answer a request if someone has written a branch for its intent and the [fetched data](/post/first-level-support-automation#step-3-fetch) behind it. Those branches form a grid: every kind of request against every state its record can be in.
 
 <DecisionFigure name="grid" />
 
 *Three intents against three account states. Alex's request is the top-left cell; had Alex's account been closed, it would be the top-right one.*
 
-Every question mark is a business rule someone has to decide, write down and keep current. This toy already leaves seven open, and the ticket analysis found more than twenty intents, against more than three account states. Some cells share a rule: the whole Flagged column may be one, escalate to security, and a must-hold one that belongs in the tools. The rest is where the tree kept growing. A handful of intents covered most *messages*, not most *cells*: every new state meant another branch and another template, and the branches grew faster than the share of tickets the tree could answer.
+Every question mark is a decision someone has to make, write down and keep current. This toy already leaves seven open, and the ticket analysis found more than twenty intents, against more than three account states. A handful of intents covered most *messages*, not most *cells*: every new state meant another branch and another template, and the branches grew faster than the share of tickets the tree could answer.
 
-The gaps are also silent. "Other" catches requests a tree doesn't recognise, not a recognised request on an account state nobody wrote a question for. Account locked's tree in [the architecture post](/post/first-level-support-automation#step-4-plan-generation) asks whether a record was found, whether there is exactly one, and whether it is flagged. A tree like that, with no question about whether the account is open, would send a closed account the unlock steps. An agent reading the same record would at least see that the account was closed.
+{/* FIGURE coverage */}
+
+*Schematic, not measured: each new branch answers fewer new tickets than the last.*
+
+The gaps are also silent. "Other" catches requests a tree doesn't recognise, not a recognised request on an account state nobody wrote a question for. Account locked's tree in [the architecture post](/post/first-level-support-automation#step-4-plan-generation) asks whether a record was found, whether there is exactly one, and whether it is flagged. Nothing in it asks whether the account is open, so a tree like that would fill the closed cell without anyone deciding it: it would send the unlock steps.
 
 ## The agent got the leftovers
 
 <DecisionMap preset="fallback" />
 
-Eventually the workflow wasn't expressive enough, so we bolted an agent onto the tree as a fallback for the requests that landed in an ["Other" leaf](/post/first-level-support-automation#step-4-plan-generation). Code stayed the default, and the agent got only the scraps code hadn't reached yet.
+Requests the tree didn't recognise landed in an ["Other" leaf](/post/first-level-support-automation#step-4-plan-generation), so we bolted an agent onto it as a fallback. Code stayed the default, and the agent got the scraps code hadn't reached yet.
 
-Alex's request started out uncovered. Before the tree had an Account locked intent, the message landed in an "Other" leaf, and the draft for it was [rejected for "Wrong process"](/post/the-missing-test-suite#1-experts-grade). The reviewer wrote: "We have the account number, so look them up: never ask for what we can find. Locked accounts get the unlock link, or go to security if flagged." The fix was a new Account locked intent, and every new intent took some of the agent's scraps away.
+The grading still worked against it: drafts were scored on template match, not on whether the customer's issue got resolved, so a clearer answer in the agent's own words scored badly. We were asking the agent to be a worse workflow.
 
-The grading worked against the agent then, too. We scored drafts on template match rather than on whether the customer's issue got resolved. So a clearer, more helpful answer in the agent's own words still scored badly, just for departing from a template. We were asking the agent to be a worse workflow. A score like that is [a proxy for a proxy](/post/approval-rate-is-not-savings), one step further from the outcome anyone is paying for.
+Alex's message was one of those scraps at first. Before the tree had an Account locked intent, it landed in "Other", and the draft for it was [rejected for "Wrong process"](/post/the-missing-test-suite#1-experts-grade). The fix was a new Account locked intent. The reviewer had written: "We have the account number, so look them up: never ask for what we can find. Locked accounts get the unlock link, or go to security if flagged."
 
 ## Rules that must hold belong in the tools
 
@@ -89,34 +93,28 @@ The good reason was never that code must decide the order of every step; it was 
 
 *The flag check inside the unlock tool. Whoever calls it, a flagged account gets no unlock steps.*
 
-The same tool can settle the other question that must never go wrong, whether the writer may act on this account: it sends the steps only to the contact details on the record, never to whoever wrote in. Our pipeline already had a rule of this kind: plans involving money, account access or side effects required [human review](/post/temporal-human-in-the-loop). None of these needs a tree around it.
+The same tool can settle the other question that must never go wrong, whether the writer may act on this account: it sends the steps only to the contact details on the record, never to whoever wrote in. The agent still decides which record Alex means; this rule is what makes a wrong match harmless. Our pipeline already had a rule of this kind: plans involving money, account access or side effects required [human review](/post/temporal-human-in-the-loop). None of these needs a tree around it.
 
-To sort a decision, ask what one mistake would be. If a single violation would be an incident, it is a rule, and it goes in a tool. If it would be a reply an expert rejects, it is a judgement call for the agent, and the grading will catch it. Judgement calls need the bank's policies, though, and those are what the tree kept failing to write down.
+To sort a decision, ask what one mistake would be. If a single violation would be an incident, it is a rule, and it goes in a tool. If it would be a reply an expert rejects, it is policy: the agent follows it, and the grading catches it when it doesn't.
 
-The reviewer's comment on Alex's draft holds one of each. "Locked accounts get the unlock link, or go to security if flagged" is the flag check, already in the unlock tool. "Never ask for what we can find" holds for every reply, so it is a policy for the agent's instructions. Neither needs a new intent. With code as the default, we added one.
-
-Templates fall on both sides of the line. Approved wording is a rule a send tool can hold: the agent picks the template, the tool fills it from the record and sends nothing else. Matching a template for its own sake is choosing what to say. In hindsight, such a tool could have answered the stakeholders' complaint without a tree.
+The reviewer's comment on Alex's draft holds one of each. "Locked accounts get the unlock link, or go to security if flagged" is the flag check, a rule already in the unlock tool. "Never ask for what we can find" is policy, for the agent's instructions. Neither needs a new intent. With code as the default, we added one.
 
 ## Next time: make the agent the default
 
 <DecisionMap preset="next-time" />
 
-*Next time: the same parts, with the default swapped and the guard in the tools.*
+*Next time: the same parts, with the default swapped. The agent comes first, and code takes what graduates.*
 
-I would invert the default, following Will Larson's [Building an internal agent](https://lethain.com/agents-coordinators/), which starts workflows LLM-driven and moves one into code once the LLM proves unreliable at it. I would start with the simplest agent that can draft a reply: a model that reads the bank's policies and acts only through tools that enforce the rules. That is also the shortest path into shadow deployment, and every week before the experts see real drafts is [a week of grades lost](/post/the-missing-test-suite#get-into-shadow-deployment-sooner).
+I would invert the default, following Will Larson's [Building an internal agent](https://lethain.com/agents-coordinators/), which starts workflows LLM-driven and moves one into code once the LLM proves unreliable at it. I would start with the simplest agent that can draft a reply: a model that follows the bank's policies and acts only through tools that hold the rules. For Alex, it would read the message, look up NSB01234 and ask the unlock tool to send the instructions. If the account isn't flagged, the tool sends the steps to the contact details on the record, once a person has approved the plan. If it is, the tool refuses, and the agent escalates to security.
 
-The agent default has a cost. An agent is [mostly judged end to end](/post/first-level-support-automation#the-practical-payoff-local-evals), so a regression is hard to locate, and a change to its instructions for one request type can break another. Graduating buys back what made the workflow good for a locked account: a narrow LLM step with its own evals, and fixes whose effect you can predict. Each path is also code to write and keep current, which pays off only for a common request type. So a request type graduates once the experts' grades show it is common and the agent gets it wrong; for rarer ones, grading the agent's mistakes is cheaper than writing the branch.
+That is also the shortest path into shadow deployment, since an agent with a set of tools is much less to build than a tree of intents, plans and templates, and every week before the experts see real drafts is [a week of grades lost](/post/the-missing-test-suite#get-into-shadow-deployment-sooner). The default has a cost, though. An agent is [mostly judged end to end](/post/first-level-support-automation#the-practical-payoff-local-evals), so a regression is hard to locate, and a change to its instructions for one request type can break another. Graduating buys back what made the workflow good for a locked account: a narrow LLM step with its own evals, and fixes whose effect you can predict. Each path is also code to write and keep current, which pays off only for a common request type. So a request type graduates once the experts' grades show it is common and the agent gets it wrong. For rarer ones, the fix goes into the agent's instructions.
 
-I would add a reason of my own: an action that can't be undone. A guard can stop a wrong action but can't choose the right one, so for such an action I want both: a path in code that decides when to act, with the model only recognising the request, and a person approving the action before it runs.
+I would add one reason of my own: an action that can't be undone. A guard can stop a wrong action but can't choose the right one, and review alone still leaves the choice to the model. So such an action also gets a path in code that decides when to act, with the model only recognising the request.
 
-For Alex, the agent would read the message, look up NSB01234 and ask the unlock tool to send the instructions. If the account isn't flagged, the tool sends the steps to the contact details on the record once a person has approved the plan. If it is flagged, the tool tells the agent to escalate to security without saying why, so the agent has nothing to repeat to the customer. Account locked would get a path in code only if the grades showed the agent getting it wrong.
-
-## Let the experts decide what goes into code
+## The experts fill in the grid
 
 <DecisionMap preset="start" />
 
-The agent doesn't shrink the grid. It spares you enumerating it, which is where we hit the wall, but skipping a cell is not the same as answering it correctly. The agent can see that an account is closed; what the bank does about it is policy, which no model was trained on and usually nobody has written down. It lives in the heads of the people who answer the tickets. Resolved tickets are a poor substitute. Their resolutions contradict each other and current policy, where the tree was at least a single curated source of truth, and an agent that retrieves raw tickets at run time is a far larger privacy and security exposure than a fixed tree.
+The agent doesn't shrink the grid. It spares you enumerating it, which is where we hit the wall, but skipping a cell is not answering it. The agent can see that an account is closed; what the bank does about it is policy, which no model was trained on. It lives in the heads of the people who answer the tickets. Resolved tickets are no substitute: they contradict each other and current policy, and they are full of personal data.
 
-So the policies have to come from the experts, and grading is how they come out: shown a draft, they can say at a glance what is wrong with it.
-
-If I built this again, I would first [work out what the automation would actually save](/post/approval-rate-is-not-savings). Then I would sort the four decisions in Alex's message into their homes. Whether it is safe to help is a rule, so it goes in the tools: the flag check, the contact details on the record, and review of plans involving money, account access or side effects. Which account is Alex's and what Alex wants are for the agent to read. What to send follows the bank's policies, written down where the agent reads them. A request type moves into code once the experts' grades show it is common and the agent gets it wrong, or once its action can't be undone, so I would [get the experts grading](/post/the-missing-test-suite) from the first week, on whether each draft solves the customer's problem. The rules live in the tools, the policies where the agent can read them, the drafting with the agent, and the bank's judgement with the experts who grade it.
+If I built this again, I would first [work out what the automation would actually save](/post/approval-rate-is-not-savings). Then I would sort the four decisions in Alex's message. What Alex wants and which account is theirs are for the agent to read. Whether it is safe to help is a rule, so it goes in the tools. What to send is the bank's policy, and usually nobody has written it down. The experts' grades are how it gets written, so I would [get them grading](/post/the-missing-test-suite) from the first week, on whether each draft solves the customer's problem. Last time, grading on templates picked the architecture. Next time I would let grading on the customer's problem pick it, one request type at a time.
