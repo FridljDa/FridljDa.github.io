@@ -10,7 +10,7 @@ Coding agents made code cheap. On a support automation I built, that moved the b
 
 In code, tests and linters catch much of what can go wrong, and a coding agent gets their verdict on every attempt for free. A reply to a customer has nothing comparable: the only check is an expert who knows the business reading it.
 
-Goldratt's theory of constraints says fixing a bottleneck doesn't remove it; it moves it somewhere else. Without a coding agent, every fix would have gone through me, code included. With one, a fix I had planned was a branch, an eval case and a green build by the next morning, with little of my time. What limited progress was finding out what to fix, and that ran on the experts' time.
+Goldratt's theory of constraints says fixing a bottleneck doesn't remove it; it moves it somewhere else. Without a coding agent, the bottleneck would have been me, writing the code for every fix. The coding agent moved it. Once I knew what to fix, the fix took little of my time. The slow part became learning what to fix, and only the experts could tell me that.
 
 The experts are also where the rules live. They can rarely list them up front, but shown a draft, they see at a glance what's wrong with it. In the review screen below, the draft asks a customer with a locked account for their email address. The expert's comment states two rules nobody had written down: never ask for what we can find, and locked accounts get the unlock link, or go to security if flagged. So grading does two jobs: it's the check a coding agent gets from its tests, and it's how the rules get written down.
 
