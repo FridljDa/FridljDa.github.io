@@ -1,15 +1,15 @@
 /**
  * The whole system The Missing Compiler is about, as one map: customers write
- * to the support agent, and in shadow its drafts land in the feedback store.
- * A team of experts grades them in the review screen, and the grades and
- * comments go back into the store; the store and the review screen are the harness I
- * built. I read the feedback there and add a comment of my own on how to fix
- * it. Each night the coding agent implements the tickets I have commented on,
+ * to the support agent, and in shadow its drafts land in the review tool I
+ * built, a review screen with a store behind it. The tool sits between a team
+ * of experts and me: they grade drafts and comment there, I read the comments
+ * and add my own on how to fix each one, and nobody messages anybody directly.
+ * Each night the coding agent implements the tickets I have commented on,
  * checks itself against evals and CI (the compiler it has) and ships back
- * into the support agent. For a new read tool the coding agent writes a spec, which I
- * hand to IT; their endpoint becomes the support agent's read tool. Old
- * tickets, the offline replay that got the project started, only appear on
- * the map of the section about them.
+ * into the support agent. For a new read tool the coding agent writes a spec,
+ * which I hand to IT, the one handoff outside the review tool; their endpoint
+ * becomes the support agent's read tool. Old tickets, the offline replay that
+ * got the project started, only appear on the map of the section about them.
  *
  * Each section of the post shows the same map with its part highlighted and
  * the rest greyed out, so the post reads as one system seen from different
@@ -18,12 +18,11 @@
 import { color, PALETTE, Person, Experts, Agent, Developer, Evals, Comment, Reply, type Point } from '../remotion/shared';
 import { Dim, Badge, Tag, ArrowMarker } from './map-parts';
 
-type NodeId = 'customers' | 'tickets' | 'support' | 'store' | 'expert' | 'me' | 'coder' | 'tests' | 'it' | 'endpoints';
+type NodeId = 'customers' | 'tickets' | 'support' | 'store' | 'tool' | 'expert' | 'me' | 'coder' | 'tests' | 'it' | 'endpoints';
 type EdgeId =
   | 'messages'
   | 'replay'
   | 'drafts'
-  | 'review'
   | 'graded'
   | 'comment'
   | 'plan'
@@ -34,8 +33,8 @@ type EdgeId =
   | 'build'
   | 'reads';
 
-/** What a preset can highlight: a node, an edge, or the harness box around the store and the review screen. */
-type Part = NodeId | EdgeId | 'harness';
+/** What a preset can highlight: a node or an edge. The review tool is two: the screen (`tool`) and the store behind it. */
+type Part = NodeId | EdgeId;
 
 export interface Preset {
   /**
@@ -59,7 +58,7 @@ export const PRESETS = {
   overview: {
     focus: [],
     description:
-      'The whole system: customers write to the support agent; in shadow its drafts land in the feedback store, a team of experts grades them in the review screen, each in their own time, and grades and comments go back into the store, the harness I built. I read the feedback there in batches and add a comment on how to fix each one. Each night the coding agent implements the tickets I commented on, checks itself against evals and CI and ships into the support agent. For a new read tool, the coding agent writes a spec that I hand to IT, who build the endpoint.',
+      'The whole system: customers write to the support agent; in shadow its drafts land in the review tool I built, a review screen with a store behind it. A team of experts grades them there, each in their own time, and I read their comments there in batches and add my own on how to fix each one; nobody messages anybody directly. Each night the coding agent implements the tickets I commented on, checks itself against evals and CI and ships into the support agent. For a new read tool, the coding agent writes a spec that I hand to IT, the one handoff outside the review tool, and IT build the endpoint.',
   },
   'coding-agents': {
     focus: ['coder', 'compile', 'tests'],
@@ -72,25 +71,25 @@ export const PRESETS = {
     description: 'Highlighted: customer messages, the support agent that drafts the replies, and the experts, the only verdict a reply can get.',
   },
   // "The loop we built": where the drafts land, then one map per step.
-  harness: {
-    focus: ['support', 'drafts', 'store', 'harness'],
+  'review-tool': {
+    focus: ['support', 'drafts', 'tool', 'store'],
     small: true,
-    description: 'Highlighted: in shadow, the support agent’s drafts land in the feedback store, inside the harness I built around it and the review screen.',
+    description: 'Highlighted: in shadow, the support agent’s drafts land in the review tool I built, a review screen with a store behind it.',
   },
   grade: {
-    focus: ['expert', 'review', 'graded', 'store'],
+    focus: ['expert', 'graded', 'tool', 'store'],
     small: true,
-    description: 'Highlighted: step 1, the experts grade drafts in the review screen; grades and comments go into the store.',
+    description: 'Highlighted: step 1, the experts grade drafts in the review tool, each in their own time; grades and comments stay there with their tickets.',
   },
   specify: {
-    focus: ['store', 'comment', 'me'],
+    focus: ['tool', 'store', 'comment', 'me'],
     small: true,
-    description: 'Highlighted: step 2, I read the experts’ comments from the store and store my own on how to fix each one.',
+    description: 'Highlighted: step 2, I read the experts’ comments in the review tool and add my own on how to fix each one.',
   },
   implement: {
-    focus: ['store', 'nightly', 'coder'],
+    focus: ['tool', 'store', 'nightly', 'coder'],
     small: true,
-    description: 'Highlighted: step 3, the coding agent’s nightly run takes the tickets I commented on from the store and implements them.',
+    description: 'Highlighted: step 3, the coding agent’s nightly run takes the tickets I commented on from the review tool and implements them.',
   },
   check: {
     focus: ['coder', 'compile', 'tests'],
@@ -122,10 +121,10 @@ export const PRESETS = {
     description: 'Highlighted: old tickets replayed through the support agent offline, with no experts to grade the replies.',
   },
   'review-screen': {
-    focus: ['expert', 'review', 'graded', 'harness'],
-    tags: [{ on: 'expert', text: 'Build this' }],
+    focus: ['expert', 'graded', 'tool'],
+    tags: [{ on: 'tool', text: 'Build this' }],
     small: true,
-    description: 'Highlighted: the experts’ review screen, the part worth building. The store behind it stays greyed out.',
+    description: 'Highlighted: the review screen, the part of the review tool worth building. The store behind it stays greyed out.',
   },
   'next-bottleneck': {
     focus: ['me'],
@@ -140,10 +139,10 @@ export const PRESETS = {
     description: 'Highlighted: an agent with skills reading the stored feedback and commenting on how to fix it, where I used to; the coding agent picks it up at night.',
   },
   start: {
-    focus: ['customers', 'messages', 'support', 'drafts', 'store', 'review', 'expert', 'graded', 'harness'],
-    tags: [{ on: 'expert', text: 'Build first' }],
+    focus: ['customers', 'messages', 'support', 'drafts', 'tool', 'store', 'expert', 'graded'],
+    tags: [{ on: 'tool', text: 'Build first' }],
     small: true,
-    description: 'Highlighted: the shadow path, the store and the experts’ review screen, the first thing to build.',
+    description: 'Highlighted: the shadow path, the review tool and the experts, the first thing to build.',
   },
 } satisfies Record<string, Preset>;
 
@@ -177,8 +176,6 @@ interface Layout {
   badges: Partial<Record<NodeId, Point>>;
   /** Where a preset's tag goes, by the part it marks. */
   tags: Partial<Record<NodeId, Point>>;
-  /** The dashed outline around the store and the review screen: the harness I built. */
-  harness: { x: number; y: number; w: number; h: number; label: Point & { anchor?: 'start' | 'middle' | 'end' } };
 }
 
 const WIDE: Layout = (() => {
@@ -186,8 +183,10 @@ const WIDE: Layout = (() => {
     customers: { x: 86, y: 300 },
     tickets: { x: 86, y: 470 },
     support: { x: 300, y: 300 },
-    store: { x: 300, y: 196 },
-    expert: { x: 300, y: 84 },
+    // The review tool: the screen, with the store tucked behind its lower right corner.
+    store: { x: 368, y: 178 },
+    tool: { x: 300, y: 144 },
+    expert: { x: 92, y: 144 },
     me: { x: 620, y: 84 },
     coder: { x: 620, y: 300 },
     tests: { x: 846, y: 300 },
@@ -201,21 +200,21 @@ const WIDE: Layout = (() => {
     edges: {
       messages: { d: `M${N.customers.x + 40},300 H${N.support.x - 84}` },
       replay: { d: `M${N.tickets.x + 36},462 C190,462 180,330 ${N.support.x - 88},330`, dashed: true },
-      drafts: { d: `M${N.support.x},${N.support.y - 50} V${N.store.y + 36}` },
-      review: { d: 'M288,162 V132' },
-      graded: { d: 'M312,128 V158' },
-      // Both comments live in the store: the expert's goes out to me, mine comes back.
+      drafts: { d: `M${N.support.x},${N.support.y - 50} V${N.tool.y + 48}` },
+      // Drafts go out to the experts, grades and comments come back: all through the tool.
+      graded: { d: `M146,144 H${N.tool.x - 70}`, twoWay: true, rides: [{ at: { x: 189, y: 144 }, icon: 'comment' }] },
+      // Both comments stay in the tool: the experts' goes out to me, mine comes back.
       comment: {
-        d: 'M334,192 C470,192 520,130 578,98',
+        d: 'M368,118 C470,110 520,100 578,90',
         twoWay: true,
         rides: [
-          { at: { x: 449, y: 173 }, icon: 'comment' },
-          { at: { x: 528, y: 130 }, icon: 'mine' },
+          { at: { x: 442, y: 110 }, icon: 'comment' },
+          { at: { x: 522, y: 98 }, icon: 'mine' },
         ],
       },
       // Before coding agents only: I go from the feedback straight to the code.
       plan: { d: `M${N.me.x},${N.me.y + 40} V${N.coder.y - 46}`, rides: [{ at: { x: 620, y: 192 }, icon: 'plan' }] },
-      nightly: { d: 'M332,222 C440,232 540,236 586,266', label: { x: 470, y: 262, text: 'Nightly' } },
+      nightly: { d: 'M402,190 C480,200 545,225 586,266', label: { x: 470, y: 238, text: 'Nightly' } },
       ships: { d: `M${N.coder.x - 50},300 H${N.support.x + 88}` },
       // The spec reaches IT through me, pinging someone on Teams.
       spec: { d: `M${N.coder.x + 40},${N.coder.y + 36} C720,350 ${N.it.x},380 ${N.it.x},${N.it.y - 40}`, rides: [{ at: { x: 742, y: 380 }, icon: 'person' }] },
@@ -231,7 +230,8 @@ const WIDE: Layout = (() => {
       tickets: { x: 86, y: 538 },
       support: { x: 300, y: 372 },
       store: { x: 0, y: 0 },
-      expert: { x: 362, y: 150 },
+      tool: { x: 300, y: 78 },
+      expert: { x: 92, y: 210 },
       me: { x: 620, y: 38 },
       coder: { x: 620, y: 366 },
       tests: { x: 846, y: 358 },
@@ -239,20 +239,20 @@ const WIDE: Layout = (() => {
       endpoints: { x: 500, y: 526 },
     },
     badges: {
-      expert: { x: N.expert.x - 98, y: N.expert.y - 50 },
+      expert: { x: 36, y: 100 },
       me: { x: N.me.x + 48, y: N.me.y + 32 },
       // Top right, so the nightly run can come in at the top left.
       coder: { x: N.coder.x + 56, y: N.coder.y - 48 },
       tests: { x: N.tests.x + 52, y: N.tests.y - 40 },
     },
     tags: {
-      expert: { x: 110, y: 84 },
+      expert: { x: 110, y: 40 },
+      tool: { x: 300, y: 26 },
       // Up and to the right, clear of step 2's badge in the small map's bigger pills.
       me: { x: 792, y: 76 },
       coder: { x: 620, y: 414 },
       it: { x: 870, y: 410 },
     },
-    harness: { x: 200, y: 30, w: 218, h: 206, label: { x: 190, y: 160, anchor: 'end' } },
   };
 })();
 
@@ -266,39 +266,39 @@ const TALL: Layout = (() => {
     tickets: { x: 64, y: 84 },
     customers: { x: 230, y: 84 },
     support: { x: 150, y: 240 },
-    store: { x: 150, y: 362 },
-    expert: { x: 176, y: 476 },
+    store: { x: 218, y: 420 },
+    tool: { x: 150, y: 386 },
+    expert: { x: 150, y: 562 },
     me: { x: 480, y: 476 },
     coder: { x: 480, y: 240 },
     tests: { x: 480, y: 92 },
-    it: { x: 480, y: 626 },
-    endpoints: { x: 150, y: 626 },
+    it: { x: 480, y: 676 },
+    endpoints: { x: 150, y: 676 },
   };
   return {
     width: 620,
-    height: 710,
+    height: 760,
     labelSize: 25,
     N,
     edges: {
       messages: { d: 'M226,112 L196,184' },
       replay: { d: 'M78,112 L102,184', dashed: true },
-      drafts: { d: 'M150,292 V324' },
-      review: { d: 'M138,398 V426' },
-      graded: { d: 'M162,430 V402' },
+      drafts: { d: 'M150,292 V336' },
+      graded: { d: 'M150,434 V516', twoWay: true, rides: [{ at: { x: 150, y: 475 }, icon: 'comment' }] },
       comment: {
-        d: 'M188,356 C320,356 400,410 440,452',
+        d: 'M252,404 C340,410 400,425 440,452',
         twoWay: true,
         rides: [
-          { at: { x: 330, y: 372 }, icon: 'comment' },
-          { at: { x: 411, y: 426 }, icon: 'mine' },
+          { at: { x: 318, y: 410 }, icon: 'comment' },
+          { at: { x: 398, y: 426 }, icon: 'mine' },
         ],
       },
       plan: { d: 'M480,436 V322', rides: [{ at: { x: 480, y: 380 }, icon: 'plan' }] },
-      nightly: { d: 'M180,338 C260,300 360,282 436,266', label: { x: 306, y: 284, text: 'Nightly' } },
+      nightly: { d: 'M216,346 C280,310 370,284 436,266', label: { x: 318, y: 300, text: 'Nightly' } },
       ships: { d: 'M430,240 H240' },
-      spec: { d: 'M524,240 C620,300 618,570 528,604', rides: [{ at: { x: 593, y: 384 }, icon: 'person' }] },
-      build: { d: 'M434,626 H188' },
-      reads: { d: 'M116,616 C36,580 28,280 60,262' },
+      spec: { d: 'M524,240 C620,300 618,620 528,654', rides: [{ at: { x: 596, y: 420 }, icon: 'person' }] },
+      build: { d: 'M434,676 H188' },
+      reads: { d: 'M116,666 C36,630 28,280 60,262' },
     },
     compile: ['M448,206 C418,180 422,140 454,114', 'M508,126 C542,148 544,178 514,202'],
     labels: {
@@ -306,27 +306,28 @@ const TALL: Layout = (() => {
       customers: { x: 236, y: 40 },
       support: { x: 244, y: 206, anchor: 'start' },
       store: { x: 0, y: 0 },
-      expert: { x: 238, y: 548 },
+      tool: { x: 240, y: 384, anchor: 'start' },
+      expert: { x: 210, y: 574, anchor: 'start' },
       me: { x: 480, y: 540 },
       coder: { x: 468, y: 306 },
       tests: { x: 480, y: 40 },
-      it: { x: 480, y: 690 },
-      endpoints: { x: 150, y: 690 },
+      it: { x: 480, y: 740 },
+      endpoints: { x: 150, y: 740 },
     },
     badges: {
-      expert: { x: 78, y: 424 },
+      expert: { x: 78, y: 534 },
       me: { x: 522, y: 450 },
       coder: { x: 536, y: 214 },
       tests: { x: 424, y: 76 },
     },
     tags: {
-      expert: { x: 372, y: 520 },
+      expert: { x: 300, y: 610 },
+      tool: { x: 380, y: 334 },
       // Under the label, clear of the spec's curve on the right.
       me: { x: 436, y: 578 },
       coder: { x: 335, y: 266 },
-      it: { x: 340, y: 664 },
+      it: { x: 340, y: 714 },
     },
-    harness: { x: 70, y: 318, w: 236, h: 196, label: { x: 74, y: 548, anchor: 'start' } },
   };
 })();
 
@@ -334,6 +335,7 @@ const LABELS: Partial<Record<NodeId, string>> = {
   customers: 'Customers',
   tickets: 'Old tickets',
   support: 'Support agent',
+  tool: 'Review tool',
   expert: 'Experts',
   me: 'Me',
   coder: 'Coding agent',
@@ -395,27 +397,28 @@ function NodeIcon({ id, at, agentTranslates, meCodes }: { id: NodeId; at: Point;
       );
     }
     case 'store':
-      // The feedback store: every draft, grade and comment.
+      // The store behind the review screen: every draft, grade and comment.
       return (
         <g>
-          <path d={`M${x - 30},${y - 22} v44 a30,10 0 0 0 60,0 v-44`} fill={color('node-bg')} stroke={color('node-border')} strokeWidth={2.5} />
-          <ellipse cx={x} cy={y - 22} rx={30} ry={10} fill={color('node-bg')} stroke={color('node-border')} strokeWidth={2.5} />
-          <path d={`M${x - 30},${y} a30,10 0 0 0 60,0`} fill="none" stroke={color('node-border')} strokeWidth={2} />
+          <path d={`M${x - 26},${y - 18} v36 a26,9 0 0 0 52,0 v-36`} fill={color('node-bg')} stroke={color('node-border')} strokeWidth={2.5} />
+          <ellipse cx={x} cy={y - 18} rx={26} ry={9} fill={color('node-bg')} stroke={color('node-border')} strokeWidth={2.5} />
+          <path d={`M${x - 26},${y} a26,9 0 0 0 52,0`} fill="none" stroke={color('node-border')} strokeWidth={2} />
+        </g>
+      );
+    case 'tool':
+      // The review screen, in front of the store.
+      return (
+        <g>
+          <rect x={x - 62} y={y - 42} width={124} height={84} rx={8} fill={color('node-bg')} stroke={color('text')} strokeWidth={2.5} />
+          <rect x={x - 52} y={y - 32} width={50} height={8} rx={3} fill={color('node-border')} />
+          <rect x={x - 52} y={y - 18} width={92} height={6} rx={3} fill={color('edge')} />
+          <rect x={x - 52} y={y - 6} width={80} height={6} rx={3} fill={color('edge')} />
+          <rect x={x - 52} y={y + 12} width={22} height={18} rx={4} fill={color('ok')} />
+          <rect x={x - 24} y={y + 12} width={22} height={18} rx={4} fill={color('bad')} />
         </g>
       );
     case 'expert':
-      return (
-        <g>
-          {/* The review screen, with the experts in front of it */}
-          <rect x={x - 88} y={y - 44} width={124} height={84} rx={8} fill={color('node-bg')} stroke={color('text')} strokeWidth={2.5} />
-          <rect x={x - 78} y={y - 34} width={50} height={8} rx={3} fill={color('node-border')} />
-          <rect x={x - 78} y={y - 20} width={92} height={6} rx={3} fill={color('edge')} />
-          <rect x={x - 78} y={y - 8} width={80} height={6} rx={3} fill={color('edge')} />
-          <rect x={x - 78} y={y + 10} width={22} height={18} rx={4} fill={color('ok')} />
-          <rect x={x - 50} y={y + 10} width={22} height={18} rx={4} fill={color('bad')} />
-          <Experts x={x + 66} y={y + 6} scale={1.45} />
-        </g>
-      );
+      return <Experts x={x} y={y} scale={1.45} />;
     case 'me':
       return agentTranslates ? <Agent x={x} y={y} scale={1.4} typing={1} /> : <Person x={x} y={y} scale={1.6} fill={color('text')} />;
     case 'coder':
@@ -448,7 +451,6 @@ function MapSvg({ layout, preset, id, className }: { layout: Layout; preset: Pre
   const all = p.focus.length === 0;
   const on = (part: Part) => all || p.focus.includes(part);
   const marker = `${id}-arrow`;
-  const harness = layout.harness;
   const shown = (part: NodeId | EdgeId) => {
     // A one-off at the start, not part of the loop: only drawn where a section is about it.
     if (part === 'tickets' || part === 'replay') return p.focus.includes(part);
@@ -469,14 +471,6 @@ function MapSvg({ layout, preset, id, className }: { layout: Layout; preset: Pre
       <defs>
         <ArrowMarker id={marker} />
       </defs>
-
-      {/* The harness I built: the review screen and the store behind it */}
-      <Dim on={on('harness')}>
-        <rect x={harness.x} y={harness.y} width={harness.w} height={harness.h} rx={18} fill="none" stroke={color('added')} strokeWidth={2} strokeDasharray="6 6" />
-        <text x={harness.label.x} y={harness.label.y} textAnchor={harness.label.anchor ?? 'middle'} fontSize={(layout.labelSize ?? 21) - 3} fontWeight={600} fill={color('added')}>
-          Harness
-        </text>
-      </Dim>
 
       {(Object.keys(layout.edges) as (keyof Layout['edges'])[]).filter(shown).map((e) => {
         const edge = layout.edges[e];
@@ -555,7 +549,7 @@ const WIDE_SMALL: Layout = {
   ...WIDE,
   labelSize: 25,
   tagSize: 23,
-  labels: { ...WIDE.labels, expert: { x: 368, y: 150 }, coder: { x: 610, y: 368 } },
+  labels: { ...WIDE.labels, coder: { x: 610, y: 368 } },
 };
 
 /** Both layouts; SystemMap.astro shows the one that fits the figure's width. */

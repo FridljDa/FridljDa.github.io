@@ -1,14 +1,21 @@
 /**
- * The shadow-deployment loop: customers write in one at a time, each message
- * runs through the intent DAG to a leaf, and the subject-matter expert grades
- * the drafted reply. Most grades are a check. On a cross the expert's comment
- * is stored with the case; I pick it up from the store and store a comment of
- * my own on how to fix it. The coding agent's nightly run takes mine from the
- * store and grows the DAG, and the next customer with that request reaches
- * the new leaf.
+ * The shadow-deployment loop, in batches: one developer (me) and a team of
+ * subject-matter experts working through the feedback store, never waiting on
+ * each other.
+ *
+ * - Day 1: customers write in, overlapping in time. Each message runs through
+ *   the intent DAG to a leaf, and the experts grade the drafted reply. Most
+ *   grades are a check; a cross's comment goes into the store, where the
+ *   comments pile up.
+ * - I take the pile in one sitting and store a fix plan for each comment. For
+ *   one I first store a question; an expert answers it in the store, and I
+ *   plan another fix while I wait.
+ * - Night: the coding agent's nightly run takes all my plans at once and grows
+ *   the DAG: two new leaves and a second parent for one of them.
+ * - Day 2: customers with the same requests reach the new leaves and get checks.
  *
  * Two layouts of the same scene: `wide` (16:9) and `tall` for phones, with the
- * DAG on top and the expert, store, me and the coding agent below it.
+ * DAG on top and the experts, store, me and the coding agent below it.
  *
  * The DAG ends as drawn in first-level-support-automation ("Step 1: Intent
  * recognition"), whose static figure (PipelineFigures.tsx) imports the same
@@ -18,6 +25,7 @@
  * Everything is a function of the frame, so any frame renders the same way
  * every time; the last one is the resting state (full DAG, all grades).
  */
+import type { ReactNode } from 'react';
 import { useCurrentFrame, useVideoConfig, spring, AbsoluteFill } from 'remotion';
 import {
   color,
@@ -28,7 +36,7 @@ import {
   edgePoint,
   edgePath,
   Person,
-  Expert,
+  Experts,
   Store,
   Agent,
   Envelope,
@@ -39,6 +47,7 @@ import {
   type Point,
 } from './shared';
 import { ArrowMarker } from '../components/map-parts';
+
 
 type Kind = 'intent' | 'other';
 
@@ -105,24 +114,36 @@ interface Growth {
 interface Visit {
   /** Nodes after the root, ending on the leaf the message lands on. */
   path: Exclude<Id, 'root'>[];
+  /** Frames after the day's first customer that this one writes in, so they overlap. */
+  offset: number;
   grows?: Growth;
 }
 
-const SCRIPT: Visit[] = [
-  { path: ['access', 'login'] },
-  { path: ['cards', 'blocked'] },
-  { path: ['access', 'accessOther'], grows: { node: 'reset', edge: ['access', 'reset'] } },
-  { path: ['access', 'reset'] },
-  { path: ['payments'] },
-  { path: ['access', 'accessOther'], grows: { node: 'locked', edge: ['access', 'locked'] } },
-  { path: ['access', 'locked'] },
-  { path: ['cards', 'cardsOther'], grows: { edge: ['cards', 'locked'] } },
-  { path: ['cards', 'locked'] },
+// What the three crosses of day 1 grow, in the order the night grows them:
+// the second parent for Account locked comes with or after the leaf itself.
+const RESET: Growth = { node: 'reset', edge: ['access', 'reset'] };
+const LOCKED: Growth = { node: 'locked', edge: ['access', 'locked'] };
+const SECOND_PARENT: Growth = { edge: ['cards', 'locked'] };
+const GROWTHS = [RESET, LOCKED, SECOND_PARENT];
+
+const DAY_1: Visit[] = [
+  { offset: 0, path: ['access', 'login'] },
+  { offset: 18, path: ['access', 'accessOther'], grows: RESET },
+  { offset: 40, path: ['cards', 'blocked'] },
+  { offset: 58, path: ['access', 'accessOther'], grows: LOCKED },
+  { offset: 82, path: ['payments'] },
+  { offset: 100, path: ['cards', 'cardsOther'], grows: SECOND_PARENT },
 ];
 
-/** Parts of the DAG that only exist once a cross has grown them. */
-const GROWN_NODES = new Set(SCRIPT.flatMap((v) => (v.grows?.node ? [v.grows.node] : [])));
-const GROWN_EDGES = new Set(SCRIPT.flatMap((v) => (v.grows ? [edgeKey(...v.grows.edge)] : [])));
+const DAY_2: Visit[] = [
+  { offset: 0, path: ['access', 'reset'] },
+  { offset: 20, path: ['access', 'locked'] },
+  { offset: 40, path: ['cards', 'locked'] },
+];
+
+/** Parts of the DAG that only exist once the night has grown them. */
+const GROWN_NODES = new Set(GROWTHS.flatMap((g) => (g.node ? [g.node] : [])));
+const GROWN_EDGES = new Set(GROWTHS.map((g) => edgeKey(...g.edge)));
 
 // Beats, in frames. The opening frame holds a moment, so the scene can be
 // read before anything moves.
@@ -130,33 +151,46 @@ const LEAD = 30;
 const ENTER = 10;
 const HOP = 11;
 const TO_EXPERT = 14;
-// A cross and the fix it leads to are what the figure is about, so they move
-// at about two thirds of the speed of the checks.
+// Comments move at about two thirds of the speed of the messages: the
+// feedback is what the figure is about.
 const TO_STORE = 18;
 const TO_ME = 21;
-const TO_AGENT = 18;
+const TO_DESK = 10;
+const TO_AGENT = 21;
+const PAUSE = 8;
+const FADE = 5;
 const TYPING = 36;
 const SPARK = 21;
 const GROW = 27;
 const HOLD = 60;
+
+/** Where an icon stands, or a comment rests between its trips. */
+type Spot = 'experts' | 'store' | 'me' | 'agent0' | 'agent1' | 'agent2' | 'pile0' | 'pile1' | 'pile2' | 'desk0' | 'desk1' | 'desk2' | 'deskTop';
 
 interface Layout {
   width: number;
   height: number;
   /** Where the DAG, drawn in its own coordinates above, is moved to. */
   dag: Point;
-  /** Where a customer stands, and where they walk in from. */
-  customer: Point;
-  customerFrom: Point;
+  /** Where the customers stand, side by side, and the offset they walk in from. */
+  customers: Point[];
+  walkIn: Point;
   expert: Point;
   tallyY: number;
   store: Point;
+  /** The bottom of the pile of comments in the store; each next one sits a little higher. */
+  pile: Point;
   me: Point;
+  /** Where the comments I am working through lie, the first next to me. */
+  desk: Point;
+  deskStep: number;
   agent: Point;
   /** The size of the names under the icons, as on the map of the same width. */
   labelSize: number;
   /** Where "Nightly" goes, next to the line from the store to the coding agent. */
   nightly: Point & { anchor: 'start' | 'middle' };
+  /** Where "Day 1", "Night" and "Day 2" go. */
+  day: Point;
 }
 
 export const LAYOUTS = {
@@ -164,30 +198,46 @@ export const LAYOUTS = {
     width: 960,
     height: 540,
     dag: { x: 0, y: 0 },
-    customer: { x: 96, y: ROOT.y },
-    customerFrom: { x: -40, y: ROOT.y },
+    customers: [
+      { x: 96, y: ROOT.y },
+      { x: 96, y: ROOT.y - 66 },
+      { x: 96, y: ROOT.y + 66 },
+    ],
+    walkIn: { x: -136, y: 0 },
     expert: { x: 846, y: 96 },
-    tallyY: 178,
-    store: { x: 846, y: 282 },
-    me: { x: 748, y: 430 },
-    agent: { x: 868, y: 430 },
+    tallyY: 182,
+    store: { x: 846, y: 290 },
+    pile: { x: 910, y: 306 },
+    me: { x: 748, y: 436 },
+    desk: { x: 680, y: 440 },
+    deskStep: -48,
+    agent: { x: 868, y: 436 },
     labelSize: 21,
-    nightly: { x: 866, y: 364, anchor: 'start' },
+    nightly: { x: 866, y: 372, anchor: 'start' },
+    day: { x: 24, y: 40 },
   },
   tall: {
     width: 540,
     height: 900,
     dag: { x: -162, y: 70 },
-    customer: { x: 34, y: 262 },
-    customerFrom: { x: 34, y: -40 },
-    expert: { x: 112, y: 650 },
-    tallyY: 726,
-    store: { x: 112, y: 820 },
+    customers: [
+      { x: 34, y: 268 },
+      { x: 34, y: 202 },
+      { x: 34, y: 136 },
+    ],
+    walkIn: { x: -90, y: 0 },
+    expert: { x: 112, y: 640 },
+    tallyY: 722,
+    store: { x: 112, y: 822 },
+    pile: { x: 42, y: 846 },
     // Raised, so the line from the store to the coding agent passes below me.
     me: { x: 290, y: 724 },
-    agent: { x: 440, y: 820 },
+    desk: { x: 354, y: 716 },
+    deskStep: 48,
+    agent: { x: 450, y: 822 },
     labelSize: 25,
-    nightly: { x: 270, y: 854, anchor: 'middle' },
+    nightly: { x: 270, y: 856, anchor: 'middle' },
+    day: { x: 20, y: 44 },
   },
 } satisfies Record<string, Layout>;
 
@@ -197,51 +247,140 @@ interface Timed extends Visit {
   index: number;
   color: string;
   ok: boolean;
+  /** Which of the standing places the customer takes. */
+  slot: number;
   start: number;
   /** Frame the message reaches each node of its path. */
   reach: number[];
   replyAt: number;
   gradeAt: number;
-  storeAt?: number;
-  meAt?: number;
-  /** My comment on the fix goes back into the store... */
-  mineAt?: number;
-  /** ...and the nightly run takes it to the coding agent. */
-  nightlyAt?: number;
-  typingAt?: number;
-  sparkAt?: number;
-  growAt?: number;
 }
 
-const TIMELINE: Timed[] = [];
-let cursor = LEAD;
-for (const [index, visit] of SCRIPT.entries()) {
-  const start = cursor;
-  const reach = visit.path.map((_, i) => start + ENTER + HOP * (i + 1));
-  const replyAt = reach[reach.length - 1] + 6;
-  const gradeAt = replyAt + TO_EXPERT;
-  const timed: Timed = { ...visit, index, color: PALETTE[index % PALETTE.length], ok: !visit.grows, start, reach, replyAt, gradeAt };
-  if (visit.grows) {
-    timed.storeAt = gradeAt + 15;
-    timed.meAt = timed.storeAt + TO_STORE + 6;
-    timed.mineAt = timed.meAt + TO_ME + 9;
-    timed.nightlyAt = timed.mineAt + TO_ME + 9;
-    timed.typingAt = timed.nightlyAt + TO_AGENT;
-    timed.sparkAt = timed.typingAt + TYPING;
-    timed.growAt = timed.sparkAt + SPARK;
-    cursor = timed.growAt + GROW + 9;
-  } else {
-    cursor = gradeAt - 10;
-  }
-  TIMELINE.push(timed);
+const schedule = (visits: Visit[], from: number, firstIndex: number): Timed[] =>
+  visits.map((visit, i) => {
+    const index = firstIndex + i;
+    const start = from + visit.offset;
+    const reach = visit.path.map((_, h) => start + ENTER + HOP * (h + 1));
+    const replyAt = reach[reach.length - 1] + 6;
+    return {
+      ...visit,
+      index,
+      color: PALETTE[index % PALETTE.length],
+      ok: !visit.grows,
+      slot: i % 3,
+      start,
+      reach,
+      replyAt,
+      gradeAt: replyAt + TO_EXPERT,
+    };
+  });
+
+const FIRST = schedule(DAY_1, LEAD, 0);
+const CROSSES = FIRST.filter((v) => v.grows);
+
+/**
+ * A comment on its trips between the experts, the store, me and the coding
+ * agent. It appears at `from`, rests wherever its last trip ended and fades
+ * out at `gone`.
+ */
+interface Item {
+  key: string;
+  kind: 'expert' | 'plan' | 'question' | 'answer';
+  from: Spot;
+  appear: number;
+  legs: { at: number; to: Spot; dur: number }[];
+  gone: number;
 }
 
-export const SHADOW_LOOP_FRAMES = cursor + HOLD;
+const ITEMS: Item[] = [];
+
+// Day 1: each cross's comment goes into the store and stays there.
+const stored = CROSSES.map((v) => v.gradeAt + 10);
+const piled = Math.max(...stored) + TO_STORE;
+
+// I take the whole pile in one sitting...
+const TAKE = piled + 20;
+const AT_DESK = TAKE + TO_ME + TO_DESK;
+// ...plan the first fix, ask the experts about the second, plan the third
+// while they answer, and plan the second once the answer is in.
+const PLAN = [AT_DESK + 12, 0, 0];
+const ASK = PLAN[0] + 30;
+const ASKED = ASK + TO_ME + PAUSE + TO_STORE;
+PLAN[2] = ASK + 32;
+const ANSWER = ASKED + 16;
+const ANSWERED = ANSWER + TO_STORE + PAUSE + TO_ME + TO_DESK;
+PLAN[1] = ANSWERED + 14;
+
+// Night: the coding agent's run takes every plan in the store at once.
+const NIGHT = Math.max(...PLAN) + TO_ME + 20;
+const COLLECT = NIGHT + 14;
+const TYPE_AT = COLLECT + 2 * 3 + TO_AGENT;
+const SPARK_AT = TYPE_AT + TYPING;
+const GROW_AT = GROWTHS.map((_, k) => SPARK_AT + 9 * k + SPARK);
+
+const DAY_2_AT = Math.max(...GROW_AT) + GROW + 16;
+const SECOND = schedule(DAY_2, DAY_2_AT + 16, DAY_1.length);
+const VISITS = [...FIRST, ...SECOND];
+
+CROSSES.forEach((v, k) => {
+  const desk = `desk${k}` as Spot;
+  // Each plan goes to the place in the pile its comment came from.
+  const pile = `pile${k}` as Spot;
+  ITEMS.push({
+    key: `expert-${k}`,
+    kind: 'expert',
+    from: 'experts',
+    appear: stored[k],
+    legs: [
+      { at: stored[k], to: pile, dur: TO_STORE },
+      { at: TAKE, to: 'me', dur: TO_ME },
+      { at: TAKE + TO_ME, to: desk, dur: TO_DESK },
+    ],
+    gone: PLAN[k] + FADE,
+  });
+  ITEMS.push({
+    key: `plan-${k}`,
+    kind: 'plan',
+    from: 'me',
+    appear: PLAN[k],
+    legs: [
+      { at: PLAN[k], to: pile, dur: TO_ME },
+      { at: COLLECT + 3 * k, to: `agent${k}` as Spot, dur: TO_AGENT },
+    ],
+    gone: COLLECT + 3 * k + TO_AGENT + FADE,
+  });
+});
+ITEMS.push({
+  key: 'question',
+  kind: 'question',
+  from: 'me',
+  appear: ASK,
+  legs: [
+    { at: ASK, to: 'store', dur: TO_ME },
+    { at: ASK + TO_ME + PAUSE, to: 'experts', dur: TO_STORE },
+  ],
+  gone: ASKED + FADE,
+});
+ITEMS.push({
+  key: 'answer',
+  kind: 'answer',
+  from: 'experts',
+  appear: ANSWER,
+  legs: [
+    { at: ANSWER, to: 'store', dur: TO_STORE },
+    { at: ANSWER + TO_STORE + PAUSE, to: 'me', dur: TO_ME },
+    { at: ANSWER + TO_STORE + PAUSE + TO_ME, to: 'deskTop', dur: TO_DESK },
+  ],
+  gone: PLAN[1] + FADE,
+});
+
+const lastGrade = Math.max(...VISITS.map((v) => v.gradeAt));
+export const SHADOW_LOOP_FRAMES = lastGrade + 30 + HOLD;
 
 /** Frame a grown node or edge appears; base parts are there from the start. */
 const grownAt = (key: string) => {
-  const visit = TIMELINE.find((v) => v.grows && (v.grows.node === key || edgeKey(...v.grows.edge) === key));
-  return visit?.growAt ?? 0;
+  const k = GROWTHS.findIndex((g) => g.node === key || edgeKey(...g.edge) === key);
+  return k >= 0 ? GROW_AT[k] : 0;
 };
 
 /** The point `by` units from `from` toward `to`: where a line between two icons leaves the first. */
@@ -255,6 +394,19 @@ const lit = (frame: number, visit: Timed, from: number) => {
   if (frame < from) return 0;
   return 1 - progress(frame, visit.gradeAt + 8, visit.gradeAt + 20);
 };
+
+/** A question of mine: my comment with a question mark on it. */
+const Question = ({ x, y, scale, opacity }: Point & { scale: number; opacity: number }) => (
+  <g opacity={opacity}>
+    <Comment x={x} y={y} scale={scale} stroke={color('added')} />
+    <g transform={`translate(${x + 22 * scale} ${y - 16 * scale}) scale(${scale})`}>
+      <circle r={9} fill={color('added')} />
+      <text y={0} dy="0.36em" textAnchor="middle" fontSize={13} fontWeight={700} fill="#fff">
+        ?
+      </text>
+    </g>
+  </g>
+);
 
 export const ShadowLoop = ({ layout = 'wide' }: { layout?: LayoutName }) => {
   const L: Layout = LAYOUTS[layout];
@@ -272,7 +424,31 @@ export const ShadowLoop = ({ layout = 'wide' }: { layout?: LayoutName }) => {
 
   const pop = (at: number) => (frame < at ? 0 : spring({ frame: frame - at, fps, config: { damping: 12, mass: 0.6 } }));
 
-  const active = TIMELINE.filter((v) => frame >= v.start && frame < v.gradeAt + 24);
+  const spot = (s: Spot): Point => {
+    if (s === 'experts') return { x: EXPERT.x, y: L.tallyY + 36 };
+    if (s === 'store') return { x: STORE.x, y: STORE.y - 4 };
+    // Above my head; into the coding agent's window, still as a pile.
+    if (s === 'me') return { x: ME.x - 4, y: ME.y - 50 };
+    if (s === 'deskTop') return { x: L.desk.x + L.deskStep + 5, y: L.desk.y - 12 };
+    const k = Number(s.slice(-1));
+    if (s.startsWith('agent')) return { x: AGENT.x + 3 * k, y: AGENT.y - 4 - 13 * k };
+    if (s.startsWith('pile')) return { x: L.pile.x + 3 * k, y: L.pile.y - 13 * k };
+    return { x: L.desk.x + L.deskStep * k, y: L.desk.y };
+  };
+
+  const placeOf = (item: Item): Point => {
+    let at = spot(item.from);
+    for (const leg of item.legs) {
+      if (frame < leg.at) break;
+      const t = progress(frame, leg.at, leg.at + leg.dur);
+      const to = spot(leg.to);
+      if (t < 1) return mix(at, to, t);
+      at = to;
+    }
+    return at;
+  };
+
+  const active = VISITS.filter((v) => frame >= v.start && frame < v.gradeAt + 24);
 
   const nodeHighlight = (id: Id) => {
     let best: { color: string; amount: number } | undefined;
@@ -300,13 +476,35 @@ export const ShadowLoop = ({ layout = 'wide' }: { layout?: LayoutName }) => {
     return undefined;
   };
 
-  // The visit, if any, that is waiting on the expert or the coding agent right now.
-  const grading = TIMELINE.find((v) => frame >= v.replyAt && frame < v.gradeAt + 14);
-  const fixing = TIMELINE.find((v) => v.typingAt !== undefined && frame >= v.typingAt && frame < v.sparkAt!);
+  // The experts lean in when a reply or my question reaches them.
+  const nudges = [...VISITS.map((v) => v.gradeAt - 6), ASKED - 4];
+  const nudge = Math.max(0, ...nudges.map((at) => (frame >= at && frame < at + 20 ? pop(at) * (1 - progress(frame, at + 12, at + 20)) : 0)));
+  const typing = frame >= TYPE_AT && frame < SPARK_AT ? progress(frame, TYPE_AT, SPARK_AT - 4) : 0;
+  const night = progress(frame, NIGHT, NIGHT + 8) * (1 - progress(frame, DAY_2_AT, DAY_2_AT + 8));
+
+  const days: { text: string; from: number; to: number }[] = [
+    { text: 'Day 1', from: -Infinity, to: NIGHT },
+    { text: 'Night', from: NIGHT, to: DAY_2_AT },
+    { text: 'Day 2', from: DAY_2_AT, to: Infinity },
+  ];
 
   return (
     <AbsoluteFill style={{ background: color('surface') }}>
       <svg viewBox={`0 0 ${L.width} ${L.height}`} width="100%" height="100%" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+        {days.map(({ text, from, to }) => {
+          // The old label fades out before the new one fades in.
+          const fadeIn = from === -Infinity ? 1 : progress(frame, from + 6, from + 14);
+          const fadeOut = to === Infinity ? 0 : progress(frame, to - 6, to + 2);
+          const opacity = fadeIn * (1 - fadeOut);
+          return opacity > 0 ? (
+            <g key={text} opacity={opacity}>
+              <Label x={L.day.x} y={L.day.y} size={L.labelSize + 3} anchor="start">
+                {text}
+              </Label>
+            </g>
+          ) : null;
+        })}
+
         <g transform={`translate(${L.dag.x} ${L.dag.y})`}>
         {/* Edges */}
         {EDGES.map(([from, to]) => {
@@ -398,14 +596,14 @@ export const ShadowLoop = ({ layout = 'wide' }: { layout?: LayoutName }) => {
         })}
         </g>
 
-        {/* The expert, their grades, the store, me and the coding agent, joined as on the section maps:
-            the grade and comment go into the store, comments go back and forth between it and me, and
-            the nightly run takes mine to the coding agent. */}
+        {/* The experts, their grades, the store, me and the coding agent, joined as on the section maps:
+            comments go back and forth between the store and the experts and between it and me, and the
+            nightly run takes my plans to the coding agent. */}
         <defs>
           <ArrowMarker id={marker} />
         </defs>
         {[
-          { d: `M${EXPERT.x},${L.tallyY + 18} V${STORE.y - 36}` },
+          { d: `M${EXPERT.x},${L.tallyY + 18} V${STORE.y - 36}`, twoWay: true },
           { d: `M${storeToMe.x},${storeToMe.y} L${meIn.x},${meIn.y}`, twoWay: true },
           { d: `M${storeToAgent.x},${storeToAgent.y} L${agentIn.x},${agentIn.y}` },
         ].map(({ d, twoWay }) => (
@@ -422,21 +620,28 @@ export const ShadowLoop = ({ layout = 'wide' }: { layout?: LayoutName }) => {
         <text x={L.nightly.x} y={L.nightly.y} textAnchor={L.nightly.anchor} fontSize={L.labelSize - 4} fontWeight={600} fill={color('muted')}>
           Nightly
         </text>
+        {night > 0 && (
+          <text x={L.nightly.x} y={L.nightly.y} textAnchor={L.nightly.anchor} fontSize={L.labelSize - 4} fontWeight={600} fill={color('added')} opacity={night}>
+            Nightly
+          </text>
+        )}
         <Store x={STORE.x} y={STORE.y} />
         <Person x={ME.x} y={ME.y} scale={1.4} fill={color('text')} />
         <Label x={ME.x} y={ME.y + 52} size={L.labelSize}>
           Me
         </Label>
-        <Expert x={EXPERT.x} y={EXPERT.y} scale={1.5 * (grading ? 1 + 0.06 * pop(grading.replyAt + TO_EXPERT - 6) : 1)} />
-        <Label x={EXPERT.x} y={EXPERT.y + 48} size={L.labelSize}>
-          Expert
+        <Experts x={EXPERT.x} y={EXPERT.y} scale={1.5 * (1 + 0.06 * nudge)} />
+        <Label x={EXPERT.x} y={EXPERT.y + 56} size={L.labelSize}>
+          Experts
         </Label>
-        {TIMELINE.filter((v) => frame >= v.gradeAt).map((v, i) => {
-          const x = EXPERT.x + (i - (SCRIPT.length - 1) / 2) * 18;
+        {VISITS.filter((v) => frame >= v.gradeAt).map((v) => {
+          // One row of grades, a small gap between the days.
+          const i = v.index;
+          const x = EXPERT.x + i * 18 + (i >= DAY_1.length ? 12 : 0) - ((VISITS.length - 1) * 18 + 12) / 2;
           return <Grade key={v.index} ok={v.ok} r={8} x={x} y={L.tallyY} scale={pop(v.gradeAt + 8)} />;
         })}
 
-        <Agent x={AGENT.x} y={AGENT.y} scale={1.5} typing={fixing ? progress(frame, fixing.typingAt!, fixing.sparkAt! - 4) : 0} />
+        <Agent x={AGENT.x} y={AGENT.y} scale={1.5} typing={typing} />
         <Label x={AGENT.x} y={AGENT.y + 52} size={L.labelSize}>
           Coding agent
         </Label>
@@ -444,16 +649,17 @@ export const ShadowLoop = ({ layout = 'wide' }: { layout?: LayoutName }) => {
         {active.map((v) => {
           const last = v.path[v.path.length - 1];
           const leafOut = outPoint(last);
-          const parts = [];
+          const parts: ReactNode[] = [];
 
           // The customer steps up, and leaves once their reply is graded.
           const enter = progress(frame, v.start, v.start + ENTER);
           const leave = progress(frame, v.gradeAt, v.gradeAt + 12);
+          const stand = L.customers[v.slot];
           parts.push(
             <Person
               key="customer"
-              x={lerp(L.customerFrom.x, L.customer.x, enter)}
-              y={lerp(L.customerFrom.y, L.customer.y, enter) + 50 * leave}
+              x={stand.x + L.walkIn.x * (1 - enter)}
+              y={stand.y + L.walkIn.y * (1 - enter) + 16 * leave}
               scale={1.5}
               opacity={enter * (1 - leave)}
               fill={v.color}
@@ -473,65 +679,47 @@ export const ShadowLoop = ({ layout = 'wide' }: { layout?: LayoutName }) => {
             parts.push(<circle key="msg" cx={q.x} cy={q.y} r={9} fill={v.color} opacity={fade} />);
           }
 
-          // The drafted reply goes to the expert, who grades it.
+          // The drafted reply goes to the experts, who grade it.
           if (frame >= v.replyAt && frame < v.gradeAt + 4) {
             const t = progress(frame, v.replyAt, v.gradeAt);
-            const p = mix(D({ x: leafOut.x + 22, y: leafOut.y }), { x: EXPERT.x - 46, y: EXPERT.y + 6 }, t);
+            const p = mix(D({ x: leafOut.x + 22, y: leafOut.y }), { x: EXPERT.x - 58, y: EXPERT.y + 6 }, t);
             parts.push(<Reply key="reply" x={p.x} y={p.y} scale={1.4} stroke={v.color} opacity={1 - progress(frame, v.gradeAt, v.gradeAt + 4)} />);
           }
           const shown = pop(v.gradeAt);
           if (shown > 0) {
-            const fade = 1 - progress(frame, v.gradeAt + 16, v.gradeAt + 24);
-            parts.push(<Grade key="grade" ok={v.ok} x={EXPERT.x + 46} y={EXPERT.y - 34} scale={shown} opacity={fade} />);
+            const fade = 1 - progress(frame, v.gradeAt + 10, v.gradeAt + 17);
+            parts.push(<Grade key="grade" ok={v.ok} x={EXPERT.x + 64} y={EXPERT.y - 36} scale={shown} opacity={fade} />);
           }
           return <g key={v.index}>{parts}</g>;
         })}
 
-        {/* A cross: the comment is stored, I pick it up and store mine on the fix, and the agent's nightly run grows the DAG. */}
-        {TIMELINE.filter((v) => v.grows && frame >= v.storeAt! && frame < v.growAt! + 4).map((v) => {
-          const parts = [];
-          const travel = (from: Point, to: Point, start: number, end: number) => mix(from, to, progress(frame, start, end));
-          if (frame < v.meAt! + TO_ME + 2) {
-            // Into the store, then out of it to me.
-            const p =
-              frame < v.meAt!
-                ? travel({ x: EXPERT.x, y: L.tallyY + 30 }, { x: STORE.x, y: STORE.y - 34 }, v.storeAt!, v.storeAt! + TO_STORE)
-                : travel({ x: STORE.x + 30, y: STORE.y - 10 }, { x: ME.x - 10, y: ME.y - 44 }, v.meAt!, v.meAt! + TO_ME);
-            parts.push(<Comment key="comment" x={p.x} y={p.y} scale={1.1} opacity={1 - progress(frame, v.meAt! + TO_ME - 2, v.meAt! + TO_ME + 2)} />);
-          }
-          if (frame >= v.mineAt! && frame < v.typingAt! + 4) {
-            // My comment on the fix: into the store, and at night out of it to the coding agent.
-            const p =
-              frame < v.nightlyAt!
-                ? travel({ x: ME.x + 10, y: ME.y - 44 }, { x: STORE.x - 10, y: STORE.y + 30 }, v.mineAt!, v.mineAt! + TO_ME)
-                : travel({ x: STORE.x + 10, y: STORE.y + 30 }, { x: AGENT.x - 10, y: AGENT.y - 44 }, v.nightlyAt!, v.typingAt!);
-            const fade = frame < v.nightlyAt! ? 1 : 1 - progress(frame, v.typingAt!, v.typingAt! + 4);
-            parts.push(<Comment key="mine" x={p.x} y={p.y} scale={1.1} stroke={color('added')} opacity={fade} />);
-          }
-          if (frame >= v.sparkAt!) {
-            const g = v.grows!;
-            const target = D(
-              g.node
-                ? { x: NODES[g.node].x + NODES[g.node].w / 2, y: NODES[g.node].y }
-                : edgePoint(outPoint(g.edge[0]), inPoint(g.edge[1]), 0.5)
-            );
-            const t = progress(frame, v.sparkAt!, v.growAt!);
-            const from = { x: AGENT.x, y: AGENT.y - 34 };
-            // Arc above the straight line, so the spark doesn't cut through the DAG's labels.
-            const p = mix(from, target, t);
-            const lift = Math.sin(Math.PI * t) * 60;
-            parts.push(
-              <circle
-                key="spark"
-                cx={p.x}
-                cy={p.y - lift}
-                r={8}
-                fill={color('added')}
-                opacity={1 - progress(frame, v.growAt!, v.growAt! + 4)}
-              />
-            );
-          }
-          return <g key={`fix-${v.index}`}>{parts}</g>;
+        {/* The comments: the experts' into the store, where they pile up; mine back into it; a question and its answer. */}
+        {ITEMS.filter((item) => frame >= item.appear && frame < item.gone).map((item) => {
+          const p = placeOf(item);
+          const opacity = progress(frame, item.appear, item.appear + FADE) * (1 - progress(frame, item.gone - FADE, item.gone));
+          if (item.kind === 'question') return <Question key={item.key} x={p.x} y={p.y} scale={0.85} opacity={opacity} />;
+          const stroke = item.kind === 'plan' ? color('added') : color('bad');
+          return <Comment key={item.key} x={p.x} y={p.y} scale={0.85} stroke={stroke} opacity={opacity} />;
+        })}
+
+        {/* The nightly run: the coding agent grows the DAG, one spark for each plan. */}
+        {GROWTHS.map((g, k) => {
+          const growAt = GROW_AT[k];
+          const sparkAt = growAt - SPARK;
+          if (frame < sparkAt || frame >= growAt + 4) return null;
+          const target = D(
+            g.node
+              ? { x: NODES[g.node].x + NODES[g.node].w / 2, y: NODES[g.node].y }
+              : edgePoint(outPoint(g.edge[0]), inPoint(g.edge[1]), 0.5)
+          );
+          const t = progress(frame, sparkAt, growAt);
+          const from = { x: AGENT.x, y: AGENT.y - 34 };
+          // Arc above the straight line, so the spark doesn't cut through the DAG's labels.
+          const p = mix(from, target, t);
+          const lift = Math.sin(Math.PI * t) * 60;
+          return (
+            <circle key={`spark-${k}`} cx={p.x} cy={p.y - lift} r={8} fill={color('added')} opacity={1 - progress(frame, growAt, growAt + 4)} />
+          );
         })}
       </svg>
     </AbsoluteFill>
