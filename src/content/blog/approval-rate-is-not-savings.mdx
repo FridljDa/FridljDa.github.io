@@ -17,7 +17,7 @@ An approval rate is not a cost reduction. Unless someone can tell in advance *wh
 
 The natural way to measure an LLM support automation is an approval rate. Run the system in **shadow deployment** — it drafts a reply to every incoming ticket, subject-matter experts grade the drafts, and nothing is sent to a customer — and count how many drafts the experts would have sent as written.
 
-It is a good number for steering development: the loop in [The Missing Compiler](/post/the-missing-compiler#the-loop-we-built) is built to raise it, one round of grading at a time. It is a poor number for a business case, because it invites a reading it can't support: an 80% approval rate sounds like 80% of the work done.
+It is a good number for steering development: the loop in [The Missing Test Suite](/post/the-missing-test-suite#the-loop-we-built) is built to raise it, one round of grading at a time. It is a poor number for a business case, because it invites a reading it can't support: an 80% approval rate sounds like 80% of the work done.
 
 ## Why the two come apart
 
@@ -50,7 +50,7 @@ Whether an automation like this pays for itself is an ROI calculation. The param
 - **Volume.** Tickets per day in the queue you are actually automating, not the whole support inbox.
 - **Handling time.** Minutes per ticket today, and minutes per ticket to *review* a generated draft.
 - **The cost of being wrong.** What happens to a bad reply that goes out, and who carries it.
-- **Reviewer availability.** Grading drafts takes subject-matter experts' time, both during the build and afterwards, and [every improvement waits on it](/post/the-missing-compiler).
+- **Reviewer availability.** Grading drafts takes subject-matter experts' time, both during the build and afterwards, and [every improvement waits on it](/post/the-missing-test-suite).
 - **Maintenance.** Who edits the rules when the business changes them, and how often that is.
 
 None of this is hard. It is uncomfortable, because the honest version of the calculation sometimes says the project shouldn't happen — which is exactly the value of doing it before rather than after.

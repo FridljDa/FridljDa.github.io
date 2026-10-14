@@ -1,12 +1,12 @@
 ---
 status: draft
 images:
-  - /images/blog/the-missing-compiler/linkedin/verdict.png
-  - /images/blog/the-missing-compiler/linkedin/review-screen.png
+  - /images/blog/the-missing-test-suite/linkedin/verdict.png
+  - /images/blog/the-missing-test-suite/linkedin/review-screen.png
 firstComment: |
-  The full post, with the loop step by step, the approval rate it is meant to raise (and why that is not a saving), which part of the review tool to build yourself, and where I expect the bottleneck to move next: https://danielfridljand.de/post/the-missing-compiler
+  The full post, with the loop step by step, the approval rate it is meant to raise (and why that is not a saving), which part of the review tool to build yourself, and where I expect the bottleneck to move next: https://danielfridljand.de/post/the-missing-test-suite
 ---
-A coding agent gets a verdict on every attempt from the compiler.
+A coding agent gets a verdict on every attempt from its tests.
 A reply to a customer gets one only when an expert reads it.
 
 On the support automation I built, that set the pace. The coding agent turned a fix I had planned into a green build overnight. How many fixes there were to plan depended on how much the experts could read.

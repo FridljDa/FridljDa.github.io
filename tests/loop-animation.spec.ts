@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 
 const SUPPORT = '/post/first-level-support-automation';
-const COMPILER = '/post/the-missing-compiler';
+const TEST_SUITE = '/post/the-missing-test-suite';
 
 test.describe('Loop animations', () => {
   test('the shadow loop plays once in view and grows the DAG', async ({ page }) => {
@@ -13,14 +13,15 @@ test.describe('Loop animations', () => {
     await expect(figure.getByText('Login problem')).toBeAttached();
     await expect(figure.getByText('Password reset')).toHaveCount(0);
 
-    // Plays in real time; the first cross grows its leaf about eleven seconds in.
+    // Plays in real time; the night grows the first leaf about twenty seconds in.
+    test.setTimeout(60_000);
     await figure.scrollIntoViewIfNeeded();
-    await expect(figure.getByText('Password reset')).toBeVisible({ timeout: 20_000 });
+    await expect(figure.getByText('Password reset')).toBeVisible({ timeout: 40_000 });
   });
 
   test('reduced motion shows the last frame without a player', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
-    await page.goto(COMPILER);
+    await page.goto(TEST_SUITE);
     const figures = page.locator('figure.loop-animation');
     await expect(figures).toHaveCount(1);
 
@@ -41,7 +42,7 @@ test.describe('Loop animations', () => {
   test('the Confluence copies show the PNGs instead', async ({ page }) => {
     for (const [post, pngs] of [
       [SUPPORT, ['shadow-loop']],
-      [COMPILER, ['shadow-loop']],
+      [TEST_SUITE, ['shadow-loop']],
     ] as const) {
       await page.goto(`${post}/confluence`);
       const srcs = await page.locator('#body img').evaluateAll((imgs) => imgs.map((img) => img.getAttribute('src')));

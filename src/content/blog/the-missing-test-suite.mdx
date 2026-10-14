@@ -1,13 +1,13 @@
 ---
-title: "The Missing Compiler: Where the Bottleneck Goes When Code Is Cheap"
+title: "The Missing Test Suite: Where the Bottleneck Goes When Code Is Cheap"
 pubDate: 2026-04-20T00:00:00.000Z
 updatedDate: 2026-10-14T00:00:00.000Z
 tags:
   - AI
   - Customer Support
   - Evaluation
-description: "Once coding agents make code cheap, business automation's bottleneck moves to the experts: with no compiler or test suite, only they can tell whether the output is right."
-image: /images/blog/the-missing-compiler/featured.png
+description: "Once coding agents make code cheap, business automation's bottleneck moves to the experts: with no test suite for a business process, only they can tell whether the output is right."
+image: /images/blog/the-missing-test-suite/featured.png
 ---
 
 import SystemMap from '../../components/SystemMap.astro';
@@ -17,7 +17,7 @@ import ApprovalCurve from '../../components/ApprovalCurve.astro';
 import ThemedImage from '../../components/ThemedImage.astro';
 
 ## TL;DR
-The question hanging over coding agents is what becomes the bottleneck once code is cheap. On a customer support automation I built, the bottleneck was the subject-matter experts. Coding agents get a free verdict on every attempt from tests and compilers; a business process has none, so the only check is someone who knows the business reading the output, and their time set the pace. Ours graded in batches, in a shared review tool, which let me work with ten of them asynchronously instead of over direct messages. Plan the project around it: have them grading the system's replies to real tickets as early as possible, before any reply reaches a customer, and make each grade quick to give.
+The question hanging over coding agents is what becomes the bottleneck once code is cheap. On a customer support automation I built, the bottleneck was the subject-matter experts. Coding agents get a free verdict on every attempt from tests and linters; a business process has no test suite, so the only check is someone who knows the business reading the output, and their time set the pace. Ours graded in batches, in a shared review tool, which let me work with ten of them asynchronously instead of over direct messages. Plan the project around it: have them grading the system's replies to real tickets as early as possible, before any reply reaches a customer, and make each grade quick to give.
 
 <SystemMap preset="overview" />
 
@@ -30,18 +30,18 @@ The question hanging over coding agents is what becomes the bottleneck once code
 Coding agents work because of two things:
 
 1. Software is mostly patterns LLMs have seen countless times during training: syntax, idioms, libraries.
-2. The [agentic loop](https://www.deeplearning.ai/the-batch/issue-359) gets a verdict on every attempt from tests, linters and compiler errors, so the agent can handle a wide range of problems without human intervention.
+2. The [agentic loop](https://www.deeplearning.ai/the-batch/issue-359) gets a verdict on every attempt from tests, linters and error messages, so the agent can handle a wide range of problems without human intervention.
 
 ## Neither condition holds for a business process
 
-<SystemMap preset="no-compiler" />
+<SystemMap preset="no-test-suite" />
 
 Consider a first-level support automation, from a real project with the details changed to protect the client. Customers write in with messages like this:
 
-<ThemedImage src="/images/blog/the-missing-compiler/customer-message.png" alt={"Customer message: Hi, I'm Alex Carter and I bank with your Riverton branch. My account number is NSB01234 and I can't get in any more; it keeps saying the account is locked. Can you help me get back in?"} />
+<ThemedImage src="/images/blog/the-missing-test-suite/customer-message.png" alt={"Customer message: Hi, I'm Alex Carter and I bank with your Riverton branch. My account number is NSB01234 and I can't get in any more; it keeps saying the account is locked. Can you help me get back in?"} />
 
 1. LLMs haven't seen your internal escalation rules or customer records during training.
-2. There is no compiler or test suite to tell the system whether the reply it wrote was any good. That is the missing compiler: the only check is someone who knows the bank reading the reply.
+2. There is no test suite to tell the system whether the reply it wrote was any good. That is the missing test suite: the only check is someone who knows the bank reading the reply.
 
 A read tool, an endpoint the system can call, lets it look up the customer's records, and would cover the rules too if anyone had written them down. Usually nobody has: they live in the heads of the people who handle the tickets. So the effort belongs on the second condition: make it easy for the people who know the bank to check each reply.
 
@@ -61,15 +61,15 @@ The review tool is also what let one developer work with ten experts. Nobody mes
 
 Each expert grades a batch of shadow responses, whenever they have time, in a review screen that shows them the customer's message and the proposed reply:
 
-<ThemedImage src="/images/blog/the-missing-compiler/review-screen-reply.png" alt={"Mocked-up review screen: the customer's locked-account message and the proposed reply, which asks for the email address on the account. The verdict, rejection reason and comments below are still empty."} />
+<ThemedImage src="/images/blog/the-missing-test-suite/review-screen-reply.png" alt={"Mocked-up review screen: the customer's locked-account message and the proposed reply, which asks for the email address on the account. The verdict, rejection reason and comments below are still empty."} />
 
 *The review screen, mocked up: a draft waiting for its grade.*
 
 The expert rejects it and says why:
 
-<ThemedImage src="/images/blog/the-missing-compiler/review-screen-graded.png" alt={"The same review screen, graded: verdict Reject, rejection reason \"Wrong process\", and the reviewer's comment: we have the account number, so look them up and never ask for what we can find; locked accounts get the unlock link, or go to security if flagged."} />
+<ThemedImage src="/images/blog/the-missing-test-suite/review-screen-graded.png" alt={"The same review screen, graded: verdict Reject, rejection reason \"Wrong process\", and the reviewer's comment: we have the account number, so look them up and never ask for what we can find; locked accounts get the unlock link, or go to security if flagged."} />
 
-The people who know a business can rarely write its rules down in advance, but shown a draft, they can tell you at a glance what is wrong with it. The reviewer's comment above holds two rules nobody had written down, prompted by a single reply that broke both. So grading does two jobs: it is the check a coding agent gets for free from its compiler, and it is how those rules get written down.
+The people who know a business can rarely write its rules down in advance, but shown a draft, they can tell you at a glance what is wrong with it. The reviewer's comment above holds two rules nobody had written down, prompted by a single reply that broke both. So grading does two jobs: it is the check a coding agent gets for free from its tests, and it is how those rules get written down.
 
 ### 2. I specify the fix
 
@@ -77,7 +77,7 @@ The people who know a business can rarely write its rules down in advance, but s
 
 I go through a batch of stored feedback in one sitting and add my own comment next to each expert's: a high-level implementation plan for the coding agent, saying where in the system the fix goes and what it should do.
 
-<ThemedImage src="/images/blog/the-missing-compiler/review-screen-fix.png" alt={"The same review screen with my comment added below the reviewer's: for the coding agent, add an Account locked intent that looks the customer up by account number, then sends the unlock link, or routes to security if the account is flagged."} />
+<ThemedImage src="/images/blog/the-missing-test-suite/review-screen-fix.png" alt={"The same review screen with my comment added below the reviewer's: for the coding agent, add an Account locked intent that looks the customer up by account number, then sends the unlock link, or routes to security if the account is flagged."} />
 
 ### 3. The coding agent implements it overnight
 
@@ -89,7 +89,7 @@ A nightly run picks up every ticket where I have specified the fix. Usually that
 
 <SystemMap preset="check" />
 
-The agent adds the case to the eval set, here Alex's message and the reply it should get, and CI re-runs the whole suite so earlier fixes stay fixed. This is the step that looks most like a compiler, and it is the easy part: once a case is written down, the rest is ordinary engineering — [Langfuse in Production](/post/langfuse-monitoring-eval-self-improvement) covers how we ran it.
+The agent adds the case to the eval set, here Alex's message and the reply it should get, and CI re-runs the whole suite so earlier fixes stay fixed. This step is an ordinary test suite, and it is the easy part: once a case is written down, the rest is ordinary engineering — [Langfuse in Production](/post/langfuse-monitoring-eval-self-improvement) covers how we ran it.
 
 Then the fix ships, and I resubmit the rejected ticket: the support agent drafts a new reply to it, and the draft goes back into the shared queue. Whichever expert picks it up checks the fix on the ticket that exposed the error, which the eval case, written from my own plan, cannot do. A rejected ticket leaves the loop only when an expert approves it.
 
@@ -114,7 +114,7 @@ Round after round, the loop is meant to raise the share of drafts for new ticket
 
 Eliyahu Goldratt's [theory of constraints](https://en.wikipedia.org/wiki/Theory_of_constraints) starts from one observation: every system has a bottleneck, and fixing it doesn't remove it, it moves it somewhere else.
 
-A coding agent moved ours. Without one, every fix would have had to go through me, the code included. With one, a fix I had specified was a branch, an eval case and a green build by the next morning, with little of my time. What limited progress instead was step 1: getting domain knowledge out of the experts' heads. That is what the missing compiler costs: we learned whether a reply was right only when an expert had time to read it.
+A coding agent moved ours. Without one, every fix would have had to go through me, the code included. With one, a fix I had specified was a branch, an eval case and a green build by the next morning, with little of my time. What limited progress instead was step 1: getting domain knowledge out of the experts' heads. That is what the missing test suite costs: we learned whether a reply was right only when an expert had time to read it.
 
 <SystemMap preset="today" />
 
