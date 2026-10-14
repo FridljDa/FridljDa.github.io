@@ -3,7 +3,7 @@ status: draft
 images:
   - /images/blog/the-missing-compiler/linkedin/review-screen.png
 firstComment: |
-  The full post, with the loop step by step, why I'd get into shadow deployment sooner, which part of the review screen to build yourself, and the other wait: two coding agents, mine and IT's, with a person on each end passing messages between them: https://danielfridljand.de/post/the-missing-compiler
+  The full post, with the loop step by step, why I'd get into shadow deployment sooner, which part of the review screen to build yourself, and where I expect the bottleneck to move next: https://danielfridljand.de/post/the-missing-compiler
 ---
 Coding agents made the code cheap on my support automation.
 The bottleneck didn't disappear. It moved to the people who know the business.
@@ -16,11 +16,9 @@ So grading did two jobs. It was the check a coding agent gets for free. And it w
 
 Their time set the pace. Grading is one more task in a day that is already full, for people who may suspect they're training their own replacement.
 
-Fixing a bottleneck doesn't remove it; it moves it. I can see where ours goes next:
+The experts weren't the only wait. Every new kind of answer needed a new endpoint from the client's IT. I wrote the spec, and they usually implemented it within a day. The handoff: I pinged someone on Teams, who pointed their own coding agent at my spec.
 
-→ To me. Every piece of feedback went through me as a plan for the coding agent. Handing it the raw feedback worked worse; I think a better loop can close the gap.
-
-→ Then back to the experts. An agent with memory could rewrite its own skills from each batch of grades, and the experts would be the only people left. The risk is drift: the skills slowly stop matching how the business works. The only thing that would catch it is the experts' grading, which is already the bottleneck.
+Two coding agents, with a person on each end passing messages between them.
 
 Coding agents didn't remove the hard part. They made it obvious where it was.
 
