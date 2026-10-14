@@ -6,20 +6,26 @@ images:
 firstComment: |
   The full post, with the loop step by step, the approval rate it is meant to raise (and why that is not a saving), which part of the review tool to build yourself, and where I expect the bottleneck to move next: https://danielfridljand.de/post/the-missing-test-suite
 ---
-A coding agent gets a verdict on every attempt from its tests.
-A reply to a customer gets one only when an expert reads it.
+Once code is cheap, what becomes the bottleneck?
 
-On the support automation I built, that set the pace. The coding agent turned a fix I had planned into a green build overnight. How many fixes there were to plan depended on how much the experts could read.
+On the support automation I built, it was the people who could tell whether a reply was right.
 
-Their read is more than a check. Experts can rarely list their rules up front, but shown a draft, they see at a glance what's wrong. The expert's comment in the second picture holds two rules nobody had written down.
+A coding agent gets a verdict on every attempt for free: tests, linters, error messages. A reply to a customer has no test suite. The only check is someone who knows the business reading it.
 
-Two things looked like that check and weren't:
+That set the pace. A fix I had specified was a branch, an eval case and a green build by the next morning. What I couldn't speed up was finding out what to fix.
 
-→ My own eval case. I wrote it from my plan for the fix, so it can't tell me whether I understood the expert. After every fix, the rejected ticket went back into the queue until an expert approved it.
+Three things I'd keep:
 
-→ Replays of old tickets. They run against today's records, not the ones the customer had when they wrote. Only drafts for live tickets, in shadow deployment, see the records the customer has, and I waited too long to start one.
+1. Experts can't list their rules, but they can grade.
+The people who know a business can rarely write its rules down in advance. Shown a draft, they see at a glance what's wrong. The one rejection comment in the second picture holds two rules nobody had written down.
 
-So the experts' time is a hard input to the estimate. We made it go further with a shared annotation queue: one developer, ten experts, no direct messages. They were the support staff answering those tickets anyway: they graded each draft as they picked up its ticket and pasted the good ones into their reply. My follow-up questions waited next to the ticket, and a nightly run picked up every fix at once.
+2. Put them in front of live drafts early.
+I waited for good offline numbers on old tickets before going into shadow deployment. That had it backwards. A replayed ticket runs against today's records: a month later, the locked account in it may already be unlocked. Only drafts for live tickets see what the customer saw. And the grades the experts could have given in the weeks before are lost for good.
+
+3. Make each grade cheap.
+The experts were the support staff answering those tickets anyway. They graded each draft as they picked up its ticket and pasted the good ones into their reply. One shared queue, ten experts, one developer, no direct messages: my follow-up questions waited next to the ticket.
+
+Then the bottleneck moved again. Turning the experts' comments into a plan for the coding agent was my job, which puts me on the critical path of every fix. An agent that rewrites its own skills from each batch of grades could take that over. But the only thing that would catch it drifting from how the business works is the experts' grading: the bottleneck we started with.
 
 Coding agents didn't remove the hard part. They made it obvious where it was.
 
