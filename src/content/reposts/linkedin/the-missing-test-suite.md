@@ -6,26 +6,24 @@ images:
 firstComment: |
   The full post, with the loop step by step, the approval rate it is meant to raise (and why that is not a saving), which part of the review tool to build yourself, and where I expect the bottleneck to move next: https://danielfridljand.de/post/the-missing-test-suite
 ---
-Once code is cheap, what becomes the bottleneck?
+Coding agents made our code cheap. The bottleneck moved to the people who could tell whether a reply was right.
 
-On the support automation I built, it was the people who could tell whether a reply was right.
+On the AI support automation I built, a coding agent got a verdict on every attempt for free, from tests and linters. A reply to a customer has no test suite. The only check is someone who knows the business reading it.
 
-A coding agent gets a verdict on every attempt for free: tests, linters, error messages. A reply to a customer has no test suite. The only check is someone who knows the business reading it.
+That set the pace. My coding agent turned a fix I had planned into a green build overnight. What limited progress was finding out what to fix.
 
-That set the pace. A fix I had specified was a branch, an eval case and a green build by the next morning. What I couldn't speed up was finding out what to fix.
+Three lessons:
 
-Three things I'd keep:
-
-1. Experts can't list their rules, but they can grade.
-The people who know a business can rarely write its rules down in advance. Shown a draft, they see at a glance what's wrong. The one rejection comment in the second picture holds two rules nobody had written down.
+1. Experts can rarely list their rules, but they can grade.
+Shown a draft, they see at a glance what's wrong. The expert's comment in the second picture holds two rules nobody had written down.
 
 2. Put them in front of live drafts early.
-I waited for good offline numbers on old tickets before going into shadow deployment. That had it backwards. A replayed ticket runs against today's records: a month later, the locked account in it may already be unlocked. Only drafts for live tickets see what the customer saw. And the grades the experts could have given in the weeks before are lost for good.
+I waited for acceptable scores on old tickets before letting the system draft replies to live ones, sent only once an expert approved. That had it backwards. A replayed ticket runs against today's records: a month later, the locked account in it may already be unlocked. And the grades the experts could have given in those weeks are lost for good.
 
-3. Make each grade cheap.
-The experts were the support staff answering those tickets anyway. They graded each draft as they picked up its ticket and pasted the good ones into their reply. One shared queue, ten experts, one developer, no direct messages: my follow-up questions waited next to the ticket.
+3. Fit grading into their day.
+The experts were the support staff answering those tickets anyway. They graded each draft as they picked up its ticket and pasted the good ones into their reply. Ten experts and one developer shared a single queue. My follow-up questions waited there, next to the ticket, instead of in direct messages.
 
-Then the bottleneck moved again. Turning the experts' comments into a plan for the coding agent was my job, which puts me on the critical path of every fix. An agent that rewrites its own skills from each batch of grades could take that over. But the only thing that would catch it drifting from how the business works is the experts' grading: the bottleneck we started with.
+Once the experts grade steadily, the next bottleneck is me: turning their comments into plans for the coding agent. Whatever takes that over still needs the experts to catch it drifting.
 
 Coding agents didn't remove the hard part. They made it obvious where it was.
 
