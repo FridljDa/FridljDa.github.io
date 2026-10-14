@@ -37,7 +37,7 @@ import {
   edgePath,
   Person,
   Experts,
-  Store,
+  ReviewTool,
   Agent,
   Envelope,
   Reply,
@@ -207,7 +207,8 @@ export const LAYOUTS = {
     expert: { x: 846, y: 96 },
     tallyY: 182,
     store: { x: 846, y: 290 },
-    pile: { x: 910, y: 306 },
+    // Left of the review tool, so my plans fly to the coding agent clear of "Nightly".
+    pile: { x: 762, y: 304 },
     me: { x: 748, y: 436 },
     desk: { x: 680, y: 440 },
     deskStep: -48,
@@ -229,7 +230,7 @@ export const LAYOUTS = {
     expert: { x: 112, y: 640 },
     tallyY: 722,
     store: { x: 112, y: 822 },
-    pile: { x: 42, y: 846 },
+    pile: { x: 26, y: 846 },
     // Raised, so the line from the store to the coding agent passes below me.
     me: { x: 290, y: 724 },
     desk: { x: 354, y: 716 },
@@ -412,9 +413,9 @@ export const ShadowLoop = ({ layout = 'wide' }: { layout?: LayoutName }) => {
   const L: Layout = LAYOUTS[layout];
   const { expert: EXPERT, agent: AGENT, store: STORE, me: ME } = L;
   // The lines from the store to me and to the coding agent, from the edge of one icon to the other's.
-  const storeToMe = toward(STORE, ME, 42);
+  const storeToMe = toward(STORE, ME, 56);
   const meIn = toward(ME, STORE, 38);
-  const storeToAgent = toward(STORE, AGENT, 42);
+  const storeToAgent = toward(STORE, AGENT, 56);
   const agentIn = toward(AGENT, STORE, 44);
   const marker = `shadow-loop-${layout}-arrow`;
   /** A point of the DAG in this layout's coordinates. */
@@ -603,7 +604,7 @@ export const ShadowLoop = ({ layout = 'wide' }: { layout?: LayoutName }) => {
           <ArrowMarker id={marker} />
         </defs>
         {[
-          { d: `M${EXPERT.x},${L.tallyY + 18} V${STORE.y - 36}`, twoWay: true },
+          { d: `M${EXPERT.x},${L.tallyY + 18} V${STORE.y - 40}`, twoWay: true },
           { d: `M${storeToMe.x},${storeToMe.y} L${meIn.x},${meIn.y}`, twoWay: true },
           { d: `M${storeToAgent.x},${storeToAgent.y} L${agentIn.x},${agentIn.y}` },
         ].map(({ d, twoWay }) => (
@@ -625,7 +626,7 @@ export const ShadowLoop = ({ layout = 'wide' }: { layout?: LayoutName }) => {
             Nightly
           </text>
         )}
-        <Store x={STORE.x} y={STORE.y} />
+        <ReviewTool x={STORE.x} y={STORE.y} />
         <Person x={ME.x} y={ME.y} scale={1.4} fill={color('text')} />
         <Label x={ME.x} y={ME.y + 52} size={L.labelSize}>
           Me

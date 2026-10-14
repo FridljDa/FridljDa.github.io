@@ -101,12 +101,25 @@ export const Expert = (place: IconProps) => (
   </Place>
 );
 
-/** A team of subject-matter experts: one expert in front of two others. */
+/** A team of subject-matter experts: one expert in front of two colleagues. */
 export const Experts = (place: IconProps) => (
   <Place {...place}>
-    <Expert x={-15} y={-7} scale={0.8} />
-    <Expert x={17} y={-7} scale={0.8} />
+    <Person x={-16} y={-7} scale={0.8} fill={color('text')} />
+    <Person x={16} y={-7} scale={0.8} fill={color('text')} />
     <Expert x={0} y={5} />
+  </Place>
+);
+
+/** The review tool: the review screen, with the store behind its lower right corner. */
+export const ReviewTool = (place: IconProps) => (
+  <Place {...place}>
+    <Store x={40} y={24} scale={0.72} />
+    <rect x={-48} y={-32} width={96} height={64} rx={7} fill={color('node-bg')} stroke={color('text')} strokeWidth={2.5} />
+    <rect x={-40} y={-24} width={38} height={7} rx={3} fill={color('node-border')} />
+    <rect x={-40} y={-12} width={70} height={5} rx={2.5} fill={color('edge')} />
+    <rect x={-40} y={-3} width={60} height={5} rx={2.5} fill={color('edge')} />
+    <rect x={-40} y={10} width={17} height={14} rx={3} fill={color('ok')} />
+    <rect x={-19} y={10} width={17} height={14} rx={3} fill={color('bad')} />
   </Place>
 );
 
