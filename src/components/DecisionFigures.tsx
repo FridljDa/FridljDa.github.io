@@ -5,6 +5,10 @@
  * - grid: three intents against three account states, the mapping a workflow
  *   has to spell out. The tree decided two cells, both for a locked account,
  *   Alex's among them; the other seven are question marks.
+ * - coverage: a schematic, not measured: the share of tickets the tree
+ *   answers, branch after branch. Each branch answers fewer new tickets than
+ *   the last, so the share flattens below all of them; Alex's Account locked
+ *   branch is an early one.
  * - unlock-tool: the flag check inside the unlock tool, called by the
  *   workflow or by the agent, with Alex's route from the agent to the unlock
  *   steps.
@@ -144,6 +148,76 @@ function IntentGrid() {
     <>
       <GridSvg layout={GRID_WIDE} className="figure-wide" />
       <GridSvg layout={GRID_TALL} className="figure-tall" />
+    </>
+  );
+}
+
+const CoverageDescription =
+  'Schematic, not measured: the share of tickets the tree answers, against the number of branches written. Each branch is a point; the first ones, Account locked among them, answer many tickets, and each later one answers fewer than the last, so the share flattens below all tickets, leaving a band unanswered.';
+
+interface CoverageLayout {
+  width: number;
+  height: number;
+  size: number;
+  plot: { left: number; right: number; top: number; bottom: number };
+}
+
+const COVERAGE_WIDE: CoverageLayout = { width: 560, height: 290, size: 17, plot: { left: 44, right: 470, top: 30, bottom: 246 } };
+const COVERAGE_TALL: CoverageLayout = { width: 400, height: 300, size: 19, plot: { left: 44, right: 316, top: 30, bottom: 248 } };
+
+/** Branches written, the share the tree answers after the k-th, and which one is Account locked. */
+const BRANCHES = 12;
+const CEILING = 0.8;
+const KEEP = 0.72;
+const answered = (k: number) => CEILING * (1 - KEEP ** k);
+const ACCOUNT_LOCKED = 2;
+
+function CoverageSvg({ layout, className }: { layout: CoverageLayout; className: string }) {
+  const { plot, size } = layout;
+  const x = (k: number) => plot.left + (k / BRANCHES) * (plot.right - plot.left);
+  const y = (share: number) => plot.bottom - share * (plot.bottom - plot.top);
+  const points = Array.from({ length: BRANCHES + 1 }, (_, k) => ({ x: x(k), y: y(answered(k)) }));
+  const last = points[BRANCHES];
+  const alex = points[ACCOUNT_LOCKED];
+  const axis = { stroke: color('edge'), strokeWidth: 2 };
+  return (
+    <Svg viewBox={`0 0 ${layout.width} ${layout.height}`} label={CoverageDescription} className={className}>
+      {/* What no branch answers yet, in the grid's colour for a gap */}
+      <rect x={plot.left} y={y(1)} width={plot.right - plot.left} height={last.y - y(1)} fill={color('other-bg')} />
+      <line x1={plot.left} x2={plot.right} y1={y(1)} y2={y(1)} stroke={color('other')} strokeWidth={2} strokeDasharray="5 4" />
+      <Text x={plot.right + 8} y={y(1)} anchor="start" size={size} muted>
+        All
+      </Text>
+      <text x={plot.right - 10} y={(y(1) + last.y) / 2} dy="0.35em" textAnchor="end" fontSize={size} fontWeight={600} fill={color('other')}>
+        Unanswered
+      </text>
+
+      <line x1={plot.left} x2={plot.right} y1={plot.bottom} y2={plot.bottom} {...axis} />
+      <line x1={plot.left} x2={plot.left} y1={plot.bottom} y2={plot.top - 10} {...axis} />
+      <text transform={`translate(${plot.left - 16} ${(plot.top + plot.bottom) / 2}) rotate(-90)`} textAnchor="middle" fontSize={size} fontWeight={600} fill={color('muted')}>
+        Tickets answered
+      </text>
+      <Text x={plot.right} y={plot.bottom + size + 8} anchor="end" size={size} muted>
+        Branches written →
+      </Text>
+
+      <polyline points={points.map((p) => `${p.x},${p.y}`).join(' ')} fill="none" stroke={color('node-border')} strokeWidth={2.5} strokeLinejoin="round" />
+      {points.slice(1).map((p, i) => (
+        <circle key={i} cx={p.x} cy={p.y} r={i + 1 === ACCOUNT_LOCKED ? 7 : 4.5} fill={i + 1 === ACCOUNT_LOCKED ? ALEX : color('node-border')} stroke={color('surface')} strokeWidth={2} />
+      ))}
+      {/* Below the steep start, where the curve leaves room */}
+      <text x={alex.x + 14} y={alex.y + 22} fontSize={size} fontWeight={650} fill={color('text')}>
+        Account locked
+      </text>
+    </Svg>
+  );
+}
+
+function Coverage() {
+  return (
+    <>
+      <CoverageSvg layout={COVERAGE_WIDE} className="figure-wide" />
+      <CoverageSvg layout={COVERAGE_TALL} className="figure-tall" />
     </>
   );
 }
@@ -336,6 +410,7 @@ function UnlockTool() {
  */
 export const FIGURES = {
   grid: { component: IntentGrid, description: GridDescription, width: 560 },
+  coverage: { component: Coverage, description: CoverageDescription, width: 500 },
   'unlock-tool': { component: UnlockTool, description: UnlockToolDescription, width: 500 },
 } satisfies Record<string, { component: ComponentType; description: string; width: number }>;
 

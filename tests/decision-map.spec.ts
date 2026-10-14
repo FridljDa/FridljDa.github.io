@@ -23,6 +23,15 @@ test.describe('Figures in Workflow or Agent', () => {
     await expect(first.getByText('Any order')).toBeVisible();
     await expect(first.getByText('Workflow')).toHaveCount(0);
 
+    // Before the fallback there is no default: the LLM's one job is reading the message.
+    const workflow = page.locator('figure.decision-map[data-confluence-png$="/map-workflow.png"] svg:visible');
+    await expect(workflow.getByText('One job')).toBeVisible();
+    await expect(workflow.getByText('Default')).toHaveCount(0);
+
+    // The close is about the experts, not the tools.
+    const start = page.locator('figure.decision-map[data-confluence-png$="/map-start.png"] svg:visible');
+    await expect(start.getByText('Fill the grid')).toBeVisible();
+
     // Next time, the default moves to the agent and a request type graduates into code.
     // Both layouts carry the labels; only the one that fits the width is shown.
     const next = page.locator('figure.decision-map[data-confluence-png$="/map-next-time.png"] svg:visible');
@@ -31,14 +40,17 @@ test.describe('Figures in Workflow or Agent', () => {
     await expect(next.getByText('Graduate', { exact: true })).toBeVisible();
   });
 
-  test('the running example has the grid and the unlock tool, and no Mermaid', async ({ page }) => {
+  test('the running example has the grid, the coverage schematic and the unlock tool, and no Mermaid', async ({ page }) => {
     await page.goto(POST);
     const figures = page.locator('figure.decision-figure');
-    await expect(figures).toHaveCount(2);
+    await expect(figures).toHaveCount(3);
     const grid = figures.nth(0).locator('svg:visible');
     await expect(grid.getByText('Unlock steps')).toBeVisible();
     await expect(grid.getByText('?', { exact: true })).toHaveCount(7);
-    const tool = figures.nth(1).locator('svg:visible');
+    const coverage = figures.nth(1).locator('svg:visible');
+    await expect(coverage.getByText('Branches written →')).toBeVisible();
+    await expect(coverage.getByText('Account locked')).toBeVisible();
+    const tool = figures.nth(2).locator('svg:visible');
     await expect(tool.getByText('Flagged?')).toBeVisible();
     await expect(tool.getByText('Refuse')).toBeVisible();
     await expect(page.locator('.prose .mermaid, .prose pre.mermaid')).toHaveCount(0);
@@ -83,7 +95,7 @@ test.describe('Figures in Workflow or Agent', () => {
     await expect(body.locator('svg, figure')).toHaveCount(0);
     const srcs = await body.locator('img').evaluateAll((imgs) => imgs.map((img) => img.getAttribute('src')));
     const base = 'https://danielfridljand.de/images/blog/workflow-vs-agent';
-    for (const png of [...PRESETS.map((p) => `map-${p}`), 'grid', 'unlock-tool']) {
+    for (const png of [...PRESETS.map((p) => `map-${p}`), 'grid', 'coverage', 'unlock-tool']) {
       expect(srcs).toContain(`${base}/${png}.png`);
     }
   });
