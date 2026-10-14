@@ -4,28 +4,21 @@ images:
   - /images/blog/the-missing-test-suite/linkedin/verdict.png
   - /images/blog/the-missing-test-suite/linkedin/review-screen.png
 firstComment: |
-  The full post, with the loop step by step, the approval rate it is meant to raise (and why that is not a saving), which part of the review tool to build yourself, and where I expect the bottleneck to move next: https://danielfridljand.de/post/the-missing-test-suite
+  The full post, with the loop step by step, the approval rate it is meant to raise (and why that is not a saving), and which part of the review tool to build yourself: https://danielfridljand.de/post/the-missing-test-suite
 ---
-Coding agents made our code cheap. The bottleneck moved to the people who could tell whether a reply was right.
+A coding agent turned each fix I planned into a green build overnight, and it took little of my time. Finding out what to fix was the slow part, because a reply to a customer has no test suite.
 
-On the AI support automation I built, a coding agent got a verdict on every attempt for free, from tests and linters. A reply to a customer has no test suite. The only check is someone who knows the business reading it.
+Tests and linters give a coding agent a verdict on every attempt. The system I built drafts replies to support tickets, and the only check on a reply is an expert reading it, so their time set the pace.
 
-That set the pace. My coding agent turned a fix I had planned into a green build overnight. What limited progress was finding out what to fix.
+Experts can rarely list the rules up front, but shown a draft, they see at a glance what's wrong with it. In the second picture, a customer gives their account number and says the account is locked, and the draft asks for their email address. The expert's comment states two rules nobody had written down: never ask for what we can find, and locked accounts get the unlock link, or go to security if flagged. Below it is my plan for the fix; the coding agent picks it up in its nightly run.
 
-Three lessons:
+The agent also adds the case to the eval set, and CI goes green. That only shows the code matches my plan. The fix counts once an expert approves a new reply to the same ticket.
 
-1. Experts can rarely list their rules, but they can grade.
-Shown a draft, they see at a glance what's wrong. The expert's comment in the second picture holds two rules nobody had written down.
+I waited too long to show the experts drafts for live tickets, even though a draft only reached a customer if one of them approved and sent it. I wanted acceptable numbers on old tickets first, and until then they saw a handful of replies I demoed each week. Those were weeks of grades we never got. Replaying old tickets catches regressions, but it's a poor way to find out what a good reply looks like.
 
-2. Put them in front of live drafts early.
-I waited for acceptable scores on old tickets before letting the system draft replies to live ones, sent only once an expert approved. That had it backwards. A replayed ticket runs against today's records: a month later, the locked account in it may already be unlocked. And the grades the experts could have given in those weeks are lost for good.
+When you estimate a project like this, budget the experts' time. Ours were the support staff who answered those tickets anyway. They graded each draft when they picked up its ticket, and an approved one was a reply they didn't have to write. A rejected one was still one more task in a full day, for people who may suspect they're training their replacement. We were lucky that they engaged and that the client's leadership visibly backed the work. That kept the feedback coming and useful, and you can't count on either.
 
-3. Fit grading into their day.
-The experts were the support staff answering those tickets anyway. They graded each draft as they picked up its ticket and pasted the good ones into their reply. Ten experts and one developer shared a single queue. My follow-up questions waited there, next to the ticket, instead of in direct messages.
-
-Once the experts grade steadily, the next bottleneck is me: turning their comments into plans for the coding agent. Whatever takes that over still needs the experts to catch it drifting.
-
-Coding agents didn't remove the hard part. They made it obvious where it was.
+So make each grade quick to give, and keep the conversation in the review tool. I asked my questions there, next to the ticket, and the experts answered when they got to it. That is how one developer could work with ten of them without anyone sending a direct message.
 
 Full post in the first comment.
 
