@@ -12,7 +12,7 @@ Assets live under `src/assets/images/` with `public/images` symlinked for stable
 
 ## Reposts (LinkedIn, Confluence)
 
-Versions of blog posts for other channels live under `src/content/reposts/` and are never shown on the site. Read `src/content/reposts/AGENTS.md` before writing one.
+LinkedIn versions of blog posts are written by hand under `src/content/reposts/linkedin/` and never shown on the site. The Confluence copy is generated from the post by code and never rewritten. Read `src/content/reposts/AGENTS.md` before working on either.
 
 ## Figures: one style per post
 
