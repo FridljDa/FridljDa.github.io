@@ -101,6 +101,15 @@ export const Expert = (place: IconProps) => (
   </Place>
 );
 
+/** A team of subject-matter experts: one expert in front of two others. */
+export const Experts = (place: IconProps) => (
+  <Place {...place}>
+    <Expert x={-15} y={-7} scale={0.8} />
+    <Expert x={17} y={-7} scale={0.8} />
+    <Expert x={0} y={5} />
+  </Place>
+);
+
 /** A coding agent: a terminal window with a prompt. `typing` (0–1) grows the lines it writes. */
 export const Agent = ({ typing = 0, ...place }: IconProps & { typing?: number }) => {
   const lines = [0.9, 0.6, 0.75];

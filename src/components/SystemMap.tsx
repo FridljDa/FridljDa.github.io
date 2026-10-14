@@ -1,8 +1,8 @@
 /**
  * The whole system The Missing Compiler is about, as one map: customers write
  * to the support agent, and in shadow its drafts land in the feedback store.
- * The expert grades them in the review screen, and the grade and comment go
- * back into the store; the store and the review screen are the harness I
+ * A team of experts grades them in the review screen, and the grades and
+ * comments go back into the store; the store and the review screen are the harness I
  * built. I read the feedback there and add a comment of my own on how to fix
  * it. Each night the coding agent implements the tickets I have commented on,
  * checks itself against evals and CI (the compiler it has) and ships back
@@ -15,7 +15,7 @@
  * the rest greyed out, so the post reads as one system seen from different
  * angles. Static: rendered on the server, no JavaScript.
  */
-import { color, PALETTE, Person, Expert, Agent, Developer, Evals, Comment, Reply, type Point } from '../remotion/shared';
+import { color, PALETTE, Person, Experts, Agent, Developer, Evals, Comment, Reply, type Point } from '../remotion/shared';
 import { Dim, Badge, Tag, ArrowMarker } from './map-parts';
 
 type NodeId = 'customers' | 'tickets' | 'support' | 'store' | 'expert' | 'me' | 'coder' | 'tests' | 'it' | 'endpoints';
@@ -59,7 +59,7 @@ export const PRESETS = {
   overview: {
     focus: [],
     description:
-      'The whole system: customers write to the support agent; in shadow its drafts land in the feedback store, the expert grades them in the review screen, and grade and comment go back into the store, the harness I built. I read the feedback there and add a comment on how to fix it. Each night the coding agent implements the tickets I commented on, checks itself against evals and CI and ships into the support agent. For a new read tool, the coding agent writes a spec that I hand to IT, who build the endpoint.',
+      'The whole system: customers write to the support agent; in shadow its drafts land in the feedback store, a team of experts grades them in the review screen, each in their own time, and grades and comments go back into the store, the harness I built. I read the feedback there in batches and add a comment on how to fix each one. Each night the coding agent implements the tickets I commented on, checks itself against evals and CI and ships into the support agent. For a new read tool, the coding agent writes a spec that I hand to IT, who build the endpoint.',
   },
   'coding-agents': {
     focus: ['coder', 'compile', 'tests'],
@@ -69,7 +69,7 @@ export const PRESETS = {
   'no-compiler': {
     focus: ['customers', 'messages', 'support', 'expert'],
     small: true,
-    description: 'Highlighted: customer messages, the support agent that drafts the replies, and the expert, the only verdict a reply can get.',
+    description: 'Highlighted: customer messages, the support agent that drafts the replies, and the experts, the only verdict a reply can get.',
   },
   // "The loop we built": where the drafts land, then one map per step.
   harness: {
@@ -80,12 +80,12 @@ export const PRESETS = {
   grade: {
     focus: ['expert', 'review', 'graded', 'store'],
     small: true,
-    description: 'Highlighted: step 1, the expert grades a draft in the review screen; grade and comment go into the store.',
+    description: 'Highlighted: step 1, the experts grade drafts in the review screen; grades and comments go into the store.',
   },
   specify: {
     focus: ['store', 'comment', 'me'],
     small: true,
-    description: 'Highlighted: step 2, I read the expert’s comment from the store and store my own on how to fix it.',
+    description: 'Highlighted: step 2, I read the experts’ comments from the store and store my own on how to fix each one.',
   },
   implement: {
     focus: ['store', 'nightly', 'coder'],
@@ -107,7 +107,7 @@ export const PRESETS = {
   today: {
     focus: ['expert', 'coder'],
     tags: [{ on: 'expert', text: 'Bottleneck' }],
-    description: 'Today: the coding agent writes the code; the bottleneck is the expert’s grading.',
+    description: 'Today: the coding agent writes the code; the bottleneck is the experts’ grading.',
   },
   endpoints: {
     focus: ['coder', 'spec', 'it', 'build', 'endpoints', 'reads', 'support'],
@@ -119,13 +119,13 @@ export const PRESETS = {
   shadow: {
     focus: ['tickets', 'replay', 'support'],
     small: true,
-    description: 'Highlighted: old tickets replayed through the support agent offline, with no expert to grade the replies.',
+    description: 'Highlighted: old tickets replayed through the support agent offline, with no experts to grade the replies.',
   },
   'review-screen': {
     focus: ['expert', 'review', 'graded', 'harness'],
     tags: [{ on: 'expert', text: 'Build this' }],
     small: true,
-    description: 'Highlighted: the expert’s review screen, the part worth building. The store behind it stays greyed out.',
+    description: 'Highlighted: the experts’ review screen, the part worth building. The store behind it stays greyed out.',
   },
   'next-bottleneck': {
     focus: ['me'],
@@ -143,7 +143,7 @@ export const PRESETS = {
     focus: ['customers', 'messages', 'support', 'drafts', 'store', 'review', 'expert', 'graded', 'harness'],
     tags: [{ on: 'expert', text: 'Build first' }],
     small: true,
-    description: 'Highlighted: the shadow path, the store and the expert’s review screen, the first thing to build.',
+    description: 'Highlighted: the shadow path, the store and the experts’ review screen, the first thing to build.',
   },
 } satisfies Record<string, Preset>;
 
@@ -334,7 +334,7 @@ const LABELS: Partial<Record<NodeId, string>> = {
   customers: 'Customers',
   tickets: 'Old tickets',
   support: 'Support agent',
-  expert: 'Expert',
+  expert: 'Experts',
   me: 'Me',
   coder: 'Coding agent',
   tests: 'Evals & CI',
@@ -406,14 +406,14 @@ function NodeIcon({ id, at, agentTranslates, meCodes }: { id: NodeId; at: Point;
     case 'expert':
       return (
         <g>
-          {/* The review screen, with the expert in front of it */}
+          {/* The review screen, with the experts in front of it */}
           <rect x={x - 88} y={y - 44} width={124} height={84} rx={8} fill={color('node-bg')} stroke={color('text')} strokeWidth={2.5} />
           <rect x={x - 78} y={y - 34} width={50} height={8} rx={3} fill={color('node-border')} />
           <rect x={x - 78} y={y - 20} width={92} height={6} rx={3} fill={color('edge')} />
           <rect x={x - 78} y={y - 8} width={80} height={6} rx={3} fill={color('edge')} />
           <rect x={x - 78} y={y + 10} width={22} height={18} rx={4} fill={color('ok')} />
           <rect x={x - 50} y={y + 10} width={22} height={18} rx={4} fill={color('bad')} />
-          <Expert x={x + 62} y={y + 8} scale={1.55} />
+          <Experts x={x + 66} y={y + 6} scale={1.45} />
         </g>
       );
     case 'me':
