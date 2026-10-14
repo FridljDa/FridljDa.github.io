@@ -20,10 +20,11 @@ const blog = defineCollection({
 /**
  * LinkedIn versions of blog posts, written by hand and never listed on the
  * site. The filename is the post's slug and the body is the post text, kept
- * as plain text. See src/content/reposts/AGENTS.md.
+ * as plain text. See src/content/reposts/linkedin/AGENTS.md, which the
+ * pattern leaves out.
  */
 const linkedin = defineCollection({
-  loader: glob({ pattern: '*.md', base: './src/content/reposts/linkedin' }),
+  loader: glob({ pattern: ['*.md', '!AGENTS.md'], base: './src/content/reposts/linkedin' }),
   schema: z.object({
     status: z.enum(['draft', 'posted']).default('draft'),
     postedAt: z.coerce.date().optional(),
