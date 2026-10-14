@@ -16,7 +16,7 @@ So grading did two jobs. It was the check a coding agent gets for free. And it w
 
 Their time set the pace. Grading is one more task in a day that is already full, for people who may suspect they're training their own replacement.
 
-We built the loop around their time. One developer, ten experts, and no direct messages: every grade and comment went into a store next to its ticket. Each expert graded a batch when their day had room. I went through the comments in one sitting, asked follow-up questions right there, and they answered when they got to it. A nightly run picked up every fix at once.
+We built the loop around their time. One developer, ten experts, and no direct messages: every grade and comment went into a store next to its ticket. Each expert graded a batch when their day had room. I went through the comments in one sitting, asked follow-up questions right there, and they answered when they got to it. A nightly run picked up every fix at once, and each rejected ticket went back into the shared queue until an expert approved it.
 
 The one handoff outside the store, endpoints from IT, ran over Teams: two coding agents, with a person on each end passing messages between them.
 

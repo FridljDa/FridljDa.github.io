@@ -12,7 +12,9 @@
  *   plan another fix while I wait.
  * - Night: the coding agent's nightly run takes all my plans at once and grows
  *   the DAG: two new leaves and a second parent for one of them.
- * - Day 2: customers with the same requests reach the new leaves and get checks.
+ * - Day 2: I resubmit the three rejected tickets. Each runs again from the
+ *   review tool, reaches its new leaf, and goes back into the shared queue,
+ *   where the experts approve it.
  *
  * Two layouts of the same scene: `wide` (16:9) and `tall` for phones, with the
  * DAG on top and the experts, store, me and the coding agent below it.
@@ -117,6 +119,8 @@ interface Visit {
   /** Frames after the day's first customer that this one writes in, so they overlap. */
   offset: number;
   grows?: Growth;
+  /** A rejected day-1 ticket, by its place among the crosses, resubmitted from the review tool. */
+  resubmits?: number;
 }
 
 // What the three crosses of day 1 grow, in the order the night grows them:
@@ -135,10 +139,11 @@ const DAY_1: Visit[] = [
   { offset: 100, path: ['cards', 'cardsOther'], grows: SECOND_PARENT },
 ];
 
+// The same three tickets, resubmitted once the night has fixed them.
 const DAY_2: Visit[] = [
-  { offset: 0, path: ['access', 'reset'] },
-  { offset: 20, path: ['access', 'locked'] },
-  { offset: 40, path: ['cards', 'locked'] },
+  { offset: 0, path: ['access', 'reset'], resubmits: 0 },
+  { offset: 20, path: ['access', 'locked'], resubmits: 1 },
+  { offset: 40, path: ['cards', 'locked'], resubmits: 2 },
 ];
 
 /** Parts of the DAG that only exist once the night has grown them. */
@@ -149,6 +154,8 @@ const GROWN_EDGES = new Set(GROWTHS.map((g) => edgeKey(...g.edge)));
 // read before anything moves.
 const LEAD = 30;
 const ENTER = 10;
+// A resubmitted ticket travels from the review tool back to the root.
+const RESUBMIT = 30;
 const HOP = 11;
 const TO_EXPERT = 14;
 // Comments move at about two thirds of the speed of the messages: the
@@ -191,6 +198,8 @@ interface Layout {
   nightly: Point & { anchor: 'start' | 'middle' };
   /** Where "Day 1", "Night" and "Day 2" go. */
   day: Point;
+  /** A resubmitted ticket's way from the review tool to the root: start, two control points, end. */
+  resubmit: [Point, Point, Point, Point];
 }
 
 export const LAYOUTS = {
@@ -216,6 +225,8 @@ export const LAYOUTS = {
     labelSize: 21,
     nightly: { x: 866, y: 372, anchor: 'start' },
     day: { x: 24, y: 40 },
+    // Under the DAG, entering the root from below.
+    resubmit: [{ x: 796, y: 304 }, { x: 760, y: 530 }, { x: 196, y: 540 }, { x: 196, y: ROOT.y + ROOT.r }],
   },
   tall: {
     width: 540,
@@ -239,6 +250,8 @@ export const LAYOUTS = {
     labelSize: 25,
     nightly: { x: 270, y: 856, anchor: 'middle' },
     day: { x: 20, y: 44 },
+    // Up the left edge, left of the experts and clear of the DAG's first column.
+    resubmit: [{ x: 60, y: 820 }, { x: 0, y: 800 }, { x: 4, y: 470 }, { x: 34, y: ROOT.y + 70 + ROOT.r }],
   },
 } satisfies Record<string, Layout>;
 
@@ -257,16 +270,18 @@ interface Timed extends Visit {
   gradeAt: number;
 }
 
-const schedule = (visits: Visit[], from: number, firstIndex: number): Timed[] =>
+const enterOf = (visit: Visit) => (visit.resubmits === undefined ? ENTER : RESUBMIT);
+
+const schedule = (visits: Visit[], from: number, firstIndex: number, colors?: string[]): Timed[] =>
   visits.map((visit, i) => {
     const index = firstIndex + i;
     const start = from + visit.offset;
-    const reach = visit.path.map((_, h) => start + ENTER + HOP * (h + 1));
+    const reach = visit.path.map((_, h) => start + enterOf(visit) + HOP * (h + 1));
     const replyAt = reach[reach.length - 1] + 6;
     return {
       ...visit,
       index,
-      color: PALETTE[index % PALETTE.length],
+      color: visit.resubmits === undefined ? PALETTE[index % PALETTE.length] : colors![visit.resubmits],
       ok: !visit.grows,
       slot: i % 3,
       start,
@@ -320,7 +335,7 @@ const SPARK_AT = TYPE_AT + TYPING;
 const GROW_AT = GROWTHS.map((_, k) => SPARK_AT + 9 * k + SPARK);
 
 const DAY_2_AT = Math.max(...GROW_AT) + GROW + 16;
-const SECOND = schedule(DAY_2, DAY_2_AT + 16, DAY_1.length);
+const SECOND = schedule(DAY_2, DAY_2_AT + 16, DAY_1.length, CROSSES.map((v) => v.color));
 const VISITS = [...FIRST, ...SECOND];
 
 CROSSES.forEach((v, k) => {
@@ -455,7 +470,7 @@ export const ShadowLoop = ({ layout = 'wide' }: { layout?: LayoutName }) => {
     let best: { color: string; amount: number } | undefined;
     for (const v of active) {
       const i = v.path.indexOf(id as Exclude<Id, 'root'>);
-      const from = id === 'root' ? v.start + ENTER : i >= 0 ? v.reach[i] : Infinity;
+      const from = id === 'root' ? v.start + enterOf(v) : i >= 0 ? v.reach[i] : Infinity;
       const amount = lit(frame, v, from);
       if (amount > 0 && (!best || amount > best.amount)) best = { color: v.color, amount };
     }
@@ -652,11 +667,20 @@ export const ShadowLoop = ({ layout = 'wide' }: { layout?: LayoutName }) => {
           const leafOut = outPoint(last);
           const parts: ReactNode[] = [];
 
-          // The customer steps up, and leaves once their reply is graded.
+          // The customer steps up, and leaves once their reply is graded. A resubmitted
+          // ticket has no customer waiting: it comes back from the review tool.
           const enter = progress(frame, v.start, v.start + ENTER);
           const leave = progress(frame, v.gradeAt, v.gradeAt + 12);
           const stand = L.customers[v.slot];
-          parts.push(
+          if (v.resubmits !== undefined) {
+            if (frame < v.start + RESUBMIT) {
+              const t = progress(frame, v.start, v.start + RESUBMIT);
+              const [a, b, c, d] = L.resubmit;
+              const u = 1 - t;
+              const at = (k: 'x' | 'y') => u * u * u * a[k] + 3 * u * u * t * b[k] + 3 * u * t * t * c[k] + t * t * t * d[k];
+              parts.push(<circle key="resubmit" cx={at('x')} cy={at('y')} r={9} fill={v.color} opacity={progress(frame, v.start, v.start + 4)} />);
+            }
+          } else parts.push(
             <Person
               key="customer"
               x={stand.x + L.walkIn.x * (1 - enter)}
@@ -668,7 +692,7 @@ export const ShadowLoop = ({ layout = 'wide' }: { layout?: LayoutName }) => {
           );
 
           // The message travels root → parent → leaf.
-          const travelStart = v.start + ENTER;
+          const travelStart = v.start + enterOf(v);
           const arrive = v.reach[v.reach.length - 1];
           if (frame >= travelStart && frame < arrive + 6) {
             const hop = Math.min(Math.floor((frame - travelStart) / HOP), v.path.length - 1);
