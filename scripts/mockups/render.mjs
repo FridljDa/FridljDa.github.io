@@ -11,7 +11,8 @@
  * scripts/mockups/sme-review-screen.html at each stage of the loop to
  * review-screen-<stage>.png, and the customer's message on its own to
  * customer-message.png, both in src/assets/images/blog/the-missing-compiler/,
- * plus the whole screen, light only, for the post's LinkedIn repost; and
+ * plus the whole screen and linkedin-verdict.html, light only, for the post's
+ * LinkedIn repost; and
  * scripts/mockups/support-message.html, its customer message and the
  * extraction figure, to src/assets/images/blog/first-level-support-automation/.
  * Any other file without --out is written next to its HTML source.
@@ -38,6 +39,7 @@ const DEFAULT_TARGETS = [
     out: `${COMPILER_DIR}/review-screen-${stage}.png`,
   })),
   { file: DEFAULT_FILE, selector: '#mockup', out: `${COMPILER_DIR}/linkedin/review-screen.png`, lightOnly: true },
+  { file: 'scripts/mockups/linkedin-verdict.html', selector: '#verdict', out: `${COMPILER_DIR}/linkedin/verdict.png`, lightOnly: true },
   { file: DEFAULT_FILE, selector: '#customer-message', out: `${COMPILER_DIR}/customer-message.png` },
   { file: SUPPORT_FILE, selector: '#customer-message', out: `${SUPPORT_DIR}/customer-message.png` },
   { file: SUPPORT_FILE, selector: '#extraction', out: `${SUPPORT_DIR}/extraction.png` },
