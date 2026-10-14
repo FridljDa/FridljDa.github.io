@@ -18,8 +18,4 @@ LinkedIn versions of blog posts are written by hand: read `src/content/reposts/l
 
 ## Figures: one style per post
 
-All figures within a blog post share one visual style: the palette in `src/components/loop-animation.css`, the icons in `src/remotion/shared.tsx`, and short labels instead of explanatory text inside figures. Explanations go in the post's prose or a caption. Raster mockups are rendered in a light and a dark version and shown with `<ThemedImage>`. The Missing Test Suite opens every section with `<SystemMap preset="..." />`, the same map with that section's part highlighted. Architecture of a First-Level Support Automation does the same with `<PipelineMap preset="..." />`, and follows its running example through each step with `<PipelineFigure name="..." />` (`src/components/PipelineFigures.tsx`). Mockups come from `scripts/mockups/` via `npm run mockup:png`; Confluence PNGs of the drawn figures via `npm run confluence:figures`.
-
-## Animated figures (Remotion)
-
-Animations in posts are Remotion compositions in `src/remotion/`, embedded with `<LoopAnimation name="..." />` (`src/components/LoopAnimation.astro`). Every frame is a pure function of the frame number, and the last frame is the resting state: reduced motion and the Confluence copy show it as a still. Keep text inside them to short labels. After changing a composition, regenerate its PNG with `npm run confluence:figures` (dev server running) and commit only the PNGs that changed on purpose.
+All figures within a blog post share one visual style. Drawn figures, mockups and the section maps: `src/components/AGENTS.md`. Animations: `src/remotion/AGENTS.md`.
