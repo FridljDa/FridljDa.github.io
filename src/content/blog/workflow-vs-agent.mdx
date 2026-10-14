@@ -19,11 +19,11 @@ The first architectural decision in an LLM automation is how much of the work th
 
 Customers wrote in to our first-level support team at Northstar Bank with messages like this:
 
-<ThemedImage src="/images/blog/the-missing-compiler/customer-message.png" alt={"Customer message: Hi, I'm Alex Carter and I bank with your Riverton branch. My account number is NSB01234 and I can't get in any more; it keeps saying the account is locked. Can you help me get back in?"} />
+<ThemedImage src="/images/blog/the-missing-test-suite/customer-message.png" alt={"Customer message: Hi, I'm Alex Carter and I bank with your Riverton branch. My account number is NSB01234 and I can't get in any more; it keeps saying the account is locked. Can you help me get back in?"} />
 
 The running example is based on a real project, but the details have been changed to protect the client's privacy.
 
-Two facts pushed us toward code. First, no model was trained on Northstar's escalation rules or on Alex's account. Second, no test can tell us whether a reply to Alex is right, the way a test suite tells a coding agent its code works; someone who knows the bank has to read the reply. [The Missing Compiler](/post/the-missing-compiler) makes the longer argument for the second; this post is about who decides the order of operations.
+Two facts pushed us toward code. First, no model was trained on Northstar's escalation rules or on Alex's account. Second, no test can tell us whether a reply to Alex is right, the way a test suite tells a coding agent its code works; someone who knows the bank has to read the reply. [The Missing Test Suite](/post/the-missing-test-suite) makes the longer argument for the second; this post is about who decides the order of operations.
 
 ---
 
@@ -214,4 +214,4 @@ The caveats are real, though:
 
 ## What actually settles it
 
-Neither design tells you which cells of that grid matter. A workflow makes you guess them up front; an agent lets you skip writing them down. Only the people who know the business can settle which paths are worth freezing into code, and they settle it by grading the system's drafts. So next time I'd [get them grading](/post/the-missing-compiler) before committing to a tree, and [work out what the automation would actually save](/post/approval-rate-is-not-savings) before building anything.
+Neither design tells you which cells of that grid matter. A workflow makes you guess them up front; an agent lets you skip writing them down. Only the people who know the business can settle which paths are worth freezing into code, and they settle it by grading the system's drafts. So next time I'd [get them grading](/post/the-missing-test-suite) before committing to a tree, and [work out what the automation would actually save](/post/approval-rate-is-not-savings) before building anything.

@@ -47,7 +47,7 @@ We classify the message against a **rooted DAG of intents, biased toward depth 2
 
 **Two narrow calls beat one wide classifier.** Each parent exposes only its own children as a typed `Literal`, so unrelated categories never compete. A shared leaf simply appears in more than one parent's options.
 
-**Expert feedback grows the DAG.** In shadow deployment, subject-matter experts graded every draft. A request they kept flagging in an "Other" bucket became a new leaf; one that needed an existing leaf's handling gave that leaf a second parent. [The Missing Compiler](/post/the-missing-compiler) covers that loop.
+**Expert feedback grows the DAG.** In shadow deployment, subject-matter experts graded every draft. A request they kept flagging in an "Other" bucket became a new leaf; one that needed an existing leaf's handling gave that leaf a second parent. [The Missing Test Suite](/post/the-missing-test-suite) covers that loop.
 
 <LoopAnimation
   name="shadow-loop"

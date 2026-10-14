@@ -1,11 +1,11 @@
 /**
- * The whole system The Missing Compiler is about, as one map: customers write
+ * The whole system The Missing Test Suite is about, as one map: customers write
  * to the support agent, and in shadow its drafts land in the review tool I
  * built, a review screen with a store behind it. The tool sits between a team
  * of experts and me: they grade drafts and comment there, I read the comments
  * and add my own on how to fix each one, and nobody messages anybody directly.
  * Each night the coding agent implements the tickets I have commented on,
- * checks itself against evals and CI (the compiler it has) and ships back
+ * checks itself against evals and CI (the test suite it has) and ships back
  * into the support agent. For a new read tool the coding agent writes a spec,
  * which I hand to IT, the one handoff outside the review tool; their endpoint
  * becomes the support agent's read tool. Old tickets, the offline replay that
@@ -27,7 +27,7 @@ type EdgeId =
   | 'comment'
   | 'plan'
   | 'nightly'
-  | 'compile'
+  | 'checks'
   | 'ships'
   | 'spec'
   | 'build'
@@ -61,11 +61,11 @@ export const PRESETS = {
       'The whole system: customers write to the support agent; in shadow its drafts land in the review tool I built, a review screen with a store behind it. A team of experts grades them there, each in their own time, and I read their comments there in batches and add my own on how to fix each one; nobody messages anybody directly. Each night the coding agent implements the tickets I commented on, checks itself against evals and CI and ships into the support agent. For a new read tool, the coding agent writes a spec that I hand to IT, the one handoff outside the review tool, and IT build the endpoint.',
   },
   'coding-agents': {
-    focus: ['coder', 'compile', 'tests'],
+    focus: ['coder', 'checks', 'tests'],
     small: true,
     description: 'Highlighted: the coding agent and its evals and CI, the verdict it gets on every attempt.',
   },
-  'no-compiler': {
+  'no-test-suite': {
     focus: ['customers', 'messages', 'support', 'expert'],
     small: true,
     description: 'Highlighted: customer messages, the support agent that drafts the replies, and the experts, the only verdict a reply can get.',
@@ -92,7 +92,7 @@ export const PRESETS = {
     description: 'Highlighted: step 3, the coding agent’s nightly run takes the tickets I commented on from the review tool and implements them.',
   },
   check: {
-    focus: ['coder', 'compile', 'tests'],
+    focus: ['coder', 'checks', 'tests'],
     small: true,
     description: 'Highlighted: step 4, evals and CI check the coding agent’s change, the same check a coding agent gets on every attempt.',
   },
@@ -167,11 +167,11 @@ interface Layout {
    * both ends, and `label` a short word next to it.
    */
   edges: Record<
-    Exclude<EdgeId, 'compile'>,
+    Exclude<EdgeId, 'checks'>,
     { d: string; dashed?: boolean; twoWay?: boolean; rides?: Ride[]; label?: Point & { text: string } }
   >;
   /** The coding agent's loop with evals and CI: there and back. */
-  compile: [string, string];
+  checks: [string, string];
   labels: Record<NodeId, Point & { anchor?: 'start' | 'middle' | 'end' }>;
   badges: Partial<Record<NodeId, Point>>;
   /** Where a preset's tag goes, by the part it marks. */
@@ -221,7 +221,7 @@ const WIDE: Layout = (() => {
       build: { d: `M${N.it.x - 46},470 H${N.endpoints.x + 46}` },
       reads: { d: `M${N.endpoints.x},${N.endpoints.y - 34} C${N.endpoints.x},380 470,330 ${N.support.x + 88},330` },
     },
-    compile: [
+    checks: [
       `M${N.coder.x + 48},286 C700,240 790,240 ${N.tests.x - 36},282`,
       `M${N.tests.x - 36},318 C790,360 700,360 ${N.coder.x + 48},314`,
     ],
@@ -300,7 +300,7 @@ const TALL: Layout = (() => {
       build: { d: 'M434,676 H188' },
       reads: { d: 'M116,666 C36,630 28,280 60,262' },
     },
-    compile: ['M448,206 C418,180 422,140 454,114', 'M508,126 C542,148 544,178 514,202'],
+    checks: ['M448,206 C418,180 422,140 454,114', 'M508,126 C542,148 544,178 514,202'],
     labels: {
       tickets: { x: 30, y: 40, anchor: 'start' },
       customers: { x: 236, y: 40 },
@@ -510,9 +510,9 @@ function MapSvg({ layout, preset, id, className }: { layout: Layout; preset: Pre
         );
       })}
 
-      {/* The coding agent's own loop: the compiler it gets for free */}
-      <Dim on={on('compile')}>
-        {layout.compile.map((d) => (
+      {/* The coding agent's own loop: the verdict it gets for free */}
+      <Dim on={on('checks')}>
+        {layout.checks.map((d) => (
           <path key={d} d={d} fill="none" stroke={color('ok')} strokeWidth={3} markerEnd={`url(#${marker})`} />
         ))}
       </Dim>

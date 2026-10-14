@@ -1,8 +1,8 @@
 import { test, expect } from '@playwright/test';
 
-const POST = '/post/the-missing-compiler';
+const POST = '/post/the-missing-test-suite';
 
-test.describe('System map in The Missing Compiler', () => {
+test.describe('System map in The Missing Test Suite', () => {
   test('every section opens with the map, its part highlighted', async ({ page }) => {
     await page.goto(POST);
     const headings = page.locator('.prose h2, .prose h3');

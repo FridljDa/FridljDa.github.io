@@ -10,7 +10,7 @@
  * With no arguments, renders every mockup in DEFAULT_TARGETS:
  * scripts/mockups/sme-review-screen.html at each stage of the loop to
  * review-screen-<stage>.png, and the customer's message on its own to
- * customer-message.png, both in src/assets/images/blog/the-missing-compiler/,
+ * customer-message.png, both in src/assets/images/blog/the-missing-test-suite/,
  * plus the whole screen and linkedin-verdict.html, light only, for the post's
  * LinkedIn repost; and
  * scripts/mockups/support-message.html, its customer message and the
@@ -28,7 +28,7 @@ import { pathToFileURL } from 'node:url';
 import { chromium } from 'playwright';
 
 const DEFAULT_FILE = 'scripts/mockups/sme-review-screen.html';
-const COMPILER_DIR = 'src/assets/images/blog/the-missing-compiler';
+const TEST_SUITE_DIR = 'src/assets/images/blog/the-missing-test-suite';
 const SUPPORT_FILE = 'scripts/mockups/support-message.html';
 const SUPPORT_DIR = 'src/assets/images/blog/first-level-support-automation';
 const DEFAULT_TARGETS = [
@@ -36,11 +36,11 @@ const DEFAULT_TARGETS = [
     file: DEFAULT_FILE,
     selector: '#mockup',
     stage,
-    out: `${COMPILER_DIR}/review-screen-${stage}.png`,
+    out: `${TEST_SUITE_DIR}/review-screen-${stage}.png`,
   })),
-  { file: DEFAULT_FILE, selector: '#mockup', out: `${COMPILER_DIR}/linkedin/review-screen.png`, lightOnly: true },
-  { file: 'scripts/mockups/linkedin-verdict.html', selector: '#verdict', out: `${COMPILER_DIR}/linkedin/verdict.png`, lightOnly: true },
-  { file: DEFAULT_FILE, selector: '#customer-message', out: `${COMPILER_DIR}/customer-message.png` },
+  { file: DEFAULT_FILE, selector: '#mockup', out: `${TEST_SUITE_DIR}/linkedin/review-screen.png`, lightOnly: true },
+  { file: 'scripts/mockups/linkedin-verdict.html', selector: '#verdict', out: `${TEST_SUITE_DIR}/linkedin/verdict.png`, lightOnly: true },
+  { file: DEFAULT_FILE, selector: '#customer-message', out: `${TEST_SUITE_DIR}/customer-message.png` },
   { file: SUPPORT_FILE, selector: '#customer-message', out: `${SUPPORT_DIR}/customer-message.png` },
   { file: SUPPORT_FILE, selector: '#extraction', out: `${SUPPORT_DIR}/extraction.png` },
 ];

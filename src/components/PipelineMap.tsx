@@ -6,7 +6,7 @@
  * called "Other" has no plan in code and goes to the fallback agent instead.
  *
  * Each section of the post shows the same map with its part highlighted and
- * the rest greyed out, like SystemMap.tsx does for the-missing-compiler.
+ * the rest greyed out, like SystemMap.tsx does for the-missing-test-suite.
  * Static: rendered on the server, no JavaScript.
  */
 import { color, PALETTE, Agent, Envelope, Evals, Reply, Store, type Point } from '../remotion/shared';

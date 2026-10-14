@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-const POST = '/post/the-missing-compiler';
+const POST = '/post/the-missing-test-suite';
 
 test.describe('Confluence copy of a post', () => {
   test('body survives a paste: absolute URLs, no heading anchors, no SVG', async ({ page }) => {
@@ -19,11 +19,11 @@ test.describe('Confluence copy of a post', () => {
     for (const url of urls) {
       expect(url).toMatch(/^https:\/\//);
     }
-    expect(urls).toContain('https://danielfridljand.de/images/blog/the-missing-compiler/shadow-timeline.png');
-    expect(urls).toContain('https://danielfridljand.de/images/blog/the-missing-compiler/map-grade.png');
+    expect(urls).toContain('https://danielfridljand.de/images/blog/the-missing-test-suite/shadow-timeline.png');
+    expect(urls).toContain('https://danielfridljand.de/images/blog/the-missing-test-suite/map-grade.png');
     // Themed figures paste their light version only.
-    expect(urls).toContain('https://danielfridljand.de/images/blog/the-missing-compiler/review-screen-graded.png');
-    expect(urls).not.toContain('https://danielfridljand.de/images/blog/the-missing-compiler/review-screen-graded-dark.png');
+    expect(urls).toContain('https://danielfridljand.de/images/blog/the-missing-test-suite/review-screen-graded.png');
+    expect(urls).not.toContain('https://danielfridljand.de/images/blog/the-missing-test-suite/review-screen-graded-dark.png');
   });
 
   test('the post itself keeps its drawn figures', async ({ page }) => {

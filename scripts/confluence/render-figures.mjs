@@ -19,18 +19,18 @@ import { chromium } from 'playwright';
 
 const FIGURES = [
   {
-    post: 'the-missing-compiler',
+    post: 'the-missing-test-suite',
     selector: '.shadow-timeline',
-    out: 'src/assets/images/blog/the-missing-compiler/shadow-timeline.png',
+    out: 'src/assets/images/blog/the-missing-test-suite/shadow-timeline.png',
   },
   {
-    post: 'the-missing-compiler',
+    post: 'the-missing-test-suite',
     selector: '.approval-curve',
-    out: 'src/assets/images/blog/the-missing-compiler/approval-curve.png',
+    out: 'src/assets/images/blog/the-missing-test-suite/approval-curve.png',
   },
 ];
 
-const POSTS = ['the-missing-compiler', 'first-level-support-automation', 'scrap-conditional-independence'];
+const POSTS = ['the-missing-test-suite', 'first-level-support-automation', 'scrap-conditional-independence'];
 
 // Figures are drawn at 720px wide; the rest is the white margin around them.
 const FIGURE_WIDTH = 768;
