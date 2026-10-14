@@ -18,8 +18,6 @@ My own job was designing the system. It had to meet the requirements and split d
 
 I also designed the loop around the experts, to make grading easy for them, because their time was the constraint. They were the support staff answering those tickets anyway, so they graded each draft as they picked up its ticket, on a screen with the customer's message and the draft. An approved draft was a reply they didn't have to write. My follow-up questions waited next to the ticket instead of in direct messages, which is how one developer could work with ten experts.
 
-Coding agents didn't remove the hard part. They made it obvious where it was.
-
 Full post in the first comment.
 
 #AIAgents #LLM #Evals #CustomerSupport
