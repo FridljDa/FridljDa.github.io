@@ -14,7 +14,7 @@ Goldratt's theory of constraints says fixing a bottleneck doesn't remove it; it 
 
 The experts are also where the rules live. They can rarely list them up front, but shown a draft, they see at a glance what's wrong with it. One rejected draft, which asked a locked-out customer for details we already had, brought out two rules nobody had written down. So grading does two jobs: it's the check a coding agent gets from its tests, and it's how the rules get written down.
 
-My own job was design. The architecture had to meet the requirements and split decisions between code and model the way I wanted. It also had to turn most expert feedback into a local change: a new intent, or a new branch in the rules behind one. A change that local fits in two sentences, and I could hand it to a coding agent and trust the result.
+My own job was designing the system. It had to meet the requirements and split decisions between code and model the way I wanted. And it had to turn most expert feedback into a change in one place: a new kind of request for the system to recognise, or a new rule for one it already knew. A change like that I could describe in two sentences and trust a coding agent to build. For the locked-out customer, the fix and its eval case were done by the next morning.
 
 I also designed the loop around the experts, to make grading easy for them, because their time was the constraint. They were the support staff answering those tickets anyway, so they graded each draft as they picked up its ticket, on a screen with the customer's message and the draft. An approved draft was a reply they didn't have to write. My follow-up questions waited next to the ticket instead of in direct messages, which is how one developer could work with ten experts.
 
