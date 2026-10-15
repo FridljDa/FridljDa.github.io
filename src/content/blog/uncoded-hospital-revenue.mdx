@@ -5,26 +5,14 @@ tags:
   - AI
   - Architecture
   - Healthcare
-description: "German hospitals lose revenue on care that was given and documented but never coded. Working one vague design problem from a black box to concrete components: cheap signals find candidate codes, an LLM confirms them and cites the page, a certified grouper prices them, and a coder decides."
+description: "German hospitals lose revenue on care that was given and documented but never coded. A design for finding it: cheap signals find candidate codes, an LLM confirms them and cites the page, a certified grouper prices them, and a coder decides."
 ---
 
 import DesignMap from '../../components/DesignMap.astro';
 import DesignFigure from '../../components/DesignFigure.astro';
 
 ## TL;DR
-German hospitals are paid per case, by codes. When something was treated and documented but never coded, the hospital simply doesn't get paid for it. "Design a system that fixes that" is a nicely vague problem, and this post works it the way I approach any vague design problem: settle the requirements, sketch the simplest design that works end to end, make each box concrete, dig into the tradeoffs of the part that matters most, and finish with evaluation, rollout and security. The map of the system starts as a black box and gains detail with every section. The result, in one line: cheap signals find candidate codes, an LLM only confirms them and must cite the page, a certified grouper prices them, and a coder decides. The hard parts are not throughput but integration, trust and evaluation.
-
-## The approach: narrow down step by step
-
-I narrow a vague problem down in five steps, each more concrete than the last, and use them as this post's sections:
-
-1. **Requirements.** Who uses it, at what scale, under which constraints.
-2. **A simple end-to-end design.** Abstract and technology-agnostic, with the data that flows between the steps.
-3. **Components.** Turn each abstract box into concrete building blocks, with the reason for each.
-4. **Tradeoffs.** For the part that matters most, the options, what each costs, and when to upgrade.
-5. **Finishing touches.** Evaluation, rollout to the next customer, security, how the work splits across a team, and how the system grows.
-
-Start simple, and only add complexity when something forces it. And keep the people in view: here they are coders with a queue, physicians with no time, and a Medizincontrolling department that answers to management for every euro.
+German hospitals are paid per case, by codes. Care that was given and documented but never coded is never paid for. This post designs a system that finds it, starting from what the system must do and getting more concrete with every section, so the map of the system starts as a black box and gains detail as it goes. In one line: cheap signals find candidate codes, an LLM only confirms them and must cite the page, a certified grouper prices them, and a coder decides. The hard parts are not throughput but integration, trust and evaluation, and the people who decide whether it works are coders with a queue, physicians with no time, and a Medizincontrolling department that answers to management for every euro.
 
 ## How a German hospital gets paid
 
@@ -42,7 +30,7 @@ The invoice goes to the patient's Krankenkasse, which can send it to the Medizin
 
 That second half is the one this design keeps coming back to. A system that only maximises revenue is an upcoding machine, and the 2027 rule punishes exactly that.
 
-## Step 1: Requirements
+## What the system must do
 
 <DesignMap preset="clarify" />
 
@@ -61,7 +49,7 @@ Before drawing anything, the problem needs boundaries. These are the ones I'd se
 
 The last point reshapes the whole design. This is not a system where the hard part is requests per second. The hard parts are getting data out of a dozen KIS installations, keeping the view of a case up to date as the record changes, and making coders trust suggestions enough to act on them. That decides where the rest of this post spends its time.
 
-## Step 2: A simple end-to-end design
+## The simplest design that works
 
 <DesignMap preset="end-to-end" />
 
@@ -84,7 +72,7 @@ The data between the steps is small and worth naming, because it is the interfac
 
 Two things already fall out of this. Suggestions point at a case *version*, so when the record changes we know which suggestions to re-check. And the grouper sits after the detectors, not inside them: the LLM proposes, deterministic certified software does the money math. I never want a model to tell a coder what a code is worth.
 
-## Step 3: Components
+## The components
 
 <DesignMap preset="components" />
 
@@ -104,7 +92,7 @@ Now each box becomes building blocks.
 
 **Write-back and labels.** Accepted codes go back into the KIS through the same adapter, so the hospital's system stays the record of truth. Decisions go to a labels table the evaluation reads.
 
-## Step 4: The life of one suggestion
+## The life of one suggestion
 
 <DesignMap preset="suggestion" />
 
@@ -127,7 +115,7 @@ The tradeoffs in this part:
 
 When to upgrade: add an LLM-based recall stage only once the cheap signals' misses are measured and worth the cost; move off brute-force counterfactuals only when grouper calls show up in the latency budget.
 
-## Step 5: Finishing touches
+## Running it: evaluation, rollout, security
 
 <DesignMap preset="finishing" />
 
@@ -135,10 +123,10 @@ When to upgrade: add an LLM-based recall stage only once the cheap signals' miss
 
 **Evaluation.** Coder decisions are the labels: cheap, fast and plentiful, but biased by whatever the queue showed them. MD audit outcomes are the real ground truth, months later and only for the few percent of cases that get audited. Coders also disagree with each other. In my support automation, approval rates ranged from 37 to 100 percent depending on the reviewer, on the same system, so I would measure each reviewer's agreement before trusting their labels. Offline replay is weaker than it looks, because you can't easily recreate what the record looked like at the moment a coder would have seen the suggestion. Running new detectors in shadow mode on live cases, logging what they would have suggested, is the honest test. [The Missing Test Suite](/post/the-missing-test-suite) makes the longer case for that, and for why the experts' review throughput is the real bottleneck.
 
-**Onboarding hospital number 20.** A new adapter, or a configuration of an existing one, a per-hospital overlay for house rules on top of the shared DKR rules, and a backfill of open cases. The yearly catalog updates for ICD-10-GM, OPS and the DRG catalog mean every rule, signal and grouper call is tied to a catalog year, versioned and tested like code. A case admitted in December and discharged in January is the edge case to test first.
+**Adding a hospital.** A new adapter, or a configuration of an existing one, a per-hospital overlay for house rules on top of the shared DKR rules, and a backfill of open cases. The yearly catalog updates for ICD-10-GM, OPS and the DRG catalog mean every rule, signal and grouper call is tied to a catalog year, versioned and tested like code. A case admitted in December and discharged in January is the edge case to test first.
 
-**Security.** German or EU hosting only, an LLM that runs there too, encryption, per-hospital isolation, and the audit log from step 3 that shows which data the model saw for each suggestion. Certifications like ISO 27001 and BSI C5 are table stakes for hospital customers.
+**Security.** German or EU hosting only, an LLM that runs there too, encryption, per-hospital isolation, and the case store's audit log, which shows which data the model saw for each suggestion. Certifications like ISO 27001 and BSI C5 are table stakes for hospital customers.
 
 **Evolution.** Once the case context store exists, the same view of a case powers the next products: drafting answers to MD queries from the same evidence, GOÄ billing for privately insured patients, and controlling dashboards on revenue at risk.
 
-**Team split.** Ingestion and adapters; the case store; detectors and rules; the grouper service; the review UI; and evaluation. The interfaces between them are the three records from step 2, which is why I'd name them early.
+**Contracts.** The three records from the simplest design (case version, suggestion, decision) are the contracts between the parts, so ingestion, detectors, the grouper service and the review UI can change independently.
