@@ -18,6 +18,13 @@ or a caption.
   Workflow or Agent does the same with `<DecisionMap preset="..." />`, and
   draws its running example with `<DecisionFigure name="..." />`
   (`DecisionFigures.tsx`).
+- **Section maps, the house style:** prefer them to prose. Show the whole
+  system once, then open each subsection with the same map, its part
+  highlighted and with its components, the rest greyed out by name only
+  (`Dim` in `map-parts.tsx`). Keep what a part does in the map, as short
+  labels, icons and amber tags, and keep the prose after it short: a few
+  bullets, not one big figure followed by a wall of text. The Uncoded
+  Hospital Revenue post does this with `<DesignMap preset="..." />`.
 - **Animations:** `<LoopAnimation name="..." />`; see `src/remotion/AGENTS.md`.
 - **Confluence:** a paste into Confluence drops inline SVG, so the drawn figures
   show a PNG in the Confluence copy (their `Astro.locals.confluence` branch).

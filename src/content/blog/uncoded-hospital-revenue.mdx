@@ -86,33 +86,55 @@ Two things already fall out of this. Each suggestion points at a case *version*,
 
 <DesignMap preset="components" />
 
-*The same six steps, each with the components that make it concrete.*
+*The same six steps, each with the components that make it concrete. Each part below highlights its step.*
 
-**Ingestion.** One adapter per KIS, translating HL7 v2 messages, FHIR resources or file drops into events on one internal case timeline: admission, transfer, new lab result, new document, discharge. Scans go through OCR. Two gotchas make this the component I'd expect to eat the most engineering time. Messages arrive out of order and get corrected or cancelled afterwards, so the adapter has to apply corrections rather than just append. And every hospital's installation is configured differently.
+### Ingestion and case store
 
-**Case store.** Postgres, with an append-only events table per case and a materialised current view. The log gives versioning and the audit log for free: for every suggestion we can show what the record looked like when it was made, and what the model saw. At a few hundred thousand cases a year, there is no sharding story.
+<DesignMap preset="store" />
 
-**Orchestration.** Each new case version starts a durable workflow, for example in [Temporal](/post/temporal-human-in-the-loop), keyed by case ID and version, so a message delivered twice runs once, and a question to a physician can wait days for its answer without a process waiting with it. Versions are debounced: ten lab results in an hour cause one re-run, not ten. Every detector, model and grouper result is cached on a hash of case version, catalog year and detector version, so a re-run only pays for what changed.
+- **Adapters:** one per KIS, turning HL7 v2 messages, FHIR resources and file drops into events on one timeline per case: admission, transfer, lab result, document, discharge. Scans go through OCR.
+- **Where the effort goes:** messages arrive out of order and get corrected or cancelled afterwards, so an adapter applies corrections instead of appending. And every hospital's installation is configured differently.
+- **Store:** Postgres, an append-only event log per case plus a materialised current view. The log gives versions and an audit log for free: for every suggestion, what the record looked like and what the model saw. A few hundred thousand cases a year need no sharding.
+- **Orchestration:** each new case version starts a durable workflow, for example in [Temporal](/post/temporal-human-in-the-loop), keyed by case and version. A message delivered twice runs once, and a question to a physician can wait days without a process waiting with it. Ten lab results in an hour cause one re-run, and results are cached per case version, catalog year and detector version, so a re-run only pays for what changed.
 
-**Detectors.** Here I'd split recall from precision. Cheap, high-recall signals run on every version: a lab value over a threshold, a positive nutrition screening, supplement drinks on the medication list, a procedure code without a matching diagnosis. They are code, fast, and free to run every time. Each candidate becomes a few fixed questions for the evidence selector. The documents are split into numbered passages, a search keeps the twenty most relevant to the candidate, and a decision model answers: which of these passages proves it, or none; was it treated; did a physician diagnose it.
+### Gap detectors
 
-A non-generative decision model, the kind TypeSafe [introduced with Jev](https://typesafe.ai/blog/introducing-system-one-models-and-jev) in September 2026, cannot write text at all: given a question and a fixed set of options, it returns a choice or a probability its maker calls calibrated, [typed](/post/pydantic-ai-type-safe-hybrid-workflows) like any other step. That suits this job better than a generative LLM. A citation chosen from numbered passages can't point at a quote that isn't there, which is a better story for an audit than checking generated quotes afterwards. And the probabilities give the thresholds for suggesting, asking and dropping, and the acceptance probability the worklist ranks by.
+<DesignMap preset="detect" />
+
+- **Cheap signals,** for recall: a lab value over a threshold, a positive nutrition screening, supplement drinks on the medication list, a procedure without a matching diagnosis. Code, fast, run on every version.
+- **Evidence selector,** for precision: the documents are split into numbered passages, a search keeps the twenty most relevant to the candidate, and a decision model answers a few fixed questions. Which passage proves it, or none? Was it treated? Did a physician diagnose it?
+- **Rule checks:** the mechanical DKR checks. Is this code combination valid, and does D003 hold given what the evidence says was done?
+
+A non-generative decision model, the kind TypeSafe [introduced with Jev](https://typesafe.ai/blog/introducing-system-one-models-and-jev) in September 2026, cannot write text at all: given a question and a fixed set of options, it returns a choice or a probability its maker calls calibrated, [typed](/post/pydantic-ai-type-safe-hybrid-workflows) like any other step. A citation chosen from numbered passages can't point at a quote that isn't there, which is a better story for an audit than checking generated quotes afterwards. And the probabilities set the thresholds for suggesting, asking and dropping.
 
 <DesignFigure name="selector" />
 
 *The evidence selector on the malnutrition case. The model's only possible answers are the passage numbers and "none of these", so whatever it cites is in the record.*
 
-A rule layer then encodes the mechanical DKR checks: is this code combination valid, does D003 hold given what the evidence says was done.
+### Grouper
 
-**Grouper.** The certified grouper as a service: case in, DRG and revenue out, deterministic and fast, milliseconds per run. To price a suggestion it runs the case twice, with and without the code.
+<DesignMap preset="grouper" />
 
-**Worklist.** Ranked by expected value: revenue delta times the probability the coder accepts, minus a penalty for audit risk. A code worth nothing still belongs on the case, since the guidelines ask for every diagnosis that meets their definition, so it ranks low rather than vanishing. Each suggestion shows the quote highlighted on its page, the DRG before and after, and one-click reject reasons. Suggestions that need one fact only the physician can supply become a question instead, bundled per case: one yes or no per case, not six interruptions.
+The certified grouper as a service: case in, DRG and revenue out, deterministic, milliseconds per run. It prices a suggestion the way the pricing figure above shows, by grouping the case with and without the code.
+
+### Worklist
+
+<DesignMap preset="worklist" />
+
+- **Ranked by expected value:** revenue delta times the probability the coder accepts, minus a penalty for audit risk. A code worth nothing still appears, ranked low, since the guidelines ask for every diagnosis that meets their definition.
+- **Evidence on screen:** the quote highlighted on its page, the DRG before and after, one-click reject reasons.
+- **Questions bundled:** a suggestion that needs a fact only the physician can supply becomes a question, one yes or no per case, not six interruptions.
 
 <DesignFigure name="worklist" />
 
 *What the coder sees for the running example: the kidney failure as a suggestion, with the evidence highlighted and the DRG before and after, and the malnutrition as a question for the physician.*
 
-**Write-back and labels.** Accepted codes go back into the KIS through the same adapter, so the hospital's system stays the record of truth. Many installations don't allow writing codes back at all, though; there the first version is a coder copying the code, and that is fine. Decisions go to a labels table the evaluation reads.
+### Write-back and labels
+
+<DesignMap preset="feedback" />
+
+- **Write-back:** accepted codes go into the KIS through the same adapter, so the hospital's system stays the record of truth. Many installations don't allow writing codes back; there the first version is a coder copying the code, and that is fine.
+- **Labels:** every decision goes to a labels table the evaluation reads.
 
 ## The life of one suggestion
 
