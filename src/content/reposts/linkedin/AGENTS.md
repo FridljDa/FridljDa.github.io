@@ -70,6 +70,17 @@ message or supporting points changed. Don't carry every new detail across.
   more". No preamble such as "I wrote a new blog post".
 - **Same voice as the blog:** first person, concrete, no hype or engagement
   bait ("Agree?", "Thoughts? 👇"). Keep the post's claims; do not add new ones.
+- **Lead with what I think, not with what went wrong.** Put the position
+  first and the project behind it as the experience it comes from, as The
+  Missing Test Suite's version does ("On a support automation I built…", "My
+  own job was designing the system"). An opening like "we did X; next time I
+  would do the other way round" reads as a confession; the same facts told as
+  where I found a design breaks read as expertise. Don't claim more projects
+  or experience than the post describes.
+- **Keep the client anonymous.** A post's running example (Northstar Bank,
+  Alex Carter) is invented to protect the real client, so never present it as
+  the project: "a support automation I built", not "a bank's support
+  automation". Details that are generic, such as a locked account, can stay.
 - **Link to the original** at `https://danielfridljand.de/post/<slug>`, in the
   text or in `firstComment`. A link in the text gets a preview card from the
   post's `og:image` only when no images are attached. Moving it to the first
