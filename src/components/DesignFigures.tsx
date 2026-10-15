@@ -781,6 +781,189 @@ function Ranking(_props: { id: string }) {
   );
 }
 
+/** Inside the evidence selector: from all passages to the few it reads, then the same questions for both running cases and the outcome they lead to. */
+function DetectorQuestions({ id }: { id: string }) {
+  const m = `${id}-arrow`;
+  const funnel = [
+    { n: '140', line: 'passages' },
+    { n: '20', line: 'kept by search' },
+    { n: '3', line: 'questions' },
+  ];
+  const cols = [318, 428];
+  type Answer = { text?: string; yes?: boolean; p?: string };
+  const rows: { q: string; a: [Answer, Answer] }[] = [
+    { q: 'Which passage proves it?', a: [{ text: 'passage 7' }, { text: 'passage 3' }] },
+    { q: 'Was it treated?', a: [{ yes: true, p: '0.91' }, { yes: true, p: '0.93' }] },
+    { q: 'Did a physician diagnose it?', a: [{ yes: true, p: '0.86' }, { yes: false, p: '0.95' }] },
+  ];
+  const top = 168;
+  const ROW = 54;
+  const outY = top + 40 + rows.length * ROW + 34;
+  return (
+    <svg viewBox={`0 0 480 ${outY + 30}`} role="img" aria-label={DESCRIPTIONS['detector-questions']} style={{ width: '100%', height: 'auto', fontFamily: 'inherit' }}>
+      <defs>
+        <ArrowMarker id={m} />
+      </defs>
+      {funnel.map((f, i) => {
+        const cx = 80 + i * 160;
+        return (
+          <g key={f.line}>
+            {i > 0 && arrow(m, `M${cx - 104},52 H${cx - 62}`)}
+            <rect x={cx - 56} y={20} width={112} height={64} rx={12} fill={color('node-bg')} stroke={color('added')} strokeWidth={2.5} />
+            <text x={cx} y={52} dy="0.35em" textAnchor="middle" fontSize={26} fontWeight={700} fill={color('text')}>
+              {f.n}
+            </text>
+            <text x={cx} y={104} dy="0.35em" textAnchor="middle" fontSize={15} fontWeight={600} fill={color('muted')}>
+              {f.line}
+            </text>
+          </g>
+        );
+      })}
+      {[
+        { title: 'Kidney', line: 'N17.93' },
+        { title: 'Malnutrition', line: 'E44.0' },
+      ].map((h, i) => (
+        <g key={h.title}>
+          <text x={cols[i]} y={top - 12} dy="0.35em" textAnchor="middle" fontSize={16} fontWeight={700} fill={color('text')}>
+            {h.title}
+          </text>
+          <text x={cols[i]} y={top + 10} dy="0.35em" textAnchor="middle" fontSize={14} fontWeight={600} fill={color('muted')}>
+            {h.line}
+          </text>
+        </g>
+      ))}
+      {rows.map((r, i) => {
+        const y = top + 40 + i * ROW + ROW / 2;
+        return (
+          <g key={r.q}>
+            {i % 2 === 0 && <rect x={8} y={y - ROW / 2} width={464} height={ROW} rx={8} fill={color('node-bg')} />}
+            <text x={18} y={y} dy="0.35em" fontSize={16} fontWeight={600} fill={color('text')}>
+              {r.q}
+            </text>
+            {r.a.map((ans, k) =>
+              ans.text ? (
+                <text key={k} x={cols[k]} y={y} dy="0.35em" textAnchor="middle" fontSize={15} fontWeight={700} fill={color('ok')}>
+                  {ans.text}
+                </text>
+              ) : (
+                <g key={k}>
+                  <Mark x={cols[k] - 22} y={y} yes={Boolean(ans.yes)} />
+                  <text x={cols[k] - 2} y={y} dy="0.35em" fontSize={14} fontWeight={600} fill={color('muted')}>
+                    {ans.p}
+                  </text>
+                </g>
+              ),
+            )}
+          </g>
+        );
+      })}
+      <Chip x={cols[0] - 46} y={outY} w={92} text="Suggest" tone="ok" />
+      <Chip x={cols[1] - 46} y={outY} w={92} text="Ask" tone="plain" />
+      <text x={18} y={outY} dy="0.35em" fontSize={16} fontWeight={600} fill={color('muted')}>
+        Leads to
+      </text>
+    </svg>
+  );
+}
+
+/** Passages a keyword search returns for malnutrition: four traps the selector must reject, and the one that proves it. */
+function Traps(_props: { id: string }) {
+  const rows: { text: string; label: string; ok?: boolean }[] = [
+    { text: 'No signs of malnutrition.', label: 'Negated' },
+    { text: 'Weight loss after surgery, 2023.', label: 'Earlier stay' },
+    { text: 'Dietitian consult if weight drops.', label: 'Only a plan' },
+    { text: 'Weight −10% (copied from 2023).', label: 'Copied forward' },
+    { text: 'Supplement drinks since day 4.', label: 'Current, treated', ok: true },
+  ];
+  const ROW = 62;
+  return (
+    <svg viewBox={`0 0 480 ${rows.length * ROW + 24}`} role="img" aria-label={DESCRIPTIONS.traps} style={{ width: '100%', height: 'auto', fontFamily: 'inherit' }}>
+      {rows.map((r, i) => {
+        const y = 16 + i * ROW + ROW / 2;
+        return (
+          <g key={r.label}>
+            <rect x={8} y={y - ROW / 2 + 5} width={464} height={ROW - 10} rx={10} fill={color('node-bg')} stroke={r.ok ? color('ok') : color('edge')} strokeWidth={r.ok ? 2.5 : 1.5} />
+            <Mark x={34} y={y} yes={Boolean(r.ok)} />
+            <text x={58} y={y} dy="0.35em" fontSize={15} fontWeight={600} fontStyle="italic" fill={color('text')}>
+              {r.text}
+            </text>
+            <text x={460} y={y} dy="0.35em" textAnchor="end" fontSize={14} fontWeight={700} fill={r.ok ? color('ok') : color('bad')}>
+              {r.label}
+            </text>
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
+
+/** A lane: a titled band with a timing note on the right. */
+function Lane({ y, h, title, note, role }: { y: number; h: number; title: string; note: string; role: Role }) {
+  return (
+    <g>
+      <rect x={8} y={y} width={464} height={h} rx={14} fill="none" stroke={STROKE[role]} strokeWidth={2.5} strokeDasharray="8 6" />
+      <text x={24} y={y + 24} dy="0.35em" fontSize={17} fontWeight={700} fill={color('text')}>
+        {title}
+      </text>
+      <text x={456} y={y + 24} dy="0.35em" textAnchor="end" fontSize={14} fontWeight={600} fill={color('muted')}>
+        {note}
+      </text>
+    </g>
+  );
+}
+
+/** A small box in a lane, for one step. */
+function Pill({ x, y, w, text, dashed }: Point & { w: number; text: string; dashed?: boolean }) {
+  return (
+    <g>
+      <rect x={x} y={y - 20} width={w} height={40} rx={10} fill={color('node-bg')} stroke={color('node-border')} strokeWidth={2} strokeDasharray={dashed ? '6 5' : undefined} />
+      <text x={x + w / 2} y={y} dy="0.35em" textAnchor="middle" fontSize={13} fontWeight={700} fill={color('text')}>
+        {text}
+      </text>
+    </g>
+  );
+}
+
+/** What runs when: the background pipeline keeps the suggestion queue current, the foreground reads it and decides. */
+function Lanes({ id }: { id: string }) {
+  const m = `${id}-arrow`;
+  const bg = ['New version', 'Detectors', 'Grouper', 'Update queue'];
+  const fg = ['Open queue', 'Accept / reject', 'Write-back'];
+  return (
+    <svg viewBox="0 0 480 500" role="img" aria-label={DESCRIPTIONS.lanes} style={{ width: '100%', height: 'auto', fontFamily: 'inherit' }}>
+      <defs>
+        <ArrowMarker id={m} />
+      </defs>
+      <Lane y={8} h={172} title="Background, async" note="minutes behind the record" role="platform" />
+      {bg.map((t, i) => (
+        <g key={t}>
+          {i > 0 && arrow(m, `M${22 + i * 114 - 12},86 H${22 + i * 114 - 2}`)}
+          <Pill x={22 + i * 114} y={86} w={102} text={t} />
+        </g>
+      ))}
+      <text x={24} y={138} dy="0.35em" fontSize={14} fontWeight={600} fill={color('muted')}>
+        Physician answers: days later, as new events
+      </text>
+      <text x={24} y={162} dy="0.35em" fontSize={14} fontWeight={600} fill={color('muted')}>
+        Nightly: reconcile with the KIS, re-run on a new catalog
+      </text>
+      {arrow(m, `M240,180 V214`)}
+      <Step at={{ x: 240, y: 252 }} w={330} h={68} title="Suggestion queue" line="per case version" role="platform" icon={<Store x={0} y={0} scale={0.55} />} />
+      {arrow(m, `M240,286 V320`)}
+      <Lane y={328} h={160} title="Foreground, sync" note="milliseconds" role="human" />
+      {fg.map((t, i) => (
+        <g key={t}>
+          {i > 0 && arrow(m, `M${24 + i * 148 - 18},408 H${24 + i * 148 - 2}`, i === 2)}
+          <Pill x={24 + i * 148} y={408} w={128} text={t} dashed={i === 2} />
+        </g>
+      ))}
+      <text x={24} y={460} dy="0.35em" fontSize={14} fontWeight={600} fill={color('muted')}>
+        People read and decide; nobody waits on a model
+      </text>
+    </svg>
+  );
+}
+
 export const DESCRIPTIONS = {
   'billing-chain':
     'How a hospital gets paid for an inpatient case: staff document in the KIS, coders turn the record into ICD-10-GM and OPS codes, a certified grouper maps them to a DRG, the invoice goes to the Krankenkasse, which pays or sends it to the Medizinischer Dienst for an audit that cuts what the record cannot support. The gap this post is about sits between documenting and coding.',
@@ -798,6 +981,12 @@ export const DESCRIPTIONS = {
     'Orchestration for one burst of lab results: ten results arrive between 08:00 and 08:50, the workflow waits until 15 minutes pass without a new one and then runs once on the newest version. Inside that run the creatinine rule and the kidney evidence selector re-run because their inputs changed; the nutrition signals, the nutrition evidence selector and the grouper come from the cache.',
   ranking:
     'Three invented suggestions ranked by expected value, revenue delta times the probability the coder accepts minus the audit-risk penalty. First, code B: 900 euros times 0.95 minus 50 is 805. Second, code A: 3,000 euros times 0.25 minus 300 is 450. Last, code C: worth nothing, still listed at 0.',
+  'detector-questions':
+    'Inside the evidence selector: of 140 passages in the record, a search keeps 20, and the decision model answers three questions per candidate. Kidney failure, N17.93: passage 7 proves it, treated yes at 0.91, diagnosed by a physician yes at 0.86, so it becomes a suggestion. Malnutrition, E44.0: passage 3 proves it, treated yes at 0.93, diagnosed by a physician no at 0.95, so it becomes a question for the physician.',
+  traps:
+    'Five passages a search for malnutrition returns: "No signs of malnutrition" is negated; "Weight loss after surgery, 2023" is an earlier stay; "Dietitian consult if weight drops" is only a plan; "Weight minus 10 percent, copied from 2023" is copied forward. Only "Supplement drinks since day 4" proves current, treated malnutrition.',
+  lanes:
+    'What runs when. In the background, asynchronously and minutes behind the record: a new case version runs the detectors and the grouper and updates the suggestion queue; physician answers come back days later as new events, and a nightly sweep reconciles with the KIS and re-runs cases on a new catalog. In the foreground, synchronously and in milliseconds: coders open the queue, accept or reject, and write-back to the KIS is queued. Nothing in the foreground waits on a model.',
   'evidence-page':
     'What a coder sees after opening a suggestion: the scanned dietitian note, page 1, split into numbered passages; passage 2, the weight loss, is marked, and passage 3, supplement drinks twice a day, is outlined as the one the selector picked to answer "Was it treated?" with probability 0.93.',
   'physician-question':
@@ -817,6 +1006,9 @@ const FIGURES: Record<FigureName, (props: { id: string }) => ReactNode> = {
   selector: Selector,
   worklist: Worklist,
   'event-log': EventLog,
+  'detector-questions': DetectorQuestions,
+  traps: Traps,
+  lanes: Lanes,
   debounce: Debounce,
   ranking: Ranking,
   'evidence-page': EvidencePage,
