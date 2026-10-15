@@ -38,7 +38,7 @@ const Text = ({ x, y, anchor = 'middle', size, weight = 600, muted, children }: 
   </text>
 );
 
-const STATES = ['No flags', 'Flagged', 'Closed'];
+const STATES = ['Verified, no flags', 'Flagged', 'Closed'];
 const INTENTS = ['Account locked', 'Missing payment', 'Change of details'];
 
 /** The cells the tree decided, by intent and state: both for a locked account. Every other cell is a rule nobody has written. */
@@ -48,7 +48,7 @@ const DECIDED: Record<string, { text: string; escalate?: boolean; alex?: boolean
 };
 
 const GridDescription =
-  'A grid of three intents, Account locked, Missing payment and Change of details, against three account states, No flags, Flagged and Closed. Two cells are decided, both for Account locked: with no flags it gets the unlock steps, which is Alex’s cell, and flagged it is escalated. The other seven cells are question marks.';
+  'A grid of three intents, Account locked, Missing payment and Change of details, against three account states, Verified with no flags, Flagged and Closed. Two cells are decided, both for Account locked: verified with no flags it gets the unlock steps, which is Alex’s cell, and flagged it is escalated. The other seven cells are question marks.';
 
 interface GridLayout {
   width: number;
@@ -58,8 +58,9 @@ interface GridLayout {
   /** Centres of the columns, and of each row's cells. */
   cols: number[];
   rows: number[];
-  /** The baseline of the column headers. */
+  /** The baseline of the column headers, and their text if it differs from STATES. */
   head: number;
+  states?: string[];
   /** Each row's intent: left of its cells on wide screens, above them on phones. */
   intents: Label[];
 }
@@ -83,6 +84,8 @@ const GRID_TALL: GridLayout = {
   cols: [72, 222, 372],
   rows: [114, 238, 362],
   head: 26,
+  // The full first header doesn't fit a phone's column.
+  states: ['Verified', 'Flagged', 'Closed'],
   intents: [114, 238, 362].map((y) => ({ x: 4, y: y - 50, anchor: 'start' })),
 };
 
@@ -90,7 +93,7 @@ function GridSvg({ layout, className }: { layout: GridLayout; className: string 
   const { cell, size } = layout;
   return (
     <Svg viewBox={`0 0 ${layout.width} ${layout.height}`} label={GridDescription} className={className}>
-      {STATES.map((state, j) => (
+      {(layout.states ?? STATES).map((state, j) => (
         <Text key={state} x={layout.cols[j]} y={layout.head} size={size} muted>
           {state}
         </Text>

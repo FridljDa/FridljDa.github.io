@@ -15,7 +15,7 @@ import DecisionFigure from '../../components/DecisionFigure.astro';
 import ThemedImage from '../../components/ThemedImage.astro';
 
 ## TL;DR
-Every decision in an LLM automation is made by code or by the model. On a bank's support automation, we gave code the order of operations and the model one job: reading the message. That guaranteed a security check before any unlock, but what drove the decision was stakeholders wanting their templates. It worked for the commonest requests and ran out on the rest: rarer requests, and common ones on accounts in states we had no rule for. Next time I would make the agent the default, and move a request type into code once it is common and the agent gets it wrong, or its action can't be undone.
+The first architectural decision in an LLM automation is how much of the work the model does and how much code does. On a bank's support automation, we gave code the order of operations and the model one job: reading the message. That guaranteed a security check before any unlock, but what drove the decision was stakeholders wanting their templates. It worked for the commonest requests and ran out on the rest: rarer requests, and common ones on accounts in states we had no rule for. Next time I would make the agent the default, and move a request type into code once it is common and the agent gets it wrong, or its action can't be undone.
 
 <DecisionMap preset="overview" />
 
@@ -49,7 +49,7 @@ We labelled and clustered a sample of past tickets with [an AI-assisted, iterati
 
 To get both the ordering guarantee and the fixed templates, the workflow kept code in charge of the sequence and gave the LLM one job: reading the message. Once the tree has an *Account locked* intent, the LLM recognises Alex's message as one and pulls out the identifier, the account number or the name and branch. Everything after that is a small decision tree in code: look up the account, check the flag, then send the unlock-instructions template or escalate to security. The flag check comes before any unlock instructions, every time.
 
-For this one intent, the workflow was the clear fit. The logic is explicit and the cases are few: the account is flagged or it isn't. Because code selects the reply, the template is guaranteed rather than prompted for. The LLM's part is narrow enough to have its own evals and to hand to a cheaper model. And a fix is local: when a message is misread or a policy changes, you edit the extraction prompt or add a branch, and you know what the next message of that shape will do.
+For this one intent, the workflow was the clear fit. The logic is explicit and the cases are few: the account is flagged or it isn't. Because code selects the reply, the template is guaranteed rather than prompted for. The LLM's part is narrow enough to have its own evals, a cheaper model, or a Named Entity Recognition model in its place. And a fix is local: when a message is misread or a policy changes, you edit the extraction prompt or add a branch, and you know what the next message of that shape will do.
 
 The full version is the four-step pipeline in [Architecture of a First-Level Support Automation](/post/first-level-support-automation), with the typing that holds its seams together in [Type-Safe Hybrid Workflows with Pydantic AI](/post/pydantic-ai-type-safe-hybrid-workflows).
 
@@ -65,7 +65,7 @@ But a workflow can only answer a request if someone has written a branch for its
 
 *Had Alex's account been closed, the request would land top right, in a cell nobody decided.*
 
-Every question mark is a decision someone has to make, write down and keep current. This toy already leaves seven open, and the ticket analysis found more than twenty intents, against more than three account states. A handful of intents covered most *messages*, not most *cells*: each intent still fanned out across every state its record could be in, and every new state meant another branch and another template.
+Every question mark is a decision someone has to make, write down and keep current. This toy already leaves seven open, and we had many more than three of each. A handful of intents covered most *messages*, not most *cells*: each intent still fanned out across every state its record could be in, and every new state meant another branch and another template.
 
 <DecisionFigure name="coverage" />
 
@@ -89,7 +89,7 @@ Before the tree had an Account locked intent, Alex's message landed in "Other", 
 
 I would invert the default, following Will Larson's [Building an internal agent](https://lethain.com/agents-coordinators/), which starts every workflow with the LLM in charge. A path graduates into a workflow only once it shows up often and the agent handles it unreliably, or when the action is irreversible enough that you don't want a model deciding it. Rarer request types stay with the agent.
 
-I would start with the simplest agent that can draft a reply: a model with the same tools the workflow used. For Alex, it would read the message, look up NSB01234, check the flag and propose sending the unlock steps. As in our pipeline, a plan that touches account access would still wait for a person to [approve it](/post/temporal-human-in-the-loop).
+I would start with an agent with a set of tools. For Alex, it would read the message, look up NSB01234, check the flag and propose sending the unlock steps. As in our pipeline, a plan that touches account access would still wait for a person to [approve it](/post/temporal-human-in-the-loop).
 
 That is also the shortest path into shadow deployment, since an agent with a set of tools is much less to build than a tree of intents, plans and templates, and every week before the experts see real drafts is [a week of grades lost](/post/the-missing-test-suite#get-into-shadow-deployment-sooner).
 
@@ -107,4 +107,4 @@ The caveats are real, though:
 
 Neither design tells you which cells of the grid matter. A workflow makes you guess them up front; an agent lets you skip writing them down. Only the people who know the business can settle which paths are worth freezing into code, and they settle it by grading the system's drafts.
 
-If I built this again, I would first [work out what the automation would actually save](/post/approval-rate-is-not-savings). Then I would [get the experts grading](/post/the-missing-test-suite) an agent's drafts before committing to a tree, and have them judge whether the customer's problem got solved rather than whether the reply matched a template.
+If I built this again, I would first [work out what the automation would actually save](/post/approval-rate-is-not-savings). Then I would [get the experts grading](/post/the-missing-test-suite) an agent's drafts before committing to a tree.

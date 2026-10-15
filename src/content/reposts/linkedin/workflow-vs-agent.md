@@ -5,7 +5,7 @@ images:
 firstComment: |
   The full post, with the grid of request types against account states a decision tree has to cover, the caveats of putting the agent in charge, and when a request type should still get its own path in code: https://danielfridljand.de/post/workflow-vs-agent
 ---
-On a bank's support automation, we put code in charge of every step and gave the model one job: reading the customer's message. Next time I would do it the other way round.
+On a bank's support automation, we put code in charge of the order of operations and gave the model one job: reading the customer's message. Next time I would do it the other way round.
 
 There was a real reason for code. Our first design was one agent holding every tool, and nothing guaranteed it would check an account's security flag before sending unlock instructions. A customer's message might even talk it out of the check.
 
