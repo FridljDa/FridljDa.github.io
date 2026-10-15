@@ -6,7 +6,7 @@ tags:
   - Architecture
   - Healthcare
 math: true
-description: "German hospitals lose revenue on care that was given and documented but never coded. A design for finding it: cheap signals find candidate codes, a decision model confirms them by picking the passage that proves them, a certified grouper prices them, and a coder decides."
+description: "German hospitals lose revenue on care that was documented but never coded. A system design to find it without upcoding: signals, evidence, a grouper and a coder."
 image: /images/blog/uncoded-hospital-revenue/featured.png
 ---
 
@@ -14,7 +14,7 @@ import DesignMap from '../../components/DesignMap.astro';
 import DesignFigure from '../../components/DesignFigure.astro';
 
 ## TL;DR
-German hospitals are paid per case, by codes, so care that was given and documented but never coded is never paid for. Malnutrition is the classic example: the nurses screen for it, a dietitian treats it, and because no physician ever writes the diagnosis down, nobody codes it. In the system I'd build to find such gaps, no model decides on its own. Cheap signals in code raise candidate codes, and a self-hosted decision model, one that picks from fixed options and cannot write text, confirms each one by picking the passage that proves it. A certified grouper prices it, and a coder decides. It has to favour precision over recall, because a wrong code can fail an audit, and a coder who sees a few bad suggestions stops trusting the queue. At a few hundred discharges a day even in a large hospital, throughput is not the problem; integrating with each hospital's systems, earning coders' trust and evaluating without ground truth are.
+German hospitals are paid per case, by codes, so care that was given and documented but never coded is never paid for. Malnutrition is the classic example: the nurses screen for it, a dietitian treats it, and because no physician ever writes the diagnosis down, nobody codes it. In the system I'd build to find such gaps, no model decides on its own. Cheap signals in code raise candidate codes, and a self-hosted decision model, one that picks from fixed options and cannot write text, confirms each one by picking the passage that proves it. A certified grouper prices it, and a coder decides. It has to favour precision over recall, because a wrong code can fail an audit and costs the coders' trust. At a few hundred discharges a day even in a large hospital, throughput is not the problem; integrating with each hospital's systems, earning coders' trust and evaluating without ground truth are.
 
 ## How a German hospital gets paid
 
@@ -269,7 +269,7 @@ When to upgrade: only once the signals' misses are measured, and coders still tr
 ### Evaluation
 
 - **Labels:** coder decisions. Cheap, fast and plentiful, but biased by whatever the queue showed them.
-- **Ground truth:** MD audit outcomes, months later and only for the [fewer than one in ten cases](https://md-bund.de/statistik/gkv-beratungen-und-begutachtungen.html) that get audited.
+- **Ground truth:** MD audit outcomes, months later and only for the [fewer than one in ten cases](https://md-bund.de/statistik/gkv-beratungen-und-begutachtungen.html) that get audited today.
 - **The metric:** not the acceptance rate but $\sum_{\text{accepted}} \Delta\text{revenue} - \text{euros cut in audits}$, the same gap as [between an approval rate and savings](/post/approval-rate-is-not-savings).
 - **Reviewers:** coders disagree with each other, so I'd measure each one's agreement with the others before trusting their labels.
 - **Shadow mode, not replay:** offline replay is weaker than it looks, because it is hard to recreate what the record looked like when a coder would have seen the suggestion. The honest test runs a new detector on live cases and logs what it would have suggested. [The Missing Test Suite](/post/the-missing-test-suite) makes the longer case for that, and for why the experts' review throughput is the real bottleneck.
