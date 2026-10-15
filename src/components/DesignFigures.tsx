@@ -1,7 +1,9 @@
 /**
  * The figures of uncoded-hospital-revenue other than its section map
- * (DesignMap.tsx): how a German hospital gets paid for a case, and the life
- * of one suggestion through the design, with the step names the map uses.
+ * (DesignMap.tsx): how a German hospital gets paid for a case, how one code
+ * changes its price, the running example's two uncoded diagnoses, how the
+ * evidence selector answers, a coder's worklist, and the life of one
+ * suggestion through the design, with the step names the map uses.
  * Same palette, box style and icons as the map. Both are narrow enough to
  * share one layout between phones and wide screens. Static: rendered on the
  * server, no JavaScript.
@@ -89,7 +91,7 @@ function Suggestion({ id }: { id: string }) {
     { title: 'Cheap signal', line: 'NRS 2002 score 4', icon: <Envelope x={0} y={0} scale={1.1} /> },
     { title: 'Evidence selector', line: 'Dietitian note, p. 1', icon: <Agent x={0} y={0} scale={0.75} typing={1} /> },
     { title: 'DKR rule check', line: 'Treated: D003 holds', icon: <Evals x={0} y={0} scale={0.75} /> },
-    { title: 'Grouper delta', line: 'Priced per variant', icon: <Gauge x={0} y={0} scale={1.4} /> },
+    { title: 'Grouper', line: 'With and without the code', icon: <Gauge x={0} y={0} scale={1.4} /> },
   ];
   const ys = steps.map((_, i) => 50 + i * 100);
   const outcomes = [
@@ -120,15 +122,220 @@ function Suggestion({ id }: { id: string }) {
   );
 }
 
+/** One case version grouped twice, without and with the kidney failure; the difference is the price of the code. */
+function Pricing({ id }: { id: string }) {
+  const m = `${id}-arrow`;
+  const cols = [
+    { x: 122, variant: 'Without', drg: 'F62C', line: 'lower severity' },
+    { x: 358, variant: 'With', drg: 'F62B', line: 'higher severity' },
+  ];
+  return (
+    <svg viewBox="0 0 480 470" role="img" aria-label={DESCRIPTIONS.pricing} style={{ width: '100%', height: 'auto', fontFamily: 'inherit' }}>
+      <defs>
+        <ArrowMarker id={m} />
+      </defs>
+      {cols.map((c) => (
+        <g key={c.x}>
+          {arrow(m, `M240,86 C240,108 ${c.x},104 ${c.x},121`)}
+          {arrow(m, `M${c.x},199 V236`)}
+          <text x={c.x + 12} y={218} dy="0.35em" fontSize={16} fontWeight={500} fill={color('muted')}>
+            grouper
+          </text>
+          {arrow(m, `M${c.x},316 C${c.x},340 240,336 240,356`)}
+        </g>
+      ))}
+      <Step at={{ x: 240, y: 50 }} w={300} h={72} title="One case version" line="as documented" role="hospital" />
+      {cols.map((c) => (
+        <g key={c.drg}>
+          <Step at={{ x: c.x, y: 160 }} w={200} h={76} title={c.variant} line="N17.93" role="platform" />
+          <Step at={{ x: c.x, y: 278 }} w={200} h={76} title={c.drg} line={c.line} role="platform" />
+        </g>
+      ))}
+      <Step at={{ x: 240, y: 400 }} w={360} h={76} title="Price of the code" line="weight gap x base rate" role="platform" icon={<Gauge x={0} y={0} scale={1.4} />} />
+    </svg>
+  );
+}
+
+/** The running example's two lanes, day by day: where each fact is written down, and that neither gets coded. */
+function RunningExample(_props: { id: string }) {
+  const lanes = [
+    { x: 170, title: 'Kidney', tag: 'A rule finds it' },
+    { x: 370, title: 'Malnutrition', tag: 'Must be read' },
+  ];
+  const rows: { day: string; y: number; cells: (null | [string, string])[] }[] = [
+    { day: 'Day 1', y: 110, cells: [['Creatinine 1.2', 'admission lab'], ['NRS 2002: 4', 'nursing screen']] },
+    { day: 'Day 3', y: 210, cells: [['Creatinine 4.3', 'drug paused'], null] },
+    { day: 'Day 4', y: 310, cells: [null, ['Dietitian note', 'scanned, -10%']] },
+  ];
+  return (
+    <svg viewBox="0 0 480 540" role="img" aria-label={DESCRIPTIONS['running-example']} style={{ width: '100%', height: 'auto', fontFamily: 'inherit' }}>
+      {lanes.map((l) => (
+        <g key={l.x}>
+          <line x1={l.x} x2={l.x} y1={52} y2={378} stroke={color('edge')} strokeWidth={2.5} strokeDasharray="6 6" />
+          <text x={l.x} y={30} dy="0.35em" textAnchor="middle" fontSize={TITLE} fontWeight={700} fill={color('text')}>
+            {l.title}
+          </text>
+        </g>
+      ))}
+      {rows.map((r) => (
+        <g key={r.day}>
+          <text x={38} y={r.y} dy="0.35em" textAnchor="middle" fontSize={17} fontWeight={600} fill={color('muted')}>
+            {r.day}
+          </text>
+          {r.cells.map((c, i) => c && <Step key={i} at={{ x: lanes[i].x, y: r.y }} w={186} h={76} title={c[0]} line={c[1]} role="hospital" />)}
+        </g>
+      ))}
+      <Step at={{ x: 270, y: 418 }} w={386} h={76} title="Discharge" line="neither is coded" role="human" />
+      {lanes.map((l) => (
+        <Tag key={l.tag} x={l.x} y={500} text={l.tag} size={15} />
+      ))}
+    </svg>
+  );
+}
+
+/** The evidence selector's answer: a fixed question, numbered passages, and the one passage it picks, or none. */
+function Selector({ id }: { id: string }) {
+  const m = `${id}-arrow`;
+  const passages = ['Mobilised with help', 'Weight down 10% in 3 months', 'Supplement drinks twice a day', 'Wound dressing changed', 'Sleeps poorly', 'None of these'];
+  const picked = 2;
+  const top = 128;
+  const rowH = 46;
+  const panelH = passages.length * rowH + 20;
+  const modelY = top + panelH + 72;
+  return (
+    <svg viewBox={`0 0 480 ${modelY + 112}`} role="img" aria-label={DESCRIPTIONS.selector} style={{ width: '100%', height: 'auto', fontFamily: 'inherit' }}>
+      <defs>
+        <ArrowMarker id={m} />
+      </defs>
+      {arrow(m, `M240,86 V${top - 4}`)}
+      {arrow(m, `M240,${top + panelH} V${modelY - 40}`)}
+      <Step at={{ x: 240, y: 50 }} w={400} h={72} title="Was it treated?" line="candidate: E44.0" role="platform" />
+      <rect x={40} y={top} width={400} height={panelH} rx={14} fill={color('node-bg')} stroke={color('node-border')} strokeWidth={2.5} />
+      {passages.map((text, i) => {
+        const y = top + 10 + i * rowH + rowH / 2;
+        const none = i === passages.length - 1;
+        const on = i === picked;
+        return (
+          <g key={text}>
+            {on && <rect x={50} y={y - rowH / 2 + 3} width={380} height={rowH - 6} rx={10} fill={color('ok')} fillOpacity={0.16} stroke={color('ok')} strokeWidth={2.5} />}
+            {!none && (
+              <>
+                <circle cx={76} cy={y} r={13} fill={on ? color('ok') : color('edge')} />
+                <text x={76} y={y} dy="0.35em" textAnchor="middle" fontSize={15} fontWeight={700} fill={on ? '#fff' : color('text')}>
+                  {i + 1}
+                </text>
+              </>
+            )}
+            <text x={none ? 64 : 100} y={y} dy="0.35em" fontSize={LINE} fontWeight={on ? 600 : 500} fontStyle={none ? 'italic' : undefined} fill={on ? color('text') : color('muted')}>
+              {text}
+            </text>
+          </g>
+        );
+      })}
+      <Step at={{ x: 240, y: modelY }} w={400} h={72} title="Decision model" line="picks 3, p = 0.93" role="platform" icon={<Agent x={0} y={0} scale={0.75} typing={1} />} />
+      <Tag x={240} y={modelY + 76} text="No text it could invent" size={15} />
+    </svg>
+  );
+}
+
+/** A small rounded button or chip. */
+function Chip({ x, y, w, text, tone }: { x: number; y: number; w: number; text: string; tone: 'ok' | 'bad' | 'plain' }) {
+  const solid = tone === 'ok';
+  return (
+    <g>
+      <rect x={x} y={y - 18} width={w} height={36} rx={18} fill={solid ? color('ok') : color('node-bg')} stroke={tone === 'bad' ? color('bad') : solid ? color('ok') : color('edge')} strokeWidth={2} />
+      <text x={x + w / 2} y={y} dy="0.35em" textAnchor="middle" fontSize={16} fontWeight={600} fill={solid ? '#fff' : tone === 'bad' ? color('bad') : color('muted')}>
+        {text}
+      </text>
+    </g>
+  );
+}
+
+/** One quoted line of evidence with its source, the quote marked like a highlighter would. */
+function Quote({ y, text, source }: { y: number; text: string; source: string }) {
+  return (
+    <g>
+      <rect x={52} y={y - 15} width={text.length * 9.6 + 16} height={30} rx={6} fill={color('warn')} fillOpacity={0.3} />
+      <text x={60} y={y} dy="0.35em" fontSize={17} fontWeight={600} fill={color('text')}>
+        {text}
+      </text>
+      <text x={60} y={y + 26} dy="0.35em" fontSize={15} fontWeight={500} fill={color('muted')}>
+        {source}
+      </text>
+    </g>
+  );
+}
+
+/** What the coder sees: the top suggestion with its evidence and price, and a question bundled for the physician. */
+function Worklist({ id }: { id: string }) {
+  return (
+    <svg viewBox="0 0 480 620" role="img" aria-label={DESCRIPTIONS.worklist} style={{ width: '100%', height: 'auto', fontFamily: 'inherit' }}>
+      <rect x={20} y={20} width={440} height={392} rx={14} fill={color('node-bg')} stroke={color('ok')} strokeWidth={2.5} />
+      <text x={44} y={56} dy="0.35em" fontSize={TITLE} fontWeight={700} fill={color('text')}>
+        N17.93
+      </text>
+      <text x={436} y={56} dy="0.35em" textAnchor="end" fontSize={16} fontWeight={600} fill={color('muted')}>
+        Suggestion 1 of 4
+      </text>
+      <text x={44} y={86} dy="0.35em" fontSize={LINE} fontWeight={500} fill={color('muted')}>
+        Acute kidney failure, stage 3
+      </text>
+      <Quote y={132} text="Creatinine 4.3 mg/dl" source="Lab report, day 3, p. 2" />
+      <Quote y={196} text="ACE inhibitor paused" source="Ward note, day 3, p. 1" />
+      <text x={44} y={262} dy="0.35em" fontSize={LINE} fontWeight={500} fill={color('muted')}>
+        DRG
+      </text>
+      <text x={96} y={262} dy="0.35em" fontSize={TITLE} fontWeight={700} fill={color('text')}>
+        F62C → F62B
+      </text>
+      <Chip x={44} y={316} w={120} text="Accept" tone="ok" />
+      <Chip x={176} y={316} w={120} text="Reject" tone="bad" />
+      <Chip x={44} y={370} w={124} text="Not treated" tone="plain" />
+      <Chip x={176} y={370} w={124} text="Wrong code" tone="plain" />
+      <Chip x={308} y={370} w={128} text="Already coded" tone="plain" />
+      <rect x={20} y={436} width={440} height={164} rx={14} fill={color('node-bg')} stroke={color('ok')} strokeWidth={2.5} strokeDasharray="8 6" />
+      <text x={44} y={470} dy="0.35em" fontSize={TITLE} fontWeight={700} fill={color('text')}>
+        Ask the physician
+      </text>
+      <text x={44} y={502} dy="0.35em" fontSize={LINE} fontWeight={500} fill={color('muted')}>
+        Moderate malnutrition, relevant to treatment?
+      </text>
+      <text x={44} y={530} dy="0.35em" fontSize={15} fontWeight={500} fill={color('muted')}>
+        Dietitian note attached
+      </text>
+      <Chip x={44} y={570} w={90} text="Yes" tone="ok" />
+      <Chip x={146} y={570} w={90} text="No" tone="bad" />
+    </svg>
+  );
+}
+
 export const DESCRIPTIONS = {
   'billing-chain':
     'How a hospital gets paid for an inpatient case: staff document in the KIS, coders turn the record into ICD-10-GM and OPS codes, a certified grouper maps them to a DRG, the invoice goes to the Krankenkasse, which pays or sends it to the Medizinischer Dienst for an audit that cuts what the record cannot support. The gap this post is about sits between documenting and coding.',
+  pricing:
+    'How one secondary diagnosis changes the price: the same case is grouped without and with N17.93, acute kidney failure; without it the case lands in F62C, with it the higher severity moves it to F62B, and the difference in cost weight times the base rate is the price of the code.',
+  'running-example':
+    'The running example day by day. Kidney: creatinine 1.2 on admission, 4.3 on day three and the drug paused. Malnutrition: a nursing screening score of 4 on day one, a scanned dietitian note on day four. At discharge neither is coded; a rule finds the first, the second must be read.',
+  selector:
+    'How the evidence selector answers: a fixed question about a candidate code, here whether the malnutrition was treated, numbered passages from the record plus "none of these", and a decision model that picks passage 3, the supplement drinks, with a probability. It cannot write a quote of its own.',
+  worklist:
+    'What the coder sees: the top suggestion, N17.93, with the two quotes that prove it highlighted and their sources, the DRG before and after, accept and reject with one-click reasons; below it a question bundled for the physician about the malnutrition, with the dietitian note attached.',
   suggestion:
     'The life of one suggestion: a cheap signal raises a candidate, the evidence selector picks the passage that supports it, a DKR rule check decides whether it counts, the grouper prices it, and it ends as a suggestion to the coder, a question to the physician, or is dropped. The malnutrition case ends as a question.',
 } as const;
 
 export type FigureName = keyof typeof DESCRIPTIONS;
 
+const FIGURES: Record<FigureName, (props: { id: string }) => ReactNode> = {
+  'billing-chain': BillingChain,
+  pricing: Pricing,
+  'running-example': RunningExample,
+  selector: Selector,
+  worklist: Worklist,
+  suggestion: Suggestion,
+};
+
 export default function DesignFigure({ name, id }: { name: FigureName; id: string }) {
-  return name === 'billing-chain' ? <BillingChain id={id} /> : <Suggestion id={id} />;
+  const Figure = FIGURES[name];
+  return <Figure id={id} />;
 }

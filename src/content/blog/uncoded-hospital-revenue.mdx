@@ -29,6 +29,10 @@ The rulebook for coding is the [DKR](https://www.gkv-spitzenverband.de/media/dok
 
 Secondary diagnoses matter more than you'd think. They feed a severity score, the PCCL (patient clinical complexity level, 0 to 6), which often decides the DRG's suffix letter: F62B, heart failure with higher severity, pays more than F62C. But under DKR rule D003, a secondary diagnosis only counts if it caused treatment, diagnostics, or extra care or monitoring.
 
+<DesignFigure name="pricing" />
+
+*The price of one code: group the same case without it and with it. Here acute kidney failure raises the severity enough to move the case from F62C to F62B, and the difference in cost weight times the base rate is what the code is worth.*
+
 The invoice goes to the patient's *Krankenkasse*, the statutory health insurer, which can send it to the MD (*Medizinischer Dienst*) for audit. Since 2021 the MD has been [formally independent of the insurers](https://md-bund.de/ueber-uns/die-medizinischen-dienste-und-der-medizinische-dienst-bund.html), though they still fund it. The MD cuts whatever the record doesn't support. How many of a hospital's invoices a payer may send to audit depends on its track record: the larger the share of its audited invoices the MD cut last time, the more of its invoices may be audited next. Until the end of 2026 that share is [capped at 5 to 15 percent](https://www.gesetze-im-internet.de/sgb_5/__275c.html). A [law passed in July 2026](https://www.bundesgesundheitsministerium.de/ministerium/meldungen/bundestag-beschliesst-gkv-beitragssatzstabilisierunggesetz-pm-10-07-2026) raises the cap to 40 percent from 2027, and removes it entirely for the hospitals with the worst track record. With [two thirds of hospitals](https://www.dki.de/pressemitteilung/dkg-zum-dki-krankenhaus-barometer) posting a loss in 2024, two things matter at once: finding the revenue that was earned but not coded, and never claiming a code the record can't defend.
 
 That second half is the one this design keeps coming back to. A system that only maximises revenue is an upcoding machine, and stricter audits punish exactly that.
@@ -43,6 +47,10 @@ The running example is invented; the coding rules around it are real. A 74-year-
 
 - **Acute kidney failure.** On day three, creatinine is 4.3 mg/dl against 1.2 on admission, more than three times the baseline: [stage 3](https://doi.org/10.1038/kisup.2012.1). The ward pauses the ACE inhibitor and checks creatinine daily. That is treatment under D003, so [N17.93](https://gesund.bund.de/icd-code-suche/n17-93) counts, and it moves the case from F62C to F62B, worth roughly a thousand euros in this invented case.
 - **Malnutrition.** The nursing admission screening, the [NRS 2002](https://doi.org/10.1016/S0261-5614(02)00214-5) (Nutritional Risk Screening), scores 4, where 3 already means the patient is at risk. A dietitian's note on day four records a 10 percent weight loss in three months and prescribes supplement drinks twice a day. No physician mentions it. The coding guidelines make diagnoses the treating physician's responsibility, so a coder won't code what only a dietitian wrote down, and [E44.0](https://gesund.bund.de/icd-code-suche/e44-0), moderate malnutrition, stays uncoded.
+
+<DesignFigure name="running-example" />
+
+*The running example day by day. Grey is the hospital's record, teal the coders. Both facts are in the record; neither reaches the codes.*
 
 The first is easy to find with a lab threshold. The second is the kind a rule can't find: scattered across scanned nursing notes, worded differently every time, and blocked on a physician's confirmation. A design that handles both is the goal.
 
@@ -68,17 +76,11 @@ The simplest design that works end to end:
 1. **Hospital systems** send what happens to a case.
 2. A **case context store** keeps one record per case: every code, document and lab value, with the time it arrived.
 3. **Gap detectors** read a case and propose codes it is missing, each with the evidence for it.
-4. A **counterfactual grouper** runs the case with and without each proposed code and reports the revenue delta.
+4. A **grouper** prices each proposed code: it groups the case with and without it and reports the revenue delta.
 5. A **ranked worklist** shows the coder the suggestions worth their time, best first. They accept or reject.
 6. **Write-back and labels:** accepted codes go back into the KIS, and every decision goes back to the detectors as a label.
 
-The data between the steps is small and worth naming, because it is the interface teams would build against:
-
-- a **case version**: case ID, hospital, version number, codes, documents and lab values as of that version;
-- a **suggestion**: case ID and version, proposed code, evidence (document, page, quote), the rule that allows it, the revenue delta, and a status (open, accepted, rejected, asked);
-- a **decision**: suggestion ID, who, accept or reject, and a reason from a short list.
-
-Two things already fall out of this. Suggestions point at a case *version*, so when the record changes we know which suggestions to re-check. And the grouper sits after the detectors, not inside them: the model confirms, deterministic certified software does the money math. I never want a model to tell a coder what a code is worth.
+Two things already fall out of this. Each suggestion points at a case *version*, the record as it stood when the suggestion was made, so when the record changes we know which suggestions to re-check. And the grouper sits after the detectors, not inside them: the model confirms, deterministic certified software does the money math. I never want a model to tell a coder what a code is worth.
 
 ## The components
 
@@ -96,11 +98,19 @@ Two things already fall out of this. Suggestions point at a case *version*, so w
 
 A non-generative decision model, the kind TypeSafe [introduced with Jev](https://typesafe.ai/blog/introducing-system-one-models-and-jev) in September 2026, cannot write text at all: given a question and a fixed set of options, it returns a choice or a probability its maker calls calibrated, [typed](/post/pydantic-ai-type-safe-hybrid-workflows) like any other step. That suits this job better than a generative LLM. A citation chosen from numbered passages can't point at a quote that isn't there, which is a better story for an audit than checking generated quotes afterwards. And the probabilities give the thresholds for suggesting, asking and dropping, and the acceptance probability the worklist ranks by.
 
+<DesignFigure name="selector" />
+
+*The evidence selector on the malnutrition case. The model's only possible answers are the passage numbers and "none of these", so whatever it cites is in the record.*
+
 A rule layer then encodes the mechanical DKR checks: is this code combination valid, does D003 hold given what the evidence says was done.
 
 **Grouper.** The certified grouper as a service: case in, DRG and revenue out, deterministic and fast, milliseconds per run. To price a suggestion it runs the case twice, with and without the code.
 
 **Worklist.** Ranked by expected value: revenue delta times the probability the coder accepts, minus a penalty for audit risk. A code worth nothing still belongs on the case, since the guidelines ask for every diagnosis that meets their definition, so it ranks low rather than vanishing. Each suggestion shows the quote highlighted on its page, the DRG before and after, and one-click reject reasons. Suggestions that need one fact only the physician can supply become a question instead, bundled per case: one yes or no per case, not six interruptions.
+
+<DesignFigure name="worklist" />
+
+*What the coder sees for the running example: the kidney failure as a suggestion, with the evidence highlighted and the DRG before and after, and the malnutrition as a question for the physician.*
 
 **Write-back and labels.** Accepted codes go back into the KIS through the same adapter, so the hospital's system stays the record of truth. Many installations don't allow writing codes back at all, though; there the first version is a coder copying the code, and that is fine. Decisions go to a labels table the evaluation reads.
 
@@ -123,10 +133,9 @@ The tradeoffs in this part:
 - **Rules, a model, or both.** Rules alone are precise but brittle: the creatinine rule works, but nobody writes a rule for every way a nurse records weight loss. A model alone needs a question to answer, and asking it about every possible code on every case version buries the coder in low-confidence guesses. The hybrid uses rules to say *where to look* and the model to *read what's there*. That matches [a support automation I built](/post/first-level-support-automation): code in charge of the sequence and the model confined to interpretation made each piece testable on its own.
 - **Which model.** An open-weight decision model, self-hosted in a German data center; Jev itself runs only on its maker's [US-hosted service](https://typesafe.ai/legal/privacy-policy), which rules it out for patient data. Models of this kind are new and their benchmarks are their makers' own, so I'd measure one on a few hundred coder-labelled candidates before trusting it. The fallback is a generative open-weight LLM in the same data center, slower and costlier but well understood. The selector's typed interface makes the model a swap, not a redesign.
 - **Precision over recall.** A coder who sees three bad suggestions in a row stops trusting the queue, and then the good ones go unread too. I'd start with a few detectors that are nearly always right, and add more only when the acceptance rate holds.
-- **How to search the counterfactuals.** Running the grouper once per suggestion is fine for a handful. Exploring every clinically plausible variant of a case can mean thousands of runs, which brute force still handles in seconds at milliseconds per run, with caching per case version. Smarter would be to exploit the grouper's structure: most codes don't touch the decision path that matters for this DRG, so only the ones near a decision boundary need varying. Cases near a boundary are interesting both ways: upside if a documented fact is missing, audit risk if a claimed one is thin.
 - **Workflow or agent.** For this pipeline, a [workflow](/post/workflow-vs-agent): every suggestion goes through the same checks in the same order, and the order is what makes it defensible in an audit. An agent might earn a place later, for open-ended work like drafting an answer to an MD query.
 
-When to upgrade: let the decision model ask about codes no signal raised only once the signals' misses are measured and coders still trust the queue, and move off brute-force counterfactuals only when grouper runs show up in the time it takes a case to reach the queue.
+When to upgrade: let the decision model ask about codes no signal raised only once the signals' misses are measured and coders still trust the queue.
 
 ## Running it: evaluation, rollout, security
 
@@ -140,4 +149,4 @@ When to upgrade: let the decision model ask about codes no signal raised only on
 
 **Security.** German hosting only, a model that runs there too, encryption, per-hospital isolation, and the case store's audit log, which shows which data the model saw for each suggestion.
 
-**Contracts and growth.** The three records from the simplest design, case version, suggestion and decision, are the contracts between the parts, so ingestion, detectors, the grouper service and the review UI can change independently. They also carry the next products: answering MD queries from the same evidence, billing privately insured patients under the GOÄ (*Gebührenordnung für Ärzte*), the physicians' fee schedule, and showing controlling the revenue at risk.
+**Contracts and growth.** Three small records pass between the parts: a case version (the record as of one change), a suggestion (the proposed code, its evidence, the rule that allows it, the revenue delta and a status), and a coder's decision with its reason. They are the contracts between the parts, so ingestion, detectors, the grouper service and the review UI can change independently. They also carry the next products: answering MD queries from the same evidence, billing privately insured patients under the GOÄ (*Gebührenordnung für Ärzte*), the physicians' fee schedule, and showing controlling the revenue at risk.
