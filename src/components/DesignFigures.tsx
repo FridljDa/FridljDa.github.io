@@ -11,7 +11,7 @@
  * server, no JavaScript.
  */
 import type { ReactNode } from 'react';
-import { color, Agent, Envelope, Evals, Gauge, type Point } from '../remotion/shared';
+import { color, Agent, Envelope, Evals, Gauge, Store, type Point } from '../remotion/shared';
 import { ArrowMarker, Tag } from './map-parts';
 
 type Role = 'hospital' | 'platform' | 'human' | 'payer';
@@ -611,6 +611,59 @@ function Shadow(_props: { id: string }) {
   );
 }
 
+/** One case in the store: its event log, one version per message, a suggestion pinned to the version it was made on, and the current view built from the log. */
+function EventLog({ id }: { id: string }) {
+  const m = `${id}-arrow`;
+  const rows: { time: string; event: string; source: string; pin?: { text: string; tone: 'ok' | 'bad' } }[] = [
+    { time: 'Mon 08:10', event: 'Admission', source: 'ADT message' },
+    { time: 'Mon 09:02', event: 'Creatinine 1.2 mg/dl', source: 'lab result' },
+    { time: 'Wed 07:45', event: 'Creatinine 4.3 mg/dl', source: 'lab result' },
+    { time: 'Wed 11:20', event: 'ACE inhibitor paused', source: 'medication order', pin: { text: 'N17.93', tone: 'ok' } },
+    { time: 'Thu 14:05', event: 'Dietitian note', source: 'scanned document' },
+    { time: 'Thu 16:30', event: 'v3 corrected to 4.1', source: 'lab correction', pin: { text: 'Re-check', tone: 'bad' } },
+  ];
+  const top = 56;
+  const ROW = 52;
+  const viewY = top + rows.length * ROW + 92;
+  return (
+    <svg viewBox={`0 0 480 ${viewY + 44}`} role="img" aria-label={DESCRIPTIONS['event-log']} style={{ width: '100%', height: 'auto', fontFamily: 'inherit' }}>
+      <defs>
+        <ArrowMarker id={m} />
+      </defs>
+      <text x={24} y={26} dy="0.35em" fontSize={TITLE} fontWeight={700} fill={color('text')}>
+        Case 4711: event log
+      </text>
+      <text x={456} y={26} dy="0.35em" textAnchor="end" fontSize={15} fontWeight={600} fill={color('muted')}>
+        append-only
+      </text>
+      {rows.map((r, i) => {
+        const y = top + i * ROW + ROW / 2;
+        return (
+          <g key={r.time}>
+            <rect x={16} y={y - ROW / 2 + 3} width={448} height={ROW - 6} rx={10} fill={color('node-bg')} stroke={r.pin ? (r.pin.tone === 'ok' ? color('ok') : color('bad')) : color('edge')} strokeWidth={r.pin ? 2.5 : 1.5} />
+            <circle cx={40} cy={y} r={13} fill={color('added')} />
+            <text x={40} y={y} dy="0.35em" textAnchor="middle" fontSize={13} fontWeight={700} fill="#fff">
+              {`v${i + 1}`}
+            </text>
+            <text x={66} y={y - 9} dy="0.35em" fontSize={16} fontWeight={600} fill={color('text')}>
+              {r.event}
+            </text>
+            <text x={66} y={y + 11} dy="0.35em" fontSize={13} fontWeight={500} fill={color('muted')}>
+              {`${r.time} · ${r.source}`}
+            </text>
+            {r.pin && <Chip x={352} y={y} w={100} text={r.pin.text} tone={r.pin.tone === 'ok' ? 'ok' : 'bad'} />}
+          </g>
+        );
+      })}
+      {arrow(m, `M240,${top + rows.length * ROW + 4} V${viewY - 40}`)}
+      <text x={254} y={top + rows.length * ROW + 30} dy="0.35em" fontSize={14} fontWeight={600} fill={color('muted')}>
+        replayed into
+      </text>
+      <Step at={{ x: 240, y: viewY }} w={448} h={72} title="Current view" line="creatinine 4.1, drug paused, 1 scan" role="platform" icon={<Store x={0} y={0} scale={0.55} />} />
+    </svg>
+  );
+}
+
 export const DESCRIPTIONS = {
   'billing-chain':
     'How a hospital gets paid for an inpatient case: staff document in the KIS, coders turn the record into ICD-10-GM and OPS codes, a certified grouper maps them to a DRG, the invoice goes to the Krankenkasse, which pays or sends it to the Medizinischer Dienst for an audit that cuts what the record cannot support. The gap this post is about sits between documenting and coding.',
@@ -622,6 +675,8 @@ export const DESCRIPTIONS = {
     'How the evidence selector answers: a fixed question about a candidate code, here whether the malnutrition was treated, numbered passages from the record plus "none of these", and a decision model that picks passage 3, the supplement drinks, with a probability. It cannot write a quote of its own.',
   worklist:
     'What the coder sees: the top suggestion, N17.93, with the two quotes that prove it highlighted and their sources, the DRG before and after, accept and reject with one-click reasons; below it a question bundled for the physician about the malnutrition, with the dietitian note attached.',
+  'event-log':
+    'The running example\'s case in the store as an append-only event log, one version per message: v1 admission, v2 creatinine 1.2, v3 creatinine 4.3, v4 the ACE inhibitor paused, where the N17.93 suggestion is made, v5 the scanned dietitian note, and v6 a lab correction of v3 to 4.1, which marks the suggestion for a re-check. The log is replayed into the current view: creatinine 4.1, drug paused, one scan.',
   'evidence-page':
     'What a coder sees after opening a suggestion: the scanned dietitian note, page 1, split into numbered passages; passage 2, the weight loss, is marked, and passage 3, supplement drinks twice a day, is outlined as the one the selector picked to answer "Was it treated?" with probability 0.93.',
   'physician-question':
@@ -640,6 +695,7 @@ const FIGURES: Record<FigureName, (props: { id: string }) => ReactNode> = {
   'running-example': RunningExample,
   selector: Selector,
   worklist: Worklist,
+  'event-log': EventLog,
   'evidence-page': EvidencePage,
   'physician-question': PhysicianQuestion,
   shadow: Shadow,
