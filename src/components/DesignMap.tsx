@@ -51,7 +51,7 @@ export const PRESETS = {
     level: 'detail',
     focus: [],
     description:
-      'The same six steps with their components: adapters and a versioned event log; cheap signals, an evidence extractor that cites the page, and rule checks; a certified grouper pricing each variant; a worklist for coders and bundled physician queries; write-back and labels.',
+      'The same six steps with their components: adapters and a versioned event log; cheap signals, an evidence selector that picks the passage, and rule checks; a certified grouper pricing each variant; a worklist for coders and bundled physician queries; write-back and labels.',
   },
   suggestion: {
     level: 'detail',
@@ -73,7 +73,7 @@ const NODES: Record<NodeId, { name: string; role: Role; detail: string[] }> = {
   sources: { name: 'Hospital systems', role: 'hospital', detail: ['HL7 v2, FHIR', 'Letters, PDFs, scans'] },
   system: { name: '?', role: 'platform', detail: [] },
   store: { name: 'Case context store', role: 'platform', detail: ['Adapter per KIS', 'Event log per case', 'Versions, audit log'] },
-  detect: { name: 'Gap detectors', role: 'platform', detail: ['Cheap signals', 'Evidence extractor', 'DKR rule checks'] },
+  detect: { name: 'Gap detectors', role: 'platform', detail: ['Cheap signals', 'Evidence selector', 'DKR rule checks'] },
   grouper: { name: 'Counterfactual grouper', role: 'platform', detail: ['Certified grouper', 'Delta per variant', 'Cache per version'] },
   worklist: { name: 'Ranked worklist', role: 'human', detail: ['Coder: accept, reject', 'Physician query'] },
   feedback: { name: 'Write-back, labels', role: 'platform', detail: ['Codes into the KIS', 'Decisions into evals'] },
