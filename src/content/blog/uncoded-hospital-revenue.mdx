@@ -12,7 +12,7 @@ import DesignMap from '../../components/DesignMap.astro';
 import DesignFigure from '../../components/DesignFigure.astro';
 
 ## TL;DR
-German hospitals are paid per case, by codes. Care that was given and documented but never coded is never paid for. This post designs a system that finds it, starting from what the system must do and getting more concrete with every section, so the map of the system starts as a black box and gains detail as it goes. In one line: cheap signals find candidate codes, an LLM only confirms them and must cite the page, a certified grouper prices them, and a coder decides. The hard parts are not throughput but integration, trust and evaluation, and the people who decide whether it works are coders with a queue, physicians with no time, and a Medizincontrolling department that answers to management for every euro.
+German hospitals are paid per case, by codes, so care that was given and documented but never coded is never paid for. In a system that finds it, the LLM decides nothing on its own: cheap signals in code raise candidate codes, the LLM only confirms them and must cite the page, a certified grouper prices them, and a coder decides. It has to favour precision over recall, because a wrong code can fail an audit, and a coder who sees a few bad suggestions stops trusting the queue. At a few hundred discharges a day per hospital, throughput is not the problem; integrating with each hospital's systems, earning coders' trust and evaluating without ground truth are.
 
 ## How a German hospital gets paid
 
