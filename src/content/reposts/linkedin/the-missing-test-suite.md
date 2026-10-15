@@ -1,5 +1,5 @@
 ---
-status: draft
+status: posted
 image: /images/blog/the-missing-test-suite/linkedin/verdict.png
 comments:
   - text: |
