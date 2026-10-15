@@ -15,7 +15,7 @@ Now say the account is closed. Same request, and the workflow has no answer: top
 
 A workflow answers only what someone wrote a branch for, and the branches form a grid: every request type against every state the account can be in. In mine, a few request types covered most messages, which makes a workflow tempting. But each one still fanned out across every account state, and every new state meant another branch and another template.
 
-An agent with a set of tools doesn't shrink that grid, but it spares you writing it out before you know which cells matter. For a locked account, it would check the flag and propose the unlock steps. The guarantee code gave would come from a person instead, who approves any plan that touches account access. It is also much less to build, so the people who know the business can start grading its drafts sooner.
+An agent with a set of tools doesn't shrink that grid, but it spares you writing it out before you know which cells matter. For a locked account, it would check the flag and propose the unlock steps. As in my workflow, any plan that touches account access would still wait for a person to approve it. It is also much less to build, so the people who know the business can start grading its drafts sooner.
 
 Neither design tells you which cells deserve code; the grades do. Where a request type is common and the graders keep rejecting the agent's replies, code has earned its place.
 
