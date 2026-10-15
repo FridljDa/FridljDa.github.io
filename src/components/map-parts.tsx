@@ -6,10 +6,10 @@
 import type { ReactNode } from 'react';
 import { color, type Point } from '../remotion/shared';
 
-/** Full strength when `on`, otherwise faded and grey. */
-export function Dim({ on, children }: { on: boolean; children: ReactNode }) {
+/** Full strength when `on`, otherwise faded and grey; `faded` is the opacity then. */
+export function Dim({ on, faded = 0.22, children }: { on: boolean; faded?: number; children: ReactNode }) {
   return (
-    <g opacity={on ? 1 : 0.22} style={on ? undefined : { filter: 'grayscale(1)' }}>
+    <g opacity={on ? 1 : faded} style={on ? undefined : { filter: 'grayscale(1)' }}>
       {children}
     </g>
   );

@@ -2,8 +2,8 @@
  * The automation workflow-vs-agent is about, as one map: a customer message
  * goes to intent recognition, an LLM call, which routes it either to a
  * workflow in code or to an agent. Both act only through the same tools,
- * which are code and can hold rules of their own, drawn as a shield on them.
- * Every action goes out through the tools, the reply included; experts grade
+ * which are code. Every action goes out through the tools, the reply
+ * included; experts grade
  * each reply, and their grades feed back into the workflow: a new branch while
  * code is the default, a request type graduating into code once the agent is.
  *
@@ -27,8 +27,6 @@ export interface Preset {
   tags?: { on: NodeId; text: string }[];
   /** The route requests take unless intent recognition sends them the other way, which is dashed. Unset: neither, both solid. */
   default?: Route;
-  /** A rule inside the tools, which holds whoever calls them: a shield on the tools. */
-  guard?: boolean;
   /** The first design: the message goes straight to the agent, with no intent step and no workflow. */
   direct?: boolean;
   /** Only shows where a section sits in the system, so wide screens get it smaller. */
@@ -39,9 +37,8 @@ export interface Preset {
 export const PRESETS = {
   overview: {
     focus: [],
-    guard: true,
     description:
-      'The system as one map: a message goes to intent recognition, an LLM call, which routes it to a workflow in code or to an agent. Both act through the same tools, code with a shield for the rules they hold, which send the reply; experts grade it and their grades feed back into the workflow.',
+      'The system as one map: a message goes to intent recognition, an LLM call, which routes it to a workflow in code or to an agent. Both act through the same tools, which send the reply; experts grade it and their grades feed back into the workflow.',
   },
 
   'agent-first': {
@@ -67,7 +64,6 @@ export const PRESETS = {
     small: true,
     description: 'Highlighted: the workflow, which grows a new branch each round of the experts’ feedback.',
   },
-
   // A pair with next-time: the same parts lit, the dashes swapped, the pill moved.
   fallback: {
     focus: ['intent', 'known', 'other', 'workflow', 'agent'],
@@ -78,28 +74,19 @@ export const PRESETS = {
       'Highlighted: intent recognition sends known requests to the workflow, the default, and the rest by the dashed Other route to the agent.',
   },
 
-  guards: {
-    focus: ['tools', 'workflowTools', 'agentTools', 'workflow', 'agent'],
-    guard: true,
-    tags: [{ on: 'tools', text: 'Must hold' }],
-    small: true,
-    description: 'Highlighted: the tools, with a shield for the rule inside them, and the calls into them from both the workflow and the agent.',
-  },
+
 
   'next-time': {
     focus: ['intent', 'known', 'other', 'workflow', 'agent', 'feedback', 'experts'],
     default: 'agent',
-    guard: true,
     tags: [{ on: 'agent', text: 'Default' }],
     small: true,
     description:
-      'Highlighted: the routing next time. The agent is the default route; a request type takes the dashed route to the workflow only once the experts’ feedback graduates it.',
+      'Highlighted: the routing next time. The agent is the default route; a request type takes the dashed route to the workflow only once it is common and the agent gets it wrong, or its action can’t be undone.',
   },
-
   start: {
     focus: ['send', 'reply', 'grade', 'experts'],
     default: 'agent',
-    guard: true,
     tags: [{ on: 'experts', text: 'Fill the grid' }],
     small: true,
     description: 'Highlighted: the experts, grading every reply from the first week.',
@@ -134,10 +121,11 @@ interface Layout {
   edges: Record<EdgeId, { d: string; twoWay?: boolean; label?: Label }>;
   /** Where each node's name goes; what runs it ("LLM", "Code") sits under it. */
   labels: Record<NodeId, Label>;
-  /** The shield, on the tools' top right corner. */
-  guard: Point;
   tags: Partial<Record<NodeId, Point>>;
 }
+
+/** Greyed parts a little stronger than the other posts' maps, so their labels stay readable in the small maps. */
+const FADED = 0.34;
 
 /** A step is drawn as a box this size with a small picture of what it does inside, as in PipelineMap.tsx. */
 const BOX = { w: 160, h: 92 };
@@ -182,13 +170,11 @@ const WIDE: Layout = {
     // Above: the grade comes in underneath.
     experts: { x: 892, y: 84 },
   },
-  guard: { x: 790, y: 228 },
   tags: {
     intent: { x: 232, y: 192 },
     workflow: { x: 480, y: 46 },
     // Left of the agent, below the route coming in.
     agent: { x: 346, y: 456 },
-    tools: { x: 716, y: 410 },
     // Left of centre, to stay inside the map.
     experts: { x: 838, y: 32 },
   },
@@ -237,13 +223,11 @@ const TALL: Layout = {
     reply: { x: 350, y: 758, anchor: 'start' },
     experts: { x: 150, y: 704 },
   },
-  guard: { x: 384, y: 568 },
   tags: {
     // Under its labels, between the two routes.
     intent: { x: 310, y: 322 },
     workflow: { x: 150, y: 496 },
     agent: { x: 470, y: 496 },
-    tools: { x: 506, y: 616 },
     experts: { x: 150, y: 816 },
   },
 };
@@ -273,7 +257,7 @@ function Box({ at }: { at: Point }) {
 }
 
 /** A decision in code, each branch ending in a template: PipelineMap's plan, centred on (0, 0). */
-export function DecisionTree() {
+function DecisionTree() {
   const line = { stroke: color('node-border'), strokeWidth: 2 };
   const d = { x: -40, y: 0 };
   const ends = [-27, 0, 27].map((dy) => ({ x: 34, y: dy }));
@@ -289,17 +273,6 @@ export function DecisionTree() {
     </g>
   );
 }
-
-/**
- * A rule the tools enforce, whoever calls them: a shield with a check. Not a
- * padlock, which would read as the running example's locked account.
- */
-export const Guard = ({ x, y, scale = 1 }: Point & { scale?: number }) => (
-  <g transform={`translate(${x} ${y}) scale(${scale})`}>
-    <path d="M0,-17 L14,-12 V-1 C14,8 8,14 0,18 C-8,14 -14,8 -14,-1 V-12 Z" fill={color('node-bg')} stroke={color('text')} strokeWidth={2.5} strokeLinejoin="round" />
-    <path d="M-6,0 l4,4 l8,-9" fill="none" stroke={color('ok')} strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" />
-  </g>
-);
 
 function NodeIcon({ id, at }: { id: NodeId; at: Point }) {
   const { x, y } = at;
@@ -397,7 +370,7 @@ function MapSvg({ layout, preset, id, className }: { layout: Layout; preset: Pre
         const edge = layout.edges[e];
         const label = text(e);
         return (
-          <Dim key={e} on={on(e)}>
+          <Dim key={e} on={on(e)} faded={FADED}>
             <path
               d={edge.d}
               fill="none"
@@ -427,9 +400,8 @@ function MapSvg({ layout, preset, id, className }: { layout: Layout; preset: Pre
         const label = layout.labels[n];
         const kind = KINDS[n];
         return (
-          <Dim key={n} on={on(n)}>
+          <Dim key={n} on={on(n)} faded={FADED}>
             <NodeIcon id={n} at={N[n]} />
-            {n === 'tools' && p.guard && <Guard {...layout.guard} scale={1.3} />}
             <text x={label.x} y={label.y} textAnchor={label.anchor ?? 'middle'} fontSize={layout.labelSize} fontWeight={600} fill={color('text')}>
               {NAMES[n]}
             </text>

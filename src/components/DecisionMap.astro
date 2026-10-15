@@ -42,8 +42,9 @@ const png = `/images/blog/${Astro.params.slug}/map-${preset}.png`;
   .decision-map :global(.map-tall) {
     display: none;
   }
+  /* Wider than the other posts' small maps, so their labels stay readable. */
   :global(.prose) .decision-map.small .frame {
-    max-width: 440px;
+    max-width: 600px;
     margin: 0 auto;
   }
   @container (max-width: 560px) {

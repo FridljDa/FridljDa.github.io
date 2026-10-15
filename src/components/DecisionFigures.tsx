@@ -1,17 +1,12 @@
 /**
- * The figures of workflow-vs-agent, each following the post's running example
- * (Alex Carter's locked account):
+ * The figures of workflow-vs-agent:
  *
  * - grid: three intents against three account states, the mapping a workflow
  *   has to spell out. The tree decided two cells, both for a locked account,
  *   Alex's among them; the other seven are question marks.
  * - coverage: a schematic, not measured: the share of tickets the tree
  *   answers, branch after branch. Each branch answers fewer new tickets than
- *   the last, so the share flattens below all of them; Alex's Account locked
- *   branch is an early one.
- * - unlock-tool: the flag check inside the unlock tool, called by the
- *   workflow or by the agent, with Alex's route from the agent to the unlock
- *   steps.
+ *   the last, so the share flattens below all of them.
  *
  * Drawn in the style of the post's map (DecisionMap.tsx) and the figures of
  * first-level-support-automation (palette, icons, short labels); the prose
@@ -20,8 +15,7 @@
  * server, no JavaScript.
  */
 import type { ComponentType, ReactNode } from 'react';
-import { color, PALETTE, Agent, Grade, Person, Reply, type Point } from '../remotion/shared';
-import { DecisionTree, Guard } from './DecisionMap';
+import { color, PALETTE, Person, Reply, type Point } from '../remotion/shared';
 
 /** Alex Carter, the post's running example, in the color customers get in the shadow loop. */
 const ALEX = PALETTE[0];
@@ -133,7 +127,6 @@ function GridSvg({ layout, className }: { layout: GridLayout; className: string 
                 <text x={cx} y={cy + 26} textAnchor="middle" fontSize={size - 1} fontWeight={decided.alex ? 650 : 500} fill={color('text')}>
                   {decided.text}
                 </text>
-                {decided.alex && <Person x={cx + cell.w / 2 - 17} y={cy - cell.h / 2 + 19} scale={0.6} fill={ALEX} />}
               </g>
             );
           })}
@@ -153,7 +146,7 @@ function IntentGrid() {
 }
 
 const CoverageDescription =
-  'Schematic, not measured: the share of tickets the tree answers, against the number of branches written. Each branch is a point; the first ones, Account locked among them, answer many tickets, and each later one answers fewer than the last, so the share flattens below all tickets, leaving a band unanswered.';
+  'Schematic, not measured: the share of tickets the tree answers against the number of branches written. Each branch answers fewer new tickets than the last, so the share flattens below all tickets.';
 
 interface CoverageLayout {
   width: number;
@@ -165,12 +158,11 @@ interface CoverageLayout {
 const COVERAGE_WIDE: CoverageLayout = { width: 560, height: 290, size: 17, plot: { left: 44, right: 470, top: 30, bottom: 246 } };
 const COVERAGE_TALL: CoverageLayout = { width: 400, height: 300, size: 19, plot: { left: 44, right: 316, top: 30, bottom: 248 } };
 
-/** Branches written, the share the tree answers after the k-th, and which one is Account locked. */
+/** Branches written, and the share the tree answers after the k-th. */
 const BRANCHES = 12;
 const CEILING = 0.8;
 const KEEP = 0.72;
 const answered = (k: number) => CEILING * (1 - KEEP ** k);
-const ACCOUNT_LOCKED = 2;
 
 function CoverageSvg({ layout, className }: { layout: CoverageLayout; className: string }) {
   const { plot, size } = layout;
@@ -178,7 +170,6 @@ function CoverageSvg({ layout, className }: { layout: CoverageLayout; className:
   const y = (share: number) => plot.bottom - share * (plot.bottom - plot.top);
   const points = Array.from({ length: BRANCHES + 1 }, (_, k) => ({ x: x(k), y: y(answered(k)) }));
   const last = points[BRANCHES];
-  const alex = points[ACCOUNT_LOCKED];
   const axis = { stroke: color('edge'), strokeWidth: 2 };
   return (
     <Svg viewBox={`0 0 ${layout.width} ${layout.height}`} label={CoverageDescription} className={className}>
@@ -203,12 +194,8 @@ function CoverageSvg({ layout, className }: { layout: CoverageLayout; className:
 
       <polyline points={points.map((p) => `${p.x},${p.y}`).join(' ')} fill="none" stroke={color('node-border')} strokeWidth={2.5} strokeLinejoin="round" />
       {points.slice(1).map((p, i) => (
-        <circle key={i} cx={p.x} cy={p.y} r={i + 1 === ACCOUNT_LOCKED ? 7 : 4.5} fill={i + 1 === ACCOUNT_LOCKED ? ALEX : color('node-border')} stroke={color('surface')} strokeWidth={2} />
+        <circle key={i} cx={p.x} cy={p.y} r={4.5} fill={color('node-border')} stroke={color('surface')} strokeWidth={2} />
       ))}
-      {/* Below the steep start, where the curve leaves room */}
-      <text x={alex.x + 14} y={alex.y + 22} fontSize={size} fontWeight={650} fill={color('text')}>
-        Account locked
-      </text>
     </Svg>
   );
 }
@@ -222,181 +209,6 @@ function Coverage() {
   );
 }
 
-const UnlockToolDescription =
-  'The unlock tool, called by the workflow or by the agent. Inside it there is one question: is the account flagged? If not, the tool sends the unlock steps; if it is, the tool refuses. Alex’s request comes from the agent, the account isn’t flagged, and Alex gets the unlock steps.';
-
-interface UnlockLayout {
-  width: number;
-  height: number;
-  workflow: Point;
-  agent: Point;
-  /** Each caller's name, with what runs it under it. */
-  names: { workflow: Label; agent: Label };
-  /** Each caller's call into the tool, ending on the question; Alex's comes from the agent. */
-  calls: { workflow: string; agent: string };
-  /** One label where the two calls meet: both send the same request. */
-  callLabel: Label;
-  tool: { x: number; y: number; w: number; h: number };
-  toolLabel: Label;
-  guard: Point;
-  question: Point;
-  unlock: Point;
-  refuse: Point;
-  /** From the question to each outcome: "no" is Alex's. */
-  answers: { no: string; yes: string };
-  answerLabels: { no: Label; yes: Label };
-}
-
-const UNLOCK_WIDE: UnlockLayout = {
-  width: 610,
-  height: 330,
-  workflow: { x: 64, y: 84 },
-  agent: { x: 64, y: 234 },
-  names: { workflow: { x: 64, y: 142 }, agent: { x: 64, y: 292 } },
-  calls: {
-    workflow: 'M124,84 C210,84 226,138 288,138',
-    agent: 'M104,234 C210,234 226,162 288,162',
-  },
-  callLabel: { x: 190, y: 158 },
-  tool: { x: 244, y: 16, w: 358, h: 304 },
-  toolLabel: { x: 264, y: 52, anchor: 'start' },
-  guard: { x: 590, y: 24 },
-  question: { x: 352, y: 150 },
-  unlock: { x: 352, y: 270 },
-  refuse: { x: 528, y: 270 },
-  answers: {
-    no: 'M352,188 V240',
-    yes: 'M432,150 H516 Q528,150 528,162 V240',
-  },
-  answerLabels: { no: { x: 364, y: 220, anchor: 'start' }, yes: { x: 480, y: 140 } },
-};
-
-const UNLOCK_TALL: UnlockLayout = {
-  width: 440,
-  height: 488,
-  workflow: { x: 90, y: 52 },
-  agent: { x: 350, y: 52 },
-  names: { workflow: { x: 90, y: 112 }, agent: { x: 350, y: 112 } },
-  calls: {
-    workflow: 'M150,52 C162,52 162,120 162,294',
-    agent: 'M310,52 C278,52 278,120 278,294',
-  },
-  callLabel: { x: 220, y: 182 },
-  tool: { x: 4, y: 202, w: 432, h: 278 },
-  toolLabel: { x: 22, y: 236, anchor: 'start' },
-  guard: { x: 420, y: 210 },
-  question: { x: 220, y: 312 },
-  unlock: { x: 330, y: 432 },
-  refuse: { x: 106, y: 432 },
-  answers: {
-    no: 'M300,312 C330,312 330,350 330,402',
-    yes: 'M140,312 C106,312 106,350 106,402',
-  },
-  answerLabels: { no: { x: 342, y: 366, anchor: 'start' }, yes: { x: 94, y: 366, anchor: 'end' } },
-};
-
-function UnlockSvg({ layout, className }: { layout: UnlockLayout; className: string }) {
-  const { tool, question, unlock, refuse } = layout;
-  const diamond = { w: 80, h: 38 };
-  const box = { h: 50, unlock: 170, refuse: 124 };
-  const arrow = `unlock-${className}-arrow`;
-  const lit = `unlock-${className}-lit`;
-  const line = { fill: 'none', stroke: color('node-border'), strokeWidth: 2.5, markerEnd: `url(#${arrow})` };
-  const alex = { fill: 'none', stroke: ALEX, strokeWidth: 4, markerEnd: `url(#${lit})` };
-
-  const Outcome = ({ at, w, text, on }: { at: Point; w: number; text: string; on?: boolean }) => (
-    <g>
-      <rect x={at.x - w / 2} y={at.y - box.h / 2} width={w} height={box.h} rx={10} fill={color('surface')} stroke={on ? ALEX : color('node-border')} strokeWidth={on ? 3 : 2} />
-      {on ? <Reply x={at.x - w / 2 + 26} y={at.y} scale={1.1} stroke={ALEX} /> : <Grade ok={false} x={at.x - w / 2 + 26} y={at.y} r={12} />}
-      <text x={at.x - w / 2 + 48} y={at.y} dy="0.35em" fontSize={18} fontWeight={on ? 650 : 500} fill={color('text')}>
-        {text}
-      </text>
-    </g>
-  );
-
-  return (
-    <Svg viewBox={`0 0 ${layout.width} ${layout.height}`} label={UnlockToolDescription} className={className}>
-      <defs>
-        {[
-          { id: arrow, fill: color('node-border') },
-          { id: lit, fill: ALEX },
-        ].map((m) => (
-          <marker key={m.id} id={m.id} viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto">
-            <path d="M0,0 L10,5 L0,10 Z" fill={m.fill} />
-          </marker>
-        ))}
-      </defs>
-
-      {/* The tool, with its one question inside */}
-      <rect x={tool.x} y={tool.y} width={tool.w} height={tool.h} rx={16} fill={color('node-bg')} stroke={color('node-border')} strokeWidth={2.5} />
-      <Text {...layout.toolLabel} size={19}>
-        Unlock tool
-      </Text>
-      <Text {...layout.toolLabel} y={layout.toolLabel.y + 22} size={16} muted>
-        Code
-      </Text>
-      <Guard {...layout.guard} scale={1.1} />
-
-      {/* The callers: the workflow, and the agent, which Alex's request comes from */}
-      <rect x={layout.workflow.x - 56} y={layout.workflow.y - 32} width={112} height={64} rx={11} fill={color('node-bg')} stroke={color('node-border')} strokeWidth={2.5} />
-      <g transform={`translate(${layout.workflow.x} ${layout.workflow.y}) scale(0.7)`}>
-        <DecisionTree />
-      </g>
-      <Agent {...layout.agent} scale={1.4} typing={1} />
-      {[
-        { at: layout.names.workflow, name: 'Workflow', kind: 'Code' },
-        { at: layout.names.agent, name: 'Agent', kind: 'LLM' },
-      ].map(({ at, name, kind }) => (
-        <g key={name}>
-          <Text {...at} size={19}>
-            {name}
-          </Text>
-          <Text {...at} y={at.y + 22} size={16} muted>
-            {kind}
-          </Text>
-        </g>
-      ))}
-
-      <path d={layout.calls.workflow} {...line} />
-      <path d={layout.calls.agent} {...alex} />
-      <Text {...layout.callLabel} size={16} muted>
-        Send unlock
-      </Text>
-
-      <path d={layout.answers.yes} {...line} />
-      <path d={layout.answers.no} {...alex} />
-      <Text {...layout.answerLabels.no} size={16} muted>
-        no
-      </Text>
-      <Text {...layout.answerLabels.yes} size={16} muted>
-        yes
-      </Text>
-
-      <path
-        d={`M${question.x},${question.y - diamond.h} L${question.x + diamond.w},${question.y} L${question.x},${question.y + diamond.h} L${question.x - diamond.w},${question.y} Z`}
-        fill={color('surface')}
-        stroke={ALEX}
-        strokeWidth={3}
-        strokeLinejoin="round"
-      />
-      <text x={question.x} y={question.y} dy="0.35em" textAnchor="middle" fontSize={17} fontWeight={600} fill={color('text')}>
-        Flagged?
-      </text>
-      <Outcome at={unlock} w={box.unlock} text="Unlock steps" on />
-      <Outcome at={refuse} w={box.refuse} text="Refuse" />
-    </Svg>
-  );
-}
-
-function UnlockTool() {
-  return (
-    <>
-      <UnlockSvg layout={UNLOCK_WIDE} className="figure-wide" />
-      <UnlockSvg layout={UNLOCK_TALL} className="figure-tall" />
-    </>
-  );
-}
-
 /**
  * `width` caps the wide layout on wide screens, about its own size, so its
  * type stays near the post's rather than scaling up with the column.
@@ -404,7 +216,6 @@ function UnlockTool() {
 export const FIGURES = {
   grid: { component: IntentGrid, description: GridDescription, width: 560 },
   coverage: { component: Coverage, description: CoverageDescription, width: 500 },
-  'unlock-tool': { component: UnlockTool, description: UnlockToolDescription, width: 500 },
 } satisfies Record<string, { component: ComponentType; description: string; width: number }>;
 
 export type FigureName = keyof typeof FIGURES;
