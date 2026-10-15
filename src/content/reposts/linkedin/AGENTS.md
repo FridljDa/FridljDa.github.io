@@ -2,17 +2,19 @@
 
 `<slug>.md` in this directory, where `<slug>` is the blog post's filename
 without extension. Copy it from `/post/<slug>/linkedin`, which shows the
-character count, where "see more" cuts the text, and the images to upload.
+character count, where "see more" cuts the text, and the comments and images to
+post.
 
 ```yaml
 ---
 status: draft            # draft | posted
 postedAt: 2026-10-10     # once posted
 url: https://www.linkedin.com/posts/...   # once posted
-images:                  # optional, at most 20, uploaded by hand
-  - /images/blog/<slug>/featured.png
-firstComment: |          # optional, at most 1,250 characters
-  Full post: https://danielfridljand.de/post/<slug>
+image: /images/blog/<slug>/featured.png   # optional, one, uploaded by hand
+comments:                # optional, posted in this order under the post
+  - text: |              # at most 1,250 characters
+      Full post: https://danielfridljand.de/post/<slug>
+    image: /images/blog/<slug>/linkedin/<name>.png   # optional, one
 ---
 Post text, as plain text.
 ```
@@ -23,9 +25,9 @@ Post text, as plain text.
   under it; LinkedIn may count emoji differently than the copy page does.
 - **Before "see more":** about 210 characters on desktop, about 140 on mobile,
   and never more than about three lines.
-- **Images:** up to 20 per post, 5 MB each, shown at 4:5 at most. 4:5
-  portrait (1080×1350) or square (1080×1080) uses the most of the feed.
-- **Comment:** 1,250 characters.
+- **Images:** one per post, and one per comment, 5 MB each. Shown at 4:5 at
+  most: 4:5 portrait (1080×1350) or square (1080×1080) uses the most of the feed.
+- **Comments:** any number, 1,250 characters each.
 - Alternatives when a feed post is too small: a PDF document post ("carousel",
   up to 300 pages and 100 MB), or a LinkedIn Article (about 110,000 characters).
 
@@ -93,8 +95,8 @@ message or supporting points changed. Don't carry every new detail across.
   the project: "a support automation I built", not "a bank's support
   automation". Details that are generic, such as a locked account, can stay.
 - **Link to the original** at `https://danielfridljand.de/post/<slug>`, in the
-  text or in `firstComment`. A link in the text gets a preview card from the
-  post's `og:image` only when no images are attached. Moving it to the first
+  text or in the first comment. A link in the text gets a preview card from the
+  post's `og:image` only when no image is attached. Moving it to the first
   comment is common because links in the text are widely reported, though not
   documented, to reduce reach.
 - **Hashtags:** 3–5 at the end, on their own line.
@@ -103,7 +105,12 @@ message or supporting points changed. Don't carry every new detail across.
 
 ## Images
 
-Attached images show below the text, so a sentence that points at one has to
+A post takes one image, so pick the one the message needs. Another picture goes
+in a comment, one per comment, such as the review screen under The Missing Test
+Suite's version. Readers who never open the comments never see it, so the text
+points only at the post's own image.
+
+The post's image shows below the text, so a sentence that points at it has to
 make sense before the reader scrolls to it ("top right in the picture below",
 not a "cell" the text hasn't introduced). Tie the post's concrete example to the
 image when they match: the closed-account cell of Workflow or Agent's grid.

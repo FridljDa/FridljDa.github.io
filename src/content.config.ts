@@ -25,18 +25,29 @@ const blog = defineCollection({
  */
 const linkedin = defineCollection({
   loader: glob({ pattern: ['*.md', '!AGENTS.md'], base: './src/content/reposts/linkedin' }),
-  schema: z.object({
-    status: z.enum(['draft', 'posted']).default('draft'),
-    postedAt: z.coerce.date().optional(),
-    url: z.url().optional(),
-    images: z.array(z.string()).max(LINKEDIN.maxImages).default([]),
-    firstComment: z
-      .string()
-      .refine((text) => countCharacters(text) <= LINKEDIN.maxCommentLength, {
-        message: `A LinkedIn comment holds at most ${LINKEDIN.maxCommentLength} characters`,
-      })
-      .optional(),
-  }),
+  // Strict, so a field LinkedIn has no place for fails the build instead of
+  // being dropped without a word.
+  schema: z
+    .object({
+      status: z.enum(['draft', 'posted']).default('draft'),
+      postedAt: z.coerce.date().optional(),
+      url: z.url().optional(),
+      // A post takes one image; more go in comments, one each.
+      image: z.string().optional(),
+      comments: z
+        .array(
+          z
+            .object({
+              text: z.string().refine((text) => countCharacters(text) <= LINKEDIN.maxCommentLength, {
+                message: `A LinkedIn comment holds at most ${LINKEDIN.maxCommentLength} characters`,
+              }),
+              image: z.string().optional(),
+            })
+            .strict(),
+        )
+        .default([]),
+    })
+    .strict(),
 });
 
 export const collections = { blog, linkedin };

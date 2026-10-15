@@ -34,11 +34,12 @@ test.describe('LinkedIn copy of a post', () => {
       const copies = await page.locator('[data-copy]').evaluateAll((buttons) =>
         buttons.filter((b) => b.getAttribute('data-what') !== 'post link').map((b) => b.getAttribute('data-copy')),
       );
-      expect(copies.join('\n'), 'link the original post in the text or first comment').toContain(
+      expect(copies.join('\n'), 'link the original post in the text or a comment').toContain(
         `https://danielfridljand.de/post/${slug}`,
       );
 
-      for (const img of await page.locator('#images img').all()) {
+      // The post's image and each comment's.
+      for (const img of await page.locator('main img').all()) {
         await expect(img).toHaveJSProperty('complete', true);
         const src = (await img.getAttribute('src')) ?? '';
         expect(await img.evaluate((el: HTMLImageElement) => el.naturalWidth), src).toBeGreaterThan(0);

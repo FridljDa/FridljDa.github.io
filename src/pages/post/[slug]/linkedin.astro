@@ -5,7 +5,8 @@
  * Only posts with src/content/reposts/linkedin/<slug>.md have one; the rest are
  * a 404. The text is the entry's raw body, since LinkedIn takes plain text.
  * The page shows the character count against LinkedIn's limit and where "see
- * more" cuts the text, and lists the images to upload by hand.
+ * more" cuts the text, then the comments to post under it. The post and each
+ * comment take one image, uploaded by hand.
  *
  * Unlisted and noindex, like the Confluence copy.
  */
@@ -24,7 +25,7 @@ if (!post || !repost) {
 const postUrl = `${SITE.url}/post/${post.id}`;
 const text = (repost.body ?? '').trim();
 const length = countCharacters(text);
-const { status, postedAt, url, images, firstComment } = repost.data;
+const { status, postedAt, url, image, comments } = repost.data;
 
 // Split on code points so the fold markers sit where LinkedIn counts them.
 const chars = [...text];
@@ -67,7 +68,13 @@ const segments = [
       </p>
       <div class="actions">
         <button type="button" data-copy={text} data-what="text">Copy text</button>
-        {firstComment && <button type="button" data-copy={firstComment.trim()} data-what="first comment">Copy first comment</button>}
+        {
+          comments.map((comment, i) => (
+            <button type="button" data-copy={comment.text.trim()} data-what={`comment ${i + 1}`}>
+              Copy comment {i + 1}
+            </button>
+          ))
+        }
         <button type="button" data-copy={postUrl} data-what="post link">Copy post link</button>
         <span
           id="count"
@@ -91,30 +98,31 @@ const segments = [
       <div id="text" class="text">{segments[0]}{segments[1] && <span class="fold" data-label="mobile fold" aria-hidden="true"></span>}{segments[1]}{segments[2] && <span class="fold" data-label="desktop fold" aria-hidden="true"></span>}{segments[2]}</div>
 
       {
-        firstComment && (
+        image && (
           <>
-            <h2>First comment</h2>
-            <div id="first-comment" class="text">{firstComment.trim()}</div>
+            <p class="note">Attach this image to the post. Click it to download it.</p>
+            <a class="image" href={image} download>
+              <img src={image} alt="" />
+            </a>
           </>
         )
       }
 
       {
-        images.length > 0 && (
-          <>
-            <h2>Images ({images.length} / {LINKEDIN.maxImages})</h2>
-            <p class="note">Upload these by hand, in this order (left to right). Click one to download it.</p>
-            <ol id="images" class="images">
-              {images.map((src) => (
-                <li>
-                  <a href={src} download>
-                    <img src={src} alt="" />
-                  </a>
-                </li>
-              ))}
-            </ol>
-          </>
-        )
+        comments.map((comment, i) => (
+          <section class="comment">
+            <h2>Comment {i + 1}</h2>
+            <div class="text">{comment.text.trim()}</div>
+            {comment.image && (
+              <>
+                <p class="note">Attach this image to the comment. Click it to download it.</p>
+                <a class="image" href={comment.image} download>
+                  <img src={comment.image} alt="" />
+                </a>
+              </>
+            )}
+          </section>
+        ))
       }
     </main>
 
@@ -228,14 +236,14 @@ const segments = [
         white-space: nowrap;
         user-select: none;
       }
-      .images {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
-        gap: 0.5rem;
-        padding: 0;
-        list-style: none;
+      .text + .note {
+        margin-top: 0.75rem;
       }
-      .images img {
+      .image {
+        display: block;
+        width: min(100%, 18rem);
+      }
+      .image img {
         width: 100%;
         height: auto;
         display: block;

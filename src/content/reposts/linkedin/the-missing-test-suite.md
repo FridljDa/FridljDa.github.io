@@ -1,10 +1,10 @@
 ---
 status: draft
-images:
-  - /images/blog/the-missing-test-suite/linkedin/verdict.png
-  - /images/blog/the-missing-test-suite/linkedin/review-screen.png
-firstComment: |
-  The full post, with the loop step by step, the approval rate it is meant to raise (and why that is not a saving), and which part of the review tool to build yourself: https://danielfridljand.de/post/the-missing-test-suite
+image: /images/blog/the-missing-test-suite/linkedin/verdict.png
+comments:
+  - text: |
+      The full post, with the loop step by step, the approval rate it is meant to raise (and why that is not a saving), and which part of the review tool to build yourself: https://danielfridljand.de/post/the-missing-test-suite
+    image: /images/blog/the-missing-test-suite/linkedin/review-screen.png
 ---
 Coding agents made code cheap. On a support automation I built, that moved the bottleneck to the experts who could tell if a reply was right.
 

@@ -1,9 +1,9 @@
 ---
 status: draft
-images:
-  - /images/blog/workflow-vs-agent/linkedin/grid.png
-firstComment: |
-  The full post, with how a customer's message can talk a single agent out of the flag check, how grading drafts on template match tilts the choice toward code, and the caveats of making the agent the default: https://danielfridljand.de/post/workflow-vs-agent
+image: /images/blog/workflow-vs-agent/linkedin/grid.png
+comments:
+  - text: |
+      The full post, with how a customer's message can talk a single agent out of the flag check, how grading drafts on template match tilts the choice toward code, and the caveats of making the agent the default: https://danielfridljand.de/post/workflow-vs-agent
 ---
 Workflow or agent? In an LLM automation, make the agent the default and let code earn its place.
 
