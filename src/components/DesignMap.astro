@@ -1,0 +1,43 @@
+---
+/**
+ * The section map of uncoded-hospital-revenue, at the level of
+ * detail and with the part highlighted that the section is about (see
+ * DesignMap.tsx for the presets). Rendered on the server, no JavaScript.
+ *
+ * A paste into Confluence drops inline SVG, so the Confluence copy shows a PNG
+ * of each preset, map-<preset>.png in the post's image folder. Regenerate them
+ * after changing the map: npm run confluence:figures
+ */
+import DesignMapSvg, { PRESETS, type PresetName } from './DesignMap';
+import './loop-animation.css';
+
+interface Props {
+  preset: PresetName;
+}
+
+const { preset } = Astro.props;
+const { description } = PRESETS[preset];
+const png = `/images/blog/${Astro.params.slug}/map-${preset}.png`;
+---
+
+{Astro.locals.confluence ? (
+  <img src={png} alt={description} />
+) : (
+  <figure class="design-map not-prose my-8" data-confluence-png={png}>
+    <div class="frame">
+      <DesignMapSvg preset={preset} id={`map-${preset}`} />
+    </div>
+  </figure>
+)}
+
+<style>
+  /* One vertical layout for every width; on wide screens it would otherwise
+     fill the column and tower over the text. */
+  .design-map .frame {
+    max-width: 480px;
+    margin: 0 auto;
+  }
+  .design-map :global(svg) {
+    display: block;
+  }
+</style>
