@@ -23,15 +23,21 @@ You can't design a system for a domain you can't draw, so first the chain the sy
 
 *The six stations of an inpatient case's billing. Grey belongs to the hospital, teal is the coders, orange the payer. The gap this post is about sits between documenting and coding.*
 
+### From the record to a DRG
+
 A hospital is paid per inpatient case with a flat rate, the DRG (diagnosis-related group). Physicians and nurses document the treatment in the hospital information system, the KIS (*Krankenhausinformationssystem*). Coders turn that record into codes: [ICD-10-GM](https://www.bfarm.de/DE/Kodiersysteme/Klassifikationen/ICD/ICD-10-GM/_node.html) for diagnoses, one main diagnosis and any number of secondary ones, and [OPS](https://www.bfarm.de/DE/Kodiersysteme/Klassifikationen/OPS-ICHI/OPS/_node.html) (*Operationen- und Prozedurenschlüssel*) for procedures.
 
 The rulebook for coding is the [DKR](https://www.gkv-spitzenverband.de/media/dokumente/krankenversicherung_1/krankenhaeuser/drg/drg_2026/DKR_2026_20.11.2025.pdf) (*Deutsche Kodierrichtlinien*), the German coding guidelines. A certified grouper, deterministic software built on the [catalog](https://www.g-drg.de/content/download/17468/file/Fallpauschalenkatalog_2026_2025-11-19.pdf) that the InEK (*Institut für das Entgeltsystem im Krankenhaus*) publishes every year, then maps the codes plus age, length of stay and a few more fields to a DRG. The DRG part of the invoice is roughly the DRG's cost weight times a [state base rate](https://www.vdek.com/vertragspartner/Krankenhaeuser/landesbasisfallwerte/_jcr_content/par/download_986753009/file.res/LBFW_2026_Final_2026.05.28.pdf) of about 4,570 EUR in 2026; nursing staff costs are [paid separately, per day](https://www.gesetze-im-internet.de/khentgg/__6a.html).
+
+### Why one secondary diagnosis matters
 
 Secondary diagnoses matter more than you'd think. They feed a severity score, the PCCL (patient clinical complexity level, 0 to 6), which often decides the DRG's suffix letter: F62B, heart failure with higher severity, pays more than F62C. But under DKR rule D003, a secondary diagnosis only counts if it caused treatment, diagnostics, or extra care or monitoring.
 
 <DesignFigure name="pricing" />
 
 *The price of one code: group the same case without it and with it. Here acute kidney failure raises the severity enough to move the case from F62C to F62B, and the difference in cost weight times the base rate is what the code is worth.*
+
+### Audits
 
 The invoice goes to the patient's *Krankenkasse*, the statutory health insurer, which can send it to the MD (*Medizinischer Dienst*) for audit. Since 2021 the MD has been [formally independent of the insurers](https://md-bund.de/ueber-uns/die-medizinischen-dienste-und-der-medizinische-dienst-bund.html), though they still fund it. The MD cuts whatever the record doesn't support. How many of a hospital's invoices a payer may send to audit depends on its track record: the larger the share of its audited invoices the MD cut last time, the more of its invoices may be audited next. Until the end of 2026 that share is [capped at 5 to 15 percent](https://www.gesetze-im-internet.de/sgb_5/__275c.html). A [law passed in July 2026](https://www.bundesgesundheitsministerium.de/ministerium/meldungen/bundestag-beschliesst-gkv-beitragssatzstabilisierunggesetz-pm-10-07-2026) raises the cap to 40 percent from 2027, and removes it entirely for the hospitals with the worst track record. With [two thirds of hospitals](https://www.dki.de/pressemitteilung/dkg-zum-dki-krankenhaus-barometer) posting a loss in 2024, two things matter at once: finding the revenue that was earned but not coded, and never claiming a code the record can't defend.
 
@@ -43,6 +49,8 @@ That second half is the one this design keeps coming back to. A system that only
 
 *All we know so far: documentation goes in, and a coder should get something to act on.*
 
+### The running example
+
 The running example is invented; the coding rules around it are real. A 74-year-old is admitted with heart failure, and two things happen that nobody codes:
 
 - **Acute kidney failure.** On day three, creatinine is 4.3 mg/dl against 1.2 on admission, more than three times the baseline: [stage 3](https://doi.org/10.1038/kisup.2012.1). The ward pauses the ACE inhibitor and checks creatinine daily. That is treatment under D003, so [N17.93](https://gesund.bund.de/icd-code-suche/n17-93) counts, and it moves the case from F62C to F62B, worth roughly a thousand euros in this invented case.
@@ -53,6 +61,8 @@ The running example is invented; the coding rules around it are real. A 74-year-
 *The two misses are different kinds of evidence. The kidney failure is a number crossing a line, which a rule can watch. The malnutrition is spread over documents that have to be read, and the physician's is missing. Both were treated; only one has a physician behind it.*
 
 The first is easy to find with a lab threshold. The second is the kind a rule can't find: scattered across scanned nursing notes, worded differently every time, and blocked on a physician's confirmation. A design that handles both is the goal.
+
+### Boundaries
 
 Before drawing anything, the problem needs boundaries. These are the ones I'd settle on:
 
@@ -150,7 +160,7 @@ The kidney failure takes the easy path: the creatinine threshold fires, the sele
 
 The screening score of 4 is the cheap signal. The evidence selector reads the passages from the scanned nursing notes and picks the dietitian's note on page 1, with the weight loss and the supplement drinks. The rule check says D003 holds, since the malnutrition was treated, but finds no physician's diagnosis, which a coder needs. So it doesn't become a suggestion. It becomes one bundled question to the physician: "Moderate malnutrition, relevant to treatment? Dietitian's note attached." If they confirm, it re-enters the queue as a suggestion, priced like any other. Had the signal been a single low potassium value, normal on the recheck and never treated, D003 would fail and the candidate would be dropped.
 
-The tradeoffs in this part:
+### Tradeoffs
 
 - **Rules, a model, or both.** Rules alone are precise but brittle: the creatinine rule works, but nobody writes a rule for every way a nurse records weight loss. A model alone needs a question to answer, and asking it about every possible code on every case version buries the coder in low-confidence guesses. The hybrid uses rules to say *where to look* and the model to *read what's there*. That matches [a support automation I built](/post/first-level-support-automation): code in charge of the sequence and the model confined to interpretation made each piece testable on its own.
 - **Which model.** An open-weight decision model, self-hosted in a German data center; Jev itself runs only on its maker's [US-hosted service](https://typesafe.ai/legal/privacy-policy), which rules it out for patient data. Models of this kind are new and their benchmarks are their makers' own, so I'd measure one on a few hundred coder-labelled candidates before trusting it. The fallback is a generative open-weight LLM in the same data center, slower and costlier but well understood. The selector's typed interface makes the model a swap, not a redesign.
@@ -165,10 +175,18 @@ When to upgrade: let the decision model ask about codes no signal raised only on
 
 *Highlighted: the decisions, which close the loop into the evaluation.*
 
-**Evaluation.** Coder decisions are the labels: cheap, fast and plentiful, but biased by whatever the queue showed them. MD audit outcomes are the real ground truth, months later and only for the [fewer than one in ten cases](https://md-bund.de/statistik/gkv-beratungen-und-begutachtungen.html) that get audited. And an acceptance rate is not recovered revenue: what counts is the euros that survive an audit, the same gap as [between an approval rate and savings](/post/approval-rate-is-not-savings). Coders also disagree with each other, so I would measure each reviewer's agreement with the others before trusting their labels. Offline replay is weaker than it looks, because it is hard to recreate what the record looked like at the moment a coder would have seen the suggestion. Running new detectors in shadow mode on live cases, logging what they would have suggested, is the honest test. [The Missing Test Suite](/post/the-missing-test-suite) makes the longer case for that, and for why the experts' review throughput is the real bottleneck.
+### Evaluation
 
-**Adding a hospital.** A new adapter, or a configuration of an existing one, a per-hospital overlay for house rules on top of the shared DKR rules, and a backfill of open cases. The yearly catalog updates for ICD-10-GM, OPS and the DRG catalog mean every rule, signal and grouper run is tied to a catalog year, versioned and tested like code. A case admitted in December and discharged in January is the edge case to test first.
+Coder decisions are the labels: cheap, fast and plentiful, but biased by whatever the queue showed them. MD audit outcomes are the real ground truth, months later and only for the [fewer than one in ten cases](https://md-bund.de/statistik/gkv-beratungen-und-begutachtungen.html) that get audited. And an acceptance rate is not recovered revenue: what counts is the euros that survive an audit, the same gap as [between an approval rate and savings](/post/approval-rate-is-not-savings). Coders also disagree with each other, so I would measure each reviewer's agreement with the others before trusting their labels. Offline replay is weaker than it looks, because it is hard to recreate what the record looked like at the moment a coder would have seen the suggestion. Running new detectors in shadow mode on live cases, logging what they would have suggested, is the honest test. [The Missing Test Suite](/post/the-missing-test-suite) makes the longer case for that, and for why the experts' review throughput is the real bottleneck.
 
-**Security.** German hosting only, a model that runs there too, encryption, per-hospital isolation, and the case store's audit log, which shows which data the model saw for each suggestion.
+### Adding a hospital
 
-**Contracts and growth.** Three small records pass between the parts: a case version (the record as of one change), a suggestion (the proposed code, its evidence, the rule that allows it, the revenue delta and a status), and a coder's decision with its reason. They are the contracts between the parts, so ingestion, detectors, the grouper service and the review UI can change independently. They also carry the next products: answering MD queries from the same evidence, billing privately insured patients under the GOÄ (*Gebührenordnung für Ärzte*), the physicians' fee schedule, and showing controlling the revenue at risk.
+A new adapter, or a configuration of an existing one, a per-hospital overlay for house rules on top of the shared DKR rules, and a backfill of open cases. The yearly catalog updates for ICD-10-GM, OPS and the DRG catalog mean every rule, signal and grouper run is tied to a catalog year, versioned and tested like code. A case admitted in December and discharged in January is the edge case to test first.
+
+### Security
+
+German hosting only, a model that runs there too, encryption, per-hospital isolation, and the case store's audit log, which shows which data the model saw for each suggestion.
+
+### Contracts and growth
+
+Three small records pass between the parts: a case version (the record as of one change), a suggestion (the proposed code, its evidence, the rule that allows it, the revenue delta and a status), and a coder's decision with its reason. They are the contracts between the parts, so ingestion, detectors, the grouper service and the review UI can change independently. They also carry the next products: answering MD queries from the same evidence, billing privately insured patients under the GOÄ (*Gebührenordnung für Ärzte*), the physicians' fee schedule, and showing controlling the revenue at risk.
