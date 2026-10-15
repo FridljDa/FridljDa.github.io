@@ -1,0 +1,159 @@
+---
+title: "How I'd Approach a System Design Interview at calliora"
+pubDate: 2026-10-15T00:00:00.000Z
+tags:
+  - AI
+  - Architecture
+  - Healthcare
+  - Interviews
+description: "Preparing for a system design interview at a hospital-billing startup by working one plausible question end to end: from a vague prompt about lost revenue, through a black box and six abstract boxes, to the life of one suggested code and how you would know it works."
+---
+
+import DesignMap from '../../components/DesignMap.astro';
+import DesignFigure from '../../components/DesignFigure.astro';
+
+## TL;DR
+Tomorrow I have a system design interview at [calliora](https://calliora.com/en/), a Munich startup that helps German hospitals get paid for the care they actually gave. To prepare, I picked the question I think is most likely, "hospitals lose revenue because things are documented but never coded; design a system that fixes that", and worked it the way Patrick Halina's [Systems Design Interview Guide](http://patrickhalina.com/posts/systems-design-interview-guide/) suggests: clarify first, then a simple end-to-end design, then concrete components, then the tradeoffs inside one of them, then the finishing touches. The map of the system starts as a black box and gains detail with every section. My answer, in one line: cheap signals find candidate codes, an LLM only confirms them and must cite the page, a certified grouper prices them, and a coder decides. The hard parts are not throughput but integration, trust and evaluation.
+
+The architecture below is my inference from calliora's public website and press coverage, not their actual design. I have not seen their code.
+
+## How I'd run the hour
+
+Halina's framing, paraphrased: treat the interview less like an exam and more like an improvised presentation that you lead. The prompt is vague on purpose, and how you narrow it down is part of what is being graded. You should do most of the talking, explain why at every step, start simple and only add complexity when something forces it, and keep an eye on the interviewer's cues: when they ask a direct question, answer it, even if it pulls you off your plan.
+
+He breaks the work into five steps, and I'll use them as this post's sections:
+
+1. **Clarify.** No design before you know who uses it, at what scale, under which constraints.
+2. **High-level solution.** Abstract and end to end, with the data that flows between the steps.
+3. **Architectural components.** Turn each abstract box into concrete building blocks, and say why.
+4. **Concrete implementations.** For the parts that matter, list the options and their tradeoffs, and when you would upgrade.
+5. **Finishing touches.** How the work splits across a team, how the system evolves, and the real-world gotchas: compliance, versioning, security.
+
+He also lists what interviewers look for besides the boxes: process, background knowledge, real-world gotchas, technical leadership, and empathy for the people using the product. In a hospital-billing company, that last one is not decoration. The users are coders with a queue, physicians with no time, and a Medizincontrolling department that answers to management for every euro.
+
+## How a German hospital gets paid
+
+You can't design a system for a domain you can't draw, so first the chain the system has to fit into.
+
+<DesignFigure name="billing-chain" />
+
+*The six stations of an inpatient case's billing. The system in this post sits between the first two.*
+
+A hospital is paid per inpatient case (*Fall*), with a flat rate called a DRG. Physicians and nurses document the treatment in the hospital information system (KIS, for example Dedalus ORBIS, iMedOne or SAP i.s.h.med). Coders (*Kodierfachkräfte*) turn that record into codes: ICD-10-GM for diagnoses, one main diagnosis and any number of secondary ones, and OPS for procedures. The rulebook for that is the DKR, the German coding guidelines. A certified grouper, deterministic software whose catalog InEK publishes each year, then maps the codes plus age, length of stay, ventilation hours and a few more fields to a DRG. The invoice is roughly the DRG's cost weight times a state base rate of 4,000 to 5,000 EUR.
+
+Secondary diagnoses matter more than you'd think. They feed a severity score (PCCL, 0 to 6) that often decides the DRG's suffix letter, and F62B pays more than F62C. But under DKR D003, a secondary diagnosis only counts if it caused treatment, diagnostics or extra care. The other levers are ventilation-hour thresholds, length-of-stay limits (deductions below the lower limit, surcharges above the upper one), the choice between outpatient, inpatient and Hybrid-DRG, and add-on payments.
+
+The invoice goes to the patient's Krankenkasse, which can send it to the Medizinischer Dienst (MD) for audit. The MD cuts whatever the record doesn't support. Until the end of 2026, payers may audit 5 to 15 percent of a hospital's invoices. From 2027, a hospital that has more than 35 percent of its audited invoices objected to can face audits of up to 40 percent. With two thirds of general hospitals running at a loss in 2024, that makes two things matter at once: finding the revenue that was earned but not coded, and never claiming a code the record can't defend.
+
+That second half is the one I'd keep coming back to in the interview. A system that only maximises revenue is an upcoding machine, and the 2027 rule punishes exactly that.
+
+## Step 1: Clarify
+
+<DesignMap preset="clarify" />
+
+*All we know so far: documentation goes in, and a coder should get something to act on.*
+
+The running example is invented, but the pattern comes straight from calliora's own mockups. A 74-year-old is admitted with heart failure. On day three, the lab report shows creatinine at 4.3 mg/dl, more than three times the baseline: acute kidney failure, stage 3. The ward treats it and documents it. Nobody codes it. N17.93 would have moved the case from F62C to F62B, worth around a thousand euros. Multiply that by every case in every department.
+
+Before drawing anything, I'd ask:
+
+- **Who acts on the output?** Coders working a queue, physicians answering questions, or controlling looking at totals? I'd assume coders first, since they own the codes, with physicians as the source of missing facts.
+- **When?** While the patient is still admitted, or after discharge, just before billing? Earlier means more time to ask a physician while they still remember the case; later means a more complete record. I'd aim for both: concurrent review that settles by discharge.
+- **What does a mistake cost?** A missed code costs its revenue delta once. A wrong code can fail an audit, and from 2027 a bad audit record raises the audit rate for every case. So a wrong suggestion is worse than a missed one, and the system should optimise for precision.
+- **What data is there?** Structured data from the KIS over HL7 v2 or FHIR, discharge letters, lab PDFs, scanned nursing notes. Every hospital's mix is different.
+- **Where can it run?** Patient data under GDPR and the hospital's own rules. I'd expect German data centers at least, and the question whether an external LLM API is allowed at all.
+- **What scale?** A hospital has roughly 20,000 to 80,000 inpatient cases a year, so a few hundred discharges a day. Even with a few dozen hospitals that is nothing for a database.
+
+That last answer reshapes the whole interview. This is not a system where the hard part is requests per second. The hard parts are getting data out of a dozen KIS installations, keeping the view of a case up to date as the record changes, and making coders trust suggestions enough to act on them. I'd say that out loud, because it decides where the remaining time goes.
+
+## Step 2: A simple end-to-end design
+
+<DesignMap preset="end-to-end" />
+
+*Six steps, still technology-agnostic. Blue boxes are the platform, the teal one is a person, the grey ones belong to the hospital.*
+
+The simplest design that works end to end:
+
+1. **Hospital systems** send what happens to a case.
+2. A **case context store** keeps one record per case: every code, document and lab value, with the time it arrived.
+3. **Gap detectors** read a case and propose codes it is missing, each with the evidence for it.
+4. A **counterfactual grouper** runs the case with and without each proposed code and reports the revenue delta.
+5. A **ranked worklist** shows the coder the suggestions worth their time, best first. They accept or reject.
+6. **Write-back and labels:** accepted codes go back into the KIS, and every decision goes back to the detectors as a label.
+
+The data between the steps is small and worth naming, because it is the interface teams would build against:
+
+- a **case version**: case ID, hospital, version number, codes, documents and lab values as of that version;
+- a **suggestion**: case ID and version, proposed code, evidence (document, page, quote), the rule that allows it, the revenue delta, and a status (open, accepted, rejected, asked);
+- a **decision**: suggestion ID, who, accept or reject, and a reason from a short list.
+
+Two things already fall out of this. Suggestions point at a case *version*, so when the record changes we know which suggestions to re-check. And the grouper sits after the detectors, not inside them: the LLM proposes, deterministic certified software does the money math. I never want a model to tell a coder what a code is worth.
+
+## Step 3: Components
+
+<DesignMap preset="components" />
+
+*The same six steps, each with the components that make it concrete.*
+
+Now each box becomes building blocks.
+
+**Ingestion.** One adapter per KIS, translating HL7 v2 messages, FHIR resources or file drops into one internal case timeline. Admission, transfer, new lab result, new document, discharge: each is an event appended to the case. Documents go through OCR when they are scans. This is the least glamorous component and the one I'd expect to eat the most engineering time, because every hospital's installation is configured differently.
+
+**Case store.** An append-only event log per case, with a materialised current view. Versioning comes for free from the log, and so does the audit log: for every suggestion we can show what the record looked like when it was made, and what the model saw. A relational database handles this at a few hundred thousand cases a year without any sharding story.
+
+**Detectors.** Here I'd split recall from precision. Cheap, high-recall signals run on every new event: a lab value over a threshold (creatinine over 3x baseline), a medication that implies a diagnosis (insulin without a diabetes code), a procedure code without a matching diagnosis, ventilation hours near a threshold. They are code, fast, and free to run on every version. Only the candidates they raise go to an LLM, whose job is narrow: find the passage in the documentation that supports or refutes the candidate, and cite the document and page. A rule layer then encodes the DKR checks that are mechanical: is this code combination valid, does D003 hold given what the evidence says was done.
+
+**Grouper.** The certified grouper as a service: case in, DRG and revenue out, deterministic. To price a suggestion it runs the case twice, with and without the code.
+
+**Worklist.** Ranked by expected value: revenue delta times the probability the coder accepts, minus a penalty for audit risk. Suggestions missing one fact the physician can supply become a question instead, bundled per case: one yes or no per case, not six interruptions.
+
+**Write-back and labels.** Accepted codes go back into the KIS through the same adapter, so the hospital's system stays the record of truth. Decisions go to a labels table the evaluation reads.
+
+## Step 4: The life of one suggestion
+
+<DesignMap preset="suggestion" />
+
+*Highlighted: the part the interviewer is most likely to dig into, where the model, the rules and the money meet.*
+
+Following the running example through it:
+
+<DesignFigure name="suggestion" />
+
+*The kidney-failure case, from the signal that raised it to one of three outcomes. Dropping is dashed: it is the outcome nobody sees.*
+
+The new lab result arrives and the threshold signal fires: creatinine 4.3 mg/dl, more than three times baseline, and no N17 code on the case. The evidence extractor finds the lab report, page 2, and a later note that dialysis was ordered. The rule check confirms D003 holds, since the kidney failure was treated, and the grouper says N17.93 moves the case from F62C to F62B. The evidence is complete, so it becomes a suggestion in the cardiology coder's queue, with both pages linked. Had the record shown the lab value but no treatment, it would have become a question to the physician: "Acute kidney failure, relevant to treatment? Lab report attached." Had the grouper said the code changes nothing, it would have been dropped.
+
+This is where I'd lay out the tradeoffs, since that is what step 4 is for:
+
+- **Rules, LLM, or both.** Rules alone are precise but brittle, and nobody writes a rule for every way a physician phrases "we treated it". An LLM alone reads everything but is expensive on every version of every case, and its mistakes are hard to explain. The hybrid uses rules to say *where to look* and the LLM to *read what's there*. That matches what I saw in my own work on a support automation: code in charge of the sequence, the model confined to interpretation, made each piece testable on its own.
+- **Precision over recall.** A coder who sees three bad suggestions in a row stops trusting the queue, and then the good ones go unread too. I'd start with a few detectors that are nearly always right, and add more only when the acceptance rate holds.
+- **How to search the counterfactuals.** Running the grouper once per suggestion is fine for a handful. calliora's site talks about evaluating over 10,000 plausible scenarios per case in seconds. Brute force works at that size if each run is fast and results are cached per case version. Smarter would be to exploit the grouper's structure: most codes don't touch the decision path that matters for this DRG, so you only need to vary the ones near a decision boundary. Cases near a boundary are interesting both ways: upside if a documented fact is missing, audit risk if a claimed one is thin.
+- **Workflow or agent.** For this pipeline, a [workflow](/post/workflow-vs-agent): every suggestion goes through the same checks in the same order, and the order is what makes it defensible in an audit. An agent might earn a place later, for the open-ended work like drafting an answer to an MD query.
+
+When to upgrade: add an LLM-based recall stage only once the cheap signals' misses are measured and worth the cost; move off brute-force counterfactuals only when grouper calls show up in the latency budget.
+
+## Step 5: Finishing touches
+
+<DesignMap preset="finishing" />
+
+*Highlighted: the decisions, which close the loop into the evaluation.*
+
+**Evaluation.** Coder decisions are the labels: cheap, fast and plentiful, but biased by whatever the queue showed them. MD audit outcomes are the real ground truth, months later and only for the few percent of cases that get audited. Coders also disagree with each other. In my support automation, approval rates ranged from 37 to 100 percent depending on the reviewer, on the same system, so I would measure each reviewer's agreement before trusting their labels. Offline replay is weaker than it looks, because you can't easily recreate what the record looked like at the moment a coder would have seen the suggestion. Running new detectors in shadow mode on live cases, logging what they would have suggested, is the honest test. [The Missing Test Suite](/post/the-missing-test-suite) makes the longer case for that, and for why the experts' review throughput is the real bottleneck.
+
+**Onboarding hospital number 20.** A new adapter, or a configuration of an existing one, a per-hospital overlay for house rules on top of the shared DKR rules, and a backfill of open cases. The yearly catalog updates for ICD-10-GM, OPS and the DRG catalog mean every rule, signal and grouper call is tied to a catalog year, versioned and tested like code. A case admitted in December and discharged in January is the edge case I'd expect them to ask about.
+
+**Security.** German or EU hosting only, an LLM that runs there too, encryption, per-hospital isolation, and the audit log from step 3 that shows which data the model saw for each suggestion. calliora advertises ISO 27001 and BSI C5, so I'd expect this to be table stakes rather than a talking point.
+
+**Evolution.** Once the case context store exists, the same view of a case powers the next products: drafting answers to MD queries from the same evidence, GOÄ billing for privately insured patients, and controlling dashboards on revenue at risk.
+
+**Team split.** Ingestion and adapters; the case store; detectors and rules; the grouper service; the review UI; and evaluation. The interfaces between them are the three records from step 2, which is why I'd name them early.
+
+## What I'd want to learn from them
+
+The questions I'd turn around at the end, because the design depends on them: how much of the effort really goes into KIS integration; whether coders work suggestions inside calliora or inside their KIS; how they measure a suggestion's quality before an MD audit settles it; and where they draw the line between finding earned revenue and inviting upcoding. That last one is where I'd expect their answer to tell me most about the company.
+
+## Sources
+
+- calliora's [website](https://calliora.com/en/) and [platform page](https://calliora.com/de/plattform/), for the product, the mockups and the claims about counterfactual analysis.
+- Funding coverage in [Trending Topics](https://www.trendingtopics.eu/calliora-funding-hospital-billing-ai/), [Tech Funding News](https://techfundingnews.com/bertelsmann-and-redalpine-back-calliora-with-6m-for-ai-that-cuts-hospital-billing-errors/) and [BornCity](https://borncity.com/news/calliora-finanzierung-bertelsmann-und-redalpine-fuehren-6-millionen-runde-an/), for the 2027 audit rule and the hospital figures.
+- Patrick Halina's [Systems Design Interview Guide](http://patrickhalina.com/posts/systems-design-interview-guide/), for the approach, paraphrased.
