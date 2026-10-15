@@ -5,6 +5,7 @@ tags:
   - AI
   - Architecture
   - Healthcare
+math: true
 description: "German hospitals lose revenue on care that was given and documented but never coded. A design for finding it: cheap signals find candidate codes, a decision model confirms them by picking the passage that proves them, a certified grouper prices them, and a coder decides."
 image: /images/blog/uncoded-hospital-revenue/featured.png
 ---
@@ -27,19 +28,37 @@ You can't design a system for a domain you can't draw, so first the chain the sy
 
 A hospital is paid per inpatient case with a flat rate, the DRG (diagnosis-related group). Physicians and nurses document the treatment in the hospital information system, the KIS (*Krankenhausinformationssystem*). Coders turn that record into codes: [ICD-10-GM](https://www.bfarm.de/DE/Kodiersysteme/Klassifikationen/ICD/ICD-10-GM/_node.html) for diagnoses, one main diagnosis and any number of secondary ones, and [OPS](https://www.bfarm.de/DE/Kodiersysteme/Klassifikationen/OPS-ICHI/OPS/_node.html) (*Operationen- und Prozedurenschlüssel*) for procedures.
 
-The rulebook for coding is the [DKR](https://www.gkv-spitzenverband.de/media/dokumente/krankenversicherung_1/krankenhaeuser/drg/drg_2026/DKR_2026_20.11.2025.pdf) (*Deutsche Kodierrichtlinien*), the German coding guidelines. A certified grouper, deterministic software built on the [catalog](https://www.g-drg.de/content/download/17468/file/Fallpauschalenkatalog_2026_2025-11-19.pdf) that the InEK (*Institut für das Entgeltsystem im Krankenhaus*) publishes every year, then maps the codes plus age, length of stay and a few more fields to a DRG. The DRG part of the invoice is roughly the DRG's cost weight times a [state base rate](https://www.vdek.com/vertragspartner/Krankenhaeuser/landesbasisfallwerte/_jcr_content/par/download_986753009/file.res/LBFW_2026_Final_2026.05.28.pdf) of about 4,570 EUR in 2026; nursing staff costs are [paid separately, per day](https://www.gesetze-im-internet.de/khentgg/__6a.html).
+The rulebook for coding is the [DKR](https://www.gkv-spitzenverband.de/media/dokumente/krankenversicherung_1/krankenhaeuser/drg/drg_2026/DKR_2026_20.11.2025.pdf) (*Deutsche Kodierrichtlinien*), the German coding guidelines. A certified grouper, deterministic software built on the [catalog](https://www.g-drg.de/content/download/17468/file/Fallpauschalenkatalog_2026_2025-11-19.pdf) that the InEK (*Institut für das Entgeltsystem im Krankenhaus*) publishes every year, then maps the codes plus age, length of stay and a few more fields to a DRG. The DRG part of the invoice is roughly
+
+$$
+\text{DRG revenue} \approx \text{cost weight} \times \text{base rate},
+$$
+
+with a [state base rate](https://www.vdek.com/vertragspartner/Krankenhaeuser/landesbasisfallwerte/_jcr_content/par/download_986753009/file.res/LBFW_2026_Final_2026.05.28.pdf) of about 4,570 EUR in 2026; nursing staff costs are [paid separately, per day](https://www.gesetze-im-internet.de/khentgg/__6a.html).
 
 ### Why one secondary diagnosis matters
 
-Secondary diagnoses matter more than you'd think. They feed a severity score, the PCCL (patient clinical complexity level, 0 to 6), which often decides the DRG's suffix letter: F62B, heart failure with higher severity, pays more than F62C. But under DKR rule D003, a secondary diagnosis only counts if it caused treatment, diagnostics, or extra care or monitoring.
+Secondary diagnoses matter more than you'd think. They feed a severity score, the PCCL (patient clinical complexity level, 0 to 6), which often decides the DRG's suffix letter: F62B, heart failure with higher severity, pays more than F62C. But under DKR rule D003, a secondary diagnosis only counts if it caused treatment, diagnostics, or extra care or monitoring. What a counted code is worth follows from grouping the case twice:
+
+$$
+\text{price of a code} = \big(w_{\text{with}} - w_{\text{without}}\big) \times \text{base rate},
+$$
+
+where $w$ is the cost weight of the DRG the case lands in with and without the code.
 
 <DesignFigure name="pricing" />
 
-*The price of one code: group the same case without it and with it. Here acute kidney failure raises the severity enough to move the case from F62C to F62B, and the difference in cost weight times the base rate is what the code is worth.*
+*The price of one code: group the same case without it and with it. Here acute kidney failure raises the severity enough to move the case from F62C to F62B, and the formula above prices the move.*
 
 ### Audits
 
-The invoice goes to the patient's *Krankenkasse*, the statutory health insurer, which can send it to the MD (*Medizinischer Dienst*) for audit. Since 2021 the MD has been [formally independent of the insurers](https://md-bund.de/ueber-uns/die-medizinischen-dienste-und-der-medizinische-dienst-bund.html), though they still fund it. The MD cuts whatever the record doesn't support. How many of a hospital's invoices a payer may send to audit depends on its track record: the larger the share of its audited invoices the MD cut last time, the more of its invoices may be audited next. Until the end of 2026 that share is [capped at 5 to 15 percent](https://www.gesetze-im-internet.de/sgb_5/__275c.html). A [law passed in July 2026](https://www.bundesgesundheitsministerium.de/ministerium/meldungen/bundestag-beschliesst-gkv-beitragssatzstabilisierunggesetz-pm-10-07-2026) raises the cap to 40 percent from 2027, and removes it entirely for the hospitals with the worst track record. With [two thirds of hospitals](https://www.dki.de/pressemitteilung/dkg-zum-dki-krankenhaus-barometer) posting a loss in 2024, two things matter at once: finding the revenue that was earned but not coded, and never claiming a code the record can't defend.
+The invoice goes to the patient's *Krankenkasse*, the statutory health insurer, which can send it to the MD (*Medizinischer Dienst*) for audit. Since 2021 the MD has been [formally independent of the insurers](https://md-bund.de/ueber-uns/die-medizinischen-dienste-und-der-medizinische-dienst-bund.html), though they still fund it. The MD cuts whatever the record doesn't support. How many of a hospital's invoices a payer may send to audit depends on its track record. With $s$ the share of its audited invoices the MD left uncut last time, the [cap until the end of 2026](https://www.gesetze-im-internet.de/sgb_5/__275c.html) is
+
+$$
+\text{audit quota} \le \begin{cases} 5\,\% & \text{if } s \ge 60\,\% \\ 10\,\% & \text{if } 40\,\% \le s < 60\,\% \\ 15\,\% & \text{if } s < 40\,\%. \end{cases}
+$$
+
+A [law passed in July 2026](https://www.bundesgesundheitsministerium.de/ministerium/meldungen/bundestag-beschliesst-gkv-beitragssatzstabilisierunggesetz-pm-10-07-2026) raises the cap to 40 percent from 2027, and removes it entirely for the hospitals with the worst track record. With [two thirds of hospitals](https://www.dki.de/pressemitteilung/dkg-zum-dki-krankenhaus-barometer) posting a loss in 2024, two things matter at once: finding the revenue that was earned but not coded, and never claiming a code the record can't defend.
 
 That second half is the one this design keeps coming back to. A system that only maximises revenue is an upcoding machine, and stricter audits punish exactly that.
 
@@ -53,7 +72,7 @@ That second half is the one this design keeps coming back to. A system that only
 
 The running example is invented; the coding rules around it are real. A 74-year-old is admitted with heart failure, and two things happen that nobody codes:
 
-- **Acute kidney failure.** On day three, creatinine is 4.3 mg/dl against 1.2 on admission, more than three times the baseline: [stage 3](https://doi.org/10.1038/kisup.2012.1). The ward pauses the ACE inhibitor and checks creatinine daily. That is treatment under D003, so [N17.93](https://gesund.bund.de/icd-code-suche/n17-93) counts, and it moves the case from F62C to F62B, worth roughly a thousand euros in this invented case.
+- **Acute kidney failure.** On day three, creatinine is 4.3 mg/dl against 1.2 on admission, $4.3 / 1.2 \approx 3.6$ times the baseline, so at least three times: [stage 3](https://doi.org/10.1038/kisup.2012.1). The ward pauses the ACE inhibitor and checks creatinine daily. That is treatment under D003, so [N17.93](https://gesund.bund.de/icd-code-suche/n17-93) counts, and it moves the case from F62C to F62B, worth roughly a thousand euros in this invented case.
 - **Malnutrition.** The nursing admission screening, the [NRS 2002](https://doi.org/10.1016/S0261-5614(02)00214-5) (Nutritional Risk Screening), scores 4, where 3 already means the patient is at risk. A dietitian's note on day four records a 10 percent weight loss in three months and prescribes supplement drinks twice a day. No physician mentions it. The coding guidelines make diagnoses the treating physician's responsibility, so a coder won't code what only a dietitian wrote down, and [E44.0](https://gesund.bund.de/icd-code-suche/e44-0), moderate malnutrition, stays uncoded.
 
 <DesignFigure name="running-example" />
@@ -71,7 +90,7 @@ Before drawing anything, the problem needs boundaries. These are the ones I'd se
 - **A wrong code costs more than a missed one.** A missed code costs its revenue delta once. A wrong code can fail an audit, and a bad audit record raises the audit rate for every case. So the system optimises for precision.
 - **The data is heterogeneous.** Structured data from the KIS arrives as [HL7 v2](https://www.hl7.org/implement/standards/product_brief.cfm?product_id=185) messages, the decades-old workhorse of hospital data exchange, or through [FHIR](https://hl7.org/fhir/), the newer web-API standard from the same organisation. Alongside it come discharge letters, lab PDFs, scanned nursing notes, in a different mix at every hospital.
 - **Patient data stays in Germany.** German law [keeps cloud processing of health data](https://www.gesetze-im-internet.de/sgb_5/__393.html) in the EU or in countries with an adequacy decision, and hospitals' own rules go further, so in practice that means German data centers, and a model that runs there too.
-- **Scale is small.** Even a large university hospital discharges only a few hundred inpatients a day, around [150,000 a year](https://www.charite.de/service/pressemitteilung/artikel/detail/charite_bilanz_2025_deutliches_plus_bei_patientinnen_und_forschung); the [average German hospital](https://www.destatis.de/DE/Themen/Gesellschaft-Umwelt/Gesundheit/Krankenhauser/Tabellen/gd-krankenhaeuser-jahre.html) handles about 10,000 cases a year. To size the model's load, take a large hospital and two guesses of mine, not measurements: each case's record changes about five times before discharge (new lab results, new documents), and each change leaves about three possible missing codes for the model to check. For 300 discharges a day, that is around 4,500 model calls a day, each over about 20,000 tokens of documentation: some 90 million tokens a day. For a generative LLM that is real money. For a small decision model on one GPU, it is not, so cost is not what limits the design; precision is. For a database, a few dozen hospitals are nothing.
+- **Scale is small.** Even a large university hospital discharges only a few hundred inpatients a day, around [150,000 a year](https://www.charite.de/service/pressemitteilung/artikel/detail/charite_bilanz_2025_deutliches_plus_bei_patientinnen_und_forschung); the [average German hospital](https://www.destatis.de/DE/Themen/Gesellschaft-Umwelt/Gesundheit/Krankenhauser/Tabellen/gd-krankenhaeuser-jahre.html) handles about 10,000 cases a year. To size the model's load, take a large hospital and two guesses of mine, not measurements: each case's record changes about five times before discharge (new lab results, new documents), and each change leaves about three possible missing codes for the model to check. For 300 discharges a day, that is $300 \times 5 \times 3 = 4{,}500$ model calls a day, each over about 20,000 tokens of documentation: $4{,}500 \times 20{,}000 \approx 90$ million tokens a day. For a generative LLM that is real money. For a small decision model on one GPU, it is not, so cost is not what limits the design; precision is. For a database, a few dozen hospitals are nothing.
 
 The last point shapes the design. The hard part is not requests per second. It is getting data out of a dozen KIS installations, keeping the view of a case current as the record changes, and making coders trust suggestions enough to act on them.
 
@@ -105,11 +124,15 @@ Two things already fall out of this. Each suggestion points at a case *version*,
 - **Adapters:** one per KIS, turning HL7 v2 messages, FHIR resources and file drops into events on one timeline per case: admission, transfer, lab result, document, discharge. Scans go through OCR. Most KIS installations offer no API to query; the hospital's interface engine routes a copy of their message feeds to us. Lab results, for example, arrive as HL7 v2 result messages from the lab system, with local test codes and units (creatinine in mg/dl or µmol/l) that are mapped once per hospital.
 - **Where the effort goes:** messages arrive out of order and get corrected or cancelled afterwards, so an adapter applies corrections instead of appending. And every hospital's installation is configured differently.
 - **Store:** Postgres, an append-only event log per case plus a materialised current view. The log gives versions and an audit log for free, and a few hundred thousand cases a year need no sharding.
-- **Orchestration:** each new case version starts a durable workflow, for example in [Temporal](/post/temporal-human-in-the-loop), keyed by case and version. A message delivered twice runs once, and a question to a physician can wait days without a process waiting with it. Ten lab results in an hour cause one re-run, and results are cached per case version, catalog year and detector version, so a re-run only pays for what changed.
+- **Orchestration:** each new case version starts a durable workflow, for example in [Temporal](/post/temporal-human-in-the-loop), keyed by case and version. A message delivered twice runs once, and a question to a physician can wait days without a process waiting with it. Ten lab results in an hour cause one re-run, and every result is cached under $\text{hash}(\text{inputs}, \text{catalog year}, \text{detector version})$, so a re-run only pays for what changed.
 
 <DesignFigure name="event-log" />
 
 *The running example's case in the store. Every message is a new version; nothing is overwritten. The suggestion points at the version it was made on, so when the lab corrects a value two versions later, the store knows which suggestion to re-check. 4.1 is still over three times the baseline, so it stands.*
+
+<DesignFigure name="debounce" />
+
+*Orchestration for one burst of lab results: one run after the burst, and inside it only the steps whose inputs changed. The 15 minutes are an example.*
 
 ### Gap detectors
 
@@ -135,7 +158,18 @@ The certified grouper as a service: case in, DRG and revenue out, deterministic,
 
 <DesignMap preset="worklist" />
 
-- **Ranked by expected value:** revenue delta times the probability the coder accepts, minus a penalty for audit risk. A code worth nothing still appears, ranked low, since the guidelines ask for every diagnosis that meets their definition.
+Suggestions are ranked by expected value:
+
+$$
+\text{score} = \Delta\text{revenue} \times P(\text{coder accepts}) - \lambda \times \text{audit risk}
+$$
+
+A code with $\Delta\text{revenue} = 0$ still appears, ranked last, since the guidelines ask for every diagnosis that meets their definition.
+
+<DesignFigure name="ranking" />
+
+*Three invented suggestions. The most valuable code ranks second: its evidence is thin, so the coder is unlikely to accept it and an audit likely to cut it.*
+
 - **Evidence on screen:** the quote highlighted on its page, the DRG before and after, one-click reject reasons.
 - **Questions bundled:** a suggestion that needs a fact only the physician can supply becomes a question, one yes or no per case, not six interruptions.
 
@@ -195,7 +229,7 @@ When to upgrade: let the decision model ask about codes no signal raised only on
 
 - **Labels:** coder decisions. Cheap, fast and plentiful, but biased by whatever the queue showed them.
 - **Ground truth:** MD audit outcomes, months later and only for the [fewer than one in ten cases](https://md-bund.de/statistik/gkv-beratungen-und-begutachtungen.html) that get audited.
-- **The metric:** not the acceptance rate but the euros that survive an audit, the same gap as [between an approval rate and savings](/post/approval-rate-is-not-savings).
+- **The metric:** not the acceptance rate but $\sum_{\text{accepted}} \Delta\text{revenue} - \text{euros cut in audits}$, the same gap as [between an approval rate and savings](/post/approval-rate-is-not-savings).
 - **Reviewers:** coders disagree with each other, so I'd measure each one's agreement with the others before trusting their labels.
 - **Shadow mode, not replay:** offline replay is weaker than it looks, because it is hard to recreate what the record looked like when a coder would have seen the suggestion. The honest test runs a new detector on live cases and logs what it would have suggested. [The Missing Test Suite](/post/the-missing-test-suite) makes the longer case for that, and for why the experts' review throughput is the real bottleneck.
 
