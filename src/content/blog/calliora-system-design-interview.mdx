@@ -55,16 +55,16 @@ That second half is the one I'd keep coming back to in the interview. A system t
 
 The running example is invented, but the pattern comes straight from calliora's own mockups. A 74-year-old is admitted with heart failure. On day three, the lab report shows creatinine at 4.3 mg/dl, more than three times the baseline: acute kidney failure, stage 3. The ward treats it and documents it. Nobody codes it. N17.93 would have moved the case from F62C to F62B, worth around a thousand euros. Multiply that by every case in every department.
 
-Before drawing anything, I'd ask:
+Before drawing anything, the problem needs boundaries. These are the ones I'd settle on:
 
-- **Who acts on the output?** Coders working a queue, physicians answering questions, or controlling looking at totals? I'd assume coders first, since they own the codes, with physicians as the source of missing facts.
-- **When?** While the patient is still admitted, or after discharge, just before billing? Earlier means more time to ask a physician while they still remember the case; later means a more complete record. I'd aim for both: concurrent review that settles by discharge.
-- **What does a mistake cost?** A missed code costs its revenue delta once. A wrong code can fail an audit, and from 2027 a bad audit record raises the audit rate for every case. So a wrong suggestion is worse than a missed one, and the system should optimise for precision.
-- **What data is there?** Structured data from the KIS over HL7 v2 or FHIR, discharge letters, lab PDFs, scanned nursing notes. Every hospital's mix is different.
-- **Where can it run?** Patient data under GDPR and the hospital's own rules. I'd expect German data centers at least, and the question whether an external LLM API is allowed at all.
-- **What scale?** A hospital has roughly 20,000 to 80,000 inpatient cases a year, so a few hundred discharges a day. Even with a few dozen hospitals that is nothing for a database.
+- **Coders act on the output.** They own the codes, so they get the suggestions. Physicians are the source of missing facts, and controlling only sees totals.
+- **Review runs while the patient is admitted and settles by discharge.** Earlier leaves time to ask a physician while they still remember the case; later gives a more complete record. Concurrent review gets both.
+- **A wrong code costs more than a missed one.** A missed code costs its revenue delta once. A wrong code can fail an audit, and from 2027 a bad audit record raises the audit rate for every case. So the system optimises for precision.
+- **The data is heterogeneous.** Structured data from the KIS over HL7 v2 or FHIR, discharge letters, lab PDFs, scanned nursing notes, in a different mix at every hospital.
+- **Patient data stays in Germany.** GDPR and the hospitals' own rules mean German data centers, and an LLM that runs there too.
+- **Scale is small.** A hospital has roughly 20,000 to 80,000 inpatient cases a year, a few hundred discharges a day. Even a few dozen hospitals are nothing for a database.
 
-That last answer reshapes the whole interview. This is not a system where the hard part is requests per second. The hard parts are getting data out of a dozen KIS installations, keeping the view of a case up to date as the record changes, and making coders trust suggestions enough to act on them. I'd say that out loud, because it decides where the remaining time goes.
+The last point reshapes the whole design. This is not a system where the hard part is requests per second. The hard parts are getting data out of a dozen KIS installations, keeping the view of a case up to date as the record changes, and making coders trust suggestions enough to act on them. That decides where the rest of this post spends its time.
 
 ## Step 2: A simple end-to-end design
 
@@ -147,10 +147,6 @@ When to upgrade: add an LLM-based recall stage only once the cheap signals' miss
 **Evolution.** Once the case context store exists, the same view of a case powers the next products: drafting answers to MD queries from the same evidence, GOÄ billing for privately insured patients, and controlling dashboards on revenue at risk.
 
 **Team split.** Ingestion and adapters; the case store; detectors and rules; the grouper service; the review UI; and evaluation. The interfaces between them are the three records from step 2, which is why I'd name them early.
-
-## What I'd want to learn from them
-
-The questions I'd turn around at the end, because the design depends on them: how much of the effort really goes into KIS integration; whether coders work suggestions inside calliora or inside their KIS; how they measure a suggestion's quality before an MD audit settles it; and where they draw the line between finding earned revenue and inviting upcoding. That last one is where I'd expect their answer to tell me most about the company.
 
 ## Sources
 
