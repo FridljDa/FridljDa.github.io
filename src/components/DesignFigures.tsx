@@ -156,39 +156,110 @@ function Pricing({ id }: { id: string }) {
   );
 }
 
-/** The running example's two lanes, day by day: where each fact is written down, and that neither gets coded. */
+/** A check or a cross in a small circle: whether a fact meets one condition for coding. */
+function Mark({ x, y, yes }: Point & { yes: boolean }) {
+  return (
+    <g transform={`translate(${x} ${y})`}>
+      <circle r={13} fill={color(yes ? 'ok' : 'bad')} />
+      <path d={yes ? 'M-6,0 l4,4 l8,-8' : 'M-5,-5 l10,10 M5,-5 l-10,10'} fill="none" stroke="#fff" strokeWidth={2.8} strokeLinecap="round" strokeLinejoin="round" />
+    </g>
+  );
+}
+
+/**
+ * The running example in two parts. Above, every fact day by day in the lane
+ * of its diagnosis, with the system it was recorded in. Below, the two
+ * diagnoses against what coding them takes: both are in the record and
+ * treated, only one has a physician behind it, and neither is coded.
+ */
 function RunningExample(_props: { id: string }) {
   const lanes = [
-    { x: 170, title: 'Kidney', tag: 'A rule finds it' },
-    { x: 370, title: 'Malnutrition', tag: 'Must be read' },
+    { x: 170, title: 'Kidney' },
+    { x: 370, title: 'Malnutrition' },
   ];
-  const rows: { day: string; y: number; cells: (null | [string, string])[] }[] = [
-    { day: 'Day 1', y: 110, cells: [['Creatinine 1.2', 'admission lab'], ['NRS 2002: 4', 'nursing screen']] },
-    { day: 'Day 3', y: 210, cells: [['Creatinine 4.3', 'drug paused'], null] },
-    { day: 'Day 4', y: 310, cells: [null, ['Dietitian note', 'scanned, -10%']] },
+  const events: { day?: string; lane: 0 | 1; title: string; line: string }[] = [
+    { day: 'Day 1', lane: 0, title: 'Creatinine 1.2', line: 'lab system' },
+    { lane: 1, title: 'NRS 2002: 4', line: 'nursing form' },
+    { day: 'Day 3', lane: 0, title: 'Creatinine 4.3', line: 'lab system' },
+    { lane: 0, title: 'Drug paused', line: 'medication order' },
+    { day: 'Day 4', lane: 1, title: 'Weight -10%', line: 'scanned note' },
+    { lane: 1, title: 'Supplements', line: "dietitian's order" },
   ];
+  // Facts of the same day and lane stack; a fact in the other lane shares the row.
+  const ROW = 84;
+  let row = -1;
+  let lastDay = '';
+  const placed = events.map((e, i) => {
+    const prev = events[i - 1];
+    if (e.day || !prev || prev.lane === e.lane) row += 1;
+    if (e.day) lastDay = e.day;
+    return { ...e, y: 100 + row * ROW, showDay: Boolean(e.day), dayLabel: lastDay };
+  });
+  const timelineEnd = 100 + row * ROW + 40;
+
+  const tableTop = timelineEnd + 56;
+  const cols = [316, 420];
+  const checks: { label: string; values: [boolean | string, boolean | string] }[] = [
+    { label: 'In the record', values: [true, true] },
+    { label: 'Treated (D003)', values: [true, true] },
+    { label: 'Physician acted', values: [true, false] },
+    { label: 'Coded', values: [false, false] },
+    { label: 'Found by', values: ['lab rule', 'reading'] },
+    { label: 'Ends as', values: ['suggestion', 'question'] },
+  ];
+  const ROW_T = 42;
+  const height = tableTop + 36 + checks.length * ROW_T + 12;
+
   return (
-    <svg viewBox="0 0 480 540" role="img" aria-label={DESCRIPTIONS['running-example']} style={{ width: '100%', height: 'auto', fontFamily: 'inherit' }}>
+    <svg viewBox={`0 0 480 ${height}`} role="img" aria-label={DESCRIPTIONS['running-example']} style={{ width: '100%', height: 'auto', fontFamily: 'inherit' }}>
       {lanes.map((l) => (
         <g key={l.x}>
-          <line x1={l.x} x2={l.x} y1={52} y2={378} stroke={color('edge')} strokeWidth={2.5} strokeDasharray="6 6" />
+          <line x1={l.x} x2={l.x} y1={52} y2={timelineEnd} stroke={color('edge')} strokeWidth={2.5} strokeDasharray="6 6" />
           <text x={l.x} y={30} dy="0.35em" textAnchor="middle" fontSize={TITLE} fontWeight={700} fill={color('text')}>
             {l.title}
           </text>
         </g>
       ))}
-      {rows.map((r) => (
-        <g key={r.day}>
-          <text x={38} y={r.y} dy="0.35em" textAnchor="middle" fontSize={17} fontWeight={600} fill={color('muted')}>
-            {r.day}
-          </text>
-          {r.cells.map((c, i) => c && <Step key={i} at={{ x: lanes[i].x, y: r.y }} w={186} h={76} title={c[0]} line={c[1]} role="hospital" />)}
+      {placed.map((e) => (
+        <g key={e.title}>
+          {e.showDay && (
+            <text x={38} y={e.y} dy="0.35em" textAnchor="middle" fontSize={17} fontWeight={600} fill={color('muted')}>
+              {e.dayLabel}
+            </text>
+          )}
+          <Step at={{ x: lanes[e.lane].x, y: e.y }} w={186} h={68} title={e.title} line={e.line} role="hospital" />
         </g>
       ))}
-      <Step at={{ x: 270, y: 418 }} w={386} h={76} title="Discharge" line="neither is coded" role="human" />
-      {lanes.map((l) => (
-        <Tag key={l.tag} x={l.x} y={500} text={l.tag} size={15} />
+
+      <line x1={20} x2={460} y1={tableTop - 28} y2={tableTop - 28} stroke={color('edge')} strokeWidth={2} />
+      <text x={24} y={tableTop} dy="0.35em" fontSize={17} fontWeight={600} fill={color('muted')}>
+        At discharge
+      </text>
+      {lanes.map((l, i) => (
+        <text key={l.title} x={cols[i]} y={tableTop} dy="0.35em" textAnchor="middle" fontSize={17} fontWeight={700} fill={color('text')}>
+          {l.title}
+        </text>
       ))}
+      {checks.map((c, r) => {
+        const y = tableTop + 36 + r * ROW_T + ROW_T / 2;
+        return (
+          <g key={c.label}>
+            {r % 2 === 0 && <rect x={16} y={y - ROW_T / 2} width={448} height={ROW_T} rx={8} fill={color('node-bg')} />}
+            <text x={24} y={y} dy="0.35em" fontSize={LINE} fontWeight={500} fill={color('text')}>
+              {c.label}
+            </text>
+            {c.values.map((v, i) =>
+              typeof v === 'boolean' ? (
+                <Mark key={i} x={cols[i]} y={y} yes={v} />
+              ) : (
+                <text key={i} x={cols[i]} y={y} dy="0.35em" textAnchor="middle" fontSize={17} fontWeight={600} fill={color('muted')}>
+                  {v}
+                </text>
+              ),
+            )}
+          </g>
+        );
+      })}
     </svg>
   );
 }
@@ -315,7 +386,7 @@ export const DESCRIPTIONS = {
   pricing:
     'How one secondary diagnosis changes the price: the same case is grouped without and with N17.93, acute kidney failure; without it the case lands in F62C, with it the higher severity moves it to F62B, and the difference in cost weight times the base rate is the price of the code.',
   'running-example':
-    'The running example day by day. Kidney: creatinine 1.2 on admission, 4.3 on day three and the drug paused. Malnutrition: a nursing screening score of 4 on day one, a scanned dietitian note on day four. At discharge neither is coded; a rule finds the first, the second must be read.',
+    'The running example. Kidney: creatinine 1.2 on admission and 4.3 on day three, both in the lab system, and the drug paused by a medication order. Malnutrition: a nursing screening score of 4 on day one, then on day four a scanned dietitian note with a 10 percent weight loss and an order for supplement drinks. At discharge both are in the record and both were treated, but only the kidney failure has a physician acting on it, and neither is coded. A lab rule finds the first and it ends as a suggestion; the second has to be read and ends as a question for the physician.',
   selector:
     'How the evidence selector answers: a fixed question about a candidate code, here whether the malnutrition was treated, numbered passages from the record plus "none of these", and a decision model that picks passage 3, the supplement drinks, with a probability. It cannot write a quote of its own.',
   worklist:
