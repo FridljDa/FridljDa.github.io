@@ -41,8 +41,9 @@ export const PRESETS = {
     focus: [],
     guard: true,
     description:
-      'The system as one map: a customer message goes to intent recognition, an LLM call, which routes it either to a workflow in code or to an agent that follows the bank’s policies. Both act only through the same tools, which are code and hold the rules that must never be broken, shown as a shield. The tools send the reply, and experts grade every reply; their grades feed back into the workflow.',
+      'The system as one map: a message goes to intent recognition, an LLM call, which routes it to a workflow in code or to an agent. Both act through the same tools, code with a shield for the rules they hold, which send the reply; experts grade it and their grades feed back into the workflow.',
   },
+
   'agent-first': {
     focus: ['message', 'direct', 'agent', 'agentTools', 'tools', 'send', 'reply'],
     direct: true,
@@ -64,43 +65,46 @@ export const PRESETS = {
     default: 'code',
     tags: [{ on: 'workflow', text: 'Grows' }],
     small: true,
-    description:
-      'Highlighted: the workflow, which grows a new branch each round of the experts’ feedback. It needs a branch for every request on every account state.',
+    description: 'Highlighted: the workflow, which grows a new branch each round of the experts’ feedback.',
   },
+
+  // A pair with next-time: the same parts lit, the dashes swapped, the pill moved.
   fallback: {
-    focus: ['intent', 'known', 'workflow', 'other', 'agent', 'reply', 'grade', 'experts'],
+    focus: ['intent', 'known', 'other', 'workflow', 'agent'],
     default: 'code',
-    tags: [{ on: 'workflow', text: 'Default' }],
+    tags: [{ on: 'agent', text: 'Leftovers' }],
     small: true,
     description:
-      'Highlighted: code is the default; only requests the tree doesn’t recognise land in an Other leaf and go, by the dashed route, to the fallback agent. The experts grade every reply.',
+      'Highlighted: intent recognition sends known requests to the workflow, the default, and the rest by the dashed Other route to the agent.',
   },
+
   guards: {
     focus: ['tools', 'workflowTools', 'agentTools', 'workflow', 'agent'],
     guard: true,
     tags: [{ on: 'tools', text: 'Must hold' }],
     small: true,
-    description:
-      'Highlighted: the tools, with a rule inside them, and both routes into them: whether the workflow or the agent calls a tool, the rule holds. Anything a single mistake would make an incident is a rule and goes here; the rest is policy, for the agent to follow.',
+    description: 'Highlighted: the tools, with a shield for the rule inside them, and the calls into them from both the workflow and the agent.',
   },
-  // The end state, full size and all of it: the overview's parts, with the default swapped.
+
   'next-time': {
-    focus: [],
+    focus: ['intent', 'known', 'other', 'workflow', 'agent', 'feedback', 'experts'],
     default: 'agent',
     guard: true,
     tags: [{ on: 'agent', text: 'Default' }],
+    small: true,
     description:
-      'Next time: the agent is the default route, following the bank’s policies, and the rules stay in the tools on both routes. A request type takes the dashed route to a workflow in code only once it graduates: the experts’ grades show it is common and the agent gets it wrong, or its action can’t be undone.',
+      'Highlighted: the routing next time. The agent is the default route; a request type takes the dashed route to the workflow only once the experts’ feedback graduates it.',
   },
+
   start: {
-    focus: ['experts', 'grade', 'feedback', 'workflow', 'agent', 'agentTools', 'tools', 'send', 'reply'],
+    focus: ['send', 'reply', 'grade', 'experts'],
     default: 'agent',
     guard: true,
     tags: [{ on: 'experts', text: 'Fill the grid' }],
     small: true,
-    description:
-      'Highlighted: the experts, grading the agent’s replies from the first week. Their grades are how the bank’s unwritten policy gets written down, and they decide which request types graduate into a workflow in code: common ones the agent gets wrong. The rules stay in the tools.',
+    description: 'Highlighted: the experts, grading every reply from the first week.',
   },
+
 } satisfies Record<string, Preset>;
 
 export type PresetName = keyof typeof PRESETS;

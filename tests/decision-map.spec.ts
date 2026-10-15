@@ -32,7 +32,10 @@ test.describe('Figures in Workflow or Agent', () => {
     const start = page.locator('figure.decision-map[data-confluence-png$="/map-start.png"] svg:visible');
     await expect(start.getByText('Fill the grid')).toBeVisible();
 
-    // Next time, the default moves to the agent and a request type graduates into code.
+    // Next time mirrors the leftovers: the default moves to the agent and a request type graduates into code.
+    const fallback = page.locator('figure.decision-map[data-confluence-png$="/map-fallback.png"] svg:visible');
+    await expect(fallback.getByText('Leftovers')).toBeVisible();
+    await expect(fallback.getByText('Other', { exact: true })).toBeVisible();
     // Both layouts carry the labels; only the one that fits the width is shown.
     const next = page.locator('figure.decision-map[data-confluence-png$="/map-next-time.png"] svg:visible');
     await expect(next.getByText('Default')).toBeVisible();

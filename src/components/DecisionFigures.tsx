@@ -45,7 +45,7 @@ const Text = ({ x, y, anchor = 'middle', size, weight = 600, muted, children }: 
 );
 
 const STATES = ['No flags', 'Flagged', 'Closed'];
-const INTENTS = ['Locked account', 'Missing payment', 'Change of details'];
+const INTENTS = ['Account locked', 'Missing payment', 'Change of details'];
 
 /** The cells the tree decided, by intent and state: both for a locked account. Every other cell is a rule nobody has written. */
 const DECIDED: Record<string, { text: string; escalate?: boolean; alex?: boolean }> = {
@@ -54,7 +54,7 @@ const DECIDED: Record<string, { text: string; escalate?: boolean; alex?: boolean
 };
 
 const GridDescription =
-  'A grid of three intents, Locked account, Missing payment and Change of details, against three account states, No flags, Flagged and Closed. Two cells are decided, both for a locked account: with no flags it gets the unlock steps, which is Alex’s cell, and flagged it is escalated. The other seven cells are question marks.';
+  'A grid of three intents, Account locked, Missing payment and Change of details, against three account states, No flags, Flagged and Closed. Two cells are decided, both for Account locked: with no flags it gets the unlock steps, which is Alex’s cell, and flagged it is escalated. The other seven cells are question marks.';
 
 interface GridLayout {
   width: number;
@@ -234,7 +234,8 @@ interface UnlockLayout {
   names: { workflow: Label; agent: Label };
   /** Each caller's call into the tool, ending on the question; Alex's comes from the agent. */
   calls: { workflow: string; agent: string };
-  callLabels: Label[];
+  /** One label where the two calls meet: both send the same request. */
+  callLabel: Label;
   tool: { x: number; y: number; w: number; h: number };
   toolLabel: Label;
   guard: Point;
@@ -256,10 +257,7 @@ const UNLOCK_WIDE: UnlockLayout = {
     workflow: 'M124,84 C210,84 226,138 288,138',
     agent: 'M104,234 C210,234 226,162 288,162',
   },
-  callLabels: [
-    { x: 184, y: 66 },
-    { x: 176, y: 262 },
-  ],
+  callLabel: { x: 190, y: 158 },
   tool: { x: 244, y: 16, w: 358, h: 304 },
   toolLabel: { x: 264, y: 52, anchor: 'start' },
   guard: { x: 590, y: 24 },
@@ -280,13 +278,10 @@ const UNLOCK_TALL: UnlockLayout = {
   agent: { x: 350, y: 52 },
   names: { workflow: { x: 90, y: 112 }, agent: { x: 350, y: 112 } },
   calls: {
-    workflow: 'M150,52 C192,52 198,110 198,274',
-    agent: 'M310,52 C248,52 242,110 242,274',
+    workflow: 'M150,52 C162,52 162,120 162,294',
+    agent: 'M310,52 C278,52 278,120 278,294',
   },
-  callLabels: [
-    { x: 186, y: 182, anchor: 'end' },
-    { x: 254, y: 182, anchor: 'start' },
-  ],
+  callLabel: { x: 220, y: 182 },
   tool: { x: 4, y: 202, w: 432, h: 278 },
   toolLabel: { x: 22, y: 236, anchor: 'start' },
   guard: { x: 420, y: 210 },
@@ -364,11 +359,9 @@ function UnlockSvg({ layout, className }: { layout: UnlockLayout; className: str
 
       <path d={layout.calls.workflow} {...line} />
       <path d={layout.calls.agent} {...alex} />
-      {layout.callLabels.map((l) => (
-        <Text key={l.y} {...l} size={16} muted>
-          Send unlock
-        </Text>
-      ))}
+      <Text {...layout.callLabel} size={16} muted>
+        Send unlock
+      </Text>
 
       <path d={layout.answers.yes} {...line} />
       <path d={layout.answers.no} {...alex} />
