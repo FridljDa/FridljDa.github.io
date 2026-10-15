@@ -49,7 +49,15 @@ caveats, numbers and side arguments, makes a LinkedIn post worse.
    message is.
 
 Then reread each paragraph and ask whether the post is weaker without it. If
-not, cut it.
+not, cut it. That includes a paragraph with the post's sharpest line when it
+carries a second message: Workflow or Agent's version left out how grading on
+template match tilted the choice toward code, and its first comment names it
+as something the full post adds. The first comment names only what the
+LinkedIn text leaves out.
+
+Answer the question a skeptical reader asks first. Arguing that the agent
+should decide raises "and the security check?", so the text says who checks
+the flag in each design.
 
 The Missing Test Suite walks through the review loop step by step, the approval
 rate it aims to raise, and which part of the review tool to build yourself. Its
@@ -76,7 +84,10 @@ message or supporting points changed. Don't carry every new detail across.
   own job was designing the system"). An opening like "we did X; next time I
   would do the other way round" reads as a confession; the same facts told as
   where I found a design breaks read as expertise. Don't claim more projects
-  or experience than the post describes.
+  or experience than the post describes: a design I recommend but haven't run
+  stays in "would", and one the team only tried is "tried", not "built".
+- **One word per thing.** Once the post says "workflow", don't switch to
+  "tree" for the same thing.
 - **Keep the client anonymous.** A post's running example (Northstar Bank,
   Alex Carter) is invented to protect the real client, so never present it as
   the project: "a support automation I built", not "a bank's support
@@ -91,6 +102,11 @@ message or supporting points changed. Don't carry every new detail across.
   them there after pasting.
 
 ## Images
+
+Attached images show below the text, so a sentence that points at one has to
+make sense before the reader scrolls to it ("top right in the picture below",
+not a "cell" the text hasn't introduced). Tie the post's concrete example to the
+image when they match: the closed-account cell of Workflow or Agent's grid.
 
 Reuse the post's images under `/images/blog/<slug>/` where they fit. A crop
 made for LinkedIn goes in `src/assets/images/blog/<slug>/linkedin/` and keeps
