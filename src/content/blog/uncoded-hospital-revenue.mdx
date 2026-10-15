@@ -111,6 +111,18 @@ The simplest design that works end to end:
 
 Two things already fall out of this. Each suggestion points at a case *version*, the record as it stood when the suggestion was made, so when the record changes we know which suggestions to re-check. And the grouper sits after the detectors, not inside them: the model confirms, deterministic certified software does the money math. I never want a model to tell a coder what a code is worth.
 
+### What runs when
+
+Nothing in the pipeline waits for a person, and no person waits for the pipeline. The suggestion queue sits between them.
+
+<DesignFigure name="lanes" />
+
+*The background keeps the queue current; the foreground only reads and decides.*
+
+- **In the background, asynchronously:** every new case version, debounced, runs detectors and grouper and updates that case's suggestions in the queue, minutes behind the record. Physician answers come back as new events, often days later. A nightly sweep reconciles the case store with the KIS and re-runs cases when a catalog changes.
+- **In the foreground, synchronously:** a coder opening the queue gets suggestions that are already computed, in milliseconds. Accept and reject are saved at once; writing a code back to the KIS is queued.
+- **The deadline is discharge.** A case's suggestions should settle before it is billed, so cases close to discharge rank first and a final run happens at discharge.
+
 ## The components
 
 <DesignMap preset="components" />
@@ -138,15 +150,44 @@ Two things already fall out of this. Each suggestion points at a case *version*,
 
 <DesignMap preset="detect" />
 
-- **Cheap signals,** for recall: a lab value over a threshold, a positive nutrition screening, supplement drinks on the medication list, a procedure without a matching diagnosis. Code, fast, run on every version.
-- **Evidence selector,** for precision: the documents are split into numbered passages, a search keeps the twenty most relevant to the candidate, and a decision model answers a few fixed questions. Which passage proves it, or none? Was it treated? Did a physician diagnose it?
+A detector is code, versioned and tested like any other: a cheap signal that raises a candidate code, the questions the evidence selector has to answer about it, and the DKR rules it has to pass. A few examples, with illustrative thresholds; the real ones come from the coding guidelines and each hospital's coders:
+
+| Signal | Candidate code | Treatment that would satisfy D003 |
+|---|---|---|
+| Creatinine at least 3 × the admission value | N17.93, acute kidney failure, stage 3 | a drug paused, fluids, daily checks |
+| NRS 2002 score of 3 or more | E43 / E44.0 / E44.1, malnutrition by severity | a dietitian, supplement drinks |
+| Potassium below 3.5 mmol/l twice | E87.6, hypokalaemia | potassium substitution |
+| A procedure code without its usual diagnosis | the diagnosis the procedure implies | the procedure itself |
+
+#### Signals and the evidence selector
+
+- **Cheap signals,** for recall: thresholds on lab values, screening scores, the medication list, procedure codes. Code, fast, run on every version.
+- **Evidence selector,** for precision: the documents are split into numbered passages after OCR, a search on the candidate's terms and the signal's values keeps the twenty most relevant, and a decision model answers a few fixed questions.
 - **Rule checks:** the mechanical DKR checks. Is this code combination valid, and does D003 hold given what the evidence says was done?
+
+<DesignFigure name="detector-questions" />
+
+*The selector's questions for the running example's two candidates, with invented probabilities. The answers, not a free-text verdict, decide what happens next: the kidney failure becomes a suggestion, the malnutrition a question for the physician.*
 
 A non-generative decision model, the kind TypeSafe [introduced with Jev](https://typesafe.ai/blog/introducing-system-one-models-and-jev) in September 2026, cannot write text at all: given a question and a fixed set of options, it returns a choice or a probability its maker calls calibrated, [typed](/post/pydantic-ai-type-safe-hybrid-workflows) like any other step. A citation chosen from numbered passages can't point at a quote that isn't there, which is a better story for an audit than checking generated quotes afterwards. And the probabilities set the thresholds for suggesting, asking and dropping.
 
 <DesignFigure name="selector" />
 
 *The evidence selector on the malnutrition case. The model's only possible answers are the passage numbers and "none of these", so whatever it cites is in the record.*
+
+#### Traps
+
+A keyword finds malnutrition in many passages that don't prove it. Clinical text is full of negations, earlier stays, plans and text copied forward from old letters, and these are exactly the cases the selector has to answer with "none of these":
+
+<DesignFigure name="traps" />
+
+*Five passages a search for malnutrition returns. Only the last proves current, treated malnutrition. The traps are what the labelled test set for a detector has to cover.*
+
+#### Shipping a detector
+
+- **Tests:** a few hundred coder-labelled candidates, traps included, run on every change.
+- **Versions:** each detector carries a version and a catalog year, so results stay reproducible and cache correctly.
+- **Shadow mode first:** a new detector or version logs what it would suggest on live cases before any coder sees it (see the evaluation below).
 
 ### Grouper
 
