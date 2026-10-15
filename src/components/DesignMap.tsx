@@ -53,6 +53,34 @@ export const PRESETS = {
     description:
       'The same six steps with their components: adapters and a versioned event log; cheap signals, an evidence selector that picks the passage, and rule checks; a certified grouper pricing each code; a worklist for coders and bundled physician queries; write-back and labels.',
   },
+  store: {
+    level: 'detail',
+    focus: ['sources', 'store'],
+    tags: [{ on: 'store', text: 'Most effort' }],
+    description: 'Highlighted: the hospital systems and the case context store, with an adapter per KIS and a versioned event log per case.',
+  },
+  detect: {
+    level: 'detail',
+    focus: ['detect'],
+    tags: [{ on: 'detect', text: 'Precision first' }],
+    description: 'Highlighted: the gap detectors, with cheap signals, the evidence selector and the DKR rule checks.',
+  },
+  grouper: {
+    level: 'detail',
+    focus: ['grouper'],
+    tags: [{ on: 'grouper', text: 'Deterministic' }],
+    description: 'Highlighted: the grouper, a certified grouper run with and without each code, cached per case version.',
+  },
+  worklist: {
+    level: 'detail',
+    focus: ['worklist'],
+    description: 'Highlighted: the ranked worklist, where coders accept or reject and physicians answer bundled questions.',
+  },
+  feedback: {
+    level: 'detail',
+    focus: ['feedback', 'loop'],
+    description: 'Highlighted: write-back of accepted codes into the KIS, and the decisions going back to the detectors as labels.',
+  },
   suggestion: {
     level: 'detail',
     focus: ['detect', 'grouper', 'worklist'],
