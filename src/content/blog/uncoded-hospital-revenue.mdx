@@ -139,6 +139,12 @@ The certified grouper as a service: case in, DRG and revenue out, deterministic,
 
 *What the coder sees for the running example: the kidney failure as a suggestion, with the evidence highlighted and the DRG before and after, and the malnutrition as a question for the physician.*
 
+One click on a quote opens its page, so the coder checks the evidence where it was written, not a copy of it:
+
+<DesignFigure name="evidence-page" />
+
+*The malnutrition evidence on its scanned page. The numbered passages are the ones the selector chose from; the outlined one is its answer.*
+
 ### Write-back and labels
 
 <DesignMap preset="feedback" />
@@ -158,7 +164,13 @@ The kidney failure takes the easy path: the creatinine threshold fires, the sele
 
 *The malnutrition case, from the signal that raised it to a question for the physician. Dropping is dashed: it is the outcome nobody sees.*
 
-The screening score of 4 is the cheap signal. The evidence selector reads the passages from the scanned nursing notes and picks the dietitian's note on page 1, with the weight loss and the supplement drinks. The rule check says D003 holds, since the malnutrition was treated, but finds no physician's diagnosis, which a coder needs. So it doesn't become a suggestion. It becomes one bundled question to the physician: "Moderate malnutrition, relevant to treatment? Dietitian's note attached." If they confirm, it re-enters the queue as a suggestion, priced like any other. Had the signal been a single low potassium value, normal on the recheck and never treated, D003 would fail and the candidate would be dropped.
+The screening score of 4 is the cheap signal. The evidence selector reads the passages from the scanned nursing notes and picks the dietitian's note on page 1, with the weight loss and the supplement drinks. The rule check says D003 holds, since the malnutrition was treated, but finds no physician's diagnosis, which a coder needs. So it doesn't become a suggestion. It becomes one bundled question to the physician:
+
+<DesignFigure name="physician-question" />
+
+*The physician's side: questions from coding, one card per case, each with the evidence attached and a one-click answer.*
+
+If they confirm, it re-enters the queue as a suggestion, priced like any other. Had the signal been a single low potassium value, normal on the recheck and never treated, D003 would fail and the candidate would be dropped.
 
 ### Tradeoffs
 
@@ -177,7 +189,15 @@ When to upgrade: let the decision model ask about codes no signal raised only on
 
 ### Evaluation
 
-Coder decisions are the labels: cheap, fast and plentiful, but biased by whatever the queue showed them. MD audit outcomes are the real ground truth, months later and only for the [fewer than one in ten cases](https://md-bund.de/statistik/gkv-beratungen-und-begutachtungen.html) that get audited. And an acceptance rate is not recovered revenue: what counts is the euros that survive an audit, the same gap as [between an approval rate and savings](/post/approval-rate-is-not-savings). Coders also disagree with each other, so I would measure each reviewer's agreement with the others before trusting their labels. Offline replay is weaker than it looks, because it is hard to recreate what the record looked like at the moment a coder would have seen the suggestion. Running new detectors in shadow mode on live cases, logging what they would have suggested, is the honest test. [The Missing Test Suite](/post/the-missing-test-suite) makes the longer case for that, and for why the experts' review throughput is the real bottleneck.
+- **Labels:** coder decisions. Cheap, fast and plentiful, but biased by whatever the queue showed them.
+- **Ground truth:** MD audit outcomes, months later and only for the [fewer than one in ten cases](https://md-bund.de/statistik/gkv-beratungen-und-begutachtungen.html) that get audited.
+- **The metric:** not the acceptance rate but the euros that survive an audit, the same gap as [between an approval rate and savings](/post/approval-rate-is-not-savings).
+- **Reviewers:** coders disagree with each other, so I'd measure each one's agreement with the others before trusting their labels.
+- **Shadow mode, not replay:** offline replay is weaker than it looks, because it is hard to recreate what the record looked like when a coder would have seen the suggestion. The honest test runs a new detector on live cases and logs what it would have suggested. [The Missing Test Suite](/post/the-missing-test-suite) makes the longer case for that, and for why the experts' review throughput is the real bottleneck.
+
+<DesignFigure name="shadow" />
+
+*A new detector version in shadow mode next to the live one. The numbers are invented. It suggests more and agrees with coders a little less, which is the trade to decide on before promoting it; the audit outcomes that settle it arrive months later.*
 
 ### Adding a hospital
 
