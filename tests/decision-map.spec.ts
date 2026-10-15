@@ -2,19 +2,19 @@ import { test, expect } from '@playwright/test';
 
 const POST = '/post/workflow-vs-agent';
 
-const PRESETS = ['overview', 'agent-first', 'workflow', 'tree', 'fallback', 'guards', 'next-time', 'start'];
+const PRESETS = ['overview', 'agent-first', 'workflow', 'tree', 'fallback', 'next-time', 'start'];
 
 test.describe('Figures in Workflow or Agent', () => {
   test('every section opens with the decision map, its part highlighted', async ({ page }) => {
     await page.goto(POST);
-    const headings = page.locator('.prose h2');
+    // The TL;DR, if it is a heading, is the overview's; every other section opens with its own map.
+    const headings = page.locator('.prose h2').filter({ hasNotText: 'TL;DR' });
     const maps = page.locator('figure.decision-map');
-    await expect(maps).toHaveCount(8);
-    // One under every section heading; the TL;DR's is the overview.
-    expect(await maps.count()).toBe(await headings.count());
+    await expect(maps).toHaveCount(PRESETS.length);
+    expect(await maps.count()).toBe((await headings.count()) + 1);
 
     // The overview greys nothing out; a section's map greys out the rest.
-    const greyed = (i: number) => maps.nth(i).locator('g[opacity="0.22"]').count();
+    const greyed = (i: number) => maps.nth(i).locator('g[opacity="0.34"]').count();
     expect(await greyed(0)).toBe(0);
     expect(await greyed(1)).toBeGreaterThan(0);
 
@@ -43,19 +43,15 @@ test.describe('Figures in Workflow or Agent', () => {
     await expect(next.getByText('Graduate', { exact: true })).toBeVisible();
   });
 
-  test('the running example has the grid, the coverage schematic and the unlock tool, and no Mermaid', async ({ page }) => {
+  test('the grid and the coverage schematic, and no Mermaid', async ({ page }) => {
     await page.goto(POST);
     const figures = page.locator('figure.decision-figure');
-    await expect(figures).toHaveCount(3);
+    await expect(figures).toHaveCount(2);
     const grid = figures.nth(0).locator('svg:visible');
     await expect(grid.getByText('Unlock steps')).toBeVisible();
     await expect(grid.getByText('?', { exact: true })).toHaveCount(7);
     const coverage = figures.nth(1).locator('svg:visible');
     await expect(coverage.getByText('Branches written →')).toBeVisible();
-    await expect(coverage.getByText('Account locked')).toBeVisible();
-    const tool = figures.nth(2).locator('svg:visible');
-    await expect(tool.getByText('Flagged?')).toBeVisible();
-    await expect(tool.getByText('Refuse')).toBeVisible();
     await expect(page.locator('.prose .mermaid, .prose pre.mermaid')).toHaveCount(0);
   });
 
@@ -98,7 +94,7 @@ test.describe('Figures in Workflow or Agent', () => {
     await expect(body.locator('svg, figure')).toHaveCount(0);
     const srcs = await body.locator('img').evaluateAll((imgs) => imgs.map((img) => img.getAttribute('src')));
     const base = 'https://danielfridljand.de/images/blog/workflow-vs-agent';
-    for (const png of [...PRESETS.map((p) => `map-${p}`), 'grid', 'coverage', 'unlock-tool']) {
+    for (const png of [...PRESETS.map((p) => `map-${p}`), 'grid', 'coverage']) {
       expect(srcs).toContain(`${base}/${png}.png`);
     }
   });
