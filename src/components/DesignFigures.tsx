@@ -173,9 +173,11 @@ function Mark({ x, y, yes }: Point & { yes: boolean }) {
  * treated, only one has a physician behind it, and neither is coded.
  */
 function RunningExample(_props: { id: string }) {
+  // One left column for day and row labels, and the same two columns above and below.
+  const W = 540;
   const lanes = [
-    { x: 170, title: 'Kidney' },
-    { x: 370, title: 'Malnutrition' },
+    { x: 252, title: 'Kidney' },
+    { x: 440, title: 'Malnutrition' },
   ];
   const events: { day?: string; lane: 0 | 1; title: string; line: string }[] = [
     { day: 'Day 1', lane: 0, title: 'Creatinine 1.2', line: 'lab system' },
@@ -198,7 +200,6 @@ function RunningExample(_props: { id: string }) {
   const timelineEnd = 100 + row * ROW + 40;
 
   const tableTop = timelineEnd + 56;
-  const cols = [316, 420];
   const checks: { label: string; values: [boolean | string, boolean | string] }[] = [
     { label: 'In the record', values: [true, true] },
     { label: 'Treated (D003)', values: [true, true] },
@@ -211,7 +212,7 @@ function RunningExample(_props: { id: string }) {
   const height = tableTop + 36 + checks.length * ROW_T + 12;
 
   return (
-    <svg viewBox={`0 0 480 ${height}`} role="img" aria-label={DESCRIPTIONS['running-example']} style={{ width: '100%', height: 'auto', fontFamily: 'inherit' }}>
+    <svg viewBox={`0 0 ${W} ${height}`} role="img" aria-label={DESCRIPTIONS['running-example']} style={{ width: '100%', height: 'auto', fontFamily: 'inherit' }}>
       {lanes.map((l) => (
         <g key={l.x}>
           <line x1={l.x} x2={l.x} y1={52} y2={timelineEnd} stroke={color('edge')} strokeWidth={2.5} strokeDasharray="6 6" />
@@ -223,20 +224,20 @@ function RunningExample(_props: { id: string }) {
       {placed.map((e) => (
         <g key={e.title}>
           {e.showDay && (
-            <text x={38} y={e.y} dy="0.35em" textAnchor="middle" fontSize={17} fontWeight={600} fill={color('muted')}>
+            <text x={16} y={e.y} dy="0.35em" fontSize={17} fontWeight={600} fill={color('muted')}>
               {e.dayLabel}
             </text>
           )}
-          <Step at={{ x: lanes[e.lane].x, y: e.y }} w={186} h={68} title={e.title} line={e.line} role="hospital" />
+          <Step at={{ x: lanes[e.lane].x, y: e.y }} w={176} h={68} title={e.title} line={e.line} role="hospital" />
         </g>
       ))}
 
-      <line x1={20} x2={460} y1={tableTop - 28} y2={tableTop - 28} stroke={color('edge')} strokeWidth={2} />
-      <text x={24} y={tableTop} dy="0.35em" fontSize={17} fontWeight={600} fill={color('muted')}>
+      <line x1={8} x2={W - 8} y1={tableTop - 28} y2={tableTop - 28} stroke={color('edge')} strokeWidth={2} />
+      <text x={16} y={tableTop} dy="0.35em" fontSize={17} fontWeight={600} fill={color('muted')}>
         At discharge
       </text>
       {lanes.map((l, i) => (
-        <text key={l.title} x={cols[i]} y={tableTop} dy="0.35em" textAnchor="middle" fontSize={17} fontWeight={700} fill={color('text')}>
+        <text key={l.title} x={l.x} y={tableTop} dy="0.35em" textAnchor="middle" fontSize={17} fontWeight={700} fill={color('text')}>
           {l.title}
         </text>
       ))}
@@ -244,15 +245,15 @@ function RunningExample(_props: { id: string }) {
         const y = tableTop + 36 + r * ROW_T + ROW_T / 2;
         return (
           <g key={c.label}>
-            {r % 2 === 0 && <rect x={16} y={y - ROW_T / 2} width={448} height={ROW_T} rx={8} fill={color('node-bg')} />}
-            <text x={24} y={y} dy="0.35em" fontSize={LINE} fontWeight={500} fill={color('text')}>
+            {r % 2 === 0 && <rect x={8} y={y - ROW_T / 2} width={W - 16} height={ROW_T} rx={8} fill={color('node-bg')} />}
+            <text x={16} y={y} dy="0.35em" fontSize={LINE} fontWeight={500} fill={color('text')}>
               {c.label}
             </text>
             {c.values.map((v, i) =>
               typeof v === 'boolean' ? (
-                <Mark key={i} x={cols[i]} y={y} yes={v} />
+                <Mark key={i} x={lanes[i].x} y={y} yes={v} />
               ) : (
-                <text key={i} x={cols[i]} y={y} dy="0.35em" textAnchor="middle" fontSize={17} fontWeight={600} fill={color('muted')}>
+                <text key={i} x={lanes[i].x} y={y} dy="0.35em" textAnchor="middle" fontSize={17} fontWeight={600} fill={color('muted')}>
                   {v}
                 </text>
               ),
