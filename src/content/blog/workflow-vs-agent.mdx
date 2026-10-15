@@ -15,7 +15,7 @@ import DecisionFigure from '../../components/DecisionFigure.astro';
 import ThemedImage from '../../components/ThemedImage.astro';
 
 ## TL;DR
-The first architectural decision in an LLM automation is how much of the work the model does and how much code does. On a bank's support automation, we gave code the order of operations and the model one job: reading the message. That guaranteed a security check before any unlock, but what drove the decision was stakeholders wanting their templates. It worked for the commonest requests and ran out on the rest: rarer requests, and common ones on accounts in states we had no rule for. Next time I would make the agent the default, and move a request type into code once it is common and the agent gets it wrong, or its action can't be undone.
+The first architectural decision in an LLM automation is how much of the work the model does and how much code does. On a customer support automation, we gave code the order of operations and the model one job: reading the message. That guaranteed a security check before any unlock, but what drove the decision was stakeholders wanting their templates. It worked for the commonest requests and ran out on the rest: rarer requests, and common ones on accounts in states we had no rule for. Next time I would make the agent the default, and move a request type into code once it is common and the agent gets it wrong, or its action can't be undone.
 
 <DecisionMap preset="overview" />
 
@@ -25,11 +25,9 @@ The first architectural decision in an LLM automation is how much of the work th
 
 <DecisionMap preset="agent-first" />
 
-Customers wrote in to our first-level support team at Northstar Bank with messages like this:
+The running example is invented to protect the client, but the project behind it is real. Customers write in to first-level support at Northstar Bank with messages like this:
 
 <ThemedImage src="/images/blog/the-missing-test-suite/customer-message.png" alt={"Customer message: Hi, I'm Alex Carter and I bank with your Riverton branch. My account number is NSB01234 and I can't get in any more; it keeps saying the account is locked. Can you help me get back in?"} />
-
-The running example is based on a real project, with the details changed to protect the client's privacy.
 
 To answer Alex, something has to work out what Alex wants and which account is theirs, check whether it is safe to help, and choose the reply. Each of those steps can be code or the model.
 

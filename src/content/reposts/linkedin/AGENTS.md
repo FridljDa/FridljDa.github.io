@@ -90,10 +90,14 @@ message or supporting points changed. Don't carry every new detail across.
   stays in "would", and one the team only tried is "tried", not "built".
 - **One word per thing.** Once the post says "workflow", don't switch to
   "tree" for the same thing.
-- **Keep the client anonymous.** A post's running example (Northstar Bank,
-  Alex Carter) is invented to protect the real client, so never present it as
-  the project: "a support automation I built", not "a bank's support
-  automation". Details that are generic, such as a locked account, can stay.
+- **Use the invented example, never as the project.** The posts' running
+  example (see the root `AGENTS.md`) helps on LinkedIn too, but a LinkedIn
+  post has no room for the line saying it is invented. So the text describes
+  the project in generic terms, "a support automation I built", not "a bank's
+  support automation", and borrows the example's generic details, such as a
+  locked account. An image may show the invented names, like the review
+  screen under The Missing Test Suite's version, as an illustration of what
+  the text describes.
 - **Link to the original** at `https://danielfridljand.de/post/<slug>`, in the
   text or in the first comment. A link in the text gets a preview card from the
   post's `og:image` only when no image is attached. Moving it to the first

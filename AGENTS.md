@@ -16,6 +16,18 @@ Assets live under `src/assets/images/` with `public/images` symlinked for stable
 
 LinkedIn versions of blog posts are written by hand: read `src/content/reposts/linkedin/AGENTS.md` before writing one. The Confluence copy is generated from the post by code and never rewritten: see `src/content/reposts/AGENTS.md`.
 
+## Examples: invented, never passed off as the project
+
+Posts about client work explain through one concrete running example
+(Northstar Bank, Alex Carter, a locked account), because a concrete case teaches
+better than an abstract one. The example is invented to protect the client, so
+never present it as the real project. Say it is invented before or where it
+first appears ("The running example is invented to protect the client, but the
+project behind it is real"), and describe the project itself only in generic
+terms: "a customer support automation", not "a bank's support automation" or
+"our support team at Northstar Bank". Figures and mockups may show the invented
+names.
+
 ## Figures: one style per post
 
 All figures within a blog post share one visual style. Drawn figures, mockups and the section maps: `src/components/AGENTS.md`. Animations: `src/remotion/AGENTS.md`.
