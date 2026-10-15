@@ -2,8 +2,10 @@
  * The figures of uncoded-hospital-revenue other than its section map
  * (DesignMap.tsx): how a German hospital gets paid for a case, how one code
  * changes its price, the running example's two uncoded diagnoses, how the
- * evidence selector answers, a coder's worklist, and the life of one
- * suggestion through the design, with the step names the map uses.
+ * evidence selector answers, and the life of one suggestion through the
+ * design, with the step names the map uses. Plus mockups of the screens: the
+ * coder's worklist, the evidence on its page, the physician's questions and a
+ * detector in shadow mode.
  * Same palette, box style and icons as the map. Both are narrow enough to
  * share one layout between phones and wide screens. Static: rendered on the
  * server, no JavaScript.
@@ -423,6 +425,192 @@ function Worklist({ id }: { id: string }) {
   );
 }
 
+/** A screen's top bar: a back link on the left, where you are on the right. */
+function TopBar({ left, right }: { left: string; right: string }) {
+  return (
+    <g>
+      <rect x={20} y={16} width={440} height={44} rx={10} fill={color('node-bg')} stroke={color('edge')} strokeWidth={2} />
+      <text x={36} y={38} dy="0.35em" fontSize={15} fontWeight={600} fill={color('added')}>
+        {left}
+      </text>
+      <text x={444} y={38} dy="0.35em" textAnchor="end" fontSize={15} fontWeight={600} fill={color('text')}>
+        {right}
+      </text>
+    </g>
+  );
+}
+
+/** What a coder sees after opening a suggestion: the scanned page, its numbered passages, and the one the selector picked. */
+function EvidencePage(_props: { id: string }) {
+  const passages: { y: number; text?: string; picked?: boolean; bars?: number }[] = [
+    { y: 140, bars: 2 },
+    { y: 214, text: 'Weight down 10% in 3 months.' },
+    { y: 272, text: 'Supplement drinks twice a day.', picked: true },
+    { y: 334, bars: 2 },
+    { y: 408, bars: 1 },
+  ];
+  return (
+    <svg viewBox="0 0 480 540" role="img" aria-label={DESCRIPTIONS['evidence-page']} style={{ width: '100%', height: 'auto', fontFamily: 'inherit' }}>
+      <TopBar left="← Suggestion" right="Dietitian note, scanned, p. 1" />
+      <g transform="rotate(0.8 240 280)">
+        <rect x={40} y={78} width={400} height={372} rx={4} fill={color('surface')} stroke={color('node-border')} strokeWidth={2} />
+        <rect x={40} y={78} width={400} height={372} rx={4} fill={color('edge')} fillOpacity={0.3} />
+        {passages.map((p, i) => (
+          <g key={i}>
+            {p.picked && <rect x={50} y={p.y - 22} width={380} height={44} rx={8} fill={color('ok')} fillOpacity={0.16} stroke={color('ok')} strokeWidth={2.5} />}
+            {p.text && !p.picked && <rect x={84} y={p.y - 14} width={p.text.length * 8.6 + 10} height={28} rx={5} fill={color('warn')} fillOpacity={0.3} />}
+            <circle cx={66} cy={p.y} r={12} fill={p.picked ? color('ok') : color('edge')} />
+            <text x={66} y={p.y} dy="0.35em" textAnchor="middle" fontSize={13} fontWeight={700} fill={p.picked ? '#fff' : color('text')}>
+              {i + 1}
+            </text>
+            {p.text ? (
+              <text x={90} y={p.y} dy="0.35em" fontSize={16} fontWeight={p.picked ? 700 : 600} fill={color('text')} fontStyle="italic">
+                {p.text}
+              </text>
+            ) : (
+              Array.from({ length: p.bars ?? 1 }, (_, k) => <rect key={k} x={90} y={p.y - 4 + (k - ((p.bars ?? 1) - 1) / 2) * 22} width={k % 2 ? 230 : 310} height={8} rx={4} fill={color('edge')} />)
+            )}
+          </g>
+        ))}
+      </g>
+      <rect x={20} y={470} width={440} height={54} rx={12} fill={color('node-bg')} stroke={color('ok')} strokeWidth={2.5} />
+      <Mark x={48} y={497} yes />
+      <text x={72} y={497} dy="0.35em" fontSize={16} fontWeight={600} fill={color('text')}>
+        Passage 3 answers "Was it treated?"
+      </text>
+      <text x={444} y={497} dy="0.35em" textAnchor="end" fontSize={15} fontWeight={600} fill={color('muted')}>
+        p = 0.93
+      </text>
+    </svg>
+  );
+}
+
+/** The physician's side: open questions bundled one per case, the first one opened. */
+function PhysicianQuestion(_props: { id: string }) {
+  const others = [
+    { y: 382, title: 'Case 4698', line: '1 question' },
+    { y: 440, title: 'Case 4702', line: '2 questions' },
+  ];
+  return (
+    <svg viewBox="0 0 480 480" role="img" aria-label={DESCRIPTIONS['physician-question']} style={{ width: '100%', height: 'auto', fontFamily: 'inherit' }}>
+      <text x={24} y={30} dy="0.35em" fontSize={TITLE} fontWeight={700} fill={color('text')}>
+        Questions from coding
+      </text>
+      <text x={456} y={30} dy="0.35em" textAnchor="end" fontSize={15} fontWeight={600} fill={color('muted')}>
+        Ward 4B, 3 cases
+      </text>
+      <rect x={20} y={60} width={440} height={290} rx={14} fill={color('node-bg')} stroke={color('ok')} strokeWidth={2.5} />
+      <text x={44} y={92} dy="0.35em" fontSize={15} fontWeight={600} fill={color('muted')}>
+        Case 4711, discharge Friday
+      </text>
+      <text x={44} y={128} dy="0.35em" fontSize={19} fontWeight={700} fill={color('text')}>
+        Moderate malnutrition (E44.0),
+      </text>
+      <text x={44} y={156} dy="0.35em" fontSize={19} fontWeight={700} fill={color('text')}>
+        relevant to treatment?
+      </text>
+      <g transform="translate(44 188)">
+        <rect width={392} height={64} rx={10} fill={color('surface')} stroke={color('edge')} strokeWidth={2} />
+        <g transform="translate(14 14)">
+          <rect width={28} height={36} rx={3} fill={color('node-bg')} stroke={color('node-border')} strokeWidth={2} />
+          <rect x={6} y={10} width={16} height={3} rx={1.5} fill={color('edge')} />
+          <rect x={6} y={18} width={12} height={3} rx={1.5} fill={color('edge')} />
+        </g>
+        <text x={56} y={22} dy="0.35em" fontSize={16} fontWeight={600} fill={color('text')}>
+          Dietitian note, day 4
+        </text>
+        <text x={56} y={44} dy="0.35em" fontSize={14} fontWeight={500} fill={color('muted')}>
+          −10% in 3 months, supplement drinks
+        </text>
+      </g>
+      <Chip x={44} y={300} w={96} text="Yes" tone="ok" />
+      <Chip x={152} y={300} w={96} text="No" tone="bad" />
+      <Chip x={260} y={300} w={110} text="Not sure" tone="plain" />
+      {others.map((o) => (
+        <g key={o.title} opacity={0.6}>
+          <rect x={20} y={o.y - 24} width={440} height={48} rx={12} fill={color('node-bg')} stroke={color('edge')} strokeWidth={2} />
+          <text x={44} y={o.y} dy="0.35em" fontSize={17} fontWeight={600} fill={color('text')}>
+            {o.title}
+          </text>
+          <text x={436} y={o.y} dy="0.35em" textAnchor="end" fontSize={15} fontWeight={600} fill={color('muted')}>
+            {o.line}
+          </text>
+        </g>
+      ))}
+    </svg>
+  );
+}
+
+/** A new detector version in shadow mode next to the live one, and the gate it has to pass before it goes live. */
+function Shadow(_props: { id: string }) {
+  const metrics = [
+    { label: 'Would suggest per week', values: [140, 212], max: 230, fmt: (v: number) => String(v) },
+    { label: 'Agreement with coders', values: [0.78, 0.74], max: 1, fmt: (v: number) => `${Math.round(v * 100)}%` },
+    { label: 'Revenue at stake per week', values: [41, 58], max: 70, fmt: (v: number) => `€${v}k` },
+  ];
+  const versions = [
+    { name: 'v1 live', fill: color('edge') },
+    { name: 'v2 shadow', fill: color('added') },
+  ];
+  const gates = [
+    { text: 'Agreement at least 70%', yes: true },
+    { text: '200 cases checked by a coder', yes: true },
+  ];
+  return (
+    <svg viewBox="0 0 480 560" role="img" aria-label={DESCRIPTIONS.shadow} style={{ width: '100%', height: 'auto', fontFamily: 'inherit' }}>
+      <text x={24} y={28} dy="0.35em" fontSize={TITLE} fontWeight={700} fill={color('text')}>
+        Malnutrition detector
+      </text>
+      <text x={24} y={56} dy="0.35em" fontSize={15} fontWeight={500} fill={color('muted')}>
+        4 weeks on live cases
+      </text>
+      {versions.map((v, i) => (
+        <g key={v.name} transform={`translate(${290 + i * 92} 56)`}>
+          <rect x={0} y={-8} width={16} height={16} rx={4} fill={v.fill} />
+          <text x={22} y={0} dy="0.35em" fontSize={14} fontWeight={600} fill={color('muted')}>
+            {v.name}
+          </text>
+        </g>
+      ))}
+      {metrics.map((mt, r) => {
+        const y = 100 + r * 96;
+        return (
+          <g key={mt.label}>
+            <text x={24} y={y} dy="0.35em" fontSize={16} fontWeight={600} fill={color('text')}>
+              {mt.label}
+            </text>
+            {mt.values.map((v, i) => {
+              const w = (v / mt.max) * 330;
+              const by = y + 24 + i * 28;
+              return (
+                <g key={i}>
+                  <rect x={24} y={by - 10} width={w} height={20} rx={5} fill={versions[i].fill} />
+                  <text x={32 + w} y={by} dy="0.35em" fontSize={14} fontWeight={700} fill={color('text')}>
+                    {mt.fmt(v)}
+                  </text>
+                </g>
+              );
+            })}
+          </g>
+        );
+      })}
+      <line x1={20} x2={460} y1={392} y2={392} stroke={color('edge')} strokeWidth={2} />
+      {gates.map((g, i) => (
+        <g key={g.text}>
+          <Mark x={40} y={424 + i * 40} yes={g.yes} />
+          <text x={64} y={424 + i * 40} dy="0.35em" fontSize={16} fontWeight={500} fill={color('text')}>
+            {g.text}
+          </text>
+        </g>
+      ))}
+      <Chip x={24} y={524} w={160} text="Promote v2" tone="ok" />
+      <text x={200} y={524} dy="0.35em" fontSize={14} fontWeight={500} fill={color('muted')}>
+        audit outcomes follow in months
+      </text>
+    </svg>
+  );
+}
+
 export const DESCRIPTIONS = {
   'billing-chain':
     'How a hospital gets paid for an inpatient case: staff document in the KIS, coders turn the record into ICD-10-GM and OPS codes, a certified grouper maps them to a DRG, the invoice goes to the Krankenkasse, which pays or sends it to the Medizinischer Dienst for an audit that cuts what the record cannot support. The gap this post is about sits between documenting and coding.',
@@ -434,6 +622,12 @@ export const DESCRIPTIONS = {
     'How the evidence selector answers: a fixed question about a candidate code, here whether the malnutrition was treated, numbered passages from the record plus "none of these", and a decision model that picks passage 3, the supplement drinks, with a probability. It cannot write a quote of its own.',
   worklist:
     'What the coder sees: the top suggestion, N17.93, with the two quotes that prove it highlighted and their sources, the DRG before and after, accept and reject with one-click reasons; below it a question bundled for the physician about the malnutrition, with the dietitian note attached.',
+  'evidence-page':
+    'What a coder sees after opening a suggestion: the scanned dietitian note, page 1, split into numbered passages; passage 2, the weight loss, is marked, and passage 3, supplement drinks twice a day, is outlined as the one the selector picked to answer "Was it treated?" with probability 0.93.',
+  'physician-question':
+    'The physician\'s side: questions from coding bundled one per case. The open one asks whether moderate malnutrition, E44.0, was relevant to treatment, with the dietitian note from day four attached, and three answers: yes, no, not sure. Two more cases wait below with one and two questions.',
+  shadow:
+    'A new version of the malnutrition detector in shadow mode for four weeks next to the live one, with invented numbers: v2 would suggest 212 codes a week against 140, agrees with coders 74 percent of the time against 78, and puts 58 thousand euros a week at stake against 41. It passes the gate of at least 70 percent agreement and 200 cases checked by a coder, so it can be promoted; audit outcomes follow months later.',
   suggestion:
     'The life of one suggestion: a cheap signal raises a candidate, the evidence selector picks the passage that supports it, a DKR rule check decides whether it counts, the grouper prices it, and it ends as a suggestion to the coder, a question to the physician, or is dropped. The malnutrition case ends as a question.',
 } as const;
@@ -446,6 +640,9 @@ const FIGURES: Record<FigureName, (props: { id: string }) => ReactNode> = {
   'running-example': RunningExample,
   selector: Selector,
   worklist: Worklist,
+  'evidence-page': EvidencePage,
+  'physician-question': PhysicianQuestion,
+  shadow: Shadow,
   suggestion: Suggestion,
 };
 
