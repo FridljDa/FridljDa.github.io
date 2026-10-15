@@ -3,21 +3,21 @@ status: draft
 images:
   - /images/blog/workflow-vs-agent/linkedin/grid.png
 firstComment: |
-  The full post, with the grid of request types against account states a decision tree has to cover, the agent that got the requests the tree couldn't, and the caveats of making the agent the default: https://danielfridljand.de/post/workflow-vs-agent
+  The full post, with why a single agent can't guarantee the flag check comes first, how grading drafts on template match tilts the choice toward code, and the caveats of making the agent the default: https://danielfridljand.de/post/workflow-vs-agent
 ---
-The first decision in an LLM automation: does code run the order of operations, or does the model? I'd now make the model the default, and make code earn its place.
+Workflow or agent? In an LLM automation, make the agent the default and let code earn its place.
 
-A kind of request gets its own path in code once it is common and the agent gets it wrong, or when its action can't be undone. Everything else stays with an agent and its tools.
+A kind of request should get its own path in code only once it is common and the agent gets it wrong, or once its action can't be undone. Everything else stays with an agent and its tools.
 
-I've built the other default. On a support automation, code ran the order of operations and the model had one job: reading the customer's message. For a locked account, that was the clear fit. The logic is explicit, the cases are few, and code guarantees the security flag is checked before any unlock instructions go out.
+I've built both on a support automation, and for locked accounts the workflow was the clear fit. I put code in charge of the steps and gave the model one job: reading the customer's message. Verified account: send the unlock steps. Flagged: escalate to security. The flag is checked before any unlock instructions go out, every time. A prompt can ask for that order; only code guarantees it.
 
-But a workflow needs a branch for every kind of request against every state the account behind it can be in. A handful of request types covered most messages, but not most of those combinations, and every new state meant another branch and another template.
+Now make the account closed. Same request, but it lands in a cell nobody decided: top right in the picture.
 
-Watch what you grade on, too. The push toward code came less from the security check than from a complaint that replies didn't match the message templates. Judged on template match, code can't lose, because code picks the template. An agent added later for the requests the tree didn't cover was graded the same way, so a clearer answer in its own words scored badly. That is asking an agent to be a worse workflow.
+A workflow answers only what someone wrote a branch for, and the branches form a grid: every kind of request against every state the account can be in. A few request types covered most messages, which is what makes a tree tempting. They didn't cover most cells, and every new state meant another branch and another template.
 
-So I'd start with an agent and a set of tools. It is much less to build than a tree of request types and templates, so the experts see real drafts sooner. Anything that touches account access still waits for a person to approve it.
+An agent with a set of tools doesn't shrink that grid, but it spares you writing it out before you know which cells matter. It is also much less to build, so the people who know the business can start grading its drafts sooner. A plan that touches account access would still wait for a person to approve it.
 
-Neither design tells you which paths deserve code. Only the people who know the business can, by grading the system's drafts. Get them grading before you commit to a tree.
+Neither design tells you which cells deserve code. Those people do, by grading the system's drafts. Where a request type is common and they keep rejecting the agent's drafts, that path has earned its code.
 
 Full post in the first comment.
 
