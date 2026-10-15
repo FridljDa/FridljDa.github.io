@@ -102,10 +102,14 @@ Two things already fall out of this. Each suggestion points at a case *version*,
 
 <DesignMap preset="store" />
 
-- **Adapters:** one per KIS, turning HL7 v2 messages, FHIR resources and file drops into events on one timeline per case: admission, transfer, lab result, document, discharge. Scans go through OCR.
+- **Adapters:** one per KIS, turning HL7 v2 messages, FHIR resources and file drops into events on one timeline per case: admission, transfer, lab result, document, discharge. Scans go through OCR. Most KIS installations offer no API to query; the hospital's interface engine routes a copy of their message feeds to us. Lab results, for example, arrive as HL7 v2 result messages from the lab system, with local test codes and units (creatinine in mg/dl or µmol/l) that are mapped once per hospital.
 - **Where the effort goes:** messages arrive out of order and get corrected or cancelled afterwards, so an adapter applies corrections instead of appending. And every hospital's installation is configured differently.
-- **Store:** Postgres, an append-only event log per case plus a materialised current view. The log gives versions and an audit log for free: for every suggestion, what the record looked like and what the model saw. A few hundred thousand cases a year need no sharding.
+- **Store:** Postgres, an append-only event log per case plus a materialised current view. The log gives versions and an audit log for free, and a few hundred thousand cases a year need no sharding.
 - **Orchestration:** each new case version starts a durable workflow, for example in [Temporal](/post/temporal-human-in-the-loop), keyed by case and version. A message delivered twice runs once, and a question to a physician can wait days without a process waiting with it. Ten lab results in an hour cause one re-run, and results are cached per case version, catalog year and detector version, so a re-run only pays for what changed.
+
+<DesignFigure name="event-log" />
+
+*The running example's case in the store. Every message is a new version; nothing is overwritten. The suggestion points at the version it was made on, so when the lab corrects a value two versions later, the store knows which suggestion to re-check. 4.1 is still over three times the baseline, so it stands.*
 
 ### Gap detectors
 
