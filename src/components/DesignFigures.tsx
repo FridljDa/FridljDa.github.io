@@ -664,6 +664,123 @@ function EventLog({ id }: { id: string }) {
   );
 }
 
+/** One burst of lab results, the single run after it, and inside that run which steps re-run and which come from the cache. */
+function Debounce({ id }: { id: string }) {
+  const m = `${id}-arrow`;
+  const x = (min: number) => 40 + min * 5;
+  const results = [2, 5, 9, 14, 20, 26, 31, 38, 44, 50];
+  const runAt = x(65);
+  const steps: { name: string; rerun: boolean }[] = [
+    { name: 'Creatinine rule', rerun: true },
+    { name: 'Evidence selector, kidney', rerun: true },
+    { name: 'Nutrition signals', rerun: false },
+    { name: 'Evidence selector, nutrition', rerun: false },
+    { name: 'Grouper', rerun: false },
+  ];
+  const top = 262;
+  return (
+    <svg viewBox={`0 0 480 ${top + steps.length * 46 + 12}`} role="img" aria-label={DESCRIPTIONS.debounce} style={{ width: '100%', height: 'auto', fontFamily: 'inherit' }}>
+      <defs>
+        <ArrowMarker id={m} />
+      </defs>
+      <text x={24} y={24} dy="0.35em" fontSize={17} fontWeight={700} fill={color('text')}>
+        10 lab results in one hour
+      </text>
+      <line x1={x(0)} x2={x(80)} y1={80} y2={80} stroke={color('node-border')} strokeWidth={2} />
+      {results.map((t) => (
+        <g key={t}>
+          <line x1={x(t)} x2={x(t)} y1={80} y2={66} stroke={color('added')} strokeWidth={2} />
+          <circle cx={x(t)} cy={60} r={7} fill={color('added')} />
+        </g>
+      ))}
+      <text x={x(0)} y={100} dy="0.35em" fontSize={14} fill={color('muted')}>
+        08:00
+      </text>
+      <text x={x(80)} y={100} dy="0.35em" textAnchor="end" fontSize={14} fill={color('muted')}>
+        09:20
+      </text>
+      <path d={`M${x(50)},116 v8 H${runAt} v-8`} fill="none" stroke={color('warn')} strokeWidth={2.5} />
+      <text x={x(50) - 10} y={120} dy="0.35em" textAnchor="end" fontSize={14} fontWeight={700} fill={color('warn')}>
+        15 min quiet
+      </text>
+      <circle cx={runAt} cy={80} r={8} fill={color('ok')} />
+      {arrow(m, `M${runAt},90 V${178}`)}
+      <Step at={{ x: 330, y: 214 }} w={260} h={64} title="One re-run" line="on the newest version" role="platform" />
+      <text x={24} y={214} dy="0.35em" fontSize={15} fontWeight={600} fill={color('muted')}>
+        Inside the run:
+      </text>
+      {steps.map((st, i) => {
+        const y = top + 24 + i * 46;
+        return (
+          <g key={st.name}>
+            {i % 2 === 0 && <rect x={16} y={y - 22} width={448} height={44} rx={8} fill={color('node-bg')} />}
+            <text x={28} y={y} dy="0.35em" fontSize={16} fontWeight={600} fill={st.rerun ? color('text') : color('muted')}>
+              {st.name}
+            </text>
+            <Chip x={340} y={y} w={112} text={st.rerun ? 'Re-run' : 'Cached'} tone={st.rerun ? 'ok' : 'plain'} />
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
+
+/** Three suggestions scored by expected value: revenue delta times the chance of acceptance, minus the audit-risk penalty. */
+function Ranking(_props: { id: string }) {
+  const PX = 0.1;
+  const x0 = 56;
+  const rows = [
+    { name: 'Code B', note: 'modest, well documented', delta: 900, p: 0.95, risk: 50 },
+    { name: 'Code A', note: 'valuable, thin evidence', delta: 3000, p: 0.25, risk: 300 },
+    { name: 'Code C', note: 'worth nothing, still listed', delta: 0, p: 0.9, risk: 0 },
+  ];
+  const eur = (v: number) => `€${v.toLocaleString('en-US')}`;
+  const legend = [
+    { text: 'Δ revenue', fill: 'none', stroke: color('node-border') },
+    { text: '× P(accept)', fill: color('added'), stroke: color('added') },
+    { text: '− audit risk', fill: color('bad'), stroke: color('bad') },
+  ];
+  return (
+    <svg viewBox="0 0 480 372" role="img" aria-label={DESCRIPTIONS.ranking} style={{ width: '100%', height: 'auto', fontFamily: 'inherit' }}>
+      {legend.map((l, i) => (
+        <g key={l.text} transform={`translate(${24 + i * 150} 22)`}>
+          <rect x={0} y={-8} width={22} height={16} rx={4} fill={l.fill} stroke={l.stroke} strokeWidth={2} />
+          <text x={30} y={0} dy="0.35em" fontSize={14} fontWeight={600} fill={color('muted')}>
+            {l.text}
+          </text>
+        </g>
+      ))}
+      {rows.map((r, i) => {
+        const y = 70 + i * 104;
+        const expected = r.delta * r.p;
+        const score = Math.round(expected - r.risk);
+        return (
+          <g key={r.name}>
+            <circle cx={30} cy={y} r={13} fill={color('added')} />
+            <text x={30} y={y} dy="0.35em" textAnchor="middle" fontSize={14} fontWeight={700} fill="#fff">
+              {i + 1}
+            </text>
+            <text x={x0} y={y} dy="0.35em" fontSize={17} fontWeight={700} fill={color('text')}>
+              {r.name}
+              <tspan fontWeight={500} fill={color('muted')}>{`  ${r.note}`}</tspan>
+            </text>
+            {r.delta > 0 && <rect x={x0} y={y + 20} width={r.delta * PX} height={24} rx={5} fill="none" stroke={color('node-border')} strokeWidth={2} strokeDasharray="5 4" />}
+            {expected > 0 && <rect x={x0} y={y + 20} width={expected * PX} height={24} rx={5} fill={color('added')} />}
+            {r.risk > 0 && <rect x={x0 + (expected - r.risk) * PX} y={y + 20} width={r.risk * PX} height={24} fill={color('bad')} />}
+            {r.delta === 0 && <line x1={x0} x2={x0} y1={y + 18} y2={y + 46} stroke={color('node-border')} strokeWidth={3} />}
+            <text x={456} y={y + 32} dy="0.35em" textAnchor="end" fontSize={17} fontWeight={700} fill={color('text')}>
+              {eur(score)}
+            </text>
+            <text x={x0} y={y + 62} dy="0.35em" fontSize={14} fontWeight={500} fill={color('muted')}>
+              {`${eur(r.delta)} × ${r.p.toFixed(2)} − ${eur(r.risk)}`}
+            </text>
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
+
 export const DESCRIPTIONS = {
   'billing-chain':
     'How a hospital gets paid for an inpatient case: staff document in the KIS, coders turn the record into ICD-10-GM and OPS codes, a certified grouper maps them to a DRG, the invoice goes to the Krankenkasse, which pays or sends it to the Medizinischer Dienst for an audit that cuts what the record cannot support. The gap this post is about sits between documenting and coding.',
@@ -677,6 +794,10 @@ export const DESCRIPTIONS = {
     'What the coder sees: the top suggestion, N17.93, with the two quotes that prove it highlighted and their sources, the DRG before and after, accept and reject with one-click reasons; below it a question bundled for the physician about the malnutrition, with the dietitian note attached.',
   'event-log':
     'The running example\'s case in the store as an append-only event log, one version per message: v1 admission, v2 creatinine 1.2, v3 creatinine 4.3, v4 the ACE inhibitor paused, where the N17.93 suggestion is made, v5 the scanned dietitian note, and v6 a lab correction of v3 to 4.1, which marks the suggestion for a re-check. The log is replayed into the current view: creatinine 4.1, drug paused, one scan.',
+  debounce:
+    'Orchestration for one burst of lab results: ten results arrive between 08:00 and 08:50, the workflow waits until 15 minutes pass without a new one and then runs once on the newest version. Inside that run the creatinine rule and the kidney evidence selector re-run because their inputs changed; the nutrition signals, the nutrition evidence selector and the grouper come from the cache.',
+  ranking:
+    'Three invented suggestions ranked by expected value, revenue delta times the probability the coder accepts minus the audit-risk penalty. First, code B: 900 euros times 0.95 minus 50 is 805. Second, code A: 3,000 euros times 0.25 minus 300 is 450. Last, code C: worth nothing, still listed at 0.',
   'evidence-page':
     'What a coder sees after opening a suggestion: the scanned dietitian note, page 1, split into numbered passages; passage 2, the weight loss, is marked, and passage 3, supplement drinks twice a day, is outlined as the one the selector picked to answer "Was it treated?" with probability 0.93.',
   'physician-question':
@@ -696,6 +817,8 @@ const FIGURES: Record<FigureName, (props: { id: string }) => ReactNode> = {
   selector: Selector,
   worklist: Worklist,
   'event-log': EventLog,
+  debounce: Debounce,
+  ranking: Ranking,
   'evidence-page': EvidencePage,
   'physician-question': PhysicianQuestion,
   shadow: Shadow,
