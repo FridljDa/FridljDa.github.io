@@ -166,101 +166,143 @@ function Mark({ x, y, yes }: Point & { yes: boolean }) {
   );
 }
 
-/**
- * The running example in two parts. Above, every fact day by day in the lane
- * of its diagnosis, with the system it was recorded in. Below, the two
- * diagnoses against what coding them takes: both are in the record and
- * treated, only one has a physician behind it, and neither is coded.
- */
-function RunningExample(_props: { id: string }) {
-  // One left column for day and row labels, and the same two columns above and below.
-  const W = 540;
-  const lanes = [
-    { x: 252, title: 'Kidney' },
-    { x: 440, title: 'Malnutrition' },
-  ];
-  const events: { day?: string; lane: 0 | 1; title: string; line: string }[] = [
-    { day: 'Day 1', lane: 0, title: 'Creatinine 1.2', line: 'lab system' },
-    { lane: 1, title: 'NRS 2002: 4', line: 'nursing form' },
-    { day: 'Day 3', lane: 0, title: 'Creatinine 4.3', line: 'lab system' },
-    { lane: 0, title: 'Drug paused', line: 'medication order' },
-    { day: 'Day 4', lane: 1, title: 'Weight -10%', line: 'scanned note' },
-    { lane: 1, title: 'Supplements', line: "dietitian's order" },
-  ];
-  // Facts of the same day and lane stack; a fact in the other lane shares the row.
-  const ROW = 84;
-  let row = -1;
-  let lastDay = '';
-  const placed = events.map((e, i) => {
-    const prev = events[i - 1];
-    if (e.day || !prev || prev.lane === e.lane) row += 1;
-    if (e.day) lastDay = e.day;
-    return { ...e, y: 100 + row * ROW, showDay: Boolean(e.day), dayLabel: lastDay };
-  });
-  const timelineEnd = 100 + row * ROW + 40;
+/** A sheet of paper with a short title, filler lines and highlighted facts; dashed and empty when the document is missing. */
+function Doc({ x, y, rot, title, lines, scanned, missing }: Point & { rot: number; title: string; lines: (string | null)[]; scanned?: boolean; missing?: string }) {
+  const w = 124;
+  const h = 108;
+  return (
+    <g transform={`translate(${x} ${y}) rotate(${rot} ${w / 2} ${h / 2})`}>
+      <rect width={w} height={h} rx={6} fill={missing ? 'none' : color('surface')} stroke={missing ? color('bad') : color('node-border')} strokeWidth={2} strokeDasharray={missing ? '6 5' : undefined} />
+      {scanned && <rect width={w} height={h} rx={6} fill={color('edge')} fillOpacity={0.35} />}
+      <text x={10} y={18} dy="0.35em" fontSize={14} fontWeight={700} fill={missing ? color('bad') : color('muted')}>
+        {title}
+      </text>
+      {missing ? (
+        <text x={w / 2} y={64} dy="0.35em" textAnchor="middle" fontSize={15} fontStyle="italic" fill={color('bad')}>
+          {missing}
+        </text>
+      ) : (
+        lines.map((l, i) => {
+          const ly = 44 + i * 24;
+          return l ? (
+            <g key={i}>
+              <rect x={6} y={ly - 11} width={l.length * 8 + 10} height={22} rx={4} fill={color('warn')} fillOpacity={0.35} />
+              <text x={11} y={ly} dy="0.35em" fontSize={15} fontWeight={700} fill={color('text')}>
+                {l}
+              </text>
+            </g>
+          ) : (
+            <rect key={i} x={10} y={ly - 3} width={i % 2 ? 70 : 90} height={6} rx={3} fill={color('edge')} />
+          );
+        })
+      )}
+    </g>
+  );
+}
 
-  const tableTop = timelineEnd + 56;
-  const checks: { label: string; values: [boolean | string, boolean | string] }[] = [
-    { label: 'In the record', values: [true, true] },
-    { label: 'Treated (D003)', values: [true, true] },
-    { label: 'Physician acted', values: [true, false] },
-    { label: 'Coded', values: [false, false] },
-    { label: 'Found by', values: ['lab rule', 'reading'] },
-    { label: 'Ends as', values: ['suggestion', 'question'] },
+/**
+ * The running example as the two kinds of evidence it is. The kidney failure
+ * is a number crossing a line: creatinine against three times its baseline,
+ * which a rule can watch. The malnutrition is spread over documents that have
+ * to be read, and the physician's is missing. Below, both run through the
+ * same two gates in the same columns: both were treated, only one has a
+ * physician behind it.
+ */
+function RunningExample({ id }: { id: string }) {
+  const m = `${id}-arrow`;
+  const W = 540;
+  const cols = [150, 405];
+
+  // Creatinine in mg/dl per day: 1.2 on admission, 4.3 on day 3, then falling once the drug is paused.
+  const values = [1.2, 1.4, 4.3, 3.4, 2.6];
+  const dayX = (d: number) => 60 + d * 45;
+  const valY = (v: number) => 250 - v * 34;
+  const points = values.map((v, d) => ({ x: dayX(d), y: valY(v), v }));
+  const threshold = 3 * values[0];
+
+  const gates = [
+    { label: 'Treated (D003)', y: 344, marks: [true, true] },
+    { label: 'Physician involved', y: 392, marks: [true, false] },
   ];
-  const ROW_T = 42;
-  const height = tableTop + 36 + checks.length * ROW_T + 12;
+  const outcomeY = 472;
 
   return (
-    <svg viewBox={`0 0 ${W} ${height}`} role="img" aria-label={DESCRIPTIONS['running-example']} style={{ width: '100%', height: 'auto', fontFamily: 'inherit' }}>
-      {lanes.map((l) => (
-        <g key={l.x}>
-          <line x1={l.x} x2={l.x} y1={52} y2={timelineEnd} stroke={color('edge')} strokeWidth={2.5} strokeDasharray="6 6" />
-          <text x={l.x} y={30} dy="0.35em" textAnchor="middle" fontSize={TITLE} fontWeight={700} fill={color('text')}>
-            {l.title}
+    <svg viewBox={`0 0 ${W} 520`} role="img" aria-label={DESCRIPTIONS['running-example']} style={{ width: '100%', height: 'auto', fontFamily: 'inherit' }}>
+      <defs>
+        <ArrowMarker id={m} />
+      </defs>
+      {[
+        { x: cols[0], title: 'Kidney', line: 'a number crosses a line' },
+        { x: cols[1], title: 'Malnutrition', line: 'facts spread over paper' },
+      ].map((h) => (
+        <g key={h.title}>
+          <text x={h.x} y={22} dy="0.35em" textAnchor="middle" fontSize={TITLE} fontWeight={700} fill={color('text')}>
+            {h.title}
+          </text>
+          <text x={h.x} y={48} dy="0.35em" textAnchor="middle" fontSize={16} fontWeight={500} fill={color('muted')}>
+            {h.line}
           </text>
         </g>
       ))}
-      {placed.map((e) => (
-        <g key={e.title}>
-          {e.showDay && (
-            <text x={16} y={e.y} dy="0.35em" fontSize={17} fontWeight={600} fill={color('muted')}>
-              {e.dayLabel}
-            </text>
-          )}
-          <Step at={{ x: lanes[e.lane].x, y: e.y }} w={176} h={68} title={e.title} line={e.line} role="hospital" />
-        </g>
-      ))}
 
-      <line x1={8} x2={W - 8} y1={tableTop - 28} y2={tableTop - 28} stroke={color('edge')} strokeWidth={2} />
-      <text x={16} y={tableTop} dy="0.35em" fontSize={17} fontWeight={600} fill={color('muted')}>
-        At discharge
+      {/* Kidney: creatinine per day against its baseline and three times it. */}
+      <line x1={44} x2={256} y1={250} y2={250} stroke={color('node-border')} strokeWidth={2} />
+      <line x1={44} x2={256} y1={valY(values[0])} y2={valY(values[0])} stroke={color('muted')} strokeWidth={1.5} strokeDasharray="5 5" />
+      <text x={252} y={valY(values[0]) + 16} dy="0.35em" textAnchor="end" fontSize={14} fill={color('muted')}>
+        baseline 1.2
       </text>
-      {lanes.map((l, i) => (
-        <text key={l.title} x={l.x} y={tableTop} dy="0.35em" textAnchor="middle" fontSize={17} fontWeight={700} fill={color('text')}>
-          {l.title}
+      <line x1={44} x2={256} y1={valY(threshold)} y2={valY(threshold)} stroke={color('bad')} strokeWidth={2} strokeDasharray="7 5" />
+      <text x={48} y={valY(threshold) - 14} dy="0.35em" fontSize={14} fontWeight={600} fill={color('bad')}>
+        3× baseline
+      </text>
+      <polyline points={points.map((p) => `${p.x},${p.y}`).join(' ')} fill="none" stroke={color('added')} strokeWidth={3} strokeLinejoin="round" />
+      {points.map((p, d) => (
+        <circle key={d} cx={p.x} cy={p.y} r={d === 2 ? 7 : 5} fill={d === 2 ? color('bad') : color('added')} stroke={color('surface')} strokeWidth={2} />
+      ))}
+      <text x={points[2].x + 12} y={points[2].y - 6} dy="0.35em" fontSize={15} fontWeight={700} fill={color('bad')}>
+        4.3 mg/dl
+      </text>
+      {values.map((_, d) => (
+        <text key={d} x={dayX(d)} y={266} dy="0.35em" textAnchor="middle" fontSize={14} fill={color('muted')}>
+          {d === 0 ? 'Day 1' : d + 1}
         </text>
       ))}
-      {checks.map((c, r) => {
-        const y = tableTop + 36 + r * ROW_T + ROW_T / 2;
-        return (
-          <g key={c.label}>
-            {r % 2 === 0 && <rect x={8} y={y - ROW_T / 2} width={W - 16} height={ROW_T} rx={8} fill={color('node-bg')} />}
-            <text x={16} y={y} dy="0.35em" fontSize={LINE} fontWeight={500} fill={color('text')}>
-              {c.label}
-            </text>
-            {c.values.map((v, i) =>
-              typeof v === 'boolean' ? (
-                <Mark key={i} x={lanes[i].x} y={y} yes={v} />
-              ) : (
-                <text key={i} x={lanes[i].x} y={y} dy="0.35em" textAnchor="middle" fontSize={17} fontWeight={600} fill={color('muted')}>
-                  {v}
-                </text>
-              ),
-            )}
-          </g>
-        );
-      })}
+      <path d={`M${dayX(2)},280 l-6,9 h12 z`} fill={color('ok')} />
+      <text x={dayX(2)} y={302} dy="0.35em" textAnchor="middle" fontSize={14} fontWeight={600} fill={color('ok')}>
+        drug paused
+      </text>
+
+      {/* Malnutrition: the facts sit in three different documents; the physician's is missing. */}
+      <Doc x={276} y={68} rot={-3} title="Nursing form" lines={[null, 'NRS 2002: 4', null]} />
+      <Doc x={406} y={76} rot={3} title="Scanned note" lines={['−10% in 3 mo', null, 'drinks 2×/day']} scanned />
+      <Doc x={282} y={192} rot={2} title="Medication" lines={[null, 'Supplement', null]} />
+      <Doc x={408} y={198} rot={-2} title="Physician" lines={[]} missing="no diagnosis" />
+
+      {/* The same two gates for both, in the same columns. */}
+      {cols.map((x, i) => (
+        <path
+          key={x}
+          d={`M${x},318 V${outcomeY - 40}`}
+          fill="none"
+          stroke={color('node-border')}
+          strokeWidth={2.5}
+          strokeDasharray={i === 1 ? '7 6' : undefined}
+          markerEnd={`url(#${m})`}
+        />
+      ))}
+      {gates.map((g) => (
+        <g key={g.label}>
+          <rect x={8} y={g.y - 18} width={W - 16} height={36} rx={8} fill={color('node-bg')} stroke={color('edge')} strokeWidth={1.5} />
+          <text x={(cols[0] + cols[1]) / 2} y={g.y} dy="0.35em" textAnchor="middle" fontSize={17} fontWeight={600} fill={color('text')}>
+            {g.label}
+          </text>
+          {g.marks.map((yes, i) => (
+            <Mark key={i} x={cols[i]} y={g.y} yes={yes} />
+          ))}
+        </g>
+      ))}
+      <Step at={{ x: cols[0], y: outcomeY }} w={232} h={72} title="Suggest N17.93" line="F62C → F62B" role="human" />
+      <Step at={{ x: cols[1], y: outcomeY }} w={232} h={72} title="Ask the physician" line="about E44.0" role="human" />
     </svg>
   );
 }
@@ -387,7 +429,7 @@ export const DESCRIPTIONS = {
   pricing:
     'How one secondary diagnosis changes the price: the same case is grouped without and with N17.93, acute kidney failure; without it the case lands in F62C, with it the higher severity moves it to F62B, and the difference in cost weight times the base rate is the price of the code.',
   'running-example':
-    'The running example. Kidney: creatinine 1.2 on admission and 4.3 on day three, both in the lab system, and the drug paused by a medication order. Malnutrition: a nursing screening score of 4 on day one, then on day four a scanned dietitian note with a 10 percent weight loss and an order for supplement drinks. At discharge both are in the record and both were treated, but only the kidney failure has a physician acting on it, and neither is coded. A lab rule finds the first and it ends as a suggestion; the second has to be read and ends as a question for the physician.',
+    'The running example as two kinds of evidence. Kidney: a chart of creatinine per day, 1.2 on admission, 4.3 on day three, above the line at three times the baseline, then falling after the drug is paused; a rule can watch a number cross a line. Malnutrition: the facts are spread over a nursing form with an NRS 2002 score of 4, a scanned dietitian note with a 10 percent weight loss and supplement drinks twice a day, and the medication list, while the physician has no diagnosis. Both pass the D003 gate because both were treated; only the kidney failure passes the physician gate, so N17.93 becomes a suggestion that moves the case from F62C to F62B, while E44.0 becomes a question for the physician.',
   selector:
     'How the evidence selector answers: a fixed question about a candidate code, here whether the malnutrition was treated, numbered passages from the record plus "none of these", and a decision model that picks passage 3, the supplement drinks, with a probability. It cannot write a quote of its own.',
   worklist:
