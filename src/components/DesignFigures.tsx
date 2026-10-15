@@ -87,7 +87,7 @@ function Suggestion({ id }: { id: string }) {
   const cx = 240;
   const steps = [
     { title: 'Cheap signal', line: 'NRS 2002 score 4', icon: <Envelope x={0} y={0} scale={1.1} /> },
-    { title: 'Evidence extractor', line: 'Dietitian note, p. 1', icon: <Agent x={0} y={0} scale={0.75} typing={1} /> },
+    { title: 'Evidence selector', line: 'Dietitian note, p. 1', icon: <Agent x={0} y={0} scale={0.75} typing={1} /> },
     { title: 'DKR rule check', line: 'Treated: D003 holds', icon: <Evals x={0} y={0} scale={0.75} /> },
     { title: 'Grouper delta', line: 'Priced per variant', icon: <Gauge x={0} y={0} scale={1.4} /> },
   ];
@@ -124,7 +124,7 @@ export const DESCRIPTIONS = {
   'billing-chain':
     'How a hospital gets paid for an inpatient case: staff document in the KIS, coders turn the record into ICD-10-GM and OPS codes, a certified grouper maps them to a DRG, the invoice goes to the Krankenkasse, which pays or sends it to the Medizinischer Dienst for an audit that cuts what the record cannot support. The gap this post is about sits between documenting and coding.',
   suggestion:
-    'The life of one suggestion: a cheap signal raises a candidate, the evidence extractor finds the page that supports it, a DKR rule check decides whether it counts, the grouper prices it, and it ends as a suggestion to the coder, a question to the physician, or is dropped. The malnutrition case ends as a question.',
+    'The life of one suggestion: a cheap signal raises a candidate, the evidence selector picks the passage that supports it, a DKR rule check decides whether it counts, the grouper prices it, and it ends as a suggestion to the coder, a question to the physician, or is dropped. The malnutrition case ends as a question.',
 } as const;
 
 export type FigureName = keyof typeof DESCRIPTIONS;

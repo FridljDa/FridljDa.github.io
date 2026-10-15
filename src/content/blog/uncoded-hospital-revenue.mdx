@@ -5,14 +5,14 @@ tags:
   - AI
   - Architecture
   - Healthcare
-description: "German hospitals lose revenue on care that was given and documented but never coded. A design for finding it: cheap signals find candidate codes, an LLM confirms them and cites the page, a certified grouper prices them, and a coder decides."
+description: "German hospitals lose revenue on care that was given and documented but never coded. A design for finding it: cheap signals find candidate codes, a decision model confirms them by picking the passage that proves them, a certified grouper prices them, and a coder decides."
 ---
 
 import DesignMap from '../../components/DesignMap.astro';
 import DesignFigure from '../../components/DesignFigure.astro';
 
 ## TL;DR
-German hospitals are paid per case, by codes, so care that was given and documented but never coded is never paid for. Malnutrition is the classic example: the nurses screen for it, a dietitian treats it, and because no physician ever writes the diagnosis down, nobody codes it. In a system that finds such gaps, the LLM decides nothing on its own: cheap signals in code raise candidate codes, the LLM only confirms them and must cite the page, a certified grouper prices them, and a coder decides. It has to favour precision over recall, because a wrong code can fail an audit, and a coder who sees a few bad suggestions stops trusting the queue. At a few hundred discharges a day per hospital, throughput is not the problem; integrating with each hospital's systems, earning coders' trust and evaluating without ground truth are.
+German hospitals are paid per case, by codes, so care that was given and documented but never coded is never paid for. Malnutrition is the classic example: the nurses screen for it, a dietitian treats it, and because no physician ever writes the diagnosis down, nobody codes it. In a system that finds such gaps, no model decides anything on its own: cheap signals in code raise candidate codes, a self-hosted decision model that cannot write text confirms each one by picking the passage that proves it, a certified grouper prices it, and a coder decides. It has to favour precision over recall, because a wrong code can fail an audit, and a coder who sees a few bad suggestions stops trusting the queue. At a few hundred discharges a day per hospital, throughput is not the problem; integrating with each hospital's systems, earning coders' trust and evaluating without ground truth are.
 
 ## How a German hospital gets paid
 
@@ -51,8 +51,8 @@ Before drawing anything, the problem needs boundaries. These are the ones I'd se
 - **Review runs while the patient is admitted and settles by discharge.** Earlier leaves time to ask a physician while they still remember the case; later gives a more complete record. Concurrent review gets both.
 - **A wrong code costs more than a missed one.** A missed code costs its revenue delta once. A wrong code can fail an audit, and a bad audit record raises the audit rate for every case. So the system optimises for precision.
 - **The data is heterogeneous.** Structured data from the KIS over the HL7 v2 or FHIR standards, discharge letters, lab PDFs, scanned nursing notes, in a different mix at every hospital.
-- **Patient data stays in Germany.** GDPR and the hospitals' own rules mean German data centers, and an LLM that runs there too.
-- **Scale is small, but not free.** A hospital discharges a few hundred inpatients a day. If each case changes about five times and raises about three candidates, that is around 4,500 LLM calls a day per hospital. At about 20,000 tokens of context each, some 90 million tokens a day: real money for a self-hosted model, which is why only candidates go to the LLM. For a database, a few dozen hospitals are nothing.
+- **Patient data stays in Germany.** GDPR and the hospitals' own rules mean German data centers, and a model that runs there too.
+- **Scale is small.** A hospital discharges a few hundred inpatients a day. If each case changes about five times and raises about three candidates, that is around 4,500 model calls a day per hospital, each over about 20,000 tokens of documentation: some 90 million tokens a day. For a generative LLM that is real money. For a small decision model on one GPU, it is not, so cost is not what limits the design; precision is. For a database, a few dozen hospitals are nothing.
 
 The last point shapes the design. The hard part is not requests per second. It is getting data out of a dozen KIS installations, keeping the view of a case current as the record changes, and making coders trust suggestions enough to act on them.
 
@@ -77,7 +77,7 @@ The data between the steps is small and worth naming, because it is the interfac
 - a **suggestion**: case ID and version, proposed code, evidence (document, page, quote), the rule that allows it, the revenue delta, and a status (open, accepted, rejected, asked);
 - a **decision**: suggestion ID, who, accept or reject, and a reason from a short list.
 
-Two things already fall out of this. Suggestions point at a case *version*, so when the record changes we know which suggestions to re-check. And the grouper sits after the detectors, not inside them: the LLM proposes, deterministic certified software does the money math. I never want a model to tell a coder what a code is worth.
+Two things already fall out of this. Suggestions point at a case *version*, so when the record changes we know which suggestions to re-check. And the grouper sits after the detectors, not inside them: the model confirms, deterministic certified software does the money math. I never want a model to tell a coder what a code is worth.
 
 ## The components
 
@@ -89,9 +89,13 @@ Two things already fall out of this. Suggestions point at a case *version*, so w
 
 **Case store.** Postgres, with an append-only events table per case and a materialised current view. The log gives versioning and the audit log for free: for every suggestion we can show what the record looked like when it was made, and what the model saw. At a few hundred thousand cases a year, there is no sharding story.
 
-**Orchestration.** Each new case version starts a durable workflow, for example in [Temporal](/post/temporal-human-in-the-loop), keyed by case ID and version, so a message delivered twice runs once, and a question to a physician can wait days for its answer without a process waiting with it. Versions are debounced: ten lab results in an hour cause one re-run, not ten. Every detector, LLM and grouper result is cached on a hash of case version, catalog year and detector version, so a re-run only pays for what changed.
+**Orchestration.** Each new case version starts a durable workflow, for example in [Temporal](/post/temporal-human-in-the-loop), keyed by case ID and version, so a message delivered twice runs once, and a question to a physician can wait days for its answer without a process waiting with it. Versions are debounced: ten lab results in an hour cause one re-run, not ten. Every detector, model and grouper result is cached on a hash of case version, catalog year and detector version, so a re-run only pays for what changed.
 
-**Detectors.** Here I'd split recall from precision. Cheap, high-recall signals run on every version: a lab value over a threshold, a positive nutrition screening, supplement drinks on the medication list, a procedure code without a matching diagnosis. They are code, fast, and free to run every time. Only the candidates they raise go to the evidence extractor, an LLM with a narrow job: find the passage that supports or refutes the candidate, and return it [typed](/post/pydantic-ai-type-safe-hybrid-workflows), as document, page and quote. Before anything reaches a coder, code checks that the quote really is on that page; a quote that isn't is a rejected answer. A rule layer then encodes the mechanical DKR checks: is this code combination valid, does D003 hold given what the evidence says was done.
+**Detectors.** Here I'd split recall from precision. Cheap, high-recall signals run on every version: a lab value over a threshold, a positive nutrition screening, supplement drinks on the medication list, a procedure code without a matching diagnosis. They are code, fast, and free to run every time. Each candidate becomes a few fixed questions for the evidence selector. The documents are split into numbered passages, a search keeps the twenty most relevant to the candidate, and a decision model answers: which of these passages proves it, or none; was it treated; did a physician diagnose it.
+
+A decision model, like [Jev](https://en.wikipedia.org/wiki/Jev_(AI_model)), cannot write text at all. It returns a choice or a calibrated probability, [typed](/post/pydantic-ai-type-safe-hybrid-workflows) like any other step. That suits this job better than a generative LLM. A citation chosen from numbered passages can't point at a quote that isn't there, which is a better story for an audit than checking generated quotes afterwards. And the probabilities give the thresholds for suggesting, asking and dropping, and the acceptance probability the worklist ranks by.
+
+A rule layer then encodes the mechanical DKR checks: is this code combination valid, does D003 hold given what the evidence says was done.
 
 **Grouper.** The certified grouper as a service: case in, DRG and revenue out, deterministic and fast, milliseconds per run. To price a suggestion it runs the case twice, with and without the code.
 
@@ -105,23 +109,23 @@ Two things already fall out of this. Suggestions point at a case *version*, so w
 
 *Highlighted: the part where the model, the rules and the money meet.*
 
-The kidney failure takes the easy path: the creatinine threshold fires, the extractor quotes the lab report and the paused ACE inhibitor, D003 holds, and the grouper prices the move to F62B. It becomes a suggestion in the cardiology coder's queue. The malnutrition is harder, and more typical:
+The kidney failure takes the easy path: the creatinine threshold fires, the selector picks the lab report and the note pausing the ACE inhibitor, D003 holds, and the grouper prices the move to F62B. It becomes a suggestion in the cardiology coder's queue. The malnutrition is harder, and more typical:
 
 <DesignFigure name="suggestion" />
 
 *The malnutrition case, from the signal that raised it to a question for the physician. Dropping is dashed: it is the outcome nobody sees.*
 
-The screening score of 4 is the cheap signal. The evidence extractor reads the scanned nursing notes and finds the dietitian's note on page 1, with the weight loss and the supplement drinks. The rule check says D003 holds, since the malnutrition was treated, but finds no physician's diagnosis, which a coder needs. So it doesn't become a suggestion. It becomes one bundled question to the physician: "Moderate malnutrition, relevant to treatment? Dietitian's note attached." If they confirm, it re-enters the queue as a suggestion, priced like any other. Had the signal been a single low potassium value, normal on the recheck and never treated, D003 would fail and the candidate would be dropped.
+The screening score of 4 is the cheap signal. The evidence selector reads the passages from the scanned nursing notes and picks the dietitian's note on page 1, with the weight loss and the supplement drinks. The rule check says D003 holds, since the malnutrition was treated, but finds no physician's diagnosis, which a coder needs. So it doesn't become a suggestion. It becomes one bundled question to the physician: "Moderate malnutrition, relevant to treatment? Dietitian's note attached." If they confirm, it re-enters the queue as a suggestion, priced like any other. Had the signal been a single low potassium value, normal on the recheck and never treated, D003 would fail and the candidate would be dropped.
 
 The tradeoffs in this part:
 
-- **Rules, LLM, or both.** Rules alone are precise but brittle: the creatinine rule works, but nobody writes a rule for every way a nurse records weight loss. An LLM alone reads everything but is expensive on every version of every case, and its mistakes are hard to explain. The hybrid uses rules to say *where to look* and the LLM to *read what's there*. That matches [a support automation I built](/post/first-level-support-automation): code in charge of the sequence and the model confined to interpretation made each piece testable on its own.
-- **Which model.** A self-hosted open-weights model keeps the data in the hospital's or our own German data center and makes cost predictable; a managed API in an EU region is less work and usually more capable. I'd start with whichever the first hospitals' data protection officers accept, and keep the extractor's typed interface so the model can be swapped.
+- **Rules, a model, or both.** Rules alone are precise but brittle: the creatinine rule works, but nobody writes a rule for every way a nurse records weight loss. A model alone needs a question to answer, and asking it about every possible code on every case version buries the coder in low-confidence guesses. The hybrid uses rules to say *where to look* and the model to *read what's there*. That matches [a support automation I built](/post/first-level-support-automation): code in charge of the sequence and the model confined to interpretation made each piece testable on its own.
+- **Which model.** Jev itself is a hosted US service, which rules it out for patient data. Open-weight decision models that can be self-hosted followed within weeks, such as [Laya and Kev](https://www.datacamp.com/blog/top-open-source-jev-alternatives). They are new and their benchmarks are their makers' own, so I'd measure one on a few hundred coder-labelled candidates before trusting it. The fallback is a generative open-weights LLM in the same German data center, slower and costlier but well understood. The selector's typed interface makes the model a swap, not a redesign.
 - **Precision over recall.** A coder who sees three bad suggestions in a row stops trusting the queue, and then the good ones go unread too. I'd start with a few detectors that are nearly always right, and add more only when the acceptance rate holds.
 - **How to search the counterfactuals.** Running the grouper once per suggestion is fine for a handful. Exploring every clinically plausible variant of a case can mean thousands of runs, which brute force still handles in seconds at milliseconds per run, with caching per case version. Smarter would be to exploit the grouper's structure: most codes don't touch the decision path that matters for this DRG, so only the ones near a decision boundary need varying. Cases near a boundary are interesting both ways: upside if a documented fact is missing, audit risk if a claimed one is thin.
 - **Workflow or agent.** For this pipeline, a [workflow](/post/workflow-vs-agent): every suggestion goes through the same checks in the same order, and the order is what makes it defensible in an audit. An agent might earn a place later, for open-ended work like drafting an answer to an MD query.
 
-When to upgrade: add an LLM-based recall stage only once the cheap signals' misses are measured and worth the cost, and move off brute-force counterfactuals only when grouper runs show up in the time it takes a case to reach the queue.
+When to upgrade: let the decision model ask about codes no signal raised only once the signals' misses are measured and coders still trust the queue, and move off brute-force counterfactuals only when grouper runs show up in the time it takes a case to reach the queue.
 
 ## Running it: evaluation, rollout, security
 
@@ -133,6 +137,6 @@ When to upgrade: add an LLM-based recall stage only once the cheap signals' miss
 
 **Adding a hospital.** A new adapter, or a configuration of an existing one, a per-hospital overlay for house rules on top of the shared DKR rules, and a backfill of open cases. The yearly catalog updates for ICD-10-GM, OPS and the DRG catalog mean every rule, signal and grouper run is tied to a catalog year, versioned and tested like code. A case admitted in December and discharged in January is the edge case to test first.
 
-**Security.** German hosting only, an LLM that runs there too, encryption, per-hospital isolation, and the case store's audit log, which shows which data the model saw for each suggestion.
+**Security.** German hosting only, a model that runs there too, encryption, per-hospital isolation, and the case store's audit log, which shows which data the model saw for each suggestion.
 
 **Contracts and growth.** The three records from the simplest design, case version, suggestion and decision, are the contracts between the parts, so ingestion, detectors, the grouper service and the review UI can change independently. They also carry the next products: answering MD queries from the same evidence, billing privately insured patients under the GOÄ (*Gebührenordnung für Ärzte*), the physicians' fee schedule, and showing controlling the revenue at risk.
