@@ -12,7 +12,7 @@ import DesignMap from '../../components/DesignMap.astro';
 import DesignFigure from '../../components/DesignFigure.astro';
 
 ## TL;DR
-German hospitals are paid per case, by codes, so care that was given and documented but never coded is never paid for. In a system that finds it, the LLM decides nothing on its own: cheap signals in code raise candidate codes, the LLM only confirms them and must cite the page, a certified grouper prices them, and a coder decides. It has to favour precision over recall, because a wrong code can fail an audit, and a coder who sees a few bad suggestions stops trusting the queue. At a few hundred discharges a day per hospital, throughput is not the problem; integrating with each hospital's systems, earning coders' trust and evaluating without ground truth are.
+German hospitals are paid per case, by codes, so care that was given and documented but never coded is never paid for. Malnutrition is the classic example: the nurses screen for it, a dietitian treats it, and because no physician ever writes the diagnosis down, nobody codes it. In a system that finds such gaps, the LLM decides nothing on its own: cheap signals in code raise candidate codes, the LLM only confirms them and must cite the page, a certified grouper prices them, and a coder decides. It has to favour precision over recall, because a wrong code can fail an audit, and a coder who sees a few bad suggestions stops trusting the queue. At a few hundred discharges a day per hospital, throughput is not the problem; integrating with each hospital's systems, earning coders' trust and evaluating without ground truth are.
 
 ## How a German hospital gets paid
 
@@ -20,15 +20,17 @@ You can't design a system for a domain you can't draw, so first the chain the sy
 
 <DesignFigure name="billing-chain" />
 
-*The six stations of an inpatient case's billing. The system in this post sits between the first two.*
+*The six stations of an inpatient case's billing. Grey belongs to the hospital, teal is the coders, orange the payer. The gap this post is about sits between documenting and coding.*
 
-A hospital is paid per inpatient case (*Fall*), with a flat rate called a DRG. Physicians and nurses document the treatment in the hospital information system (KIS, for example Dedalus ORBIS, iMedOne or SAP i.s.h.med). Coders (*Kodierfachkräfte*) turn that record into codes: ICD-10-GM for diagnoses, one main diagnosis and any number of secondary ones, and OPS for procedures. The rulebook for that is the DKR, the German coding guidelines. A certified grouper, deterministic software whose catalog InEK publishes each year, then maps the codes plus age, length of stay, ventilation hours and a few more fields to a DRG. The invoice is roughly the DRG's cost weight times a state base rate of 4,000 to 5,000 EUR.
+A hospital is paid per inpatient case with a flat rate, the DRG (diagnosis-related group). Physicians and nurses document the treatment in the hospital information system, the KIS (*Krankenhausinformationssystem*). Coders turn that record into codes: ICD-10-GM for diagnoses, one main diagnosis and any number of secondary ones, and OPS (*Operationen- und Prozedurenschlüssel*) for procedures.
 
-Secondary diagnoses matter more than you'd think. They feed a severity score (PCCL, 0 to 6) that often decides the DRG's suffix letter, and F62B pays more than F62C. But under DKR D003, a secondary diagnosis only counts if it caused treatment, diagnostics or extra care. The other levers are ventilation-hour thresholds, length-of-stay limits (deductions below the lower limit, surcharges above the upper one), the choice between outpatient, inpatient and Hybrid-DRG, and add-on payments.
+The rulebook for coding is the DKR (*Deutsche Kodierrichtlinien*), the German coding guidelines. A certified grouper, deterministic software built on the catalog that the InEK (*Institut für das Entgeltsystem im Krankenhaus*) publishes every year, then maps the codes plus age, length of stay and a few more fields to a DRG. The DRG part of the invoice is roughly the DRG's cost weight times a state base rate of 4,000 to 5,000 EUR; nursing staff costs are paid separately, per day.
 
-The invoice goes to the patient's Krankenkasse, which can send it to the Medizinischer Dienst (MD) for audit. The MD cuts whatever the record doesn't support. Until the end of 2026, payers may audit 5 to 15 percent of a hospital's invoices. From 2027, a hospital that has more than 35 percent of its audited invoices objected to can face audits of up to 40 percent. With two thirds of general hospitals running at a loss in 2024, that makes two things matter at once: finding the revenue that was earned but not coded, and never claiming a code the record can't defend.
+Secondary diagnoses matter more than you'd think. They feed a severity score, the PCCL (patient clinical complexity level, 0 to 6), which often decides the DRG's suffix letter: F62B, heart failure with higher severity, pays more than F62C. But under DKR rule D003, a secondary diagnosis only counts if it caused treatment, diagnostics, or extra care or monitoring.
 
-That second half is the one this design keeps coming back to. A system that only maximises revenue is an upcoding machine, and the 2027 rule punishes exactly that.
+The invoice goes to the patient's *Krankenkasse*, the statutory health insurer, which can send it to the MD (*Medizinischer Dienst*) for audit. The MD cuts whatever the record doesn't support. How many of a hospital's invoices a payer may send to audit depends on its track record: the larger the share of its audited invoices the MD cut last time, the more of its invoices may be audited next. Today that share is capped at [5 to 15 percent](https://www.mydrg.de/myDRG_archives/diagnosis-related-groups-drg/weitere-verschaerfung-bei-den-pruefquoten.html). A reform going through the Bundestag in 2026 would raise the cap to 40 percent, and remove it entirely for the hospitals with the worst track record; the exact thresholds have shifted between drafts. With [two thirds of hospitals](https://www.aerzteblatt.de/news/zwei-von-drei-krankenhausern-haben-rote-zahlen-geschrieben-d29a94f8-a5b8-4627-b56a-bc1182b9a4b2) posting a loss in 2024, two things matter at once: finding the revenue that was earned but not coded, and never claiming a code the record can't defend.
+
+That second half is the one this design keeps coming back to. A system that only maximises revenue is an upcoding machine, and stricter audits punish exactly that.
 
 ## What the system must do
 
@@ -36,24 +38,29 @@ That second half is the one this design keeps coming back to. A system that only
 
 *All we know so far: documentation goes in, and a coder should get something to act on.*
 
-The running example is invented. A 74-year-old is admitted with heart failure. On day three, the lab report shows creatinine at 4.3 mg/dl, more than three times the baseline: acute kidney failure, stage 3. The ward treats it and documents it. Nobody codes it. N17.93 would have moved the case from F62C to F62B, worth around a thousand euros. Multiply that by every case in every department.
+The running example is invented; the coding rules around it are real. A 74-year-old is admitted with heart failure, and two things happen that nobody codes:
+
+- **Acute kidney failure.** On day three, creatinine is 4.3 mg/dl against 1.2 on admission, more than three times the baseline: stage 3. The ward pauses the ACE inhibitor and checks creatinine daily. That is treatment under D003, so N17.93 counts, and it moves the case from F62C to F62B, worth roughly a thousand euros in this invented case.
+- **Malnutrition.** The nursing admission screening, the NRS 2002 (Nutritional Risk Screening), scores 4. A dietitian's note on day four records a 10 percent weight loss in three months and prescribes supplement drinks twice a day. No physician mentions it. A coder can't code a diagnosis no physician made, so E44.0, moderate malnutrition, stays uncoded.
+
+The first is easy to find with a lab threshold. The second is the kind a rule can't find: scattered across scanned nursing notes, worded differently every time, and blocked on a physician's confirmation. A design that handles both is the goal.
 
 Before drawing anything, the problem needs boundaries. These are the ones I'd settle on:
 
 - **Coders act on the output.** They own the codes, so they get the suggestions. Physicians are the source of missing facts, and controlling only sees totals.
 - **Review runs while the patient is admitted and settles by discharge.** Earlier leaves time to ask a physician while they still remember the case; later gives a more complete record. Concurrent review gets both.
-- **A wrong code costs more than a missed one.** A missed code costs its revenue delta once. A wrong code can fail an audit, and from 2027 a bad audit record raises the audit rate for every case. So the system optimises for precision.
-- **The data is heterogeneous.** Structured data from the KIS over HL7 v2 or FHIR, discharge letters, lab PDFs, scanned nursing notes, in a different mix at every hospital.
+- **A wrong code costs more than a missed one.** A missed code costs its revenue delta once. A wrong code can fail an audit, and a bad audit record raises the audit rate for every case. So the system optimises for precision.
+- **The data is heterogeneous.** Structured data from the KIS over the HL7 v2 or FHIR standards, discharge letters, lab PDFs, scanned nursing notes, in a different mix at every hospital.
 - **Patient data stays in Germany.** GDPR and the hospitals' own rules mean German data centers, and an LLM that runs there too.
-- **Scale is small.** A hospital has roughly 20,000 to 80,000 inpatient cases a year, a few hundred discharges a day. Even a few dozen hospitals are nothing for a database.
+- **Scale is small, but not free.** A hospital discharges a few hundred inpatients a day. If each case changes about five times and raises about three candidates, that is around 4,500 LLM calls a day per hospital. At about 20,000 tokens of context each, some 90 million tokens a day: real money for a self-hosted model, which is why only candidates go to the LLM. For a database, a few dozen hospitals are nothing.
 
-The last point reshapes the whole design. This is not a system where the hard part is requests per second. The hard parts are getting data out of a dozen KIS installations, keeping the view of a case up to date as the record changes, and making coders trust suggestions enough to act on them. That decides where the rest of this post spends its time.
+The last point shapes the design. The hard part is not requests per second. It is getting data out of a dozen KIS installations, keeping the view of a case current as the record changes, and making coders trust suggestions enough to act on them.
 
 ## The simplest design that works
 
 <DesignMap preset="end-to-end" />
 
-*Six steps, still technology-agnostic. Blue boxes are the platform, the teal one is a person, the grey ones belong to the hospital.*
+*Six steps, still technology-agnostic. Blue boxes are the platform, the teal one is a person, the grey one belongs to the hospital.*
 
 The simplest design that works end to end:
 
@@ -78,19 +85,19 @@ Two things already fall out of this. Suggestions point at a case *version*, so w
 
 *The same six steps, each with the components that make it concrete.*
 
-Now each box becomes building blocks.
+**Ingestion.** One adapter per KIS, translating HL7 v2 messages, FHIR resources or file drops into events on one internal case timeline: admission, transfer, new lab result, new document, discharge. Scans go through OCR. Two gotchas make this the component I'd expect to eat the most engineering time. Messages arrive out of order and get corrected or cancelled afterwards, so the adapter has to apply corrections rather than just append. And every hospital's installation is configured differently.
 
-**Ingestion.** One adapter per KIS, translating HL7 v2 messages, FHIR resources or file drops into one internal case timeline. Admission, transfer, new lab result, new document, discharge: each is an event appended to the case. Documents go through OCR when they are scans. This is the least glamorous component and the one I'd expect to eat the most engineering time, because every hospital's installation is configured differently.
+**Case store.** Postgres, with an append-only events table per case and a materialised current view. The log gives versioning and the audit log for free: for every suggestion we can show what the record looked like when it was made, and what the model saw. At a few hundred thousand cases a year, there is no sharding story.
 
-**Case store.** An append-only event log per case, with a materialised current view. Versioning comes for free from the log, and so does the audit log: for every suggestion we can show what the record looked like when it was made, and what the model saw. A relational database handles this at a few hundred thousand cases a year without any sharding story.
+**Orchestration.** Each new case version starts a durable workflow, for example in Temporal, keyed by case ID and version, so a message delivered twice runs once. Versions are debounced: ten lab results in an hour cause one re-run, not ten. Every detector, LLM and grouper result is cached on a hash of case version, catalog year and detector version, so a re-run only pays for what changed.
 
-**Detectors.** Here I'd split recall from precision. Cheap, high-recall signals run on every new event: a lab value over a threshold (creatinine over 3x baseline), a medication that implies a diagnosis (insulin without a diabetes code), a procedure code without a matching diagnosis, ventilation hours near a threshold. They are code, fast, and free to run on every version. Only the candidates they raise go to an LLM, whose job is narrow: find the passage in the documentation that supports or refutes the candidate, and cite the document and page. A rule layer then encodes the DKR checks that are mechanical: is this code combination valid, does D003 hold given what the evidence says was done.
+**Detectors.** Here I'd split recall from precision. Cheap, high-recall signals run on every version: a lab value over a threshold, a positive nutrition screening, supplement drinks on the medication list, a procedure code without a matching diagnosis. They are code, fast, and free to run every time. Only the candidates they raise go to the evidence extractor, an LLM with a narrow job: find the passage that supports or refutes the candidate, and return it typed, as document, page and quote. Before anything reaches a coder, code checks that the quote really is on that page; a quote that isn't is a rejected answer. A rule layer then encodes the mechanical DKR checks: is this code combination valid, does D003 hold given what the evidence says was done.
 
-**Grouper.** The certified grouper as a service: case in, DRG and revenue out, deterministic. To price a suggestion it runs the case twice, with and without the code.
+**Grouper.** The certified grouper as a service: case in, DRG and revenue out, deterministic and fast, milliseconds per run. To price a suggestion it runs the case twice, with and without the code.
 
-**Worklist.** Ranked by expected value: revenue delta times the probability the coder accepts, minus a penalty for audit risk. Suggestions missing one fact the physician can supply become a question instead, bundled per case: one yes or no per case, not six interruptions.
+**Worklist.** Ranked by expected value: revenue delta times the probability the coder accepts, minus a penalty for audit risk. A code worth nothing still belongs on the case, since the guidelines ask for every relevant diagnosis, so it ranks low rather than vanishing. Each suggestion shows the quote highlighted on its page, the DRG before and after, and one-click reject reasons. Suggestions that need one fact only the physician can supply become a question instead, bundled per case: one yes or no per case, not six interruptions.
 
-**Write-back and labels.** Accepted codes go back into the KIS through the same adapter, so the hospital's system stays the record of truth. Decisions go to a labels table the evaluation reads.
+**Write-back and labels.** Accepted codes go back into the KIS through the same adapter, so the hospital's system stays the record of truth. Many installations don't allow writing codes back at all, though; there the first version is a coder copying the code, and that is fine. Decisions go to a labels table the evaluation reads.
 
 ## The life of one suggestion
 
@@ -98,22 +105,23 @@ Now each box becomes building blocks.
 
 *Highlighted: the part where the model, the rules and the money meet.*
 
-Following the running example through it:
+The kidney failure takes the easy path: the creatinine threshold fires, the extractor quotes the lab report and the paused ACE inhibitor, D003 holds, and the grouper prices the move to F62B. It becomes a suggestion in the cardiology coder's queue. The malnutrition is harder, and more typical:
 
 <DesignFigure name="suggestion" />
 
-*The kidney-failure case, from the signal that raised it to one of three outcomes. Dropping is dashed: it is the outcome nobody sees.*
+*The malnutrition case, from the signal that raised it to a question for the physician. Dropping is dashed: it is the outcome nobody sees.*
 
-The new lab result arrives and the threshold signal fires: creatinine 4.3 mg/dl, more than three times baseline, and no N17 code on the case. The evidence extractor finds the lab report, page 2, and a later note that dialysis was ordered. The rule check confirms D003 holds, since the kidney failure was treated, and the grouper says N17.93 moves the case from F62C to F62B. The evidence is complete, so it becomes a suggestion in the cardiology coder's queue, with both pages linked. Had the record shown the lab value but no treatment, it would have become a question to the physician: "Acute kidney failure, relevant to treatment? Lab report attached." Had the grouper said the code changes nothing, it would have been dropped.
+The screening score of 4 is the cheap signal. The evidence extractor reads the scanned nursing notes and finds the dietitian's note on page 1, with the weight loss and the supplement drinks. The rule check says D003 holds, since the malnutrition was treated, but finds no physician's diagnosis, which a coder needs. So it doesn't become a suggestion. It becomes one bundled question to the physician: "Moderate malnutrition, relevant to treatment? Dietitian's note attached." If they confirm, it re-enters the queue as a suggestion, priced like any other. Had the signal been a single low potassium value, normal on the recheck and never treated, D003 would fail and the candidate would be dropped.
 
 The tradeoffs in this part:
 
-- **Rules, LLM, or both.** Rules alone are precise but brittle, and nobody writes a rule for every way a physician phrases "we treated it". An LLM alone reads everything but is expensive on every version of every case, and its mistakes are hard to explain. The hybrid uses rules to say *where to look* and the LLM to *read what's there*. That matches what I saw in my own work on a support automation: code in charge of the sequence, the model confined to interpretation, made each piece testable on its own.
+- **Rules, LLM, or both.** Rules alone are precise but brittle: the creatinine rule works, but nobody writes a rule for every way a nurse records weight loss. An LLM alone reads everything but is expensive on every version of every case, and its mistakes are hard to explain. The hybrid uses rules to say *where to look* and the LLM to *read what's there*. That matches [a support automation I built](/post/first-level-support-automation): code in charge of the sequence and the model confined to interpretation made each piece testable on its own.
+- **Which model.** A self-hosted open-weights model keeps the data in the hospital's or our own German data center and makes cost predictable; a managed API in an EU region is less work and usually more capable. I'd start with whichever the first hospitals' data protection officers accept, and keep the extractor's typed interface so the model can be swapped.
 - **Precision over recall.** A coder who sees three bad suggestions in a row stops trusting the queue, and then the good ones go unread too. I'd start with a few detectors that are nearly always right, and add more only when the acceptance rate holds.
-- **How to search the counterfactuals.** Running the grouper once per suggestion is fine for a handful. Exploring every clinically plausible variant of a case can mean thousands of scenarios. Brute force works at that size if each run is fast and results are cached per case version. Smarter would be to exploit the grouper's structure: most codes don't touch the decision path that matters for this DRG, so you only need to vary the ones near a decision boundary. Cases near a boundary are interesting both ways: upside if a documented fact is missing, audit risk if a claimed one is thin.
-- **Workflow or agent.** For this pipeline, a [workflow](/post/workflow-vs-agent): every suggestion goes through the same checks in the same order, and the order is what makes it defensible in an audit. An agent might earn a place later, for the open-ended work like drafting an answer to an MD query.
+- **How to search the counterfactuals.** Running the grouper once per suggestion is fine for a handful. Exploring every clinically plausible variant of a case can mean thousands of runs, which brute force still handles in seconds at milliseconds per run, with caching per case version. Smarter would be to exploit the grouper's structure: most codes don't touch the decision path that matters for this DRG, so only the ones near a decision boundary need varying. Cases near a boundary are interesting both ways: upside if a documented fact is missing, audit risk if a claimed one is thin.
+- **Workflow or agent.** For this pipeline, a [workflow](/post/workflow-vs-agent): every suggestion goes through the same checks in the same order, and the order is what makes it defensible in an audit. An agent might earn a place later, for open-ended work like drafting an answer to an MD query.
 
-When to upgrade: add an LLM-based recall stage only once the cheap signals' misses are measured and worth the cost; move off brute-force counterfactuals only when grouper calls show up in the latency budget.
+When to upgrade: add an LLM-based recall stage only once the cheap signals' misses are measured and worth the cost, and move off brute-force counterfactuals only when grouper runs show up in the time it takes a case to reach the queue.
 
 ## Running it: evaluation, rollout, security
 
@@ -121,12 +129,10 @@ When to upgrade: add an LLM-based recall stage only once the cheap signals' miss
 
 *Highlighted: the decisions, which close the loop into the evaluation.*
 
-**Evaluation.** Coder decisions are the labels: cheap, fast and plentiful, but biased by whatever the queue showed them. MD audit outcomes are the real ground truth, months later and only for the few percent of cases that get audited. Coders also disagree with each other. In my support automation, approval rates ranged from 37 to 100 percent depending on the reviewer, on the same system, so I would measure each reviewer's agreement before trusting their labels. Offline replay is weaker than it looks, because you can't easily recreate what the record looked like at the moment a coder would have seen the suggestion. Running new detectors in shadow mode on live cases, logging what they would have suggested, is the honest test. [The Missing Test Suite](/post/the-missing-test-suite) makes the longer case for that, and for why the experts' review throughput is the real bottleneck.
+**Evaluation.** Coder decisions are the labels: cheap, fast and plentiful, but biased by whatever the queue showed them. MD audit outcomes are the real ground truth, months later and only for the few percent of cases that get audited. Coders also disagree with each other. On a support automation I built, approval rates ranged from 37 to 100 percent depending on the reviewer, on the same system, so I would measure each reviewer's agreement before trusting their labels. Offline replay is weaker than it looks, because it is hard to recreate what the record looked like at the moment a coder would have seen the suggestion. Running new detectors in shadow mode on live cases, logging what they would have suggested, is the honest test. [The Missing Test Suite](/post/the-missing-test-suite) makes the longer case for that, and for why the experts' review throughput is the real bottleneck.
 
-**Adding a hospital.** A new adapter, or a configuration of an existing one, a per-hospital overlay for house rules on top of the shared DKR rules, and a backfill of open cases. The yearly catalog updates for ICD-10-GM, OPS and the DRG catalog mean every rule, signal and grouper call is tied to a catalog year, versioned and tested like code. A case admitted in December and discharged in January is the edge case to test first.
+**Adding a hospital.** A new adapter, or a configuration of an existing one, a per-hospital overlay for house rules on top of the shared DKR rules, and a backfill of open cases. The yearly catalog updates for ICD-10-GM, OPS and the DRG catalog mean every rule, signal and grouper run is tied to a catalog year, versioned and tested like code. A case admitted in December and discharged in January is the edge case to test first.
 
-**Security.** German or EU hosting only, an LLM that runs there too, encryption, per-hospital isolation, and the case store's audit log, which shows which data the model saw for each suggestion. Certifications like ISO 27001 and BSI C5 are table stakes for hospital customers.
+**Security.** German hosting only, an LLM that runs there too, encryption, per-hospital isolation, and the case store's audit log, which shows which data the model saw for each suggestion.
 
-**Evolution.** Once the case context store exists, the same view of a case powers the next products: drafting answers to MD queries from the same evidence, GOÄ billing for privately insured patients, and controlling dashboards on revenue at risk.
-
-**Contracts.** The three records from the simplest design (case version, suggestion, decision) are the contracts between the parts, so ingestion, detectors, the grouper service and the review UI can change independently.
+**Contracts and growth.** The three records from the simplest design, case version, suggestion and decision, are the contracts between the parts, so ingestion, detectors, the grouper service and the review UI can change independently. They also carry the next products: answering MD queries from the same evidence, billing privately insured patients under the GOÄ (*Gebührenordnung für Ärzte*), the physicians' fee schedule, and showing controlling the revenue at risk.
