@@ -1,25 +1,23 @@
 ---
 status: draft
 images:
-  - /images/blog/workflow-vs-agent/unlock-tool.png
+  - /images/blog/workflow-vs-agent/linkedin/unlock-tool.png
 firstComment: |
-  The full post, with the grid of request types and account states a workflow has to fill, how the same tool makes a wrong account match harmless, what an agent as the default costs and when a kind of request moves into code, and the one case where I would still give an action its own path in code: https://danielfridljand.de/post/workflow-vs-agent
+  The full post, with every request type against every account state a decision tree has to cover, how the same tool makes it harmless when the model picks the wrong account, what starting with the model in charge costs, and the one kind of action I would still give its own path in code: https://danielfridljand.de/post/workflow-vs-agent
 ---
-On a bank's support automation, we put nearly every decision in code. One reason was good: no unlock instructions may go to an account with a security flag. The other was how we graded the replies.
+On a bank's support automation, we put nearly every decision in code. The one check that justified it would have fit inside a single tool.
 
-Leave the order of steps to the model, and nothing guarantees it checks the flag before it sends unlock instructions. A customer's message might even talk it out of the check. So code decided the sequence, in a decision tree for each kind of request.
+The check: no unlock instructions may go to an account with a security flag. Leave the order of steps to the model, and nothing guarantees it looks at the flag first. A customer's message might even talk it out of looking. So code decided every step, in a decision tree for each kind of request, and the model only read the customer's message.
 
-The complaint that actually drove the decision was a different one: the agent's replies didn't match the bank's message templates. No test can tell you whether a reply is right; someone who knows the bank has to read it, and what they check for becomes the specification. Judged on template match, code can't lose, because code picks the template. The grading, more than the task, picked the architecture.
+That was the good reason. What actually drove the decision was a complaint that the model's replies didn't match the bank's message templates. Judged on template match, code can't lose, because code picks the template. How we judged the replies, more than the task, picked the architecture.
 
-The tree needed a branch for every kind of request against every state an account can be in. It ran out on rarer requests, and on common ones on accounts in states we had no rule for.
+The tree needed a branch for every kind of request against every state an account can be in. It ran out on rarer requests, and on common ones when the account was in a state nobody had written a branch for. A locked-account branch that never asks whether the account is open would send a closed account the unlock steps, without anyone deciding that.
 
-Yet the flag check never needed the tree. It fits inside the unlock tool: the tool reads the flag itself and refuses if it is set, whatever the agent asked and the customer wrote.
+Yet the flag check never needed the tree. The unlock tool, the code that actually sends the instructions, can read the flag itself and refuse if it is set, whatever the model asked for and whatever the customer wrote.
 
-To sort a decision, ask what one mistake would be. If a single violation would be an incident, it is a rule, and it goes in a tool. If it would be a reply an expert rejects, it is policy: the agent follows it, and the grading catches it when it doesn't.
+So I sort each decision by asking what one mistake would be. If a single slip would be an incident, the check goes inside the tool that carries out the action. If it would be a reply a support expert sends back, like asking a customer for details we can already look up, the model makes the call, and the experts' review catches it when it gets it wrong.
 
-An expert's comment on one rejected draft, for a customer locked out of their account, held one of each. "Locked accounts get the unlock link, or go to security if flagged" is the flag check, already in the tool. "Never ask for what we can find" is policy, for the agent's instructions. Neither needs a new kind of request in the tree. With code as the default, we added one.
-
-Next time I would make the agent the default, acting only through tools that hold the rules. A kind of request moves into code once the experts' grades show it is common and the agent gets it wrong, and I would have them grade on the customer's problem, not on templates.
+Next time I would start with the model in charge, acting only through tools that hold those checks. A kind of request would get its own path in code once the experts' reviews show it is common and the model gets it wrong.
 
 Full post in the first comment.
 
