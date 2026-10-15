@@ -89,7 +89,7 @@ export const PRESETS = {
     default: 'agent',
     tags: [{ on: 'experts', text: 'Fill the grid' }],
     small: true,
-    description: 'Highlighted: the experts, grading every reply from the first week.',
+    description: 'Highlighted: the experts, grading every reply as early as possible.',
   },
 
 } satisfies Record<string, Preset>;
