@@ -1,7 +1,7 @@
 /**
  * The design of uncoded-hospital-revenue as one top-to-bottom map: hospital
  * systems feed a case context store, gap detectors propose codes, a
- * counterfactual grouper prices them, a ranked worklist puts them in front of
+ * certified grouper prices them, a ranked worklist puts them in front of
  * a coder, and the coder's decisions go back to the hospital and into the
  * evals.
  *
@@ -45,19 +45,19 @@ export const PRESETS = {
     level: 'boxes',
     focus: [],
     description:
-      'The simplest design: hospital systems feed a case context store, gap detectors propose codes, a counterfactual grouper prices them, a ranked worklist goes to the coder, and decisions go back to the hospital and, as labels, to the detectors.',
+      'The simplest design: hospital systems feed a case context store, gap detectors propose codes, a grouper prices them, a ranked worklist goes to the coder, and decisions go back to the hospital and, as labels, to the detectors.',
   },
   components: {
     level: 'detail',
     focus: [],
     description:
-      'The same six steps with their components: adapters and a versioned event log; cheap signals, an evidence selector that picks the passage, and rule checks; a certified grouper pricing each variant; a worklist for coders and bundled physician queries; write-back and labels.',
+      'The same six steps with their components: adapters and a versioned event log; cheap signals, an evidence selector that picks the passage, and rule checks; a certified grouper pricing each code; a worklist for coders and bundled physician queries; write-back and labels.',
   },
   suggestion: {
     level: 'detail',
     focus: ['detect', 'grouper', 'worklist'],
     tags: [{ on: 'detect', text: 'Precision first' }],
-    description: 'Highlighted: the gap detectors, the counterfactual grouper and the worklist, the path one suggestion takes.',
+    description: 'Highlighted: the gap detectors, the grouper and the worklist, the path one suggestion takes.',
   },
   finishing: {
     level: 'detail',
@@ -74,7 +74,7 @@ const NODES: Record<NodeId, { name: string; role: Role; detail: string[] }> = {
   system: { name: '?', role: 'platform', detail: [] },
   store: { name: 'Case context store', role: 'platform', detail: ['Adapter per KIS', 'Event log per case', 'Versions, audit log'] },
   detect: { name: 'Gap detectors', role: 'platform', detail: ['Cheap signals', 'Evidence selector', 'DKR rule checks'] },
-  grouper: { name: 'Counterfactual grouper', role: 'platform', detail: ['Certified grouper', 'Delta per variant', 'Cache per version'] },
+  grouper: { name: 'Grouper', role: 'platform', detail: ['Certified grouper', 'With and without', 'Cache per version'] },
   worklist: { name: 'Ranked worklist', role: 'human', detail: ['Coder: accept, reject', 'Physician query'] },
   feedback: { name: 'Write-back, labels', role: 'platform', detail: ['Codes into the KIS', 'Decisions into evals'] },
 };
