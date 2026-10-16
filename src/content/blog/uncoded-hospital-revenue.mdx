@@ -14,7 +14,7 @@ import DesignMap from '../../components/DesignMap.astro';
 import DesignFigure from '../../components/DesignFigure.astro';
 
 ## TL;DR
-German hospitals are paid per case, by codes, so care that was given and documented but never coded is never paid for. Malnutrition is the classic example: the nurses screen for it, a dietitian treats it, and because no physician ever writes the diagnosis down, nobody codes it. In the system I'd build to find such gaps, no model decides on its own. Cheap signals in code raise candidate codes, and a self-hosted decision model, one that picks from fixed options and cannot write text, confirms each one by picking the passage that proves it. A certified grouper prices it, and a coder decides. It has to favour precision over recall, because a wrong code can fail an audit and costs the coders' trust. At a few hundred discharges a day even in a large hospital, throughput is not the problem; integrating with each hospital's systems, earning coders' trust and evaluating without ground truth are.
+German hospitals are paid per case, by codes, so care that was given and documented but never coded is never paid for. Malnutrition is the classic example: the nurses screen for it, a dietitian treats it, and because no physician ever writes the diagnosis down, nobody codes it. In the system I'd build to find such gaps, no model decides on its own. It works on a periodic copy of the hospital's data, never on the production KIS. Cheap signals in code raise candidate codes, and a self-hosted LLM agent checks each one with four read-only tools: the record of one case and no other, the code catalog, Python for the arithmetic, and the hospital's past coding decisions. Its answer is typed, so it can only name a code that exists and cite a passage that is in the record. A certified grouper prices it, and a coder decides. Both kinds of error cost money, but only one can be measured: the share of suggestions coders accept, the precision. So that is what the system optimises. At a few hundred discharges a day even in a large hospital, throughput is not the problem; getting data out of each hospital, earning coders' trust and evaluating without ground truth are.
 
 ## How a German hospital gets paid
 
@@ -60,7 +60,7 @@ $$
 
 A [law passed in July 2026](https://www.bundesgesundheitsministerium.de/ministerium/meldungen/bundestag-beschliesst-gkv-beitragssatzstabilisierunggesetz-pm-10-07-2026) raises the cap to 40 percent from 2027, and removes it entirely for the hospitals with the worst track record. With [two thirds of hospitals](https://www.dki.de/pressemitteilung/dkg-zum-dki-krankenhaus-barometer) posting a loss in 2024, two things matter at once: finding the revenue that was earned but not coded, and never claiming a code the record can't defend.
 
-That second half is the one this design keeps coming back to. A system that only maximises revenue is an upcoding machine, and stricter audits punish exactly that.
+Both halves are errors with a price. A false negative, a code the record supports but nobody claims, is revenue lost for good once the case is billed. A false positive, a code the record can't defend, is paid back after an audit, and a worse track record lets the payers audit more of every future invoice. A system that only maximises revenue is an upcoding machine, and stricter audits punish exactly that.
 
 ## What the system must do
 
@@ -87,12 +87,13 @@ Before drawing anything, the problem needs boundaries. These are the ones I'd se
 
 - **Coders act on the output.** They own the codes, so they get the suggestions. Physicians are the source of missing facts, and controlling, the finance department, only sees totals.
 - **Review runs while the patient is admitted and settles by discharge.** Reviewing early leaves time to ask a physician while they still remember the case; reviewing late gives a more complete record. Reviewing during the stay gets both.
-- **A wrong code costs more than a missed one.** A missed code costs its revenue delta once. A wrong code can fail an audit, and a bad audit record raises the audit rate for every case. So the system optimises for precision.
-- **The data is heterogeneous.** Structured data from the KIS arrives as [HL7 v2](https://www.hl7.org/implement/standards/product_brief.cfm?product_id=185) messages, the decades-old workhorse of hospital data exchange, or through [FHIR](https://hl7.org/fhir/), the newer web-API standard from the same organisation. Alongside it come discharge letters, lab PDFs, scanned nursing notes, in a different mix at every hospital.
+- **It doesn't need to be live.** Analytical work does not belong on the database that serves operations, the point *Designing Data-Intensive Applications* makes about separating the two: a heavy read at the wrong moment slows the system that physicians and nurses are working in, and a hospital's IT department is right to be nervous about that. Nothing here needs data from the last minute either; a few refreshes a day settle a case long before discharge. So the system reads a copy, refreshed periodically, in whatever store the hospital's IT is already comfortable running. That also makes a new hospital easier to win: a read-only export is a much smaller ask than access to the production KIS.
+- **Both errors cost money, but only one can be measured.** A missed code costs its revenue delta, and two thirds of hospitals are losing money. A wrong code is paid back after an audit, and a bad audit record raises the audit rate for every case. Of the two, only wrong codes show up in our data: a coder rejects a suggestion, or the MD cuts an accepted one months later. A missed code shows up nowhere, since nobody reviews the cases we said nothing about. So the system optimises for precision, the share of its suggestions that hold up, and finds as much as it can without letting precision drop (more in the evaluation below).
+- **The data is heterogeneous.** Structured data from the KIS comes as [HL7 v2](https://www.hl7.org/implement/standards/product_brief.cfm?product_id=185) messages, the decades-old workhorse of hospital data exchange, or through [FHIR](https://hl7.org/fhir/), the newer web-API standard from the same organisation. Alongside it come discharge letters, lab PDFs, scanned nursing notes, in a different mix at every hospital.
 - **Patient data stays in Germany.** German law [keeps cloud processing of health data](https://www.gesetze-im-internet.de/sgb_5/__393.html) in the EU or in countries with an adequacy decision, and hospitals' own rules go further, so in practice that means German data centers, and a model that runs there too.
-- **Scale is small.** Even a large university hospital discharges only a few hundred inpatients a day, around [150,000 a year](https://www.charite.de/service/pressemitteilung/artikel/detail/charite_bilanz_2025_deutliches_plus_bei_patientinnen_und_forschung); the [average German hospital](https://www.destatis.de/DE/Themen/Gesellschaft-Umwelt/Gesundheit/Krankenhauser/Tabellen/gd-krankenhaeuser-jahre.html) handles about 10,000 cases a year. To size the model's load, take a large hospital and two guesses of mine, not measurements: each case's record changes about five times before discharge (new lab results, new documents), and each change leaves about three possible missing codes for the model to check. For 300 discharges a day, that is $300 \times 5 \times 3 = 4{,}500$ model calls a day, each over about 20,000 tokens of documentation: $4{,}500 \times 20{,}000 \approx 90$ million tokens a day. For a generative LLM that is real money. For a small decision model on one GPU, it is not, so cost is not what limits the design; precision is. Even a few dozen such hospitals are a small load for one database.
+- **Scale is small.** Even a large university hospital discharges only a few hundred inpatients a day, around [150,000 a year](https://www.charite.de/service/pressemitteilung/artikel/detail/charite_bilanz_2025_deutliches_plus_bei_patientinnen_und_forschung); the [average German hospital](https://www.destatis.de/DE/Themen/Gesellschaft-Umwelt/Gesundheit/Krankenhauser/Tabellen/gd-krankenhaeuser-jahre.html) handles about 10,000 cases a year. To size the model's load, take a large hospital and two guesses of mine, not measurements: about 2,000 patients admitted at any time (300 discharges a day at a stay of about a week), and one agent run per case per day, for the cases whose record changed, each reading about 50,000 tokens through its tools. That is $2{,}000 \times 50{,}000 = 100$ million tokens a day, mostly input. For a self-hosted open-weight LLM that is a few GPUs: a real cost, but small next to the roughly thousand euros one found code can be worth. Cost is not what limits the design; precision is. Even a few dozen such hospitals are a small load for one database.
 
-The last point shapes the design. The hard part is not requests per second. It is getting data out of a dozen KIS installations, keeping the view of a case current as the record changes, and making coders trust suggestions enough to act on them.
+The last point shapes the design. The hard part is not requests per second. It is getting data out of a dozen KIS installations without touching what runs the wards, keeping the view of a case current as the record changes, and making coders trust suggestions enough to act on them.
 
 ## The simplest design that works
 
@@ -102,7 +103,7 @@ The last point shapes the design. The hard part is not requests per second. It i
 
 End to end:
 
-1. **Hospital systems** send what happens to a case.
+1. **Hospital systems** hand over a periodic copy of what happened to each case.
 2. A **case context store** keeps one record per case: every code, document and lab value, with the time it arrived.
 3. **Gap detectors** read a case and propose codes it is missing, each with the evidence for it.
 4. A **grouper** prices each proposed code: it groups the case with and without it and reports the revenue delta.
@@ -119,9 +120,9 @@ Nothing in the pipeline waits for a person, and no person waits for the pipeline
 
 *The background keeps the queue current; the foreground only reads and decides.*
 
-- **In the background, asynchronously:** every new case version runs the detectors and the grouper, with bursts of changes collapsed into one run (debounced), and and updates that case's suggestions in the queue, minutes behind the record. Physician answers come back as new events, often days later. A nightly sweep reconciles the case store with the KIS and re-runs cases when a catalog changes.
+- **In the background, asynchronously:** each sync from the hospital's copy, a few times a day, runs the detectors and the grouper on the cases that changed and updates their suggestions in the queue, hours behind the record. Physician answers come back as new events, often days later. A new catalog year re-runs the open cases.
 - **In the foreground, synchronously:** a coder opening the queue gets suggestions that are already computed, in milliseconds. Accept and reject are saved at once; writing a code back to the KIS is queued.
-- **The deadline is discharge.** A case's suggestions should settle before it is billed, so cases close to discharge rank first and a final run happens at discharge.
+- **The deadline is discharge.** A case's suggestions should settle before it is billed, so cases close to discharge rank first and a final run happens on the first sync after discharge.
 
 ## The components
 
@@ -133,24 +134,21 @@ Nothing in the pipeline waits for a person, and no person waits for the pipeline
 
 <DesignMap preset="store" />
 
-- **Adapters:** one per KIS, turning HL7 v2 messages, FHIR resources and file drops into events on one timeline per case: admission, transfer, lab result, document, discharge. Scans go through OCR. Most KIS installations offer no API to query; the hospital's interface engine routes a copy of their message feeds to us. Lab results, for example, arrive as HL7 v2 result messages from the lab system, with local test codes and units (creatinine in mg/dl or µmol/l) that are mapped once per hospital.
-- **Where the effort goes:** messages arrive out of order and get corrected or cancelled afterwards, so an adapter applies corrections instead of appending. And every hospital's installation is configured differently.
+- **A copy, not the KIS:** the hospital's IT exports what changed since the last sync, a few times a day, into a store they are comfortable with: a reporting replica, a data warehouse they already run, or files dropped from their interface engine, which already archives the HL7 v2 and FHIR traffic. We read that copy and never query the production KIS.
+- **Adapters:** one per KIS export, turning those rows, messages and files into events on one timeline per case: admission, transfer, lab result, document, discharge. Scans go through OCR. Lab results, for example, come with local test codes and units (creatinine in mg/dl or µmol/l) that are mapped once per hospital.
+- **Where the effort goes:** records get corrected or cancelled after the fact, so an adapter applies corrections instead of appending. And every hospital's installation is configured differently.
 - **Store:** Postgres, an append-only event log per case plus a materialised current view. The log gives versions and a full change history for free, and a few hundred thousand cases a year need no sharding.
-- **Orchestration:** each new case version starts a durable workflow, for example in [Temporal](/post/temporal-human-in-the-loop), keyed by case and version. A message delivered twice runs once, and a question to a physician can wait days without a process waiting with it. Ten lab results in an hour cause one re-run, and every result is cached under $\text{hash}(\text{inputs}, \text{catalog year}, \text{detector version})$, so a re-run only pays for what changed.
+- **Orchestration:** each sync starts a durable workflow per changed case, for example in [Temporal](/post/temporal-human-in-the-loop), keyed by case and version. A sync processed twice runs once, and a question to a physician can wait days without a process waiting with it. Ten lab results between two syncs cause one re-run, and every result is cached under $\text{hash}(\text{inputs}, \text{catalog year}, \text{detector version})$, so a re-run only pays for what changed.
 
 <DesignFigure name="event-log" />
 
-*The running example's case in the store. Every message is a new version; nothing is overwritten. The suggestion points at the version it was made on, so when the lab corrects a value two versions later, the store knows which suggestion to re-check. 4.1 is still over three times the baseline, so it stands.*
-
-<DesignFigure name="debounce" />
-
-*Orchestration for one burst of lab results: one run after the burst, and inside it only the steps whose inputs changed. The 15 minutes are an example.*
+*The running example's case in the store. Every change a sync brings is a new version; nothing is overwritten. The suggestion points at the version it was made on, so when the lab corrects a value two versions later, the store knows which suggestion to re-check. 4.1 is still over three times the baseline, so it stands.*
 
 ### Gap detectors
 
 <DesignMap preset="detect" />
 
-A detector is code, versioned and tested like any other: a cheap signal that raises a candidate code, the questions the evidence selector has to answer about it, and the DKR rules it has to pass. A few examples, with illustrative thresholds; the real ones come from the coding guidelines and each hospital's coders:
+A detector is code, versioned and tested like any other: a cheap signal that raises a candidate code, the fields the coding agent has to fill in about it, and the DKR rules it has to pass. A few examples, with illustrative thresholds; the real ones come from the coding guidelines and each hospital's coders:
 
 | Signal | Candidate code | Treatment that would satisfy D003 |
 |---|---|---|
@@ -159,25 +157,32 @@ A detector is code, versioned and tested like any other: a cheap signal that rai
 | Potassium below 3.5 mmol/l twice | E87.6, hypokalaemia | potassium substitution |
 | A procedure code without its usual diagnosis | the diagnosis the procedure implies | the procedure itself |
 
-#### Signals and the evidence selector
+#### Signals and the coding agent
 
-- **Cheap signals,** for recall: thresholds on lab values, screening scores, the medication list, procedure codes. Code, fast, run on every version.
-- **Evidence selector,** for precision: the documents are split into numbered passages after OCR, a search on the candidate's terms and the signal's values keeps the twenty most relevant, and a decision model answers a few fixed questions.
+- **Cheap signals,** to decide where to look: thresholds on lab values, screening scores, the medication list, procedure codes. Code, fast, run on every version.
+- **Coding agent,** for precision: an LLM agent that reads the case through four read-only tools and answers in a typed record. The documents are split into numbered passages after OCR, so the agent cites passages by number.
 - **Rule checks:** the mechanical DKR checks. Is this code combination valid, and does D003 hold given what the evidence says was done?
+
+The agent's tools:
+
+- **Case reader:** browse and search the copy of the hospital's data, documents, lab values, medication. It is bound to one patient and one case when the run starts, in code, not by the prompt: the model never passes a case ID, so nothing it writes can open another patient's record. That is data protection, and it removes a whole class of error, facts from the wrong patient, deterministically.
+- **ICD-10-GM catalog:** the exact codes of the case's catalog year, with what the catalog says about each one, its inclusions, exclusions and notes, and the DKR rules that apply. That is what tells E44.0 from E43.
+- **Python:** a sandbox with no network that sees only what the case reader returned. LLMs are unreliable at arithmetic, and coding is full of it: is 4.3 more than three times 1.2, how many kilograms is 10 percent in three months? Python computes it; the model only decides what to compute.
+- **Past decisions:** how this hospital's coders decided on earlier cases, which suggestions they accepted and rejected and which codes the cases were finally billed with. That shows the agent the mapping from record to code by example, and each hospital's house rules with it, without anyone configuring them by hand. Every way the system adapts to a hospital on its own is one less thing to set up per hospital.
+
+The answer is a [Pydantic](/post/pydantic-ai-type-safe-hybrid-workflows) model, not free text: the code must exist in the catalog of the case's year, every cited passage must exist in this case, and the yes-or-no fields are booleans. An answer that fails validation goes back to the agent once and is then dropped, so nothing invalid ever reaches a coder. A citation that has to be a passage number can't point at a quote that isn't there, which is a better story for an audit than checking generated quotes afterwards.
+
+<DesignFigure name="agent" />
+
+*The coding agent on the malnutrition case: four read-only tools, and an answer that is checked before anything else sees it.*
 
 <DesignFigure name="detector-questions" />
 
-*The selector's questions for the running example's two candidates, with invented probabilities. The answers, not a free-text verdict, decide what happens next: the kidney failure becomes a suggestion, the malnutrition a question for the physician.*
-
-A non-generative decision model, the kind TypeSafe [introduced with Jev](https://typesafe.ai/blog/introducing-system-one-models-and-jev) in September 2026, cannot write text at all: given a question and a fixed set of options, it returns a choice or a probability its maker calls calibrated, [typed](/post/pydantic-ai-type-safe-hybrid-workflows) like any other step. A citation chosen from numbered passages can't point at a quote that isn't there, which is a better story for an audit than checking generated quotes afterwards. And the probabilities set the thresholds for suggesting, asking and dropping.
-
-<DesignFigure name="selector" />
-
-*The evidence selector on the malnutrition case. The model's only possible answers are the passage numbers and "none of these", so whatever it cites is in the record.*
+*The agent's typed answers for the running example's two candidates. The fields, not a free-text verdict, decide what happens next: the kidney failure becomes a suggestion, the malnutrition a question for the physician.*
 
 #### Traps
 
-A keyword finds malnutrition in many passages that don't prove it. Clinical text is full of negations, earlier stays, plans and text copied forward from old letters, and these are exactly the cases the selector has to answer with "none of these":
+A keyword finds malnutrition in many passages that don't prove it. Clinical text is full of negations, earlier stays, plans and text copied forward from old letters, and these are exactly the passages the agent must not cite:
 
 <DesignFigure name="traps" />
 
@@ -199,7 +204,7 @@ The certified grouper as a service: case in, DRG and revenue out, deterministic,
 
 <DesignMap preset="worklist" />
 
-Suggestions are ranked by expected value:
+Suggestions are ranked by expected value, with $P(\text{coder accepts})$ estimated from the hospital's past decisions on similar suggestions:
 
 $$
 \text{score} = \Delta\text{revenue} \times P(\text{coder accepts}) - \lambda \times \text{audit risk}
@@ -222,7 +227,7 @@ One click on a quote opens its page, so the coder checks the evidence where it w
 
 <DesignFigure name="evidence-page" />
 
-*The malnutrition evidence on its scanned page. The numbered passages are the ones the selector chose from; the outlined one is its answer.*
+*The malnutrition evidence on its scanned page. The numbered passages are the ones the agent could cite; the outlined one is the one it cited.*
 
 ### Write-back and labels
 
@@ -237,13 +242,13 @@ One click on a quote opens its page, so the coder checks the evidence where it w
 
 *Highlighted: the part where the model, the rules and the money meet.*
 
-The kidney failure takes the easy path: the creatinine threshold fires, the selector picks the lab report and the note pausing the ACE inhibitor, D003 holds, and the grouper prices the move to F62B. It becomes a suggestion in the cardiology coder's queue. The malnutrition is harder, and more typical:
+The kidney failure takes the easy path: the creatinine threshold fires, the agent checks the ratio in Python and cites the lab report and the note pausing the ACE inhibitor, D003 holds, and the grouper prices the move to F62B. It becomes a suggestion in the cardiology coder's queue. The malnutrition is harder, and more typical:
 
 <DesignFigure name="suggestion" />
 
 *The malnutrition case, from the signal that raised it to a question for the physician. Dropping is dashed: it is the outcome nobody sees.*
 
-The screening score of 4 is the cheap signal. The evidence selector reads the passages from the scanned nursing notes and picks the dietitian's note on page 1, with the weight loss and the supplement drinks. The rule check says D003 holds, since the malnutrition was treated, but finds no physician's diagnosis, which a coder needs. So it doesn't become a suggestion. It becomes one bundled question to the physician:
+The screening score of 4 is the cheap signal. The agent reads the scanned nursing notes, looks up E44.0 and its neighbours in the catalog to match the severity, and cites the dietitian's note on page 1, with the weight loss and the supplement drinks. The rule check says D003 holds, since the malnutrition was treated, but finds no physician's diagnosis, which a coder needs. So it doesn't become a suggestion. It becomes one bundled question to the physician:
 
 <DesignFigure name="physician-question" />
 
@@ -253,12 +258,13 @@ If the physician confirms, the code re-enters the queue as a suggestion, priced 
 
 ### Tradeoffs
 
-- **Rules, a model, or both.** Rules alone are precise but brittle: the creatinine rule works, but nobody writes a rule for every way a nurse records weight loss. A model alone needs a question to answer, and asking it about every possible code on every case version buries the coder in low-confidence guesses. The hybrid uses rules to say *where to look* and the model to *read what's there*. That matches [a support automation I built](/post/first-level-support-automation): code in charge of the sequence and the model confined to interpretation made each piece testable on its own.
-- **Which model.** An open-weight decision model, self-hosted in a German data center; Jev itself runs only on its maker's [US-hosted service](https://typesafe.ai/legal/privacy-policy), which rules it out for patient data. Models of this kind are new and their benchmarks are their makers' own, so I'd measure one on a few hundred coder-labelled candidates before trusting it. The fallback is a generative open-weight LLM in the same data center, slower and costlier but well understood. The selector's typed interface makes the model a swap, not a redesign.
-- **Precision over recall.** A coder who sees three bad suggestions in a row stops trusting the queue, and then the good ones go unread too. I'd start with a few detectors that are nearly always right, and add more only when the acceptance rate holds.
-- **Workflow or agent.** For this pipeline, a [workflow](/post/workflow-vs-agent): every suggestion goes through the same checks in the same order, and the order is what makes it defensible in an audit. An agent might earn a place later, for open-ended work like drafting an answer to an MD query.
+- **Rules, a model, or both.** Rules alone are precise but brittle: the creatinine rule works, but nobody writes a rule for every way a nurse records weight loss. A model alone needs a question to answer, and asking it about every possible code on every case buries the coder in low-confidence guesses. The hybrid uses rules to say *where to look* and the model to *read what's there*. That matches [a support automation I built](/post/first-level-support-automation): code in charge of the sequence and the model confined to interpretation made each piece testable on its own.
+- **Which model.** An open-weight LLM, self-hosted in a German data center, measured on a few hundred coder-labelled candidates before it is trusted. The cheaper option is a non-generative decision model that only picks from fixed options, the kind TypeSafe [introduced with Jev](https://typesafe.ai/blog/introducing-system-one-models-and-jev). I'd pass on it: it can't use tools, so it can't look up the catalog, compute a ratio or check what the hospital decided before, and the saving is small next to what one wrong code costs. The typed answer makes the model a swap, not a redesign.
+- **Precision first.** A coder who sees three bad suggestions in a row stops trusting the queue, and then the good ones go unread too. I'd start with a few detectors that are nearly always right, and add more only when the acceptance rate holds.
+- **Workflow and agent.** The pipeline is a [workflow](/post/workflow-vs-agent): every suggestion goes through the same checks in the same order, and the order is what makes it defensible in an audit. The agent sits inside one step of it, the one that has to read, where its freedom to browse pays off, and its tools are read-only, so the worst it can do is give an answer the checks after it reject.
+- **Live or periodic.** Reading the production KIS directly would make suggestions minutes fresher, at the price of load on the system the wards depend on and a far harder conversation with every hospital's IT. Hours of delay cost nothing when the deadline is discharge.
 
-When to upgrade: only once the signals' misses are measured, and coders still trust the queue, would I let the decision model look for codes no signal raised.
+When to upgrade: only once precision holds and coders still trust the queue would I let the agent look for codes no signal raised.
 
 ## Running it: evaluation, rollout, security
 
@@ -268,23 +274,25 @@ When to upgrade: only once the signals' misses are measured, and coders still tr
 
 ### Evaluation
 
-- **Labels:** coder decisions. Cheap, fast and plentiful, but biased by whatever the queue showed them.
-- **Ground truth:** MD audit outcomes, months later and only for the [fewer than one in ten cases](https://md-bund.de/statistik/gkv-beratungen-und-begutachtungen.html) that get audited today.
-- **The metric:** not the acceptance rate but $\sum_{\text{accepted}} \Delta\text{revenue} - \text{euros cut in audits}$, the same gap as [between an approval rate and savings](/post/approval-rate-is-not-savings).
+Measure only what the flow actually produces. Coders review our suggestions, not the gaps we stayed quiet about, so every suggestion gets a verdict and every miss stays invisible: a code we never suggested is never reviewed, and the case is billed without it. That makes precision measurable and recall not, so the evaluation is built on precision and doesn't pretend otherwise.
+
+- **Precision:** the share of suggestions coders accept, per detector and per hospital. Cheap, fast and plentiful, but biased by whatever the queue showed them.
+- **Ground truth for precision:** MD audit outcomes, months later and only for the [fewer than one in ten cases](https://md-bund.de/statistik/gkv-beratungen-und-begutachtungen.html) that get audited today. They catch the accepted codes that still didn't hold up.
+- **The metric:** not the acceptance rate alone but $\sum_{\text{accepted}} \Delta\text{revenue} - \text{euros cut in audits}$, the same gap as [between an approval rate and savings](/post/approval-rate-is-not-savings). Both terms are in our data.
 - **Reviewers:** coders disagree with each other, so I'd measure each one's agreement with the others before trusting their labels.
-- **Shadow mode, not replay:** offline replay is weaker than it looks, because it is hard to recreate what the record looked like when a coder would have seen the suggestion. The honest test runs a new detector on live cases and logs what it would have suggested. [The Missing Test Suite](/post/the-missing-test-suite) makes the longer case for that, and for why the experts' review throughput is the real bottleneck.
+- **Shadow mode, not replay:** offline replay is weaker than it looks, because it is hard to recreate what the record looked like when a coder would have seen the suggestion. The honest test runs a new detector on live cases, logs what it would have suggested, and has a coder check a sample, which gives its precision before it goes live. [The Missing Test Suite](/post/the-missing-test-suite) makes the longer case for that, and for why the experts' review throughput is the real bottleneck.
 
 <DesignFigure name="shadow" />
 
-*A new detector version in shadow mode next to the live one. The numbers are invented. It suggests more and agrees with coders a little less, which is the trade to decide on before promoting it; the audit outcomes that settle it arrive months later.*
+*A new detector version in shadow mode next to the live one. The numbers are invented. It suggests more at a slightly lower precision, which is the trade to decide on before promoting it; the audit outcomes that settle it arrive months later.*
 
 ### Adding a hospital
 
-Adding a hospital takes three things: a new adapter (or a configuration of an existing one), a per-hospital overlay of house rules on top of the shared DKR rules, and a backfill of open cases. The yearly catalog updates for ICD-10-GM, OPS and the DRG catalog mean every rule, signal and grouper run is tied to a catalog year, versioned and tested like code. A case admitted in December and discharged in January is the edge case to test first.
+Adding a hospital takes three things: a periodic export its IT is comfortable with plus an adapter for it (or a configuration of an existing one), a backfill of open cases, and the hospital's past coding decisions loaded for the agent. Those decisions carry most of the house rules, so the per-hospital overlay of rules on top of the shared DKR rules stays small. The yearly catalog updates for ICD-10-GM, OPS and the DRG catalog mean every rule, signal and grouper run is tied to a catalog year, versioned and tested like code. A case admitted in December and discharged in January is the edge case to test first.
 
 ### Security
 
-German hosting for data and model (see the boundaries above), encryption, per-hospital isolation, and the case store's change history, which shows which data the model saw for each suggestion.
+German hosting for data and model (see the boundaries above), encryption, per-hospital isolation, read-only access to a copy instead of the production KIS, an agent that can see one case per run and no other, and the case store's change history, which shows which data the agent saw for each suggestion.
 
 ### Contracts and growth
 
