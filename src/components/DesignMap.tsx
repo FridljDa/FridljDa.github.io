@@ -51,19 +51,19 @@ export const PRESETS = {
     level: 'detail',
     focus: [],
     description:
-      'The same six steps with their components: adapters and a versioned event log; cheap signals, an evidence selector that picks the passage, and rule checks; a certified grouper pricing each code; a worklist for coders and bundled physician queries; write-back and labels.',
+      'The same six steps with their components: periodic copies from the KIS and a versioned event log; cheap signals, a coding agent that cites the passage, and rule checks; a certified grouper pricing each code; a worklist for coders and bundled physician queries; write-back and labels.',
   },
   store: {
     level: 'detail',
     focus: ['sources', 'store'],
     tags: [{ on: 'store', text: 'Most effort' }],
-    description: 'Highlighted: the hospital systems and the case context store, with an adapter per KIS and a versioned event log per case.',
+    description: 'Highlighted: the hospital systems and the case context store, with a periodic copy from each KIS and a versioned event log per case.',
   },
   detect: {
     level: 'detail',
     focus: ['detect'],
     tags: [{ on: 'detect', text: 'Precision first' }],
-    description: 'Highlighted: the gap detectors, with cheap signals, the evidence selector and the DKR rule checks.',
+    description: 'Highlighted: the gap detectors, with cheap signals, the coding agent and the DKR rule checks.',
   },
   grouper: {
     level: 'detail',
@@ -100,8 +100,8 @@ export type PresetName = keyof typeof PRESETS;
 const NODES: Record<NodeId, { name: string; role: Role; detail: string[] }> = {
   sources: { name: 'Hospital systems', role: 'hospital', detail: ['HL7 v2, FHIR', 'Letters, PDFs, scans'] },
   system: { name: '?', role: 'platform', detail: [] },
-  store: { name: 'Case context store', role: 'platform', detail: ['Adapter per KIS', 'Event log per case', 'Versions, audit log'] },
-  detect: { name: 'Gap detectors', role: 'platform', detail: ['Cheap signals', 'Evidence selector', 'DKR rule checks'] },
+  store: { name: 'Case context store', role: 'platform', detail: ['Periodic copy per KIS', 'Event log per case', 'Versions, audit log'] },
+  detect: { name: 'Gap detectors', role: 'platform', detail: ['Cheap signals', 'Coding agent', 'DKR rule checks'] },
   grouper: { name: 'Grouper', role: 'platform', detail: ['Certified grouper', 'With and without', 'Cache per version'] },
   worklist: { name: 'Ranked worklist', role: 'human', detail: ['Coder: accept, reject', 'Physician query'] },
   feedback: { name: 'Write-back, labels', role: 'platform', detail: ['Codes into the KIS', 'Decisions into evals'] },

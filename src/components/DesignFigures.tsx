@@ -1,8 +1,8 @@
 /**
  * The figures of uncoded-hospital-revenue other than its section map
  * (DesignMap.tsx): how a German hospital gets paid for a case, how one code
- * changes its price, the running example's two uncoded diagnoses, how the
- * evidence selector answers, and the life of one suggestion through the
+ * changes its price, the running example's two uncoded diagnoses, the coding
+ * agent with its tools and typed answer, and the life of one suggestion through the
  * design, with the step names the map uses. Plus mockups of the screens: the
  * coder's worklist, the evidence on its page, the physician's questions and a
  * detector in shadow mode.
@@ -91,7 +91,7 @@ function Suggestion({ id }: { id: string }) {
   const cx = 240;
   const steps = [
     { title: 'Cheap signal', line: 'NRS 2002 score 4', icon: <Envelope x={0} y={0} scale={1.1} /> },
-    { title: 'Evidence selector', line: 'Dietitian note, p. 1', icon: <Agent x={0} y={0} scale={0.75} typing={1} /> },
+    { title: 'Coding agent', line: 'Dietitian note, p. 1', icon: <Agent x={0} y={0} scale={0.75} typing={1} /> },
     { title: 'DKR rule check', line: 'Treated: D003 holds', icon: <Evals x={0} y={0} scale={0.75} /> },
     { title: 'Grouper', line: 'With and without the code', icon: <Gauge x={0} y={0} scale={1.4} /> },
   ];
@@ -309,47 +309,55 @@ function RunningExample({ id }: { id: string }) {
   );
 }
 
-/** The evidence selector's answer: a fixed question, numbered passages, and the one passage it picks, or none. */
-function Selector({ id }: { id: string }) {
+/** The coding agent: four read-only tools above it, and the typed answer it must return below it. */
+function CodingAgent({ id }: { id: string }) {
   const m = `${id}-arrow`;
-  const passages = ['Mobilised with help', 'Weight down 10% in 3 months', 'Supplement drinks twice a day', 'Wound dressing changed', 'Sleeps poorly', 'None of these'];
-  const picked = 2;
-  const top = 128;
+  const tools = [
+    { title: 'Case reader', line: 'one case only' },
+    { title: 'ICD-10-GM', line: 'codes and their notes' },
+    { title: 'Python', line: '4.3 / 1.2 = 3.6' },
+    { title: 'Past decisions', line: 'this hospital' },
+  ];
+  const xs = [125, 355];
+  const ys = [50, 140];
+  const agentY = 256;
+  const fields = [
+    { text: 'code: E44.0', check: 'in the catalog' },
+    { text: 'evidence: passages 2, 3', check: 'in this case' },
+    { text: 'treated: yes', check: 'yes or no' },
+  ];
+  const top = agentY + 76;
   const rowH = 46;
-  const panelH = passages.length * rowH + 20;
-  const modelY = top + panelH + 72;
+  const panelH = fields.length * rowH + 20;
   return (
-    <svg viewBox={`0 0 480 ${modelY + 112}`} role="img" aria-label={DESCRIPTIONS.selector} style={{ width: '100%', height: 'auto', fontFamily: 'inherit' }}>
+    <svg viewBox={`0 0 480 ${top + panelH + 64}`} role="img" aria-label={DESCRIPTIONS.agent} style={{ width: '100%', height: 'auto', fontFamily: 'inherit' }}>
       <defs>
         <ArrowMarker id={m} />
       </defs>
-      {arrow(m, `M240,86 V${top - 4}`)}
-      {arrow(m, `M240,${top + panelH} V${modelY - 40}`)}
-      <Step at={{ x: 240, y: 50 }} w={400} h={72} title="Was it treated?" line="candidate: E44.0" role="platform" />
+      {xs.map((x) => (
+        <g key={x}>{arrow(m, `M${x},176 V${agentY - 40}`)}</g>
+      ))}
+      {tools.map((t, i) => (
+        <Step key={t.title} at={{ x: xs[i % 2], y: ys[Math.floor(i / 2)] }} w={214} h={72} title={t.title} line={t.line} role="platform" />
+      ))}
+      <Step at={{ x: 240, y: agentY }} w={400} h={72} title="Coding agent" line="read-only tools" role="platform" icon={<Agent x={0} y={0} scale={0.75} typing={1} />} />
+      {arrow(m, `M240,${agentY + 36} V${top - 4}`)}
       <rect x={40} y={top} width={400} height={panelH} rx={14} fill={color('node-bg')} stroke={color('node-border')} strokeWidth={2.5} />
-      {passages.map((text, i) => {
+      {fields.map((f, i) => {
         const y = top + 10 + i * rowH + rowH / 2;
-        const none = i === passages.length - 1;
-        const on = i === picked;
         return (
-          <g key={text}>
-            {on && <rect x={50} y={y - rowH / 2 + 3} width={380} height={rowH - 6} rx={10} fill={color('ok')} fillOpacity={0.16} stroke={color('ok')} strokeWidth={2.5} />}
-            {!none && (
-              <>
-                <circle cx={76} cy={y} r={13} fill={on ? color('ok') : color('edge')} />
-                <text x={76} y={y} dy="0.35em" textAnchor="middle" fontSize={15} fontWeight={700} fill={on ? '#fff' : color('text')}>
-                  {i + 1}
-                </text>
-              </>
-            )}
-            <text x={none ? 64 : 100} y={y} dy="0.35em" fontSize={LINE} fontWeight={on ? 600 : 500} fontStyle={none ? 'italic' : undefined} fill={on ? color('text') : color('muted')}>
-              {text}
+          <g key={f.text}>
+            <Mark x={68} y={y} yes />
+            <text x={92} y={y} dy="0.35em" fontSize={16} fontWeight={600} fill={color('text')}>
+              {f.text}
+            </text>
+            <text x={428} y={y} dy="0.35em" textAnchor="end" fontSize={14} fontWeight={600} fill={color('muted')}>
+              {f.check}
             </text>
           </g>
         );
       })}
-      <Step at={{ x: 240, y: modelY }} w={400} h={72} title="Decision model" line="picks 3, p = 0.93" role="platform" icon={<Agent x={0} y={0} scale={0.75} typing={1} />} />
-      <Tag x={240} y={modelY + 76} text="No text it could invent" size={15} />
+      <Tag x={240} y={top + panelH + 30} text="Invalid answers are rejected" size={15} />
     </svg>
   );
 }
@@ -440,7 +448,7 @@ function TopBar({ left, right }: { left: string; right: string }) {
   );
 }
 
-/** What a coder sees after opening a suggestion: the scanned page, its numbered passages, and the one the selector picked. */
+/** What a coder sees after opening a suggestion: the scanned page, its numbered passages, and the one the agent cited. */
 function EvidencePage(_props: { id: string }) {
   const passages: { y: number; text?: string; picked?: boolean; bars?: number }[] = [
     { y: 140, bars: 2 },
@@ -477,9 +485,6 @@ function EvidencePage(_props: { id: string }) {
       <Mark x={48} y={497} yes />
       <text x={72} y={497} dy="0.35em" fontSize={16} fontWeight={600} fill={color('text')}>
         Passage 3 answers "Was it treated?"
-      </text>
-      <text x={444} y={497} dy="0.35em" textAnchor="end" fontSize={15} fontWeight={600} fill={color('muted')}>
-        p = 0.93
       </text>
     </svg>
   );
@@ -545,7 +550,7 @@ function PhysicianQuestion(_props: { id: string }) {
 function Shadow(_props: { id: string }) {
   const metrics = [
     { label: 'Would suggest per week', values: [140, 212], max: 230, fmt: (v: number) => String(v) },
-    { label: 'Agreement with coders', values: [0.78, 0.74], max: 1, fmt: (v: number) => `${Math.round(v * 100)}%` },
+    { label: 'Precision, coder-checked', values: [0.78, 0.74], max: 1, fmt: (v: number) => `${Math.round(v * 100)}%` },
     { label: 'Revenue at stake per week', values: [41, 58], max: 70, fmt: (v: number) => `€${v}k` },
   ];
   const versions = [
@@ -553,7 +558,7 @@ function Shadow(_props: { id: string }) {
     { name: 'v2 shadow', fill: color('added') },
   ];
   const gates = [
-    { text: 'Agreement at least 70%', yes: true },
+    { text: 'Precision at least 70%', yes: true },
     { text: '200 cases checked by a coder', yes: true },
   ];
   return (
@@ -664,67 +669,6 @@ function EventLog({ id }: { id: string }) {
   );
 }
 
-/** One burst of lab results, the single run after it, and inside that run which steps re-run and which come from the cache. */
-function Debounce({ id }: { id: string }) {
-  const m = `${id}-arrow`;
-  const x = (min: number) => 40 + min * 5;
-  const results = [2, 5, 9, 14, 20, 26, 31, 38, 44, 50];
-  const runAt = x(65);
-  const steps: { name: string; rerun: boolean }[] = [
-    { name: 'Creatinine rule', rerun: true },
-    { name: 'Evidence selector, kidney', rerun: true },
-    { name: 'Nutrition signals', rerun: false },
-    { name: 'Evidence selector, nutrition', rerun: false },
-    { name: 'Grouper', rerun: false },
-  ];
-  const top = 262;
-  return (
-    <svg viewBox={`0 0 480 ${top + steps.length * 46 + 12}`} role="img" aria-label={DESCRIPTIONS.debounce} style={{ width: '100%', height: 'auto', fontFamily: 'inherit' }}>
-      <defs>
-        <ArrowMarker id={m} />
-      </defs>
-      <text x={24} y={24} dy="0.35em" fontSize={17} fontWeight={700} fill={color('text')}>
-        10 lab results in one hour
-      </text>
-      <line x1={x(0)} x2={x(80)} y1={80} y2={80} stroke={color('node-border')} strokeWidth={2} />
-      {results.map((t) => (
-        <g key={t}>
-          <line x1={x(t)} x2={x(t)} y1={80} y2={66} stroke={color('added')} strokeWidth={2} />
-          <circle cx={x(t)} cy={60} r={7} fill={color('added')} />
-        </g>
-      ))}
-      <text x={x(0)} y={100} dy="0.35em" fontSize={14} fill={color('muted')}>
-        08:00
-      </text>
-      <text x={x(80)} y={100} dy="0.35em" textAnchor="end" fontSize={14} fill={color('muted')}>
-        09:20
-      </text>
-      <path d={`M${x(50)},116 v8 H${runAt} v-8`} fill="none" stroke={color('warn')} strokeWidth={2.5} />
-      <text x={x(50) - 10} y={120} dy="0.35em" textAnchor="end" fontSize={14} fontWeight={700} fill={color('warn')}>
-        15 min quiet
-      </text>
-      <circle cx={runAt} cy={80} r={8} fill={color('ok')} />
-      {arrow(m, `M${runAt},90 V${178}`)}
-      <Step at={{ x: 330, y: 214 }} w={260} h={64} title="One re-run" line="on the newest version" role="platform" />
-      <text x={24} y={214} dy="0.35em" fontSize={15} fontWeight={600} fill={color('muted')}>
-        Inside the run:
-      </text>
-      {steps.map((st, i) => {
-        const y = top + 24 + i * 46;
-        return (
-          <g key={st.name}>
-            {i % 2 === 0 && <rect x={16} y={y - 22} width={448} height={44} rx={8} fill={color('node-bg')} />}
-            <text x={28} y={y} dy="0.35em" fontSize={16} fontWeight={600} fill={st.rerun ? color('text') : color('muted')}>
-              {st.name}
-            </text>
-            <Chip x={340} y={y} w={112} text={st.rerun ? 'Re-run' : 'Cached'} tone={st.rerun ? 'ok' : 'plain'} />
-          </g>
-        );
-      })}
-    </svg>
-  );
-}
-
 /** Three suggestions scored by expected value: revenue delta times the chance of acceptance, minus the audit-risk penalty. */
 function Ranking(_props: { id: string }) {
   const PX = 0.1;
@@ -781,20 +725,20 @@ function Ranking(_props: { id: string }) {
   );
 }
 
-/** Inside the evidence selector: from all passages to the few it reads, then the same questions for both running cases and the outcome they lead to. */
+/** Inside the coding agent's answer: from all passages to the few it reads, then the same fields for both running cases and the outcome they lead to. */
 function DetectorQuestions({ id }: { id: string }) {
   const m = `${id}-arrow`;
   const funnel = [
     { n: '140', line: 'passages' },
-    { n: '20', line: 'kept by search' },
-    { n: '3', line: 'questions' },
+    { n: '20', line: 'read by the agent' },
+    { n: '3', line: 'typed fields' },
   ];
   const cols = [318, 428];
-  type Answer = { text?: string; yes?: boolean; p?: string };
+  type Answer = { text?: string; yes?: boolean };
   const rows: { q: string; a: [Answer, Answer] }[] = [
     { q: 'Which passage proves it?', a: [{ text: 'passage 7' }, { text: 'passage 3' }] },
-    { q: 'Was it treated?', a: [{ yes: true, p: '0.91' }, { yes: true, p: '0.93' }] },
-    { q: 'Did a physician diagnose it?', a: [{ yes: true, p: '0.86' }, { yes: false, p: '0.95' }] },
+    { q: 'Was it treated?', a: [{ yes: true }, { yes: true }] },
+    { q: 'Did a physician diagnose it?', a: [{ yes: true }, { yes: false }] },
   ];
   const top = 168;
   const ROW = 54;
@@ -846,12 +790,7 @@ function DetectorQuestions({ id }: { id: string }) {
                   {ans.text}
                 </text>
               ) : (
-                <g key={k}>
-                  <Mark x={cols[k] - 22} y={y} yes={Boolean(ans.yes)} />
-                  <text x={cols[k] - 2} y={y} dy="0.35em" fontSize={14} fontWeight={600} fill={color('muted')}>
-                    {ans.p}
-                  </text>
-                </g>
+                <Mark key={k} x={cols[k]} y={y} yes={Boolean(ans.yes)} />
               ),
             )}
           </g>
@@ -866,7 +805,7 @@ function DetectorQuestions({ id }: { id: string }) {
   );
 }
 
-/** Passages a keyword search returns for malnutrition: four traps the selector must reject, and the one that proves it. */
+/** Passages a keyword search returns for malnutrition: four traps the agent must reject, and the one that proves it. */
 function Traps(_props: { id: string }) {
   const rows: { text: string; label: string; ok?: boolean }[] = [
     { text: 'No signs of malnutrition.', label: 'Negated' },
@@ -927,14 +866,14 @@ function Pill({ x, y, w, text, dashed }: Point & { w: number; text: string; dash
 /** What runs when: the background pipeline keeps the suggestion queue current, the foreground reads it and decides. */
 function Lanes({ id }: { id: string }) {
   const m = `${id}-arrow`;
-  const bg = ['New version', 'Detectors', 'Grouper', 'Update queue'];
+  const bg = ['Sync', 'Detectors', 'Grouper', 'Update queue'];
   const fg = ['Open queue', 'Accept / reject', 'Write-back'];
   return (
     <svg viewBox="0 0 480 500" role="img" aria-label={DESCRIPTIONS.lanes} style={{ width: '100%', height: 'auto', fontFamily: 'inherit' }}>
       <defs>
         <ArrowMarker id={m} />
       </defs>
-      <Lane y={8} h={172} title="Background, async" note="minutes behind the record" role="platform" />
+      <Lane y={8} h={172} title="Background, async" note="hours behind the record" role="platform" />
       {bg.map((t, i) => (
         <g key={t}>
           {i > 0 && arrow(m, `M${22 + i * 114 - 12},86 H${22 + i * 114 - 2}`)}
@@ -945,7 +884,7 @@ function Lanes({ id }: { id: string }) {
         Physician answers: days later, as new events
       </text>
       <text x={24} y={162} dy="0.35em" fontSize={14} fontWeight={600} fill={color('muted')}>
-        Nightly: reconcile with the KIS, re-run on a new catalog
+        New catalog year: re-run the open cases
       </text>
       {arrow(m, `M240,180 V214`)}
       <Step at={{ x: 240, y: 252 }} w={330} h={68} title="Suggestion queue" line="per case version" role="platform" icon={<Store x={0} y={0} scale={0.55} />} />
@@ -971,30 +910,28 @@ export const DESCRIPTIONS = {
     'How one secondary diagnosis changes the price: the same case is grouped without and with N17.93, acute kidney failure; without it the case lands in F62C, with it the higher severity moves it to F62B, and the difference in cost weight times the base rate is the price of the code.',
   'running-example':
     'The running example as two kinds of evidence. Kidney: a chart of creatinine per day, 1.2 on admission, 4.3 on day three, above the line at three times the baseline, then falling after the drug is paused; a rule can watch a number cross a line. Malnutrition: the facts are spread over a nursing form with an NRS 2002 score of 4, a scanned dietitian note with a 10 percent weight loss and supplement drinks twice a day, and the medication list, while the physician has no diagnosis. Both pass the D003 gate because both were treated; only the kidney failure passes the physician gate, so N17.93 becomes a suggestion that moves the case from F62C to F62B, while E44.0 becomes a question for the physician.',
-  selector:
-    'How the evidence selector answers: a fixed question about a candidate code, here whether the malnutrition was treated, numbered passages from the record plus "none of these", and a decision model that picks passage 3, the supplement drinks, with a probability. It cannot write a quote of its own.',
+  agent:
+    'The coding agent and its four read-only tools: a case reader that can only open the one case it was started on, the ICD-10-GM catalog with each code\'s notes, Python for arithmetic such as 4.3 divided by 1.2 is 3.6, and this hospital\'s past coding decisions. Its answer is a typed record, here code E44.0, which must exist in the catalog, evidence passages 2 and 3, which must exist in this case, and treated yes. An answer that fails these checks is rejected.',
   worklist:
     'What the coder sees: the top suggestion, N17.93, with the two quotes that prove it highlighted and their sources, the DRG before and after, accept and reject with one-click reasons; below it a question bundled for the physician about the malnutrition, with the dietitian note attached.',
   'event-log':
     'The running example\'s case in the store as an append-only event log, one version per message: v1 admission, v2 creatinine 1.2, v3 creatinine 4.3, v4 the ACE inhibitor paused, where the N17.93 suggestion is made, v5 the scanned dietitian note, and v6 a lab correction of v3 to 4.1, which marks the suggestion for a re-check. The log is replayed into the current view: creatinine 4.1, drug paused, one scan.',
-  debounce:
-    'Orchestration for one burst of lab results: ten results arrive between 08:00 and 08:50, the workflow waits until 15 minutes pass without a new one and then runs once on the newest version. Inside that run the creatinine rule and the kidney evidence selector re-run because their inputs changed; the nutrition signals, the nutrition evidence selector and the grouper come from the cache.',
   ranking:
     'Three invented suggestions ranked by expected value, revenue delta times the probability the coder accepts minus the audit-risk penalty. First, code B: 900 euros times 0.95 minus 50 is 805. Second, code A: 3,000 euros times 0.25 minus 300 is 450. Last, code C: worth nothing, still listed at 0.',
   'detector-questions':
-    'Inside the evidence selector: of 140 passages in the record, a search keeps 20, and the decision model answers three questions per candidate. Kidney failure, N17.93: passage 7 proves it, treated yes at 0.91, diagnosed by a physician yes at 0.86, so it becomes a suggestion. Malnutrition, E44.0: passage 3 proves it, treated yes at 0.93, diagnosed by a physician no at 0.95, so it becomes a question for the physician.',
+    'Inside the coding agent\'s answer: of 140 passages in the record, the agent reads 20, and fills three typed fields per candidate. Kidney failure, N17.93: passage 7 proves it, treated yes, diagnosed by a physician yes, so it becomes a suggestion. Malnutrition, E44.0: passage 3 proves it, treated yes, diagnosed by a physician no, so it becomes a question for the physician.',
   traps:
     'Five passages a search for malnutrition returns: "No signs of malnutrition" is negated; "Weight loss after surgery, 2023" is an earlier stay; "Dietitian consult if weight drops" is only a plan; "Weight minus 10 percent, copied from 2023" is copied forward. Only "Supplement drinks since day 4" proves current, treated malnutrition.',
   lanes:
-    'What runs when. In the background, asynchronously and minutes behind the record: a new case version runs the detectors and the grouper and updates the suggestion queue; physician answers come back days later as new events, and a nightly sweep reconciles with the KIS and re-runs cases on a new catalog. In the foreground, synchronously and in milliseconds: coders open the queue, accept or reject, and write-back to the KIS is queued. Nothing in the foreground waits on a model.',
+    'What runs when. In the background, asynchronously and hours behind the record: each sync from the hospital\'s copy of the data runs the detectors and the grouper on the cases that changed and updates the suggestion queue; physician answers come back days later, and a new catalog year re-runs the open cases. In the foreground, synchronously and in milliseconds: coders open the queue, accept or reject, and write-back to the KIS is queued. Nothing in the foreground waits on a model.',
   'evidence-page':
-    'What a coder sees after opening a suggestion: the scanned dietitian note, page 1, split into numbered passages; passage 2, the weight loss, is marked, and passage 3, supplement drinks twice a day, is outlined as the one the selector picked to answer "Was it treated?" with probability 0.93.',
+    'What a coder sees after opening a suggestion: the scanned dietitian note, page 1, split into numbered passages; passage 2, the weight loss, is marked, and passage 3, supplement drinks twice a day, is outlined as the one the agent cited to answer "Was it treated?".',
   'physician-question':
     'The physician\'s side: questions from coding bundled one per case. The open one asks whether moderate malnutrition, E44.0, was relevant to treatment, with the dietitian note from day four attached, and three answers: yes, no, not sure. Two more cases wait below with one and two questions.',
   shadow:
-    'A new version of the malnutrition detector in shadow mode for four weeks next to the live one, with invented numbers: v2 would suggest 212 codes a week against 140, agrees with coders 74 percent of the time against 78, and puts 58 thousand euros a week at stake against 41. It passes the gate of at least 70 percent agreement and 200 cases checked by a coder, so it can be promoted; audit outcomes follow months later.',
+    'A new version of the malnutrition detector in shadow mode for four weeks next to the live one, with invented numbers: v2 would suggest 212 codes a week against 140, has a precision of 74 percent against 78 on the suggestions a coder checked, and puts 58 thousand euros a week at stake against 41. It passes the gate of at least 70 percent precision and 200 cases checked by a coder, so it can be promoted; audit outcomes follow months later.',
   suggestion:
-    'The life of one suggestion: a cheap signal raises a candidate, the evidence selector picks the passage that supports it, a DKR rule check decides whether it counts, the grouper prices it, and it ends as a suggestion to the coder, a question to the physician, or is dropped. The malnutrition case ends as a question.',
+    'The life of one suggestion: a cheap signal raises a candidate, the coding agent cites the passage that supports it, a DKR rule check decides whether it counts, the grouper prices it, and it ends as a suggestion to the coder, a question to the physician, or is dropped. The malnutrition case ends as a question.',
 } as const;
 
 export type FigureName = keyof typeof DESCRIPTIONS;
@@ -1003,13 +940,12 @@ const FIGURES: Record<FigureName, (props: { id: string }) => ReactNode> = {
   'billing-chain': BillingChain,
   pricing: Pricing,
   'running-example': RunningExample,
-  selector: Selector,
+  agent: CodingAgent,
   worklist: Worklist,
   'event-log': EventLog,
   'detector-questions': DetectorQuestions,
   traps: Traps,
   lanes: Lanes,
-  debounce: Debounce,
   ranking: Ranking,
   'evidence-page': EvidencePage,
   'physician-question': PhysicianQuestion,
