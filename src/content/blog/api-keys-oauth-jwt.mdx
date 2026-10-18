@@ -6,6 +6,7 @@ tags:
   - Security
   - AI
 description: "API keys, OAuth and JWT get listed side by side, but they aren't three alternatives: an API key is a credential, OAuth is a protocol for getting one, and a JWT is a format a token can take. Worked through on a support agent that has to call three systems."
+image: /images/blog/api-keys-oauth-jwt/featured.png
 math: false
 ---
 
@@ -59,7 +60,7 @@ A fine fit when the calling application *is* the actor, the key lives in a secre
 
 ## OAuth 2.0: trade a secret for a short-lived token
 
-OAuth fixes the long-lived part with a middleman, the **authorization server**. The client, our agent's tools, sends its long-lived secret only there, once in a while, and gets back an **access token**: valid for minutes to an hour, and limited to the **scopes** that were granted, like `contacts.read`. The API, the **resource server**, only ever sees the access token. If it leaks, it is useless within the hour.
+[OAuth](https://datatracker.ietf.org/doc/html/rfc6749) fixes the long-lived part with a middleman, the **authorization server**. The client, our agent's tools, sends its long-lived secret only there, once in a while, and gets back an **access token**: valid for minutes to an hour, and limited to the **scopes** that were granted, like `contacts.read`. The API, the **resource server**, only ever sees the access token. If it leaks, it is useless within the hour.
 
 How the client gets the token is the **grant type**. Two cover almost every integration.
 
@@ -67,22 +68,40 @@ How the client gets the token is the **grant type**. Two cover almost every inte
 
 <AuthMap preset="client-credentials" />
 
-The CRM integration has no human in it: the agent reads accounts as itself. The CRM admin registers our agent as a client and gives us a `client_id` and a `client_secret`.
+The CRM integration has no human in it: the agent reads accounts as itself. The CRM admin registers our agent as a client, and the CRM's admin console shows two values:
+
+```text
+client_id:     northstar-support-agent
+client_secret: q8Zr2vLx7TfN4mKd9WbE
+```
+
+The `client_id` names the client and is not a secret: it shows up in logs, and in the calendar flow below, in the browser's address bar. The `client_secret` is the password. Consoles often show it only once, so it goes straight into the secrets store.
 
 <AuthFigure name="client-credentials" />
 
 *Two calls to get going: one to the auth server for a token, one to the API with it. After that, only the second, until the token expires.*
 
-The token request (1) is a form-encoded `POST`, with the client authenticating via HTTP Basic:
+The token request (1) is a form-encoded `POST`. The client authenticates with HTTP Basic: the two values joined by a colon, `northstar-support-agent:q8Zr2vLx7TfN4mKd9WbE`, then base64-encoded:
 
 ```http
 POST /oauth/token HTTP/1.1
 Host: auth.crm.example.com
-Authorization: Basic base64(client_id:client_secret)
+Authorization: Basic bm9ydGhzdGFyLXN1cHBvcnQtYWdlbnQ6cThacjJ2THg3VGZONG1LZDlXYkU=
 Content-Type: application/x-www-form-urlencoded
 
 grant_type=client_credentials&scope=contacts.read%20cases.write
 ```
+
+With `curl`, `-u` does the joining and encoding:
+
+```sh
+curl -u northstar-support-agent:q8Zr2vLx7TfN4mKd9WbE \
+  -d grant_type=client_credentials \
+  -d scope="contacts.read cases.write" \
+  https://auth.crm.example.com/oauth/token
+```
+
+Base64 is an encoding, not encryption: whoever sees that header has the secret. That is why it only ever travels over HTTPS, and only to the token endpoint.
 
 The answer (2):
 
@@ -114,7 +133,7 @@ The calendar belongs to the advisor. The agent shouldn't hold a key to *every* a
 
 - **The advisor logs in at the calendar provider (2)**, never at our app. We never see their password.
 - **The code (3) is worth nothing on its own.** Our backend trades it (4) together with its own client credentials, so a code intercepted in the browser can't be redeemed by someone else.
-- **`state` and PKCE ride along in the redirect (1).** `state` is a random value the backend checks when the code comes back, so an attacker can't splice their code into someone else's session. PKCE sends the hash of a random `code_verifier` up front and the verifier itself in step 4, so only whoever started the flow can finish it. Current best practice asks for PKCE on every client.
+- **`state` and PKCE ride along in the redirect (1).** `state` is a random value the backend checks when the code comes back, so an attacker can't splice their code into someone else's session. [PKCE](https://datatracker.ietf.org/doc/html/rfc7636) sends the hash of a random `code_verifier` up front and the verifier itself in step 4, so only whoever started the flow can finish it. Current best practice asks for PKCE on every client.
 - **The refresh token is the long-lived secret here (5).** It goes in the secrets store, one per advisor. Many providers **rotate** it: every refresh (7, 8) returns a new one and invalidates the old. An integration that forgets to store the new one works for exactly one hour.
 
 Two more grants are in the original spec, and current best practice ([RFC 9700](https://datatracker.ietf.org/doc/html/rfc9700)) says not to use them: the **implicit** grant, which returned the token in the URL, and the **password** grant, where the client collects the user's password itself.
@@ -123,7 +142,7 @@ Two more grants are in the original spec, and current best practice ([RFC 9700](
 
 <AuthMap preset="jwt" />
 
-The CRM's access token starts with `eyJ`, base64 for `{"`: it is a **JSON Web Token**, three base64url parts separated by dots.
+The CRM's access token starts with `eyJ`, base64 for `{"`: it is a [**JSON Web Token**](https://datatracker.ietf.org/doc/html/rfc7519), three base64url parts separated by dots.
 
 <AuthFigure name="jwt" />
 
@@ -159,20 +178,20 @@ def verify(token: str) -> dict:
     )
 ```
 
-- **`algorithms`** pins the algorithm. Early libraries trusted the header, so an attacker could set `"alg": "none"` and drop the signature, or switch `RS256` to `HS256` and sign with the *public* key as if it were a shared secret.
+- **`algorithms`** pins the algorithm. Early libraries trusted the header, so an attacker could set `"alg": "none"` and drop the signature, or switch `RS256` to `HS256` and sign with the *public* key as if it were a shared secret. The [JWT best practices](https://datatracker.ietf.org/doc/html/rfc8725) describe both.
 - **`audience`** stops a token minted for the ticketing API from being replayed against the CRM.
 - **`require`** rejects tokens that leave `exp` out and would otherwise never expire.
 
 ### Where else JWTs show up
 
 - **As the client's credential.** Some providers replace the `client_secret` with a JWT the client signs with its own private key ([RFC 7523](https://datatracker.ietf.org/doc/html/rfc7523)). Service accounts on large cloud and CRM platforms work like this: nothing reusable travels at all.
-- **As an ID token.** **OpenID Connect** adds login on top of OAuth: the auth server also returns an **ID token**, a JWT that tells the *client* who the user is. The access token is for the API, the ID token for the client; sending an ID token to an API is a classic mix-up.
+- **As an ID token.** [**OpenID Connect**](https://openid.net/specs/openid-connect-core-1_0.html) adds login on top of OAuth: the auth server also returns an **ID token**, a JWT that tells the *client* who the user is. The access token is for the API, the ID token for the client; sending an ID token to an API is a classic mix-up.
 
 ## When a call fails: 401 or 403
 
 <AuthMap preset="errors" />
 
-The status code says which layer failed:
+The status code says which layer failed, as the [bearer token spec](https://datatracker.ietf.org/doc/html/rfc6750#section-3.1) defines them:
 
 - **`401 Unauthorized`: "I don't know who you are."** The token is missing, expired, malformed or signed by someone the API doesn't trust. Fetch a new one and retry *once*.
 - **`403 Forbidden`: "I know who you are, and you may not do this."** A missing scope or role. A new token with the same grants won't help; the fix is in the client's configuration, usually on the provider's side.
@@ -196,13 +215,3 @@ The same split decides whose permissions apply. Alex never logs in to the CRM, s
 5. **How long do tokens live, and do refresh tokens rotate?** That decides the caching and storage code.
 6. **What do a `401` and a `403` look like here?** Some APIs answer `400` with an error body instead.
 7. **Who rotates which secret, and how?** Write it down before go-live, not after the first expiry.
-
-## Sources
-
-- [RFC 6749](https://datatracker.ietf.org/doc/html/rfc6749): the OAuth 2.0 framework, with the grant types.
-- [RFC 6750](https://datatracker.ietf.org/doc/html/rfc6750): bearer tokens, the `Authorization: Bearer` header and the `401`/`403` error codes.
-- [RFC 7636](https://datatracker.ietf.org/doc/html/rfc7636): PKCE.
-- [RFC 9700](https://datatracker.ietf.org/doc/html/rfc9700): current OAuth security best practice.
-- [RFC 7519](https://datatracker.ietf.org/doc/html/rfc7519): JSON Web Token, and [RFC 9068](https://datatracker.ietf.org/doc/html/rfc9068): JWTs as OAuth access tokens.
-- [RFC 8725](https://datatracker.ietf.org/doc/html/rfc8725): JWT best practices, including the algorithm attacks.
-- [OpenID Connect Core](https://openid.net/specs/openid-connect-core-1_0.html): ID tokens.

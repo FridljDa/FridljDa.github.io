@@ -194,7 +194,7 @@ const PARTS: Part[] = [
     encoded: 'eyJpc3Mi…',
     lines: [
       ['iss', 'auth.crm.example.com'],
-      ['sub', 'support-agent'],
+      ['sub', 'northstar-support-agent'],
       ['aud', 'api.crm.example.com'],
       ['scope', 'contacts.read cases.write'],
       ['exp', 'in one hour'],
