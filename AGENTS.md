@@ -38,6 +38,31 @@ organisation as context is not, unless the owner asks. The same applies to
 reposts, file names, slugs, frontmatter, figure text, commit messages and PR
 descriptions, since this repo is public.
 
+## Reference posts: recent and heavily iterated
+
+When writing or reviewing a post, take your cues on structure, figures and
+tone from posts that are **recent** and that the owner **iterated on a lot**.
+They hold the current house style and the owner's corrections; older posts and
+posts committed once or twice predate both, so don't copy their habits (Mermaid
+diagrams, long prose without figures, unsourced claims).
+
+Find them from the history rather than a list kept here, which goes stale:
+count commits per post, and look at when they were made. The commit count of
+the post's own drawn figures (`src/components/<Name>Figures.tsx`,
+`<Name>Map.tsx`) counts as well. A shallow clone hides most of the history, so
+run `git fetch --unshallow` first.
+
+```sh
+for f in src/content/blog/*.mdx; do
+  echo "$(git log --oneline -- "$f" | wc -l) $(git log -1 --format=%cs -- "$f") $f"
+done | sort -rn | head
+```
+
+In October 2026 these were Workflow or Agent, Documented but Never Coded
+(uncoded-hospital-revenue), The Missing Test Suite and Architecture of a
+First-Level Support Automation. Kernel to Attention has many commits, but most
+are from April, so it is not a reference.
+
 ## Figures: one style per post
 
 All figures within a blog post share one visual style. Drawn figures, mockups and the section maps: `src/components/AGENTS.md`. Animations: `src/remotion/AGENTS.md`.
