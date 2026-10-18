@@ -8,6 +8,9 @@
  * check Astro.locals.confluence). Links and images point at the production
  * site, so a post's images have to be deployed before it is pasted.
  *
+ * Only posts with `confluence: true` in their frontmatter have one; the rest
+ * are a 404.
+ *
  * Unlisted and noindex: the content is the public post, only the format differs.
  */
 import { getCollection, render } from 'astro:content';
@@ -16,7 +19,7 @@ import { SITE } from '../../../data/site';
 const { slug } = Astro.params;
 const post = (await getCollection('blog')).find((p) => p.id === slug);
 
-if (!post) {
+if (!post?.data.confluence) {
   return Astro.redirect('/404', 404);
 }
 

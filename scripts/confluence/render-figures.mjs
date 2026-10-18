@@ -9,11 +9,11 @@
  * so start the dev server first) in light mode on a white background, which
  * stays readable when Confluence itself is in dark mode.
  *
- * Figures come from FIGURES, plus every element in POSTS that names its PNG in
- * a data-confluence-png attribute (a /images/... URL, as its <img> uses).
+ * Figures come from FIGURES, plus every element in a post with `confluence: true`
+ * in its frontmatter that names its PNG in a data-confluence-png attribute (a /images/... URL, as its <img> uses).
  */
 
-import { mkdir } from 'node:fs/promises';
+import { mkdir, readdir, readFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { chromium } from 'playwright';
 
@@ -30,7 +30,18 @@ const FIGURES = [
   },
 ];
 
-const POSTS = ['the-missing-test-suite', 'first-level-support-automation', 'scrap-conditional-independence', 'workflow-vs-agent', 'api-keys-oauth-jwt'];
+const BLOG = 'src/content/blog';
+
+// The posts that have a Confluence copy: `confluence: true` in their frontmatter.
+async function confluencePosts() {
+  const posts = [];
+  for (const file of await readdir(BLOG)) {
+    if (!/\.mdx?$/.test(file)) continue;
+    const frontmatter = (await readFile(`${BLOG}/${file}`, 'utf8')).match(/^---\n([\s\S]*?)\n---/)?.[1] ?? '';
+    if (/^confluence:\s*true\s*$/m.test(frontmatter)) posts.push(file.replace(/\.mdx?$/, ''));
+  }
+  return posts;
+}
 
 // Figures are drawn at 720px wide; the rest is the white margin around them.
 const FIGURE_WIDTH = 768;
@@ -44,7 +55,7 @@ async function open(page, base, post) {
 
 async function discover(page, base) {
   const figures = [];
-  for (const post of POSTS) {
+  for (const post of await confluencePosts()) {
     await open(page, base, post);
     const pngs = await page
       .locator('[data-confluence-png]')

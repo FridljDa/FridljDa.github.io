@@ -14,7 +14,7 @@ Assets live under `src/assets/images/` with `public/images` symlinked for stable
 
 ## Reposts (LinkedIn, Confluence)
 
-LinkedIn versions of blog posts are written by hand: read `src/content/reposts/linkedin/AGENTS.md` before writing one. The Confluence copy is generated from the post by code and never rewritten: see `src/content/reposts/AGENTS.md`.
+LinkedIn versions of blog posts are written by hand: read `src/content/reposts/linkedin/AGENTS.md` before writing one. The Confluence copy is generated from the post by code and never rewritten, and only posts with `confluence: true` in their frontmatter get one: see `src/content/reposts/AGENTS.md`.
 
 ## Examples: invented, never passed off as the project
 

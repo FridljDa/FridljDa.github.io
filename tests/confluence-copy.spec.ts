@@ -26,6 +26,11 @@ test.describe('Confluence copy of a post', () => {
     expect(urls).not.toContain('https://danielfridljand.de/images/blog/the-missing-test-suite/review-screen-graded-dark.png');
   });
 
+  test('a post without the confluence flag has no copy page', async ({ page }) => {
+    const response = await page.goto('/post/kernel-to-attention/confluence');
+    expect(response?.status()).toBe(404);
+  });
+
   test('the post itself keeps its drawn figures', async ({ page }) => {
     await page.goto(POST);
     await expect(page.locator('.shadow-timeline svg')).toHaveCount(1);
