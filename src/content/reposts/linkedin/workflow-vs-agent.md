@@ -15,7 +15,7 @@ But a workflow only answers what someone wrote a branch for. A few request types
 
 An agent with a set of tools doesn't need all of that written out first. It won't get every case right either, but it is much less to build, so the people who know the business can start grading its drafts sooner. Any plan that touches account access would still wait for a person to approve it.
 
-Then I'd let the grades decide what moves into code, as in the picture below: a request type that is common and keeps getting rejected, or one whose action can't be undone. Everything else stays with the agent.
+Code would then take over a request type only once it has earned it, as in the picture below: the type is common and the graders keep rejecting the agent's drafts for it, or its action can't be undone. Everything else stays with the agent.
 
 Full post in the first comment.
 

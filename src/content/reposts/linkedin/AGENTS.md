@@ -118,7 +118,10 @@ A post takes one image, so pick the one the message needs: the post's position,
 not a detail of the argument for it. Workflow or Agent first used its grid of
 request types and account states, which shows where the first design ran out,
 and then a figure of the recommendation itself: request types split between
-agent and workflow, with a legend that says what each term means. Another
+agent and workflow, with a legend that says what each term means. Mind what a
+figure implies about order: grades drawn under every bar read as verdicts on
+the design each bar is in now, so a grey workflow bar over a cross looked as
+if the workflow was failing. The cross went next to the reason instead. Another
 picture goes in a comment, one per comment, such as the review screen under The
 Missing Test Suite's version. Readers who never open the comments never see it,
 so the text points only at the post's own image.
@@ -126,8 +129,9 @@ so the text points only at the post's own image.
 The post's image shows below the text, so a sentence that points at it has to
 make sense before the reader scrolls to it ("top right in the picture below",
 not a "cell" the text hasn't introduced). Tie the text to what the image labels:
-Workflow or Agent's "common and keeps getting rejected, or one whose action
-can't be undone" are the figure's two labels.
+Workflow or Agent's "the type is common and the graders keep rejecting the
+agent's drafts for it, or its action can't be undone" are the figure's two
+labels, "Common, agent fails" and "Can't undo".
 
 Reuse the post's images under `/images/blog/<slug>/` where they fit. A crop
 made for LinkedIn goes in `src/assets/images/blog/<slug>/linkedin/` and keeps
