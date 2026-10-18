@@ -4,7 +4,8 @@
  * - default: the post's recommendation. Request types, most common first, the
  *   long tail in the agent's colour; a type is in the workflow's only once it
  *   is common and the experts reject the agent's drafts, or its action can't
- *   be undone. The legend says what each design is: who decides each step.
+ *   be undone, and that reason sits over its bar. The legend says what each
+ *   design is: who decides the next step.
  * - grid: three intents against three account states, the mapping a workflow
  *   has to spell out. The tree decided two cells, both for a locked account,
  *   Alex's among them; the other seven are question marks.
@@ -19,7 +20,7 @@
  * server, no JavaScript.
  */
 import type { ComponentType, ReactNode } from 'react';
-import { color, PALETTE, Expert, Grade, Person, Reply, type Point } from '../remotion/shared';
+import { color, PALETTE, Grade, Person, Reply, type Point } from '../remotion/shared';
 import { Tag } from './map-parts';
 
 /** Alex Carter, the post's running example, in the color customers get in the shadow loop. */
@@ -154,20 +155,20 @@ function IntentGrid() {
 }
 
 const DefaultDescription =
-  'Request types as bars, most common first, with a long tail of rare ones. The legend: in a workflow, code decides the next step; in an agent, the LLM does; and the agent is the default. Under each bar is the experts’ grade of the agent’s drafts. The two most common types are rejected, so they are in the workflow; a rare type whose action can’t be undone is in the workflow too, under a lock. Every other type, a common one that is approved and rare ones whether approved or not, stays with the agent.';
+  'Request types as bars, most common first, with a long tail of rare ones. The legend: in a workflow, code decides the next step; in an agent, the LLM does; and the agent is the default. The two most common types are in the workflow, marked with a cross: common, and the agent fails them. A rare type is in the workflow too, marked with a lock: its action can’t be undone. Every other type stays with the agent.';
 
-/** The request types, most common first: the share of tickets, the experts' grade of the agent's drafts, and whether code runs it. */
-const TYPES: { share: number; ok: boolean; code?: boolean; irreversible?: boolean }[] = [
-  { share: 1, ok: false, code: true },
-  { share: 0.64, ok: false, code: true },
-  { share: 0.44, ok: true },
-  { share: 0.31, ok: true },
-  { share: 0.22, ok: false },
-  { share: 0.16, ok: true },
-  { share: 0.12, ok: true, code: true, irreversible: true },
-  { share: 0.085, ok: true },
-  { share: 0.06, ok: false },
-  { share: 0.045, ok: true },
+/** The request types, most common first: the share of tickets, and whether code runs it. */
+const TYPES: { share: number; code?: boolean; irreversible?: boolean }[] = [
+  { share: 1, code: true },
+  { share: 0.64, code: true },
+  { share: 0.44 },
+  { share: 0.31 },
+  { share: 0.22 },
+  { share: 0.16 },
+  { share: 0.12, code: true, irreversible: true },
+  { share: 0.085 },
+  { share: 0.06 },
+  { share: 0.045 },
 ];
 
 interface DefaultLayout {
@@ -182,10 +183,10 @@ interface DefaultLayout {
 
 const DEFAULT_WIDE: DefaultLayout = {
   width: 640,
-  height: 400,
+  height: 392,
   size: 18,
   legend: { workflow: { x: 40, y: 24 }, agent: { x: 340, y: 24 } },
-  plot: { left: 60, right: 636, top: 140, bottom: 316 },
+  plot: { left: 60, right: 636, top: 140, bottom: 340 },
   bar: 40,
 };
 
@@ -195,7 +196,7 @@ const DEFAULT_TALL: DefaultLayout = {
   height: 560,
   size: 19,
   legend: { workflow: { x: 4, y: 24 }, agent: { x: 4, y: 90 } },
-  plot: { left: 60, right: 436, top: 182, bottom: 466 },
+  plot: { left: 60, right: 436, top: 190, bottom: 500 },
   bar: 28,
 };
 
@@ -206,6 +207,16 @@ const Lock = ({ x, y }: Point) => (
   <g transform={`translate(${x} ${y})`}>
     <path d="M-6,-2 v-5 a6,6 0 0 1 12,0 v5" fill="none" stroke={color('text')} strokeWidth={2.5} />
     <rect x={-9} y={-2} width={18} height={14} rx={3} fill={color('text')} />
+  </g>
+);
+
+/** Why a request type is in code: an icon centred 11 right of x, then a short label, on the baseline y. */
+const Reason = ({ x, y, size, icon, text }: Point & { size: number; icon: ReactNode; text: string }) => (
+  <g>
+    <g transform={`translate(${x + 11} ${y - size * 0.35})`}>{icon}</g>
+    <Text x={x + 28} y={y} anchor="start" size={size}>
+      {text}
+    </Text>
   </g>
 );
 
@@ -231,9 +242,8 @@ function DefaultSvg({ layout, className }: { layout: DefaultLayout; className: s
   const slot = (plot.right - plot.left) / TYPES.length;
   const cx = (i: number) => plot.left + slot * (i + 0.5);
   const top = (share: number) => plot.bottom - share * (plot.bottom - plot.top);
-  const gradeY = plot.bottom + 24;
   const axis = { stroke: color('edge'), strokeWidth: 2 };
-  // The bracket over the common types the agent got wrong.
+  // Why a type is in code, over its bars: a cross for the common ones the agent fails, a lock for the one that can't be undone.
   const rejected = TYPES.map((t, i) => (t.code && !t.irreversible ? i : -1)).filter((i) => i >= 0);
   const bracket = { x1: cx(rejected[0]) - bar / 2, x2: cx(rejected[rejected.length - 1]) + bar / 2, y: plot.top - 14 };
   const locked = TYPES.findIndex((t) => t.irreversible);
@@ -246,28 +256,17 @@ function DefaultSvg({ layout, className }: { layout: DefaultLayout; className: s
       <text transform={`translate(${plot.left - 16} ${(plot.top + plot.bottom) / 2}) rotate(-90)`} textAnchor="middle" fontSize={size} fontWeight={600} fill={color('muted')}>
         Tickets
       </text>
-      {/* The experts' grades of the agent's drafts, one per request type */}
-      <Expert x={plot.left - 30} y={gradeY} scale={0.75} />
-      <Text x={plot.right} y={gradeY + 44} anchor="end" size={size} muted>
+      <Text x={plot.right} y={plot.bottom + 36} anchor="end" size={size} muted>
         Request types, most common first →
       </Text>
 
       {TYPES.map((t, i) => (
-        <g key={i}>
-          <rect x={cx(i) - bar / 2} y={top(t.share)} width={bar} height={plot.bottom - top(t.share)} rx={3} fill={routeColor(t.code)} />
-          <Grade x={cx(i)} y={gradeY} ok={t.ok} r={10} />
-        </g>
+        <rect key={i} x={cx(i) - bar / 2} y={top(t.share)} width={bar} height={plot.bottom - top(t.share)} rx={3} fill={routeColor(t.code)} />
       ))}
 
       <path d={`M${bracket.x1},${bracket.y + 6} V${bracket.y} H${bracket.x2} V${bracket.y + 6}`} fill="none" stroke={color('text')} strokeWidth={2} />
-      <Text x={bracket.x1} y={bracket.y - 10} anchor="start" size={size}>
-        Common, rejected
-      </Text>
-
-      <Lock x={cx(locked)} y={top(TYPES[locked].share) - 22} />
-      <Text x={cx(locked)} y={top(TYPES[locked].share) - 42} size={size}>
-        Can’t undo
-      </Text>
+      <Reason x={bracket.x1} y={bracket.y - 10} size={size} icon={<Grade x={0} y={0} ok={false} r={11} />} text="Common, agent fails" />
+      <Reason x={cx(locked) - 11} y={top(TYPES[locked].share) - 16} size={size} icon={<Lock x={0} y={1} />} text="Can’t undo" />
     </Svg>
   );
 }
