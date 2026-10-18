@@ -1,7 +1,7 @@
 ---
 title: "Workflow or Agent: Where the Decisions Live"
 pubDate: 2026-04-19T00:00:00.000Z
-updatedDate: 2026-10-14T00:00:00.000Z
+updatedDate: 2026-10-18T00:00:00.000Z
 tags:
   - AI
   - Customer Support
@@ -33,13 +33,13 @@ To answer Alex, something has to work out what Alex wants and which account is t
 
 Two facts pushed us toward code. No model was trained on Northstar's escalation rules or on Alex's account. And no test can tell us whether a reply to Alex is right, the way a test suite tells a coding agent its code works: someone who knows the bank has to read the reply. [The Missing Test Suite](/post/the-missing-test-suite) makes the longer argument for the second. This post is about who decides the order of operations.
 
-The first design we tried left all of it to the model: a single support agent that held every tool (account lookup, security-flag check, send unlock instructions, escalate to security) and wrote the reply itself.
+The first design we tried left all of it to the model: a single support agent that held every tool (account lookup, security-flag check, send unlock instructions, escalate to security), decided which to call next, and wrote the reply itself.
 
 Nothing in that design guarantees that the agent checks the security flag before it sends unlock instructions. That would be an expensive mistake. And if the model chooses the order, a customer's message can talk it out of the check: that is [prompt injection](/post/prompt-injection). A check inside the unlock tool would close that hole, but that is code deciding the order again. As the ServiceNow CEO [put it](https://open.spotify.com/episode/11xeL3QCAF77z1vxOp0am0?si=fc70f33f0dd64ab4): people forgive other people for making mistakes. They don't forgive software.
 
-In practice, though, a different complaint drove the decision: stakeholders said the agent's replies didn't match the established message templates. We tried to fix that with prompt engineering, but asking an LLM to be reliably deterministic works against its nature. Judged on template match, code can't lose, because code picks the template. So we tried a workflow.
+In practice, though, a different complaint drove the decision: stakeholders said the agent's replies didn't match the established message templates. We tried to fix that with prompt engineering, but asking an LLM to be reliably deterministic works against its nature. Judged on template match, code can't lose, because code picks the template. So we tried a workflow, where code decides the next step and the model only fills in single steps.
 
-## For a locked account, the workflow works
+## For well-understood requests, the workflow works
 
 <DecisionMap preset="workflow" />
 
@@ -47,7 +47,7 @@ We labelled and clustered a sample of past tickets with [an AI-assisted, iterati
 
 To get both the ordering guarantee and the fixed templates, the workflow kept code in charge of the sequence and gave the LLM one job: reading the message. Once the tree has an *Account locked* intent, the LLM recognises Alex's message as one and pulls out the identifier, the account number or the name and branch. Everything after that is a small decision tree in code: look up the account, check the flag, then send the unlock-instructions template or escalate to security. The flag check comes before any unlock instructions, every time.
 
-For this one intent, the workflow was the clear fit. The logic is explicit and the cases are few: the account is flagged or it isn't. Because code selects the reply, the template is guaranteed rather than prompted for. The LLM's part is narrow enough to have its own evals, a cheaper model, or a Named Entity Recognition model in its place. And a fix is local: when a message is misread or a policy changes, you edit the extraction prompt or add a branch, and you know what the next message of that shape will do.
+For an intent like this one, the workflow was the clear fit. The logic is explicit and the cases are few: the account is flagged or it isn't. Because code selects the reply, the template is guaranteed rather than prompted for. The LLM's part is narrow enough to have its own evals, a cheaper model, or a Named Entity Recognition model in its place. And a fix is local: when a message is misread or a policy changes, you edit the extraction prompt or add a branch, and you know what the next message of that shape will do.
 
 The full version is the four-step pipeline in [Architecture of a First-Level Support Automation](/post/first-level-support-automation), with the typing that holds its seams together in [Type-Safe Hybrid Workflows with Pydantic AI](/post/pydantic-ai-type-safe-hybrid-workflows).
 
@@ -86,6 +86,10 @@ Before the tree had an Account locked intent, Alex's message landed in "Other", 
 *Compare the map in "The agent got the leftovers": the same routes, the default swapped.*
 
 I would invert the default, following Will Larson's [Building an internal agent](https://lethain.com/agents-coordinators/), which starts every workflow with the LLM in charge. A path graduates into a workflow only once it shows up often and the agent handles it unreliably, or when the action is irreversible enough that you don't want a model deciding it. Rarer request types stay with the agent.
+
+<DecisionFigure name="default" />
+
+*Schematic, not measured: request types by how often they come in, each graded by the experts. Code takes a type only once it is common and the agent's drafts keep getting rejected, or its action can't be undone.*
 
 I would start with an agent with a set of tools. For Alex, it would read the message, look up NSB01234, check the flag and propose sending the unlock steps. As in our pipeline, a plan that touches account access would still wait for a person to [approve it](/post/temporal-human-in-the-loop).
 

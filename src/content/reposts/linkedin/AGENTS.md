@@ -88,6 +88,11 @@ message or supporting points changed. Don't carry every new detail across.
   where I found a design breaks read as expertise. Don't claim more projects
   or experience than the post describes: a design I recommend but haven't run
   stays in "would", and one the team only tried is "tried", not "built".
+- **Say what a term means where it first appears**, in a clause, not a
+  definition paragraph. Workflow or Agent can't assume readers know the two
+  words, so it gives each one by who decides the next step: "When code
+  decides, it's a workflow… When the model decides which tool to call next,
+  it's an agent."
 - **One word per thing.** Once the post says "workflow", don't switch to
   "tree" for the same thing.
 - **Use the invented example, never as the project.** The posts' running
@@ -109,15 +114,20 @@ message or supporting points changed. Don't carry every new detail across.
 
 ## Images
 
-A post takes one image, so pick the one the message needs. Another picture goes
-in a comment, one per comment, such as the review screen under The Missing Test
-Suite's version. Readers who never open the comments never see it, so the text
-points only at the post's own image.
+A post takes one image, so pick the one the message needs: the post's position,
+not a detail of the argument for it. Workflow or Agent first used its grid of
+request types and account states, which shows where the first design ran out,
+and then a figure of the recommendation itself: request types split between
+agent and workflow, with a legend that says what each term means. Another
+picture goes in a comment, one per comment, such as the review screen under The
+Missing Test Suite's version. Readers who never open the comments never see it,
+so the text points only at the post's own image.
 
 The post's image shows below the text, so a sentence that points at it has to
 make sense before the reader scrolls to it ("top right in the picture below",
-not a "cell" the text hasn't introduced). Tie the post's concrete example to the
-image when they match: the closed-account cell of Workflow or Agent's grid.
+not a "cell" the text hasn't introduced). Tie the text to what the image labels:
+Workflow or Agent's "common and keeps getting rejected, or one whose action
+can't be undone" are the figure's two labels.
 
 Reuse the post's images under `/images/blog/<slug>/` where they fit. A crop
 made for LinkedIn goes in `src/assets/images/blog/<slug>/linkedin/` and keeps
