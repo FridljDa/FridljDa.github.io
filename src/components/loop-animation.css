@@ -1,5 +1,5 @@
 /* Theme for the Remotion compositions in src/remotion/ and the drawn figures
-   (system map, pipeline map, pipeline figures, scrap figures, decision map and figures, design map and figures), which read these variables and
+   (system map, pipeline map, pipeline figures, scrap figures, decision map and figures, design map and figures, auth map and figures), which read these variables and
    fall back to the light values when rendered elsewhere. */
 .loop-animation,
 .system-map,
@@ -9,7 +9,9 @@
 .decision-map,
 .decision-figure,
 .design-map,
-.design-figure {
+.design-figure,
+.auth-map,
+.auth-figure {
   --lv-surface: #ffffff;
   --lv-text: #1f2937;
   --lv-muted: #6b7280;
@@ -32,7 +34,9 @@
 .dark .decision-map,
 .dark .decision-figure,
 .dark .design-map,
-.dark .design-figure {
+.dark .design-figure,
+.dark .auth-map,
+.dark .auth-figure {
   --lv-surface: #111827;
   --lv-text: #f3f4f6;
   --lv-muted: #9ca3af;

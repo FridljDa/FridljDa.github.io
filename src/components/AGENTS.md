@@ -24,7 +24,9 @@ or a caption.
   (`Dim` in `map-parts.tsx`). Keep what a part does in the map, as short
   labels, icons and amber tags, and keep the prose after it short: a few
   bullets, not one big figure followed by a wall of text. The Uncoded
-  Hospital Revenue post does this with `<DesignMap preset="..." />`.
+  Hospital Revenue post does this with `<DesignMap preset="..." />`, and
+  API Keys, OAuth and JWT with `<AuthMap preset="..." />` and
+  `<AuthFigure name="..." />` (`AuthFigures.tsx`).
 - **Animations:** `<LoopAnimation name="..." />`; see `src/remotion/AGENTS.md`.
 - **Confluence:** a paste into Confluence drops inline SVG, so the drawn figures
   show a PNG in the Confluence copy (their `Astro.locals.confluence` branch).
