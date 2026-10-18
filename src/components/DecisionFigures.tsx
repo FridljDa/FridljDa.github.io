@@ -1,6 +1,10 @@
 /**
  * The figures of workflow-vs-agent:
  *
+ * - default: the post's recommendation. Request types, most common first, the
+ *   long tail in the agent's colour; a type is in the workflow's only once it
+ *   is common and the experts reject the agent's drafts, or its action can't
+ *   be undone. The legend says what each design is: who decides each step.
  * - grid: three intents against three account states, the mapping a workflow
  *   has to spell out. The tree decided two cells, both for a locked account,
  *   Alex's among them; the other seven are question marks.
@@ -15,7 +19,8 @@
  * server, no JavaScript.
  */
 import type { ComponentType, ReactNode } from 'react';
-import { color, PALETTE, Person, Reply, type Point } from '../remotion/shared';
+import { color, PALETTE, Expert, Grade, Person, Reply, type Point } from '../remotion/shared';
+import { Tag } from './map-parts';
 
 /** Alex Carter, the post's running example, in the color customers get in the shadow loop. */
 const ALEX = PALETTE[0];
@@ -148,6 +153,134 @@ function IntentGrid() {
   );
 }
 
+const DefaultDescription =
+  'Request types as bars, most common first, with a long tail of rare ones. The legend: in a workflow, code decides the next step; in an agent, the LLM does; and the agent is the default. Under each bar is the experts’ grade of the agent’s drafts. The two most common types are rejected, so they are in the workflow; a rare type whose action can’t be undone is in the workflow too, under a lock. Every other type, a common one that is approved and rare ones whether approved or not, stays with the agent.';
+
+/** The request types, most common first: the share of tickets, the experts' grade of the agent's drafts, and whether code runs it. */
+const TYPES: { share: number; ok: boolean; code?: boolean; irreversible?: boolean }[] = [
+  { share: 1, ok: false, code: true },
+  { share: 0.64, ok: false, code: true },
+  { share: 0.44, ok: true },
+  { share: 0.31, ok: true },
+  { share: 0.22, ok: false },
+  { share: 0.16, ok: true },
+  { share: 0.12, ok: true, code: true, irreversible: true },
+  { share: 0.085, ok: true },
+  { share: 0.06, ok: false },
+  { share: 0.045, ok: true },
+];
+
+interface DefaultLayout {
+  width: number;
+  height: number;
+  size: number;
+  /** Where each design's legend entry starts: swatch, name, and what it is below. */
+  legend: { workflow: Point; agent: Point };
+  plot: { left: number; right: number; top: number; bottom: number };
+  bar: number;
+}
+
+const DEFAULT_WIDE: DefaultLayout = {
+  width: 640,
+  height: 400,
+  size: 18,
+  legend: { workflow: { x: 40, y: 24 }, agent: { x: 340, y: 24 } },
+  plot: { left: 60, right: 636, top: 140, bottom: 316 },
+  bar: 40,
+};
+
+// About 4:5 once framed, so it also fills a LinkedIn image.
+const DEFAULT_TALL: DefaultLayout = {
+  width: 440,
+  height: 560,
+  size: 19,
+  legend: { workflow: { x: 4, y: 24 }, agent: { x: 4, y: 90 } },
+  plot: { left: 60, right: 436, top: 182, bottom: 466 },
+  bar: 28,
+};
+
+const routeColor = (code?: boolean) => color(code ? 'node-border' : 'added');
+
+/** A padlock: what can't be undone. */
+const Lock = ({ x, y }: Point) => (
+  <g transform={`translate(${x} ${y})`}>
+    <path d="M-6,-2 v-5 a6,6 0 0 1 12,0 v5" fill="none" stroke={color('text')} strokeWidth={2.5} />
+    <rect x={-9} y={-2} width={18} height={14} rx={3} fill={color('text')} />
+  </g>
+);
+
+function LegendEntry({ at, code, name, what, size, tag }: { at: Point; code?: boolean; name: string; what: string; size: number; tag?: string }) {
+  const nameEnd = at.x + size * 1.5 + name.length * (size + 2) * 0.62;
+  const tagWidth = tag ? tag.length * (size - 4) * 0.59 + 44 : 0;
+  return (
+    <g>
+      <rect x={at.x} y={at.y - size * 0.8} width={size} height={size} rx={4} fill={routeColor(code)} />
+      <Text x={at.x + size * 1.5} y={at.y} anchor="start" size={size + 2} weight={700}>
+        {name}
+      </Text>
+      {tag && <Tag x={nameEnd + 12 + tagWidth / 2} y={at.y - size * 0.35} text={tag} size={size - 4} />}
+      <Text x={at.x + size * 1.5} y={at.y + size + 8} anchor="start" size={size} weight={500} muted>
+        {what}
+      </Text>
+    </g>
+  );
+}
+
+function DefaultSvg({ layout, className }: { layout: DefaultLayout; className: string }) {
+  const { plot, size, bar } = layout;
+  const slot = (plot.right - plot.left) / TYPES.length;
+  const cx = (i: number) => plot.left + slot * (i + 0.5);
+  const top = (share: number) => plot.bottom - share * (plot.bottom - plot.top);
+  const gradeY = plot.bottom + 24;
+  const axis = { stroke: color('edge'), strokeWidth: 2 };
+  // The bracket over the common types the agent got wrong.
+  const rejected = TYPES.map((t, i) => (t.code && !t.irreversible ? i : -1)).filter((i) => i >= 0);
+  const bracket = { x1: cx(rejected[0]) - bar / 2, x2: cx(rejected[rejected.length - 1]) + bar / 2, y: plot.top - 14 };
+  const locked = TYPES.findIndex((t) => t.irreversible);
+  return (
+    <Svg viewBox={`0 0 ${layout.width} ${layout.height}`} label={DefaultDescription} className={className}>
+      <LegendEntry at={layout.legend.workflow} code name="Workflow" what="Code decides the next step" size={size} />
+      <LegendEntry at={layout.legend.agent} name="Agent" what="The LLM decides the next step" size={size} tag="Default" />
+
+      <line x1={plot.left} x2={plot.right} y1={plot.bottom} y2={plot.bottom} {...axis} />
+      <text transform={`translate(${plot.left - 16} ${(plot.top + plot.bottom) / 2}) rotate(-90)`} textAnchor="middle" fontSize={size} fontWeight={600} fill={color('muted')}>
+        Tickets
+      </text>
+      {/* The experts' grades of the agent's drafts, one per request type */}
+      <Expert x={plot.left - 30} y={gradeY} scale={0.75} />
+      <Text x={plot.right} y={gradeY + 44} anchor="end" size={size} muted>
+        Request types, most common first →
+      </Text>
+
+      {TYPES.map((t, i) => (
+        <g key={i}>
+          <rect x={cx(i) - bar / 2} y={top(t.share)} width={bar} height={plot.bottom - top(t.share)} rx={3} fill={routeColor(t.code)} />
+          <Grade x={cx(i)} y={gradeY} ok={t.ok} r={10} />
+        </g>
+      ))}
+
+      <path d={`M${bracket.x1},${bracket.y + 6} V${bracket.y} H${bracket.x2} V${bracket.y + 6}`} fill="none" stroke={color('text')} strokeWidth={2} />
+      <Text x={bracket.x1} y={bracket.y - 10} anchor="start" size={size}>
+        Common, rejected
+      </Text>
+
+      <Lock x={cx(locked)} y={top(TYPES[locked].share) - 22} />
+      <Text x={cx(locked)} y={top(TYPES[locked].share) - 42} size={size}>
+        Can’t undo
+      </Text>
+    </Svg>
+  );
+}
+
+function AgentByDefault() {
+  return (
+    <>
+      <DefaultSvg layout={DEFAULT_WIDE} className="figure-wide" />
+      <DefaultSvg layout={DEFAULT_TALL} className="figure-tall" />
+    </>
+  );
+}
+
 const CoverageDescription =
   'Schematic, not measured: the share of tickets the tree answers against the number of branches written. Each branch answers fewer new tickets than the last, so the share flattens below all tickets.';
 
@@ -217,6 +350,7 @@ function Coverage() {
  * type stays near the post's rather than scaling up with the column.
  */
 export const FIGURES = {
+  default: { component: AgentByDefault, description: DefaultDescription, width: 600 },
   grid: { component: IntentGrid, description: GridDescription, width: 560 },
   coverage: { component: Coverage, description: CoverageDescription, width: 500 },
 } satisfies Record<string, { component: ComponentType; description: string; width: number }>;
