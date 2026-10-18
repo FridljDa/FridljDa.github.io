@@ -1,0 +1,175 @@
+---
+title: "The Most Important Inputs Made the Forecast Worse"
+pubDate: 2026-10-18
+tags:
+  - Data
+  - ML
+  - Evaluation
+math: true
+description: "A week-ahead forecast of hourly passengers per station, evaluated as it would run in production. Its lead over a calendar average that knows holidays came almost entirely from holidays, and the inputs SHAP ranked first made it worse."
+image: /images/blog/week-ahead-ridership-forecast/featured.png
+confluence: true
+---
+
+import ForecastFigure from '../../components/ForecastFigure.astro';
+
+## TL;DR
+Measure every part of a forecast by what it adds to the calendar: the model by its lead over the average for that station, weekday and hour with public holidays as days of their own, and each input by the error without it. Evaluated over six weeks as it would run in production, a gradient-boosted model with every input had 35% less error than a four-week average, but only 8% less than that calendar average, and on ordinary days none. The inputs SHAP ranked first, the station's recent counts, made the model worse: without them, its error fell to 15% below the calendar average. Importance says what a model uses, not whether it helps.
+
+## The problem
+
+### A forecast for staffing stations
+
+In a hackathon case study, the task was to forecast how many passengers enter each of ten Munich rail stations in each hour from 7:00 to 12:00, seven days ahead, so that staff can be sent to the stations that will be busy. An earlier version of this analysis is the first part of the deck in [How I Used Claude Design to Create a Hackathon Slide Deck](/post/claude-design-hackathon-slide-deck). This one evaluates it more strictly, which changed the answer.
+
+The data are synthetic. The station names are real; the passenger counts, the weather and the traffic were generated for the case study. Every number below says how the methods behave on this data, not how many people travel through Munich. There are four tables:
+
+- **Passenger counts** per station and hour, 7:00 to 12:00, from January 2023 to February 2026: 67,740 rows, 0.7% of them missing.
+- **Station metadata:** capacity, whether it is an interchange, and a connectivity score.
+- **Weather**, hourly: temperature and precipitation.
+- **Traffic**, hourly: a congestion index from five road sensors.
+
+The task scores forecasts by the root mean squared error over the hourly rows,
+
+$$
+\text{RMSE} = \sqrt{\frac{1}{n} \sum_{k=1}^{n} (y_k - \hat y_k)^2},
+$$
+
+in passengers, where $y_k$ is the count in row $k$, one station and hour, and $\hat y_k$ its forecast.
+
+### What the forecast may know
+
+Three times define each forecast:
+
+- $t_1$, the training cutoff: the last hour the model was trained on. The model is retrained every Monday at 12:00, after the morning's last hour.
+- $t_2$, the issue time: when the forecast is made, some hour from 7:00 to 12:00 in the week after the retrain.
+- $t_3 = t_2 + 7$ days, the target: the hour forecast.
+
+So a forecast always targets an hour 8 to 14 days after the data its model was trained on.
+
+<ForecastFigure name="windows" />
+
+*The model is trained on data up to $t_1$. During the following week it issues forecasts, each at some $t_2$ for the same hour a week later, $t_3$.*
+
+Every input to a forecast must be known at $t_2$:
+
+- **Calendar of $t_3$:** hour, weekday, month, weekend, public holiday in Bavaria, Oktoberfest. Known years ahead.
+- **Station:** its identity and metadata, which don't change.
+- **Recent demand:** the count at the same station and hour a week before $t_3$, which is the count just observed at $t_2$, and the average of the counts 7, 14, 21 and 28 days before $t_3$.
+- **Traffic:** the index at the nearest sensor a week before $t_3$. There is no forecast of traffic, so the latest value is all there is.
+- **Weather:** the forecast for $t_3$; the task assumes accurate forecasts ten days out. The archive holds actual weather only, so the model trains on actuals with noise added, a fifth of each variable's standard deviation, to keep it from trusting the weather more than a forecast deserves. On this data, the noise made no consistent difference.
+
+"A week before" means the same wall-clock hour seven calendar days earlier. Taken as 168 hours in UTC, as in a first version, it reads the neighbouring hour, or one that isn't in the data, for four weeks after each change of the clocks.
+
+## The bar to clear
+
+### Five baselines
+
+Ridership follows the calendar: a station's 8:00 on a Wednesday looks much like its 8:00 on the Wednesday before. So the first question is how far the calendar alone gets. For station $s$ and target hour $t$, five forecasts that need no model:
+
+| Baseline | Forecast for station $s$ at hour $t$ |
+|---|---|
+| **Station and hour** | mean of all past counts of $s$ at the hour of day of $t$ |
+| **Last week** | the count of $s$ seven days before $t$ |
+| **Four-week average** | ${\frac14 \sum_{j=1}^{4} y_{s,\, t - 7j \text{ days}}}$ |
+| **Calendar average** | mean of all past counts of $s$ at the weekday and hour of $t$ |
+| **Calendar average with holidays** | the calendar average over days that aren't public holidays; on a holiday, the mean of all past holidays of $s$ at that hour |
+
+The deck compared the model with the four-week average. The calendar averages beat it, for three reasons. Its four values are noisy. The weekly pattern doesn't drift: from 2023 to 2025, every station's yearly mean stayed within 1% of the previous year's, so the mean over three years of the same station, weekday and hour, about 150 counts, is the better estimate. And a holiday distorts it twice: on the day, which it forecasts as an ordinary weekday, and on the same weekday for the four weeks after, while the holiday is one of its four values. Call those days *after a holiday*.
+
+<ForecastFigure name="holidays" />
+
+*RMSE per day over all ten stations and six hours, through the six evaluation weeks, which start on the marked Tuesdays. On the four public holidays the four-week average misses by 700 to 1,015 passengers, and the calendar average with holidays by 280 to 480. The model without recent demand, described below, mostly stays between 150 and 300. On 27 January every forecast falls short at Karlsplatz (Stachus), by almost 600 passengers an hour on average.*
+
+The strongest of the five, the calendar average with holidays, is the bar a model has to clear. Beating a weaker one only shows that the weaker one is weak.
+
+## The model
+
+### One model for all stations
+
+A single gradient-boosted tree model, [LightGBM](https://lightgbm.readthedocs.io/), serves all ten stations. It takes the inputs listed above: the station and calendar fields as categories, the rest as numbers. It handles that mix without preprocessing, learns interactions such as how a station's size changes its morning peak without hand-built features, and trains in seconds on 66,000 rows. It minimises squared error, since the task scores RMSE, for 600 rounds at a learning rate of 0.04. A per-station time-series model couldn't use the weather; a linear model would need the interactions written out.
+
+### Validation that copies production
+
+The evaluation uses six weeks, from 23 December 2025 to 2 February 2026; the last is the task's held-out test week. Each week is forecast by a model trained on everything up to 12:00 on the Monday eight days before the week starts: the data the weekly retrain would have had, so the gap between training data and target is the one production has. The training window grows from one week to the next.
+
+The model trains for a fixed number of rounds. Stopping early when the error on the evaluation week stops falling, as the first version did, would tune the model on the week it is scored on. That version also trained up to the start of each week, a week closer to the targets than production ever gets.
+
+All six weeks contain a holiday, 25 and 26 December, 1 and 6 January, or days after one. So these weeks over-represent holidays, which flatters any method that handles them.
+
+## The result
+
+### Most of the lead came from holidays
+
+Pooled over the six weeks, 2,504 hourly rows:
+
+<ForecastFigure name="ladder" />
+
+*RMSE over the six evaluation weeks, in passengers. The model without recent demand has 15% less error than the strongest baseline, the calendar average with holidays.*
+
+The model with every input had 35% less error than the four-week average, but only 8% less than the calendar average with holidays. Splitting the rows by kind of day shows where those 8% came from:
+
+<ForecastFigure name="groups" />
+
+*RMSE by kind of day. The model with every input matches the calendar average on ordinary days, beats it on holidays, and loses to it on the days after a holiday.*
+
+- **On ordinary days**, the model with every input had an RMSE of 229 and the calendar average 231. For a regular weekday, the model had learned the calendar, and little else.
+- **On the four holidays**, it had 228 against 403. A single holiday mean per station and hour is crude; the model learned how far each holiday and weekday falls below an ordinary day, from the 37 to 41 holidays in its training data.
+- **On the days after a holiday**, it had 289 against 283. It leaned on the four-week average, which still held the holiday.
+
+### The inputs SHAP ranked first
+
+[SHAP values](https://shap.readthedocs.io/) split each forecast into contributions of the inputs. Averaged over all rows and summed within each group of inputs, recent demand, the four-week average and last week's count, contributed five times as much as any other group. To test whether a group helps, the model was retrained without it, for each of the six weeks:
+
+<ForecastFigure name="importance" />
+
+*Left: mean absolute SHAP contribution of each group of inputs to the model with every input. Right: how its RMSE over the six weeks changes when it is retrained without that group. Recent demand contributes the most and adds to the error.*
+
+Without recent demand, the RMSE fell from 246 to 226. Retraining with three other random seeds moved a week's RMSE by at most 8 passengers; dropping recent demand lowered it by 2 in the first week and by 11 to 37 in each of the other five. The decision to drop it can be made on the first five weeks alone, where the RMSE fell from 239 to 217, and checked on the test week, which it never saw: there it fell from 279 to 268. A day-block bootstrap, which resamples evaluation days with replacement, all stations and hours of a day together, puts the ratio of the two models' RMSE over the six weeks at 0.92, with a 95% interval from 0.88 to 0.96.
+
+The other groups behaved as expected. Without the calendar, the RMSE rose to 358; without the station, to 270. Without the weather forecast it rose to 250, and without traffic it fell to 245, both changes within what a different seed does to a week.
+
+Why does the model lean on inputs that hurt it? A tree picks each split by how much it lowers the training error. The four-week average packs station, weekday and hour into one number, so it wins the first splits and takes the credit for everything it stands in for. But it brings four weeks of noise and the holidays they contain, which the station and calendar fields don't. Given those fields, the model learns the calendar average by itself, from three years of data. SHAP describes the fitted model: how far its forecasts move with an input. It doesn't say whether a model trained without that input would forecast better. [Condition on What the Client Already Knows](/post/scrap-conditional-independence) makes a related point: importance answers a different question than the one asked.
+
+This result depends on the data. Here the weekly pattern never drifts, so recent demand only adds noise. Real ridership drifts: a new line opens, a station closes for construction. Then recent demand may earn its place, and the same comparison would show it.
+
+Against the calendar average with holidays, the model without recent demand had an RMSE ratio of 0.85 over the six weeks, with a 95% interval from 0.78 to 0.92 under the same bootstrap. It gained on ordinary days too, 217 against 231. In the test week alone the ratio is 0.93, from 0.84 to 1.00: one week of 417 rows barely separates the two.
+
+### Station by station
+
+The overall RMSE counts passengers, so the busiest stations dominate it: a 5% miss at Karlsplatz (Stachus) is as many passengers as Isartor sees in an hour. Each station needs its own comparison, here over the six weeks, about 250 rows per station:
+
+<div className="table-scroll">
+
+| Station | Passengers per hour | RMSE, model without recent demand | RMSE, calendar average with holidays | Ratio |
+|---|---:|---:|---:|---:|
+| Karlsplatz (Stachus) | 2,666 | 402 | 418 | 0.96 |
+| Odeonsplatz | 2,548 | 348 | 409 | 0.85 |
+| Hauptbahnhof | 2,094 | 309 | 417 | 0.74 |
+| Sendlinger Tor | 1,434 | 196 | 214 | 0.92 |
+| Westbahnhof | 1,337 | 189 | 261 | 0.73 |
+| Münchner Freiheit | 973 | 156 | 185 | 0.84 |
+| Ostbahnhof | 671 | 155 | 165 | 0.94 |
+| Pasing | 423 | 96 | 113 | 0.85 |
+| Marienplatz | 298 | 41 | 63 | 0.65 |
+| Isartor | 147 | 24 | 19 | 1.24 |
+
+</div>
+
+The model beat the baseline at nine of ten stations. At Isartor, the smallest, it lost: squared error weighs the busy stations most, so the shared model fits them first. A comparison of weekly means per station, as in the deck, would hide every error that averages out over the week.
+
+## In production
+
+Dropping recent demand also drops a dependency: the forecast no longer needs the count just observed. Traffic has to go too, since a forecast made before 7:00 can't use that morning's index a week before its target, and it adds nothing measurable: without it, the RMSE over the six weeks is 225. What is left, calendar, station and weather forecast, is known in advance, so one run a day can forecast a whole day a week ahead.
+
+| Job | When | What it does |
+|---|---|---|
+| **Forecast** | daily, before 7:00 | Builds the inputs for each station and hour seven days ahead, loads the production model, and writes the forecasts with the model version, so that a jump in the forecasts can be traced to a new model. |
+| **Monitor** | daily | Joins last week's forecasts to the counts that have arrived, and computes the RMSE per station for the model and for the calendar average with holidays. Alerts when a station's ratio stays above 1. |
+| **Retrain** | Mondays, 12:00 | Trains on everything to date, evaluates on the latest week the way the six weeks were evaluated, and promotes the new model only if it beats both the current one and the baseline. Once a month, it reruns the comparison with and without each group of inputs, recent demand included. |
+
+The baseline does three jobs here. It is the bar every new model must clear, the reference for monitoring, and the fallback: if the model loses to it at a station over a few weeks, that station gets the baseline until someone has looked.
+
+## The general move
+
+Measure every part of a forecast by what it adds to the calendar. Build the strongest baseline the calendar allows, evaluate on weeks forecast with only the data production would have, and keep an input only if the error rises without it. Importance rankings answer a different question: here the inputs ranked first added 9% to the error.
