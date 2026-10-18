@@ -16,11 +16,11 @@ import QuoteFigure from '../../components/QuoteFigure.astro';
 
 ## TL;DR
 
-A manufacturer that makes parts to its customers' drawings lives on quotes, and loses most of them. Every request for a quote is an email with a drawing. Someone checks that nothing is missing, works out which machine could make the part and how many hours the tooling would take, prices it in a spreadsheet, types the result into the ERP and sends a PDF. Most of that work earns nothing, and the knowledge it rests on lives in one or two people's heads. The system I'd build drafts the quote within minutes of the email arriving and leaves every decision to the expert. An LLM does the reading: is this a request, what does the drawing say, what is missing. Rules the expert writes down set what is allowed, past parts that look alike propose within it, and the arithmetic is plain code. One screen shows the drawing next to the draft, and every change the expert makes is kept with a reason. The hard parts are not the models. They are getting the rules out of the expert's head, getting history out of an old ERP, and a review screen good enough that the expert prefers it to the spreadsheet.
+A manufacturer that makes parts to its customers' drawings lives on quotes, and loses most of them. Every request for a quote is an email with a drawing. Someone checks that nothing is missing, works out which machine could make the part and how many hours the tooling would take, prices it in a spreadsheet, types the result into the ERP and sends a PDF. Most of that work earns nothing, and the knowledge it rests on lives in one expert's head. The system I'd build drafts the quote within minutes of the email arriving and leaves every decision to the expert. An LLM does the reading: is this a request, what does the drawing say, what is missing. Rules the expert writes down set what is allowed, past parts that look alike propose within it, and the arithmetic is plain code. One screen shows the drawing next to the draft, and every change the expert makes is kept with a reason. The hard parts are not the models. They are getting the rules out of the expert's head, getting history out of an old ERP, and a review screen good enough that the expert prefers it to the spreadsheet.
 
 ## How a quote gets made today
 
-The design follows a real quoting process, which I studied from transcripts of calls with one manufacturer that makes parts to print, its calculation spreadsheets and two of its requests. The running example below is invented to protect the manufacturer; the process behind it is real.
+The design follows a real quoting process at a manufacturer that makes parts to print. The running example below is invented to protect the manufacturer, but the process behind it is real.
 
 <QuoteFigure name="today" />
 
@@ -49,13 +49,13 @@ Lindqvist Outdoor, a maker of camping gear, emails a request: 45,000 tent-pole c
 
 *What the system reads out of the request, field by field, and where each value came from. One required field is missing.*
 
-Two things about this request decide what the design needs. The missing surface blocks a final price but not a draft: the expert can price the usual finish and ask at the same time. And at 45,000 a year, the small and the large machine break even after about a year. If the clip runs longer than that, the large machine is cheaper; only the customer knows how long it will run. So the right answer is two prices, not one (more in the calculation below).
+Two things about this request decide what the design needs. The missing surface blocks a final price but not a draft: the draft prices the usual finish as a marked assumption and asks at the same time. And at 45,000 a year, the small and the large machine break even after about a year. If the clip runs longer than that, the large machine is cheaper; only the customer knows how long it will run. So the right answer is two prices, not one (more in the calculation below).
 
 ### Boundaries
 
 - **The expert decides, the system drafts.** The price goes out under the manufacturer's name, and a wrong quote is either money left on the table or a contract that loses money for years. So nothing is sent without a person approving it, and the goal is a draft good enough to approve in minutes.
-- **Most quotes are lost.** The effort that matters is effort per *request*, not per order. If a quote takes $t$ hours and one in five wins, every order carries $5t$ hours of quoting. Halving $t$ pays off on every request, won or lost.
-- **Speed matters as well as effort.** A request that sits in an inbox for days, or waits days more for a question about a missing field, is a request a faster competitor may answer first. A draft and the question to the customer on the day the email arrives are worth as much as the time saved.
+- **Most quotes are lost.** The effort that matters is effort per *request*, not per order. If a quote takes $t$ hours and only one in $n$ wins, every order carries $n\,t$ hours of quoting. Halving $t$ pays off on every request, won or lost.
+- **Speed matters as well as effort.** A request that sits in an inbox for days, or waits days more for a question about a missing field, is a request a faster competitor may answer first. A draft and the question to the customer on the day the email arrives can matter as much as the time saved.
 - **Only written rules get automated.** Assessment rules that exist only in the expert's head can't be built, tested or relied on. So the first deliverable is the expert's own: writing the rules down, with help. What is written is what the system implements and can be held to; everything else goes to the similar-parts search and to the expert. This boundary shapes the project more than any model choice.
 - **The systems are old and stay.** An on-premise ERP without an API anyone wants to touch, and a mail system without a ready-made connector. Version one reads what it can, and where it can't write, the expert copies a few fields across. Waiting months for integrations would cost more than the copying.
 - **Some requests are out of scope.** Assemblies of several parts, a small share of requests, need 3D models and a different kind of assessment. In version one the system recognises them and hands them to the expert untouched.
@@ -77,7 +77,7 @@ End to end:
 6. **Review:** the expert sees the drawing next to the draft, changes what is wrong with a reason, and approves.
 7. **Handover** produces the offer PDF and the mail to the customer, and the fields the ERP needs.
 
-Two things fall out of this already. Every value in the draft knows where it came from, so a wrong value can be traced to the step that produced it. And the expert's changes go back to assessment as proposals: the system doesn't "learn along", it suggests a rule and the expert decides.
+Two things fall out of this already. Every value in the draft knows where it came from, so a wrong value can be traced to the step that produced it. And the expert's changes go back to assessment as proposals: the system doesn't retrain itself on them; it suggests a rule and the expert decides.
 
 Three small records carry all of it: a *request* (the email, its attachments and the customer), a *draft* per drawing (every field with its value, its source and its check results, plus the variants and their prices), and a *change* (field, old value, new value, reason, who and when). Only these cross between the steps, so each step can be replaced without touching the others.
 
@@ -91,7 +91,7 @@ Three small records carry all of it: a *request* (the email, its attachments and
 
 <QuoteMap preset="intake" />
 
-- **Request or not:** the shared inbox also receives order confirmations, invoices and newsletters. An LLM classifies each email from its subject, text and attachment names, into request, not a request, or unclear. Unclear, and any email with a drawing attached that isn't classified as a request, goes to a person.
+- **Request or not:** the shared inbox also receives order confirmations, invoices and newsletters. An LLM classifies each email from its subject, text and attachment names, into request, not a request, or unclear. Anything unclear goes to a person, and so does any email with a drawing that isn't classified as a request.
 - **Product line:** the line decides which checklist applies, which rules, which machines and which calculation template, so it is the first decision and a visible one. The expert can change it, and everything downstream recomputes.
 - **One draft per drawing:** a request often has several drawings, with quantities in a table in the email. Intake matches each quantity to its drawing; a quantity it can't match becomes a missing field.
 - **Replies find their draft:** a customer's answer to a question is matched to its request by the thread and the drawing number, and fills the missing field.
@@ -103,10 +103,10 @@ Three small records carry all of it: a *request* (the email, its attachments and
 A vision-capable LLM reads each page of the drawing and fills a [Pydantic](/post/pydantic-ai-type-safe-hybrid-workflows) model, not free text: material and grade from a list the manufacturer actually buys, diameter as a number in millimetres, finishing steps from a fixed vocabulary, plus whatever notes it can't map.
 
 - **Every value carries its source:** the title block, a note on the drawing, the email text, a default, or nothing. On the review screen a click on a value shows the spot on the drawing it was read from, so checking it takes a glance instead of a search.
-- **No confidence colours.** It is tempting to colour each field by how sure the model says it is. A model's self-reported confidence is poorly calibrated, so the colour would mostly be noise. What the expert can use is where a value came from and whether it passed a check: does the grade exist in this diameter, is the quantity a number, does the 3D model agree with the drawing, and do two independent reads of the page agree. Those checks are code, and their results are what the screen shows.
+- **No confidence colours.** It is tempting to colour each field by how sure the model says it is. A model's self-reported confidence is poorly calibrated, so the colour would mostly be noise. What the expert can use is where a value came from and whether it passed a check: does the grade exist in this diameter, is the quantity a number, does the 3D model agree with the drawing, and do two reads with different models or prompts agree. Those checks are code, and their results are what the screen shows.
 - **Unreadable is a result:** a scan the model can't read leaves the fields empty, marked as unread, and the draft goes to the expert with the page.
 - **Tolerances as a flag:** whether every tolerance can be held is checked in detail once an order is won. At quote time, extraction only flags tolerances tighter than what the machines usually hold, because they add operations and scrap.
-- **The checklist and the question:** each product line has a checklist of required fields, checked against the extracted record, since half the answers are on the drawing. A missing field gets a drafted question to the customer, in the customer's language, naming the drawing and the field. Where the mail system allows it, the question lands as a draft in the shared mailbox; where it doesn't, it appears on the review screen to copy. Either way it can go out on the day the request arrived.
+- **The checklist and the question:** each product line has a checklist of required fields, checked against the extracted record, since half the answers are on the drawing. A missing field gets a drafted question to the customer, in the customer's language, naming the drawing and the field, and asking how long the part is expected to run if the request doesn't say. Where the mail system allows it, the question lands as a draft in the shared mailbox; where it doesn't, it appears on the review screen to copy. Either way it can go out on the day the request arrived.
 
 ### Assessment
 
@@ -115,8 +115,8 @@ A vision-capable LLM reads each page of the drawing and fills a [Pydantic](/post
 Assessment answers three questions: can we make it, on which machine, and how much tooling. It has two sources, and shows both.
 
 - **Written rules,** as code: diameter limits per machine, which product line runs on which machine family, minimum lot sizes, setup times per machine and part type. Each rule is versioned, has the expert's name on it, and is tested against past requests whose answer is known. Rules mostly say what is *allowed*; the rule set starts small and grows from the expert's overrides (below).
-- **Similar past parts,** from the ERP's article master: every part made before, with its material, diameter, routing, cycle and setup times and price. That is what production actually ran, so it is more reliable than the project folders on the file server. Tooling hours are another matter: where they were recorded at all, it is often only in those folders, so linking each article to its drawing and its tooling history is a data task of its own.
-- **How "similar" is computed:** a filter on the structured fields (product line, material, diameter range, finishing) narrows thousands of parts to a few dozen. Those are ranked by a weighted score: closeness in diameter and quantity, plus the similarity of image embeddings of the rendered drawings, or of shape features from the 3D model where there is one. The score is only for ranking; the expert sees the parts, not a number to trust.
+- **Similar past parts,** from the ERP's article master: every part made before, with its material, diameter, routing, cycle and setup times and price. That is what production actually ran, so it is more reliable than the project folders. Tooling hours are another matter: where they were recorded at all, it is often only in those folders, so linking each article to its drawing and its tooling history is a data task of its own.
+- **How "similar" is computed:** a filter on the structured fields (product line, material, diameter range, finishing) narrows thousands of parts to a few dozen. Those are ranked by a weighted score: closeness in diameter and quantity, plus the similarity of image embeddings of the rendered drawings, cropped to the part views without the title block and frame, or of shape features from the 3D model where there is one. The score is only for ranking; the expert sees the parts, not the score.
 
 <QuoteFigure name="similar" />
 
@@ -134,7 +134,7 @@ $$
 P_m(Q) = T_m + c_m \, Q,
 $$
 
-where $T_m$ is the one-off tooling charge (tooling hours times the toolmaker's rate, here 150 euros an hour) and $c_m$ the price per piece: material, cycle time times the machine rate, finishing, setup spread over the lot size, and the surcharges for overhead and margin. The small machine has a small $T$ and a large $c$; the large machine the reverse. They cost the customer the same at
+where $T_m$ is the one-off tooling charge (tooling hours times the toolmaker's rate, here 150 euros an hour) and $c_m$ the price per piece: material, cycle time times the machine rate, finishing, setup spread over a typical lot, and the surcharges for overhead and margin. The small machine has a small $T$ and a large $c$; the large machine the reverse. They cost the customer the same at
 
 $$
 Q^* = \frac{T_L - T_S}{c_S - c_L}.
@@ -144,11 +144,11 @@ With the running example's invented numbers, 8 hours of tooling on the small mac
 
 <QuoteFigure name="break-even" />
 
-*Total price of the two variants over the quantity ordered, invented numbers. They meet at about a year's demand; over three years the large machine is cheaper by about 27,000 euros.*
+*Total price of the two variants over the quantity ordered, invented numbers, with the draft's 90 hours of tooling on the large machine. They meet at about a year's demand; over three years the large machine is cheaper by about 27,000 euros.*
 
-So the draft offers both: a small tooling charge with a higher piece price, and a larger tooling charge with a lower one, and the customer chooses. The expert's spreadsheet sometimes does this already; the system does it whenever the expected lifetime quantity falls near $Q^*$.
+So the draft offers both: a small tooling charge with a higher piece price, and a larger tooling charge with a lower one, and the customer chooses. The expert's spreadsheet sometimes does this already; the system does it whenever $Q^*$ falls within a plausible run of the part, say one to five years of the stated annual demand.
 
-- **Material prices from purchasing:** material prices change a few times a year. The calculation reads them from a table purchasing owns, and flags a quote whose material volume is large enough that purchasing should ask the supplier for its own price.
+- **Material prices from purchasing:** material prices change a few times a year. The calculation reads them from a table purchasing owns, and flags a quote whose material is missing from the table, or whose volume is large enough that purchasing should ask the supplier for its own price.
 - **Per customer:** payment and delivery terms come from the ERP's customer record, read-only, so the offer never states terms the ERP doesn't have.
 
 ### Review
@@ -170,21 +170,21 @@ The review screen decides whether any of this gets used. If checking a draft tak
 
 <QuoteMap preset="handover" />
 
-- **Offer PDF and mail,** from the manufacturer's template, in the customer's language, with an offer number that continues the ERP's sequence so the two never disagree.
+- **Offer PDF and mail,** from the manufacturer's template, in the customer's language. The offer number stays blank until the ERP assigns it, so the two never disagree.
 - **The ERP, in steps:** read access first (customers, terms, article master, the last offer number), which IT can grant without risk. Writing comes later: in version one the screen lays out the fields in the ERP's order to copy across; later an API if there is one, or a robot that fills the ERP's screens as a last resort.
 
 ### From overrides to rules
 
 <QuoteMap preset="rules" />
 
-The expert's changes are the most valuable data the system produces, and they are not used to retrain anything behind the expert's back. A change made once might be a one-off for one customer; the same change made three times on similar parts is a rule nobody wrote down.
+The expert's changes are the most valuable data the system produces, and they are not used to retrain anything behind the expert's back. A change made once might be a one-off for one customer; the same change made repeatedly on similar parts is a rule nobody wrote down.
 
 <QuoteFigure name="overrides" />
 
-*The running example's change is the third of its kind. Three overrides become a proposal, checked against the past requests that didn't produce it; the expert approves, edits or rejects it.*
+*The running example's change, R-1262, is the third of its kind. The overrides become a proposal, checked against the past requests that didn't produce it; the expert approves, edits or rejects it.*
 
 - **Every change is an event** with the draft value, the new value, the reason and the request.
-- **"The same kind"** means the same field, the same reason, and parts from the same product line and material. When three such changes point the same way, an LLM drafts the rule that would have produced them, in the rule language, and code checks it.
+- **"The same kind"** means the same field, the same reason, and parts from the same product line and material. When a few such changes point the same way, an LLM drafts the rule that would have produced them, in the rule language, and code checks it.
 - **The check uses other requests:** the proposal is replayed on past requests that didn't produce it, and the expert sees where it agrees with what they decided and where it doesn't.
 - **The expert decides,** and only an approved rule goes live. That keeps the rule set a document the expert owns, rather than a model nobody can read.
 
@@ -194,7 +194,7 @@ The expert's changes are the most valuable data the system produces, and they ar
 
 *Highlighted: the path the running example takes.*
 
-The Lindqvist email arrives at 9:12. Intake classifies it as a request for formed parts. Extraction reads 4 mm stainless 1.4310, no heat treatment, 45,000 a year, and a surface "per customer standard" it can't resolve; the checklist marks the surface as missing and drafts a question to the buyer. Assessment finds no rule against either machine; of the three most similar parts, the two on the large machine took 85 and 100 hours of tooling, the one on the small machine 8. The calculation prices both variants, with 90 hours on the large machine and the usual passivated finish as a marked assumption. At 9:20 the draft is waiting for the expert, who sends the question and raises the tooling from 90 to 100 hours, because the clip's bend is tighter than on any of the similar parts, with the reason "differs from the similar parts". When the buyer confirms the finish, the draft updates, and the offer goes out with both variants the same afternoon.
+The Lindqvist email arrives at 9:12. Intake classifies it as a request for formed parts. Extraction reads 4 mm stainless 1.4310, no heat treatment, 45,000 a year, and a surface "per customer standard" it can't resolve; the checklist marks the surface as missing and drafts a question to the buyer. Assessment finds no rule against either machine; of the three most similar parts, the two on the large machine took 85 and 100 hours of tooling, the one on the small machine 8, and it proposes 90 hours, weighted towards the closest part. The calculation prices both variants, with the usual passivated finish as a marked assumption. At 9:20 the draft is waiting. The expert sends the question and raises the tooling from 90 to 100 hours, picking "differs from the similar parts": the clip's bend is tighter than on any of them. When the buyer confirms the finish and a three-year run, the draft updates, and the offer goes out with both variants within the hour.
 
 ## Tradeoffs
 
@@ -212,11 +212,11 @@ The Lindqvist email arrives at 9:12. Intake classifies it as a request for forme
 
 ### Evaluation
 
-Unlike many automation projects, this one has labelled history: every past request in the archive comes with the quote that was sent for it. And unlike a patient record that changes every hour, a request is a frozen snapshot, an email and its drawings, so replaying it later shows the system exactly what the expert saw.
+This project has what many lack: labelled history. Every past request comes with the quote sent for it, and a request is a frozen snapshot, an email and its drawings, so replaying it shows the system exactly what the expert saw.
 
 - **Extraction:** field by field on a few hundred past requests, against what the expert entered at the time. Wrong is worse than missing: a missing field gets a question, a wrong one gets a wrong price.
 - **Assessment:** how often the proposed machine matches the one the expert chose, and how far the tooling hours are off. Measured separately for rules and for similar parts, so each one's share of the work is visible.
-- **No peeking:** in replay, the similar-parts search only sees parts created before the request's date, and never the part itself, which a won quote added to the article master. Rules are tested on requests the expert didn't use to write them.
+- **No peeking:** in replay, the similar-parts search only sees parts created before the request's date, and never the part itself, which a won quote added to the article master, nor any earlier revision of the same drawing. Rules are tested on requests the expert didn't use to write them.
 - **Calculation:** not the final price, which moves with material prices, but each cost component against the expert's spreadsheet.
 - **In production:** time from email to sent offer, and edits per draft. Edits are the honest measure of a draft's quality, the same way [an approval rate is not a saving](/post/approval-rate-is-not-savings): a draft the expert approves after rewriting half of it has saved little.
 - **Not the win rate.** It is what everyone wants to move, and it depends on prices, competitors and the customer's own plans. A quote that went out faster and lost is not evidence the system failed.
@@ -238,7 +238,7 @@ The design rests on three assumptions, in order of how much a wrong one would ch
 
 ### Security
 
-Customers' drawings are usually under a non-disclosure agreement. So the documents and the model stay in the EU, in a data center the manufacturer agrees to, with no training on its data, per-customer isolation, and read-only access to the ERP until writing is worth the risk. The change log doubles as the record of who changed which price and why.
+Customers' drawings are usually under a non-disclosure agreement. So the documents and the model stay in the EU, in a data center the manufacturer agrees to, with no training on its data, isolated from other companies' data, and read-only access to the ERP until writing is worth the risk. The change log doubles as the record of who changed which price and why.
 
 ### What carries over
 

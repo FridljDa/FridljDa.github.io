@@ -132,7 +132,7 @@ function Request({ id }: { id: string }) {
       <line x1={20} x2={500} y1={bottom + 12} y2={bottom + 12} stroke={color('edge')} strokeWidth={2} />
       <Reply x={44} y={bottom + 44} scale={1.1} stroke={color('added')} />
       <text x={68} y={bottom + 44} dy="0.35em" fontSize={17} fontWeight={600} fill={color('text')}>
-        Question drafted: which surface?
+        Question drafted: surface, run length?
       </text>
     </svg>
   );
@@ -142,13 +142,13 @@ function Request({ id }: { id: string }) {
 function Similar({ id }: { id: string }) {
   const m = `${id}-arrow`;
   const parts = [
-    { no: 'A-2291', name: 'Tarp clip, 4 mm', machine: 'Large', hours: '85 h', score: '0.91' },
-    { no: 'A-3107', name: 'Hose clip, 3.5 mm', machine: 'Large', hours: '100 h', score: '0.87' },
-    { no: 'A-1450', name: 'Retaining clip, 4 mm', machine: 'Small', hours: '8 h', score: '0.84' },
+    { no: 'A-2291', name: 'Tarp clip, 4 mm', machine: 'Large', hours: '85 h' },
+    { no: 'A-3107', name: 'Hose clip, 3.5 mm', machine: 'Large', hours: '100 h' },
+    { no: 'A-1450', name: 'Retaining clip, 4 mm', machine: 'Small', hours: '8 h' },
   ];
   const rules = ['4 mm: both machines', '45,000 a year: both'];
   return (
-    <svg viewBox="0 0 520 600" role="img" aria-label={DESCRIPTIONS.similar} style={{ width: '100%', height: 'auto', fontFamily: 'inherit' }}>
+    <svg viewBox="0 0 520 580" role="img" aria-label={DESCRIPTIONS.similar} style={{ width: '100%', height: 'auto', fontFamily: 'inherit' }}>
       <defs>
         <ArrowMarker id={m} />
       </defs>
@@ -166,12 +166,9 @@ function Similar({ id }: { id: string }) {
         </g>
       ))}
 
-      <rect x={10} y={150} width={500} height={250} rx={14} fill={color('node-bg')} stroke={color('added')} strokeWidth={2.5} />
+      <rect x={10} y={150} width={500} height={230} rx={14} fill={color('node-bg')} stroke={color('added')} strokeWidth={2.5} />
       <text x={30} y={180} dy="0.35em" fontSize={TITLE} fontWeight={700} fill={color('text')}>
         Similar past parts
-      </text>
-      <text x={490} y={180} dy="0.35em" textAnchor="end" fontSize={15} fontWeight={600} fill={color('muted')}>
-        similarity
       </text>
       {parts.map((p, i) => {
         const y = 230 + i * 56;
@@ -183,22 +180,19 @@ function Similar({ id }: { id: string }) {
             <text x={30} y={y + 14} dy="0.35em" fontSize={16} fontWeight={500} fill={color('muted')}>
               {p.machine} machine, tooling {p.hours}
             </text>
-            <text x={490} y={y} dy="0.35em" textAnchor="end" fontSize={18} fontWeight={700} fill={color('text')}>
-              {p.score}
-            </text>
           </g>
         );
       })}
 
-      {arrow(m, 'M260,400 V446')}
-      <rect x={60} y={450} width={400} height={130} rx={14} fill={color('node-bg')} stroke={color('added')} strokeWidth={2.5} />
-      <text x={84} y={490} dy="0.35em" fontSize={TITLE} fontWeight={700} fill={color('text')}>
+      {arrow(m, 'M260,380 V426')}
+      <rect x={60} y={430} width={400} height={130} rx={14} fill={color('node-bg')} stroke={color('added')} strokeWidth={2.5} />
+      <text x={84} y={470} dy="0.35em" fontSize={TITLE} fontWeight={700} fill={color('text')}>
         Proposal to the expert
       </text>
-      <text x={84} y={534} dy="0.35em" fontSize={17} fontWeight={600} fill={color('text')}>
+      <text x={84} y={514} dy="0.35em" fontSize={17} fontWeight={600} fill={color('text')}>
         Large machine, 90 h tooling
       </text>
-      <text x={84} y={560} dy="0.35em" fontSize={17} fontWeight={500} fill={color('muted')}>
+      <text x={84} y={540} dy="0.35em" fontSize={17} fontWeight={500} fill={color('muted')}>
         Small machine as a second variant
       </text>
     </svg>
@@ -264,8 +258,8 @@ function Review({ id }: { id: string }) {
         Two variants
       </text>
       {[
-        { name: 'Small machine', hours: '8 h', price: '1,200 € + 0.48 €' },
-        { name: 'Large machine', hours: '100 h', price: '15,000 € + 0.19 €', edited: '90' },
+        { name: 'Small machine', hours: '8 h', price: '1,200 € + 0.48 €/pc' },
+        { name: 'Large machine', hours: '100 h', price: '15,000 € + 0.19 €/pc', edited: '90' },
       ].map((v, i) => {
         const y = 386 + i * 54;
         return (
@@ -369,7 +363,7 @@ function BreakEven({ id }: { id: string }) {
         Total price
       </text>
       {/* Direct labels: the small machine's above and left of its line, the large machine's below and right. */}
-      <text x={x(80000) - 12} y={y(cost(variants[0], 80000)) - 16} dy="0.35em" textAnchor="end" fontSize={16} fontWeight={700} fill={color('text')}>
+      <text x={x(100000) - 12} y={y(cost(variants[0], 100000)) - 16} dy="0.35em" textAnchor="end" fontSize={16} fontWeight={700} fill={color('text')}>
         Small machine
       </text>
       <text x={x(80000) + 12} y={y(cost(variants[1], 80000)) + 22} dy="0.35em" fontSize={16} fontWeight={700} fill={color('text')}>
@@ -389,13 +383,13 @@ function BreakEven({ id }: { id: string }) {
   );
 }
 
-/** Three overrides of the same kind, the rule they suggest, and the expert's decision. */
+/** Overrides of one kind, the rule they suggest, and the expert's decision. */
 function Overrides({ id }: { id: string }) {
   const m = `${id}-arrow`;
   const rows = [
     { req: 'R-1187', what: 'Stainless, 3 mm, tight bend', change: '+12 h' },
     { req: 'R-1203', what: 'Stainless, 5 mm, tight bend', change: '+8 h' },
-    { req: 'LO-318', what: 'Stainless, 4 mm, tight bend', change: '+10 h' },
+    { req: 'R-1262', what: 'Stainless, 4 mm, tight bend', change: '+10 h' },
   ];
   return (
     <svg viewBox="0 0 520 610" role="img" aria-label={DESCRIPTIONS.overrides} style={{ width: '100%', height: 'auto', fontFamily: 'inherit' }}>
@@ -404,7 +398,7 @@ function Overrides({ id }: { id: string }) {
       </defs>
       <rect x={10} y={10} width={500} height={220} rx={14} fill={color('node-bg')} stroke={color('ok')} strokeWidth={2.5} />
       <text x={30} y={40} dy="0.35em" fontSize={TITLE} fontWeight={700} fill={color('text')}>
-        Three overrides
+        Overrides of one kind
       </text>
       {rows.map((r, i) => {
         const y = 92 + i * 46;
@@ -456,15 +450,15 @@ export const DESCRIPTIONS = {
   today:
     'How a quote gets made today: a request arrives by mail with drawings, someone checks whether anything is missing, the expert assesses machine and tooling, calculates the price in a spreadsheet, the result is retyped into the ERP, and the offer is sent as a PDF. Assessing and calculating sit with one expert.',
   request:
-    'What the system reads out of the running example’s request, LO-318, a tent-pole clip for Lindqvist Outdoor: product line formed parts, classified; stainless 1.4310 from the title block; 4 mm and no heat treatment from the drawing and its notes; 45,000 a year and delivery from Q2 from the email. The surface is missing, and a question asking for it is drafted.',
+    'What the system reads out of the running example’s request, LO-318, a tent-pole clip for Lindqvist Outdoor: product line formed parts, classified; stainless 1.4310 from the title block; 4 mm and no heat treatment from the drawing and its notes; 45,000 a year and delivery from Q2 from the email. The surface is missing, and a question asking for it, and for how long the part will run, is drafted.',
   similar:
-    'Assessment for the running example. The written rules allow both machines for 4 mm and 45,000 a year. The three most similar past parts: A-2291, a tarp clip of 4 mm, ran on the large machine with 85 hours of tooling, similarity 0.91; A-3107, a hose clip of 3.5 mm, on the large machine with 100 hours, 0.87; A-1450, a retaining clip of 4 mm, on the small machine with 8 hours, 0.84. The proposal to the expert: the large machine with 90 hours of tooling, and the small machine as a second variant.',
+    'Assessment for the running example. The written rules allow both machines for 4 mm and 45,000 a year. The three most similar past parts: A-2291, a tarp clip of 4 mm, ran on the large machine with 85 hours of tooling; A-3107, a hose clip of 3.5 mm, on the large machine with 100 hours; A-1450, a retaining clip of 4 mm, on the small machine with 8 hours. The proposal to the expert: the large machine with 90 hours of tooling, and the small machine as a second variant.',
   'break-even':
-    'Total price over the number of pieces ordered, with invented numbers. The small machine costs 1,200 euros of tooling plus 0.48 euros a piece, the large machine 13,500 euros plus 0.19 euros a piece. The lines cross at about 42,000 pieces, a little under one year of demand; at 135,000 pieces, three years, the large machine costs about 39,000 euros against about 66,000, about 27,000 less.',
+    'Total price over the number of pieces ordered, with invented numbers and the draft’s 90 hours of tooling on the large machine. The small machine costs 1,200 euros of tooling plus 0.48 euros a piece, the large machine 13,500 euros plus 0.19 euros a piece. The lines cross at about 42,000 pieces, a little under one year of demand; at 135,000 pieces, three years, the large machine costs about 39,000 euros against about 66,000, about 27,000 less.',
   review:
-    'The review screen for LO-318: a banner says the surface is missing and offers to send the drafted question; the drawing sits next to the extracted fields, and selecting the diameter outlines the spot on the drawing it was read from. Below, the two variants: the small machine with 8 hours of tooling at 1,200 euros plus 0.48 a piece, and the large machine with tooling edited from 90 to 100 hours, now 15,000 euros plus 0.19 a piece. The reason picked for the change is that the part differs from the similar parts. The offer waits for the surface.',
+    'The review screen for LO-318: a banner says the surface is missing and offers to send the drafted question; the drawing sits next to the extracted fields, and selecting the diameter outlines the spot on the drawing it was read from. Below, the two variants: the small machine with 8 hours of tooling at 1,200 euros plus 0.48 euros a piece, and the large machine with tooling edited from 90 to 100 hours, now 15,000 euros plus 0.19 euros a piece. The reason picked for the change is that the part differs from the similar parts. The offer waits for the surface.',
   overrides:
-    'Three overrides of the same kind: on requests R-1187, R-1203 and LO-318, stainless parts of 3 to 5 mm with a tight bend, the expert raised the tooling hours by 8 to 12 with the reason that the part differs from the similar parts. The system proposes a rule, stainless with a bend radius under the diameter gets 10 hours more tooling, which agrees with the expert on 8 of 9 other past requests. The expert approves, edits or rejects it.',
+    'Overrides of one kind: on requests R-1187, R-1203 and R-1262, the running example, stainless parts of 3 to 5 mm with a tight bend, the expert raised the tooling hours by 8 to 12 with the reason that the part differs from the similar parts. The system proposes a rule, stainless with a bend radius under the diameter gets 10 hours more tooling, which agrees with the expert on 8 of 9 other past requests. The expert approves, edits or rejects it.',
 } as const;
 
 export type FigureName = keyof typeof DESCRIPTIONS;
