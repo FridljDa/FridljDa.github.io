@@ -38,6 +38,13 @@ organisation as context is not, unless the owner asks. The same applies to
 reposts, file names, slugs, frontmatter, figure text, commit messages and PR
 descriptions, since this repo is public.
 
+## Links in the text, no source lists
+
+A post has no Sources, References or Further reading section, and no list of
+links at the end. A source worth giving is a hyperlink on the words of the claim
+it supports, where that claim is made. A source that fits nowhere in the text is
+not worth giving.
+
 ## Reference posts: recent and heavily iterated
 
 When writing or reviewing a post, take your cues on structure, figures and
