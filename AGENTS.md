@@ -28,6 +28,16 @@ terms: "a customer support automation", not "a bank's support automation" or
 "our support team at Northstar Bank". Figures and mockups may show the invented
 names.
 
+## Posts stand on their own
+
+A post never says why it was written or who it is for. It does not address,
+name or hint at a particular company, team or role as its reader or occasion
+("for the X team", "as X does it", "what X looks for"). Naming tools,
+open-source projects and cited sources is fine; naming an employer or
+organisation as context is not, unless the owner asks. The same applies to
+reposts, file names, slugs, frontmatter, figure text, commit messages and PR
+descriptions, since this repo is public.
+
 ## Figures: one style per post
 
 All figures within a blog post share one visual style. Drawn figures, mockups and the section maps: `src/components/AGENTS.md`. Animations: `src/remotion/AGENTS.md`.
