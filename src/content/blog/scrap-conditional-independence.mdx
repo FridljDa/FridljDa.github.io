@@ -107,7 +107,9 @@ Neither step reverses, so either implication can hold while the signal still mat
 
 We answered the question five ways. Write $X = (X_1, \dots, X_{12})$ for all signals together and $X_{-i}$ for all of them but $X_i$. For order $k = 1, \dots, n$, write $y_k$ for its scrap rate, $z_k$ for its ball type, and $\bar y_z$ for the average scrap rate of the orders of ball type $z$.
 
-Every method that needed a regression model ran with three learners: XGBoost, a random forest, and [TabICL](https://arxiv.org/abs/2602.11139), a pretrained transformer for tables that predicts from the training rows in context instead of being fitted to them.
+Every method that needed a regression model ran with three learners: XGBoost, a random forest, and TabICL, a pretrained transformer for tables that predicts from the training rows in context instead of being fitted to them.
+
+TabICL is the least familiar of the three. [It was built](https://arxiv.org/abs/2502.05564) for classification, pretrained on synthetic tables only, and [its second version](https://arxiv.org/abs/2602.11139) adds regression. For this analysis it has three properties the trees lack. Nothing is fitted per fold: each fold is a new context, so cross-validation costs only predictions, and there is next to nothing to tune on the folds that score it. It returns a predictive distribution, so one model gives both the median the model comparison scores and the mean the residual model needs. And it learns differently: two tree ensembles that agree may share a bias, so a transformer that agrees with them adds more confidence than a third tree would. The price is explanation. SHAP has no exact algorithm for it as it has for trees, so its importances are sampled approximations, and a shuffled test row asks it about an order unlike any in its context.
 
 | Method | Tests |
 |---|---|
@@ -175,7 +177,7 @@ Three more choices make the GCM's p-values hold up on orders from a factory.
 
 - **Dependent orders.** $T$ assumes the products $R_k$ are independent. Orders run on the same day share the weather, the shift and the state of the machines, so their products are correlated and $\hat\sigma_R$ is too small. A variance clustered by day, or a [Newey–West](https://doi.org/10.2307/1913610) variance over orders sorted by start time, accounts for that. Where the averages are fitted on other folds, the folds are [contiguous blocks of time](https://doi.org/10.1016/j.csda.2017.11.003), not random orders.
 - **A check of the null.** Shuffling a signal within each ball type makes it independent of scrap given the type, by construction. Run the shuffled signals through the same test: their $T$ should be standard normal. If they spread wider, the p-values are too small, and the spread says by how much.
-- **Many signals.** Twelve tests at 5% give 0.6 rejections by chance. [Benjamini–Hochberg](https://doi.org/10.1111/j.2517-6161.1995.tb02031.x) bounds the share of false rejections among the rejections, and it stays valid when the tests are [positively dependent](https://doi.org/10.1214/aos/1013699998), as tests of correlated signals are. Neither correction helps against twelve links each too small to reject. The GCM paper's joint version does: it takes $\max_i |T_i|$ over all signals and calibrates it with a multiplier bootstrap, which keeps the dependence between the tests.
+- **Many signals.** Before testing, signals that are near copies of each other, with a correlation above 0.99 within ball types, are one test, not two: test the one recorded on more orders. Twelve tests at 5% give 0.6 rejections by chance. [Benjamini–Hochberg](https://doi.org/10.1111/j.2517-6161.1995.tb02031.x) bounds the share of false rejections among the rejections, and it stays valid when the tests are [positively dependent](https://doi.org/10.1214/aos/1013699998), as tests of correlated signals are. Neither correction helps against twelve links each too small to reject. The GCM paper's joint version does: it takes $\max_i |T_i|$ over all signals and calibrates it with a multiplier bootstrap, which keeps the dependence between the tests.
 
 ### Where the GCM and the models differ
 
@@ -190,6 +192,8 @@ A model has a harder job with the same orders: it has to find that link among tw
 #### Correlated signals
 
 Feature importance divides credit among the inputs of one model, and how correlated signals share it depends on the learner: a random forest tends to spread credit over all of them, while XGBoost tends to pick one and leave the rest near zero. SHAP explains whichever model it is given, so it inherits the split, and whether it should split credit by the model or by the data is [a choice of its own](https://arxiv.org/abs/2006.16234). Tree importances also [favour signals with many possible splits](https://doi.org/10.1186/1471-2105-8-25). Permuting all signals of one machine together, a [grouped permutation importance](https://arxiv.org/abs/1411.4170), asks about the machine instead: if the group's importance is smaller than the sum of its members', they carry the same information.
+
+Credit and contribution can even point opposite ways. An overfitted learner spends its splits on noise in the signals and gives them credit for it, and the same signals then cost it accuracy on held-out orders: the learner that credits the signals most can be the one they hurt most. So we read each learner's importances next to its own held-out comparison. Credit that no held-out gain backs says how the learner works, not where scrap comes from.
 
 The GCM doesn't have this problem. Each test conditions only on the ball type, so correlated signals don't compete. The flip side is that both of two correlated signals are flagged, like the two thermometers above. Asking which of them matters means conditioning on the other signals too, $X_i \perp\!\!\!\perp Y \mid (Z, X_{-i})$, and since they are continuous, that brings back the hardness result above.
 
@@ -228,11 +232,23 @@ After correcting for testing twelve signals, none of the five methods found evid
 - **The models per ball type** had a held-out squared error 0% to 3% above that of their type's average scrap rate, in all three ball types, so there was nothing to compare across types.
 - **The GCM** rejected one of the twelve signals at the 5% level: $X_7$, a spin speed at M3, with $p = 0.02$. With twelve tests, 0.6 such rejections are expected by chance if no signal is linked. After a Bonferroni correction for twelve tests, which holds however the tests depend on each other, its p-value is $12 \times 0.02 = 0.24$; Benjamini–Hochberg gives the same. Neither the joint test over all twelve signals nor any of the twelve distance probes rejected. The shuffled signals' $T$ spread as a standard normal should, and a variance clustered by day left the conclusion unchanged.
 
+<ScrapFigure name="comparison" />
+
+*Held-out error of each learner's models on the signals, with and without the ball type, minus that of the same learner on the ball type alone, with 95% bootstrap intervals over orders. Right of zero is worse.*
+
 <ScrapFigure name="residual" />
 
 *Held-out orders. A link would tilt them towards the dashed line.*
 
 A flag from one method alone deserves a look before it is dismissed, if it falls in a blind spot of the others. $X_7$'s does: a small link with nonzero covariance is what the models miss. Its $\hat\beta$ is 0.075, with a 95% interval from 0.01 to 0.14.
+
+A test statistic that is an average can rest on a handful of orders. So the look starts with the orders behind it: drop the 5% of orders with the largest $|R_k|$, and compute the test again. If the link runs through all orders, $T$ shrinks a little; if a few orders carry it, $T$ collapses. $X_7$'s collapses: without its 20 largest products, $\hat\beta$ falls to 0.02 and $T$ from 2.3 to 0.6. Most of those orders lie far out on the signal, at spin speeds unusual for their ball type.
+
+<ScrapFigure name="x7" />
+
+*$X_7$ against scrap, each order centred on its ball type's averages; a sample of the orders drawn. The slope through all orders is 0.075; without the 5% of orders with the largest products, it is 0.02.*
+
+A link carried by a few extreme orders can still be real, but it is a question about those orders, for the people who ran them, not a slope to act on. One more check is open: a signal and scrap that both drift over months correlate within ball types without any link between them. Shifting $X_7$ by a week, a month and two months and testing again would separate the two: a real link stands out among the shifted copies, a shared drift survives the shift.
 
 ### What no evidence means
 
