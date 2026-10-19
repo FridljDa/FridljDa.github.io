@@ -43,10 +43,10 @@ test.describe('Figures in Workflow or Agent', () => {
     await expect(next.getByText('Graduate', { exact: true })).toBeVisible();
   });
 
-  test('the grid and the coverage schematic, and no Mermaid', async ({ page }) => {
+  test('the recommendation, the grid and the coverage schematic, and no Mermaid', async ({ page }) => {
     await page.goto(POST);
     const figures = page.locator('figure.decision-figure');
-    await expect(figures).toHaveCount(2);
+    await expect(figures).toHaveCount(3);
     const grid = figures.nth(0).locator('svg:visible');
     await expect(grid.getByText('Unlock steps')).toBeVisible();
     await expect(grid.getByText('?', { exact: true })).toHaveCount(7);
@@ -94,7 +94,7 @@ test.describe('Figures in Workflow or Agent', () => {
     await expect(body.locator('svg, figure')).toHaveCount(0);
     const srcs = await body.locator('img').evaluateAll((imgs) => imgs.map((img) => img.getAttribute('src')));
     const base = 'https://danielfridljand.de/images/blog/workflow-vs-agent';
-    for (const png of [...PRESETS.map((p) => `map-${p}`), 'grid', 'coverage']) {
+    for (const png of [...PRESETS.map((p) => `map-${p}`), 'default', 'grid', 'coverage']) {
       expect(srcs).toContain(`${base}/${png}.png`);
     }
   });
