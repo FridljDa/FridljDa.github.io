@@ -1,30 +1,30 @@
 ---
-title: "Prompt Injection"
+title: "Prompt Injection: Can You Make My Chatbot Leak Its Password?"
 pubDate: 2026-01-24
 tags:
   - AI
   - Security
-description: "I participated in a white hat hacking challenge at Agent Olympics Hackathon Munich 2026. Can you trick my chatbot into revealing the secret password?"
+description: "A white-hat prompt-injection challenge from the Agent Olympics Hackathon Munich 2026, and a live chatbot for you to try it on."
 image: /images/blog/prompt-injection/featured.png
 math: false
 ---
 
 import PasswordChecker from '../../components/PasswordChecker';
 
-## The Hackathon Challenge
+## The hackathon challenge
 
-I recently participated in a white hat hacking challenge at the [Agent Olympics Hackathon Munich 2026](https://luma.com/agent-olympics?tk=DjHhlt). The goal was to build a voice agent that interacts with other AI systems to surface pre-planted sensitive information through prompt injection attacks.
+At the [Agent Olympics Hackathon Munich 2026](https://luma.com/agent-olympics?tk=DjHhlt), I took part in a white hat challenge: build a voice agent that uses prompt injection against other AI systems to surface pre-planted sensitive information.
 
-Here you can see our voice agent successfully extract the password from a vulnerable AI chat system during the hackathon, navigating through multiple layers of defenses in just 3.5 minutes:
+The video shows our voice agent extracting the password from a vulnerable AI chat system during the hackathon in 3.5 minutes:
 
 <video controls class="w-full rounded-lg my-8 aspect-video">
   <source src="/images/blog/prompt-injection/hackathon-clip.mp4" type="video/mp4" />
   Your browser does not support the video tag.
 </video>
 
-In this demonstration, our attacking voice agent first convinced the AI chat system's "customer support" to transfer it to "technical support," which had access to the password. It then exploited prompt injection vulnerabilities to trick the technical support agent into revealing the password. In practice, this meant threatening the technical support until it gave up.
+The attacking voice agent first convinced the AI chat system's "customer support" to transfer it to "technical support," which had access to the password. It then used prompt injection to make the technical support agent reveal the password. In practice, this meant threatening the technical support until it gave up.
 
-## Your Challenge
+## Your challenge
 
 There's a secret password hidden in this website. Once you've found the password, enter it below to verify:
 

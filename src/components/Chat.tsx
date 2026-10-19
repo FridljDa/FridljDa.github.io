@@ -1,10 +1,15 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import type { Message } from '../types/chat';
+import type { GeminiQuota } from '../types/api';
 import ChatMessage from './ChatMessage';
 import { ErrorBoundary } from './ErrorBoundary';
 import { isRateLimitErrorMessage } from '../utils/error';
 
 const CHAT_CONSENT_KEY = 'chat-consent';
+
+function formatResetTime(quota: GeminiQuota) {
+  return new Date(quota.resetsAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
 
 function ChatContent() {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -13,6 +18,7 @@ function ChatContent() {
   const [isMinimized, setIsMinimized] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasConsent, setHasConsent] = useState(false);
+  const [quota, setQuota] = useState<GeminiQuota | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -35,6 +41,25 @@ function ChatContent() {
     }
   }, [messages, isMinimized, hasConsent]);
 
+  const refreshQuota = useCallback(async () => {
+    try {
+      const response = await fetch('/api/chat', { cache: 'no-store' });
+      if (response.ok) {
+        setQuota(await response.json());
+      }
+    } catch {
+      // The counter is informational; the chat still works without it
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!isMinimized && hasConsent) {
+      refreshQuota();
+    }
+  }, [isMinimized, hasConsent, refreshQuota]);
+
+  const isQuotaExhausted = quota?.exhausted === true;
+
   const toggleMinimize = () => {
     setIsMinimized(!isMinimized);
   };
@@ -46,7 +71,7 @@ function ChatContent() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim() || isLoading || !hasConsent) return;
+    if (!input.trim() || isLoading || !hasConsent || isQuotaExhausted) return;
 
     const userMessage: Message = { role: 'user', content: input };
     setMessages((prev) => [...prev, userMessage]);
@@ -110,8 +135,9 @@ function ChatContent() {
 
       let userMessage = 'Sorry, I encountered an error. Please try again.';
       if (isRateLimitErrorMessage(errorMessage)) {
-        userMessage =
-          'The daily usage limit has been reached. The quota resets at 9:00 AM CET. Please try again later.';
+        userMessage = `The daily usage limit has been reached. The quota resets at ${
+          quota ? formatResetTime(quota) : '9:00 AM CET'
+        }. Please try again later.`;
       }
 
       setMessages((prev) => [
@@ -123,6 +149,7 @@ function ChatContent() {
       ]);
     } finally {
       setIsLoading(false);
+      refreshQuota();
     }
   };
 
@@ -144,6 +171,15 @@ function ChatContent() {
     <div className="fixed bottom-4 right-4 md:bottom-20 md:right-4 w-[calc(100%-2rem)] md:w-96 h-[calc(100vh-8rem)] md:h-[500px] border border-surface rounded-xl shadow-lg bg-surface overflow-hidden z-[1000] flex flex-col transition-all">
       <div className="flex items-center justify-between p-3 bg-blue-600 text-white">
         <h3 className="font-semibold text-sm">AI Chat</h3>
+        {hasConsent && quota && (
+          <span
+            className="ml-auto mr-2 text-xs whitespace-nowrap"
+            title={`Shared by all visitors. Resets at ${formatResetTime(quota)}.`}
+            data-testid="chat-quota"
+          >
+            {quota.remaining} {quota.remaining === 1 ? 'question' : 'questions'} left today
+          </span>
+        )}
         <button
           onClick={toggleMinimize}
           className="btn-focus-ring p-1 hover:bg-blue-700 rounded transition-colors"
@@ -216,15 +252,19 @@ function ChatContent() {
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="Ask about skills, experience..."
+                placeholder={
+                  isQuotaExhausted
+                    ? `Daily quota used up until ${formatResetTime(quota)}`
+                    : 'Ask about skills, experience...'
+                }
                 className="flex-1 px-4 py-2 border border-input rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-transparent transition-all bg-surface-elevated text-heading placeholder-text-subtle"
-                disabled={isLoading}
+                disabled={isLoading || isQuotaExhausted}
                 aria-invalid={error ? true : undefined}
                 aria-describedby={error ? 'chat-error' : undefined}
               />
               <button
                 type="submit"
-                disabled={isLoading || !input.trim()}
+                disabled={isLoading || isQuotaExhausted || !input.trim()}
                 aria-label="Send message"
                 className="btn-focus-ring bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white rounded-full w-10 h-10 flex items-center justify-center transition-colors shadow-sm"
               >

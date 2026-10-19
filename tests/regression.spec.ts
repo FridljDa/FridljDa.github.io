@@ -140,7 +140,7 @@ test.describe('Regression Tests', () => {
 
   test('should display publication about air pollution disparities', async ({ page }) => {
     // Scroll to publications section
-    const publicationsSection = page.locator('#publications');
+    const publicationsSection = page.locator('#publication');
     await publicationsSection.scrollIntoViewIfNeeded();
     
     // Wait for publications to be visible
@@ -214,7 +214,7 @@ test.describe('Regression Tests', () => {
     // Verify markdown content includes expected sections
     expect(content).toMatch(/# Daniel Fridljand/i);
     expect(content).toMatch(/# Experience/i);
-    expect(content).toMatch(/# Publications/i);
+    expect(content).toMatch(/# Publication\b/i);
     expect(content).toMatch(/# Blog Posts/i);
     
     // Verify content type is markdown (check response headers)
@@ -388,7 +388,7 @@ test.describe('Regression Tests', () => {
     const projectName = test.info().project.name;
     test.skip(projectName === 'iPhone 13' || projectName === 'iPad Pro' || projectName === 'Pixel 5', 'Server-side functionality, only needs desktop testing');
 
-    const response = await request.get('/dev/trigger-500');
+    const response = await request.get('/500');
     expect(response.status()).toBe(500);
     const body = await response.text();
     expect(body).toContain('Back to home');
@@ -586,4 +586,3 @@ test.describe('Regression Tests', () => {
     }
   });
 });
-

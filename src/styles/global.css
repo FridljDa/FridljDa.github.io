@@ -136,6 +136,19 @@
   .prose {
     @apply text-gray-700 dark:text-gray-300;
   }
+
+  /* A display equation or table wider than a phone scrolls on its own instead of widening the page. */
+  .prose .katex-display,
+  .prose .table-scroll {
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+
+  /* In a scrolling table, the first column stays in view and keeps room for its labels. */
+  .prose .table-scroll :is(th, td):first-child {
+    @apply sticky left-0 bg-white dark:bg-gray-900;
+    min-width: 10rem;
+  }
   
   /* Regular links in prose (not heading links) */
   .prose a:not(.heading-link) {

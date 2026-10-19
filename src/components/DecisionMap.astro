@@ -1,0 +1,60 @@
+---
+/**
+ * The decision map of workflow-vs-agent, with one section's part highlighted
+ * (see DecisionMap.tsx for the presets). Rendered on the server, no
+ * JavaScript.
+ *
+ * A paste into Confluence drops inline SVG, so the Confluence copy shows a PNG
+ * of each preset, map-<preset>.png in the post's image folder. Regenerate them
+ * after changing the map: npm run confluence:figures
+ */
+import DecisionMapSvg, { PRESETS, type Preset, type PresetName } from './DecisionMap';
+import './loop-animation.css';
+
+interface Props {
+  preset: PresetName;
+}
+
+const { preset } = Astro.props;
+const { description, small }: Preset = PRESETS[preset];
+const png = `/images/blog/${Astro.params.slug}/map-${preset}.png`;
+---
+
+{Astro.locals.confluence ? (
+  <img src={png} alt={description} />
+) : (
+  <figure class:list={['decision-map not-prose my-8', { small }]} data-confluence-png={png}>
+    <div class="frame">
+      <DecisionMapSvg preset={preset} id={`map-${preset}`} />
+    </div>
+  </figure>
+)}
+
+<style>
+  /* As in SystemMap.astro: below this width the wide map's labels get too
+     small, so phones get the top-to-bottom layout instead. */
+  .decision-map {
+    container-type: inline-size;
+  }
+  .decision-map :global(svg) {
+    display: block;
+  }
+  .decision-map :global(.map-tall) {
+    display: none;
+  }
+  /* Wider than the other posts' small maps, so their labels stay readable. */
+  :global(.prose) .decision-map.small .frame {
+    max-width: 600px;
+    margin: 0 auto;
+  }
+  @container (max-width: 560px) {
+    .decision-map :global(.map-wide) {
+      display: none;
+    }
+    .decision-map :global(.map-tall) {
+      display: block;
+      max-width: 400px;
+      margin: 0 auto;
+    }
+  }
+</style>

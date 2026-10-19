@@ -1,0 +1,60 @@
+---
+/**
+ * The system map of the-missing-test-suite, with one section's part highlighted
+ * (see SystemMap.tsx for the presets). Rendered on the server, no JavaScript.
+ *
+ * A paste into Confluence drops inline SVG, so the Confluence copy shows a PNG
+ * of each preset, map-<preset>.png in the post's image folder. Regenerate them
+ * after changing the map: npm run confluence:figures
+ */
+import SystemMapSvg, { PRESETS, type Preset, type PresetName } from './SystemMap';
+import './loop-animation.css';
+
+interface Props {
+  preset: PresetName;
+}
+
+const { preset } = Astro.props;
+const { description, small }: Preset = PRESETS[preset];
+const png = `/images/blog/${Astro.params.slug}/map-${preset}.png`;
+---
+
+{Astro.locals.confluence ? (
+  <img src={png} alt={description} />
+) : (
+  <figure class:list={['system-map not-prose my-8', { small }]} data-confluence-png={png}>
+    <div class="frame">
+      <SystemMapSvg preset={preset} id={`map-${preset}`} />
+    </div>
+  </figure>
+)}
+
+<style>
+  /* The wide map's labels get too small below this width, so phones (and
+     narrow columns) get the two-column layout instead. */
+  .system-map {
+    container-type: inline-size;
+  }
+  .system-map :global(svg) {
+    display: block;
+  }
+  .system-map :global(.map-tall) {
+    display: none;
+  }
+  /* A map that only shows where a section sits is drawn smaller. Only in the
+     post's column: the Confluence PNG of it stays full size. */
+  :global(.prose) .system-map.small .frame {
+    max-width: 440px;
+    margin: 0 auto;
+  }
+  @container (max-width: 560px) {
+    .system-map :global(.map-wide) {
+      display: none;
+    }
+    .system-map :global(.map-tall) {
+      display: block;
+      max-width: 520px;
+      margin: 0 auto;
+    }
+  }
+</style>

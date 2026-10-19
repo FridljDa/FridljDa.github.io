@@ -36,8 +36,6 @@ export default function ModelRecommendations() {
 
   return (
     <div className="my-6 rounded-lg border border-neutral-200 bg-neutral-50 p-6 dark:border-neutral-700 dark:bg-neutral-800/50">
-      <h3 className="mb-4 text-lg font-semibold">Recommended pairings</h3>
-
       <div className="space-y-3">
         <div>
           <strong className="font-semibold">Planning:</strong>{" "}

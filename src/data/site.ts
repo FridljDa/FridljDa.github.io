@@ -1,6 +1,6 @@
 export const SITE = {
   title: 'Daniel Fridljand',
-  description: 'Software consultant focused on applied AI engineering, with a research background in computational oncology, environmental epidemiology, and statistical genomics',
+  description: 'AI engineer building production systems, with a research background in computational oncology, environmental epidemiology, and statistical genomics',
   url: 'https://danielfridljand.de',
   github: {
     owner: 'FridljDa',
@@ -11,12 +11,12 @@ export const SITE = {
 
 export const BIOGRAPHY = {
   name: 'Daniel Fridljand',
-  role: 'Software Consultant',
+  role: 'AI Engineer',
   organization: {
     name: 'TNG Technology Consulting',
     url: 'https://www.tngtech.com/en/',
   },
-  bio: 'Software consultant at TNG focused on applied AI engineering, currently embedded as the sole AI engineer on a production agentic support-automation system (Claude, Temporal, MCP, DSPy) at an enterprise customer. Research background spanning ETH Zürich (computational oncology), Stanford School of Medicine (first co-author in Nature Medicine, 2024), and EMBL (statistical genomics). M.Sc. Mathematics with full marks; Yale exchange scholar.',
+  bio: 'I build AI systems that make it to production, including an LLM-based customer-support automation I took from discovery to live rollout as sole AI engineer. A mathematics background and a co-first-author Nature Medicine paper shape how I build: measuring whether a system works gets the same rigor as building it.',
   interests: [
     'Applied AI',
     'Machine Learning',

@@ -1,0 +1,138 @@
+# LinkedIn versions of blog posts
+
+`<slug>.md` in this directory, where `<slug>` is the blog post's filename
+without extension. Copy it from `/post/<slug>/linkedin`, which shows the
+character count, where "see more" cuts the text, and the comments and images to
+post.
+
+```yaml
+---
+status: draft            # draft | posted
+postedAt: 2026-10-10     # once posted
+url: https://www.linkedin.com/posts/...   # once posted
+image: /images/blog/<slug>/featured.png   # optional, one, uploaded by hand
+comments:                # optional, posted in this order under the post
+  - text: |              # at most 1,250 characters
+      Full post: https://danielfridljand.de/post/<slug>
+    image: /images/blog/<slug>/linkedin/<name>.png   # optional, one
+---
+Post text, as plain text.
+```
+
+## Limits
+
+- **Text:** 3,000 characters, spaces and line breaks included. Stay a little
+  under it; LinkedIn may count emoji differently than the copy page does.
+- **Before "see more":** about 210 characters on desktop, about 140 on mobile,
+  and never more than about three lines.
+- **Images:** one per post, and one per comment, 5 MB each. Shown at 4:5 at
+  most: 4:5 portrait (1080×1350) or square (1080×1080) uses the most of the feed.
+- **Comments:** any number, 1,250 characters each.
+- Alternatives when a feed post is too small: a PDF document post ("carousel",
+  up to 300 pages and 100 MB), or a LinkedIn Article (about 110,000 characters).
+
+## Find the story first
+
+A LinkedIn post is a post of its own, not a shortened article. Before drafting,
+step back from the blog post. Most of what makes the blog post good, its steps,
+caveats, numbers and side arguments, makes a LinkedIn post worse.
+
+1. **The message.** Ask what a reader who never clicks the link should
+   remember. Write it as one sentence. If it needs an "and", keep one half.
+2. **The points.** Pick the two or three things from the post that make that
+   message interesting or believable: usually the result, what was surprising
+   about it, and one concrete example.
+3. **The narrative.** Order them as a story: the result or surprise first, then
+   why, then what it means or what I did about it. Don't follow the blog post's
+   section order.
+4. **The rest goes to the link.** How-to steps, implementation details, figures
+   described in words, caveats, secondary arguments, numbers that need context.
+   Being true or hard-won is not a reason to keep a sentence; carrying the
+   message is.
+
+Then reread each paragraph and ask whether the post is weaker without it. If
+not, cut it. That includes a paragraph with the post's sharpest line when it
+carries a second message: Workflow or Agent's version left out how grading on
+template match tilted the choice toward code, and its first comment names it
+as something the full post adds. The first comment names only what the
+LinkedIn text leaves out.
+
+Answer the question a skeptical reader asks first. Arguing that the agent
+should decide raises "and the security check?", so the text says who checks
+the flag in each design.
+
+The Missing Test Suite walks through the review loop step by step, the approval
+rate it aims to raise, and which part of the review tool to build yourself. Its
+LinkedIn version keeps one message, that coding agents moved the bottleneck to
+the experts who can judge a reply, and the first comment says what the full
+post adds.
+
+When the blog post changes later, change the LinkedIn version only where its
+message or supporting points changed. Don't carry every new detail across.
+
+## Writing the text
+
+- **Plain text only.** LinkedIn does not render Markdown: `**bold**`, `#`
+  headings, `[links](...)` and tables show up literally. Use line breaks and
+  short paragraphs. No Unicode "bold" letters: screen readers spell them out and
+  search does not match them.
+- **The first ~200 characters must work alone** and make someone tap "see
+  more". No preamble such as "I wrote a new blog post".
+- **Same voice as the blog:** first person, concrete, no hype or engagement
+  bait ("Agree?", "Thoughts? 👇"). Keep the post's claims; do not add new ones.
+- **Lead with what I think, not with what went wrong.** Put the position
+  first and the project behind it as the experience it comes from, as The
+  Missing Test Suite's version does ("On a support automation I built…", "My
+  own job was designing the system"). An opening like "we did X; next time I
+  would do the other way round" reads as a confession; the same facts told as
+  where I found a design breaks read as expertise. Don't claim more projects
+  or experience than the post describes: a design I recommend but haven't run
+  stays in "would", and one the team only tried is "tried", not "built".
+- **Say what a term means where it first appears**, in a clause, not a
+  definition paragraph. Workflow or Agent can't assume readers know the two
+  words, so it gives each one by who decides the next step: "When code
+  decides, it's a workflow… When the model decides which tool to call next,
+  it's an agent."
+- **One word per thing.** Once the post says "workflow", don't switch to
+  "tree" for the same thing.
+- **Use the invented example, never as the project.** The posts' running
+  example (see the root `AGENTS.md`) helps on LinkedIn too, but a LinkedIn
+  post has no room for the line saying it is invented. So the text describes
+  the project in generic terms, "a support automation I built", not "a bank's
+  support automation", and borrows the example's generic details, such as a
+  locked account. An image may show the invented names, like the review
+  screen under The Missing Test Suite's version, as an illustration of what
+  the text describes.
+- **Link to the original** at `https://danielfridljand.de/post/<slug>`, in the
+  text or in the first comment. A link in the text gets a preview card from the
+  post's `og:image` only when no image is attached. Moving it to the first
+  comment is common because links in the text are widely reported, though not
+  documented, to reduce reach.
+- **Hashtags:** 3–5 at the end, on their own line.
+- **Mentions** (`@Name`) only resolve when typed in LinkedIn's composer, so add
+  them there after pasting.
+
+## Images
+
+A post takes one image, so pick the one the message needs: the post's position,
+not a detail of the argument for it. Workflow or Agent first used its grid of
+request types and account states, which shows where the first design ran out,
+and then a figure of the recommendation itself: request types split between
+agent and workflow, with a legend that says what each term means. Mind what a
+figure implies about order: grades drawn under every bar read as verdicts on
+the design each bar is in now, so a grey workflow bar over a cross looked as
+if the workflow was failing. The cross went next to the reason instead. Another
+picture goes in a comment, one per comment, such as the review screen under The
+Missing Test Suite's version. Readers who never open the comments never see it,
+so the text points only at the post's own image.
+
+The post's image shows below the text, so a sentence that points at it has to
+make sense before the reader scrolls to it ("top right in the picture below",
+not a "cell" the text hasn't introduced). Tie the text to what the image labels:
+Workflow or Agent's "the type is common and the graders keep rejecting the
+agent's drafts for it, or its action can't be undone" are the figure's two
+labels, "Common, agent fails" and "Can't undo".
+
+Reuse the post's images under `/images/blog/<slug>/` where they fit. A crop
+made for LinkedIn goes in `src/assets/images/blog/<slug>/linkedin/` and keeps
+full resolution like every other site image (see the root `AGENTS.md`).

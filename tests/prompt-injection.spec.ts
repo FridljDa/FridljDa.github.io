@@ -41,22 +41,22 @@ test.describe('Prompt Injection Blog Post', () => {
     // Verify the title
     const title = article.locator('h1').first();
     await expect(title).toBeVisible();
-    await expect(title).toHaveText('Prompt Injection');
+    await expect(title).toHaveText('Prompt Injection: Can You Make My Chatbot Leak Its Password?');
   });
 
   test('should display hackathon challenge content', async ({ page }) => {
     const article = page.locator('article');
     
     // Verify hackathon challenge section
-    const hackathonSection = article.locator('h2', { hasText: 'The Hackathon Challenge' });
+    const hackathonSection = article.getByRole('heading', { name: 'The hackathon challenge' });
     await expect(hackathonSection).toBeVisible();
     
     // Verify challenge description - match actual blog post text with link
-    const challengeText = article.getByText(/I recently participated in a white hat hacking challenge/i);
+    const challengeText = article.getByText(/I took part in a white hat challenge/i);
     await expect(challengeText).toBeVisible();
     
     // Verify "Your Challenge" section
-    const yourChallengeSection = article.locator('h2', { hasText: 'Your Challenge' });
+    const yourChallengeSection = article.getByRole('heading', { name: 'Your challenge' });
     await expect(yourChallengeSection).toBeVisible();
     
     // Verify hint text
