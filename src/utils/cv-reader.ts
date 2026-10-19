@@ -146,7 +146,7 @@ export function cvYamlToMarkdown(): string {
 
   const publications = sections.publications;
   if (Array.isArray(publications) && publications.length > 0) {
-    out.push('## Publications');
+    out.push('## Publication');
     for (const entry of publications as CvEntry[]) {
       out.push(formatEntryBlock(entry, 'publication'));
       out.push('');

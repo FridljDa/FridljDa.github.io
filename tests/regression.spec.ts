@@ -140,7 +140,7 @@ test.describe('Regression Tests', () => {
 
   test('should display publication about air pollution disparities', async ({ page }) => {
     // Scroll to publications section
-    const publicationsSection = page.locator('#publications');
+    const publicationsSection = page.locator('#publication');
     await publicationsSection.scrollIntoViewIfNeeded();
     
     // Wait for publications to be visible
@@ -214,7 +214,7 @@ test.describe('Regression Tests', () => {
     // Verify markdown content includes expected sections
     expect(content).toMatch(/# Daniel Fridljand/i);
     expect(content).toMatch(/# Experience/i);
-    expect(content).toMatch(/# Publications/i);
+    expect(content).toMatch(/# Publication\b/i);
     expect(content).toMatch(/# Blog Posts/i);
     
     // Verify content type is markdown (check response headers)
