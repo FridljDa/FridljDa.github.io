@@ -23,7 +23,7 @@ const png = `/images/blog/animations/${name}.png`;
 {Astro.locals.confluence ? (
   <img src={png} alt={description} />
 ) : (
-  <figure class="loop-animation not-prose my-8" data-confluence-png={png} aria-label={description}>
+  <figure class="loop-animation lv-theme not-prose my-8" data-confluence-png={png} aria-label={description}>
     <LoopAnimation client:only="react" name={name}>
       <div slot="fallback" class="loop-animation-placeholder">
         <noscript><img src={png} alt={description} /></noscript>

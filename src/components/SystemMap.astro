@@ -22,7 +22,7 @@ const png = `/images/blog/${Astro.params.slug}/map-${preset}.png`;
 {Astro.locals.confluence ? (
   <img src={png} alt={description} />
 ) : (
-  <figure class:list={['system-map not-prose my-8', { small }]} data-confluence-png={png}>
+  <figure class:list={['system-map lv-theme not-prose my-8', { small }]} data-confluence-png={png}>
     <div class="frame">
       <SystemMapSvg preset={preset} id={`map-${preset}`} />
     </div>

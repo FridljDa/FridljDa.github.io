@@ -22,7 +22,7 @@ const png = `/images/blog/${Astro.params.slug}/${name}.png`;
 {Astro.locals.confluence ? (
   <img src={png} alt={description} />
 ) : (
-  <figure class="pipeline-figure not-prose my-8" data-confluence-png={png}>
+  <figure class="pipeline-figure lv-theme not-prose my-8" data-confluence-png={png}>
     <div class="frame" style={`max-width: ${width}px`}>
       <Figure />
     </div>
