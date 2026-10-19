@@ -16,6 +16,10 @@
  *   would tilt the orders towards the diagonal.
  * - forest: each signal's slope on scrap, beta-hat, with its 95% interval,
  *   against a band of slopes too small to act on.
+ * - comparison: per learner, the held-out error of the models on the signals,
+ *   with and without the ball type, minus that of the ball type alone.
+ * - x7: the orders behind X7's rejection, centred on their type, and how the
+ *   slope falls without the 5% of orders with the largest products.
  *
  * All data are made up; the post says so once. Drawn in the style of the site's other figures (palette, icons, short
  * labels); the prose explains them. Static: rendered on the server, no
@@ -578,6 +582,153 @@ function Forest() {
 }
 
 /**
+ * Results of the model comparison, per learner: the held-out mean absolute
+ * error of a model minus that of the model on the ball type alone, with the
+ * half-width of its 95% bootstrap interval, in percentage points. Positive is
+ * worse. They average to the post's 0.49 − 0.48 and 0.51 − 0.48.
+ */
+const COMPARISON: { learner: string; both: [number, number]; signals: [number, number] }[] = [
+  { learner: 'XGBoost', both: [0.012, 0.018], signals: [0.035, 0.022] },
+  { learner: 'Random forest', both: [0.008, 0.017], signals: [0.025, 0.02] },
+  { learner: 'TabICL', both: [0.01, 0.016], signals: [0.03, 0.021] },
+];
+const INPUTS = [
+  { key: 'both', label: 'Type + signals', fill: PALETTE[3] },
+  { key: 'signals', label: 'Signals only', fill: PALETTE[1] },
+] as const;
+
+const ComparisonDescription =
+  'For each of three learners, XGBoost, a random forest and TabICL: how much higher the held-out mean absolute error is than that of the same learner on the ball type alone, with a 95% interval, on a scale from −0.04 to +0.08 percentage points. Adding the signals to the ball type changes the error by about +0.01, with intervals that include zero. The signals on their own are about 0.03 worse, with intervals that mostly exclude zero. No learner gains from the signals.';
+
+function Comparison() {
+  const box = { left: 132, top: 40, right: 400, bottom: 268 };
+  const min = -0.04;
+  const max = 0.08;
+  const sx = (v: number) => box.left + ((v - min) / (max - min)) * (box.right - box.left);
+  const group = (box.bottom - box.top) / COMPARISON.length;
+  const rowY = (i: number, j: number) => box.top + i * group + group / 2 + (j - 0.5) * 26;
+
+  return (
+    <Svg viewBox="0 0 560 352" label={ComparisonDescription}>
+      <g fontSize={16} fill={color('muted')}>
+        {[-0.04, 0, 0.04, 0.08].map((t) => (
+          <g key={t}>
+            <line x1={sx(t)} x2={sx(t)} y1={box.top} y2={box.bottom} stroke={color(t === 0 ? 'node-border' : 'edge')} strokeWidth={t === 0 ? 1.5 : 1} />
+            <text x={sx(t)} y={box.bottom + 22} textAnchor="middle">
+              {signed(t)}
+            </text>
+          </g>
+        ))}
+      </g>
+      <text x={sx(0)} y={box.top - 14} textAnchor="middle" fontSize={16} fontWeight={600} fill={color('text')}>
+        Ball type alone
+      </text>
+      <g textAnchor="middle" fontSize={17} fontWeight={600} fill={color('text')}>
+        <text x={(box.left + box.right) / 2} y={box.bottom + 50}>
+          Held-out absolute error minus that of the
+        </text>
+        <text x={(box.left + box.right) / 2} y={box.bottom + 72}>
+          ball type alone (percentage points)
+        </text>
+      </g>
+
+      {COMPARISON.map((c, i) => (
+        <g key={c.learner}>
+          <text x={box.left - 14} y={(rowY(i, 0) + rowY(i, 1)) / 2} dy="0.35em" textAnchor="end" fontSize={17} fontWeight={600} fill={color('text')}>
+            {c.learner}
+          </text>
+          {INPUTS.map(({ key, label, fill }, j) => {
+            const [estimate, halfWidth] = c[key];
+            const y = rowY(i, j);
+            return (
+              <g key={key}>
+                <line x1={sx(estimate - halfWidth)} x2={sx(estimate + halfWidth)} y1={y} y2={y} stroke={fill} strokeWidth={3} strokeLinecap="round" />
+                <circle cx={sx(estimate)} cy={y} r={5.5} fill={fill} stroke={color('surface')} strokeWidth={1.5} />
+                {i === 0 && (
+                  <text x={sx(estimate + halfWidth) + 12} y={y} dy="0.35em" fontSize={16} fontWeight={600} fill={fill}>
+                    {label}
+                  </text>
+                )}
+              </g>
+            );
+          })}
+        </g>
+      ))}
+    </Svg>
+  );
+}
+
+/**
+ * X7, the one signal the GCM rejected before correction: each order's signal
+ * and scrap rate minus its ball type's averages, the signal in within-type
+ * standard deviations. Most orders follow a slope of 0.05; four far out on
+ * the signal pull the slope through all of them up to the post's 0.075. The
+ * 5% of orders with the largest products R_k are found, not placed, so the
+ * figure shows what the influence check does.
+ */
+const X7_ORDERS = (() => {
+  const rand = random(13);
+  const centre = (orders: Order[]) => {
+    const mx = orders.reduce((s, o) => s + o.x, 0) / orders.length;
+    const my = orders.reduce((s, o) => s + o.y, 0) / orders.length;
+    return orders.map((o) => ({ x: o.x - mx, y: o.y - my }));
+  };
+  const bulk = centre(Array.from({ length: 114 }, () => ({ x: normal(rand), y: 0.5 * normal(rand) })).filter((o) => Math.abs(o.x) < 2.2 && Math.abs(o.y) < 1.3));
+  const line = fit(bulk);
+  const tilted = bulk.map((o) => ({ ...o, y: o.y + (0.05 - (line(1) - line(0))) * o.x }));
+  const far: Order[] = [
+    [2.8, 1],
+    [2.5, 1],
+    [-2.7, -1],
+    [-2.4, -1],
+  ].map(([x, y]) => ({ x, y }));
+  // Scale the far orders' scrap so the slope through all orders is exactly 0.075.
+  const sum = (orders: Order[], f: (o: Order) => number) => orders.reduce((s, o) => s + f(o), 0);
+  const xx = (o: Order) => o.x * o.x;
+  const xy = (o: Order) => o.x * o.y;
+  const k = (0.075 * (sum(tilted, xx) + sum(far, xx)) - sum(tilted, xy)) / sum(far, xy);
+  const orders = [...tilted, ...far.map((o) => ({ ...o, y: k * o.y }))];
+  const cut = [...orders].sort((a, b) => Math.abs(xy(b)) - Math.abs(xy(a)))[Math.round(0.05 * orders.length) - 1];
+  return orders.map((o) => ({ ...o, top: Math.abs(xy(o)) >= Math.abs(xy(cut)) }));
+})();
+
+const X7Description =
+  'Signal X7 against scrap, each order as its difference from its ball type\'s averages: the signal in within-type standard deviations from −3 to +3, scrap in percentage points from −1.5 to +1.5. A solid line through all orders has the slope 0.075. Six orders, the 5% with the largest products of the two differences, are highlighted; four of them lie far out on the signal, two on each side. A dashed line through the other orders is nearly flat, with the slope 0.02.';
+
+function X7() {
+  const box = { left: 64, top: 40, right: 400, bottom: 290 };
+  const x: Axis = { min: -3, max: 3, ticks: [-3, -2, -1, 0, 1, 2, 3], format: signed, label: 'Signal − type average (standard deviations)' };
+  const y: Axis = { min: -1.5, max: 1.5, ticks: [-1, 0, 1], format: signed, label: 'Scrap rate − type average (percentage points)' };
+  const { sx, sy } = scales(box, x, y);
+  const lines = [
+    { label: 'All orders', line: fit(X7_ORDERS), dash: undefined },
+    { label: 'Without the 5%', line: fit(X7_ORDERS.filter((o) => !o.top)), dash: '6 4' },
+  ];
+  return (
+    <Svg viewBox="0 0 560 352" label={X7Description}>
+      <Axes box={box} x={x} y={y} />
+      {X7_ORDERS.filter((o) => !o.top).map((o, i) => (
+        <Dot key={i} x={sx(o.x)} y={sy(o.y)} fill={PALETTE[3]} />
+      ))}
+      {X7_ORDERS.filter((o) => o.top).map((o, i) => (
+        <circle key={i} cx={sx(o.x)} cy={sy(o.y)} r={6} fill={color('warn')} stroke={color('surface')} strokeWidth={1.5} />
+      ))}
+      {lines.map(({ label, line, dash }) => (
+        <g key={label}>
+          <path d={`M${sx(-2.8)},${sy(line(-2.8))} L${sx(2.8)},${sy(line(2.8))}`} stroke={color('text')} strokeWidth={2} strokeDasharray={dash} />
+          <text x={sx(2.8) + 10} y={sy(line(2.8)) + (dash ? 10 : -10)} dy="0.35em" fontSize={16} fill={color('text')}>
+            {label}
+          </text>
+        </g>
+      ))}
+      <text x={sx(-2.9)} y={sy(1.3)} dy="0.35em" fontSize={16} fontWeight={600} fill={color('warn')}>
+        Largest 5% of products
+      </text>
+    </Svg>
+  );
+}
+
+/**
  * `width` caps the figure on wide screens, about its own size, so its type
  * doesn't grow past the post's body text.
  */
@@ -589,6 +740,8 @@ export const FIGURES = {
   cancel: { component: Cancel, description: CancelDescription, width: 600 },
   residual: { component: Residual, description: ResidualDescription, width: 420 },
   forest: { component: Forest, description: ForestDescription, width: 600 },
+  comparison: { component: Comparison, description: ComparisonDescription, width: 600 },
+  x7: { component: X7, description: X7Description, width: 600 },
 } satisfies Record<string, { component: ComponentType; description: string; width: number }>;
 
 export type FigureName = keyof typeof FIGURES;
