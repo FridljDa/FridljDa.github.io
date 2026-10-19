@@ -90,14 +90,16 @@ $$
 &\overset{(1)}{=} \mathbb{E}\big[(X_i - \mu_i(Z))\, Y \mid Z\big] \\
 &\overset{(2)}{=} \mathbb{E}\big[(X_i - \mu_i(Z))\, \mathbb{E}[Y \mid X_i, Z] \mid Z\big] \\
 &\overset{(3)}{=} \mathbb{E}\big[(X_i - \mu_i(Z))\, \mathbb{E}[Y \mid Z] \mid Z\big] \\
-&\overset{(4)}{=} \mathbb{E}[Y \mid Z]\; \mathbb{E}\big[X_i - \mu_i(Z) \mid Z\big] = 0.
+&\overset{(4)}{=} \mathbb{E}[Y \mid Z]\; \mathbb{E}\big[X_i - \mu_i(Z) \mid Z\big] \\
+&\overset{(5)}{=} \mathbb{E}[Y \mid Z] \cdot 0 = 0.
 \end{aligned}
 $$
 
 1. **Definition.** The covariance is $\mathbb{E}\big[(X_i - \mu_i(Z))(Y - \mathbb{E}[Y \mid Z]) \mid Z\big]$. Given $Z$, $\mathbb{E}[Y \mid Z]$ is a constant, and a constant times the deviation averages to zero, so the second centring can be dropped.
 2. **Average in two stages.** First average $Y$ over orders with the same signal value and ball type, then over the signal values. Given $X_i$ and $Z$, the deviation $X_i - \mu_i(Z)$ is known, so only $Y$ is replaced by its average.
 3. **The first implication.** $\mathbb{E}[Y \mid X_i, Z] = \mathbb{E}[Y \mid Z]$: the signal doesn't move the mean.
-4. **Constant again.** $\mathbb{E}[Y \mid Z]$ depends on $Z$ only, so it comes out of the average, and what remains is the deviation, which averages to zero.
+4. **Take out what is known.** $\mathbb{E}[Y \mid Z]$ depends on $Z$ only, so given $Z$ it is a fixed number and moves outside the average, as in step 1. In its simplest case, $\mathbb{E}\big[\mathbb{E}[Y \mid Z] \mid Z\big] = \mathbb{E}[Y \mid Z]$: averaging twice given the same thing is averaging once.
+5. **The deviation averages to zero** within each ball type, by the choice of $\mu_i(Z)$.
 
 Neither step reverses, so either implication can hold while the signal still matters:
 
