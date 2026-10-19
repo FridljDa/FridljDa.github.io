@@ -88,7 +88,7 @@ export function publicationsToMarkdown(): string {
     return parts.join('\n\n');
   });
 
-  return `# Publications
+  return `# Publication
 
 ${publications.join('\n\n')}`;
 }
