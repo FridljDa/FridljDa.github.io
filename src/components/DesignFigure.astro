@@ -22,7 +22,7 @@ const png = `/images/blog/${Astro.params.slug}/${name}.png`;
 {Astro.locals.confluence ? (
   <img src={png} alt={description} />
 ) : (
-  <figure class="design-figure not-prose my-8" data-confluence-png={png}>
+  <figure class="design-figure lv-theme not-prose my-8" data-confluence-png={png}>
     <div class="frame">
       <DesignFigureSvg name={name} id={name} />
     </div>

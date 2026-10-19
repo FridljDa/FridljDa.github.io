@@ -1,17 +1,8 @@
-/* Theme for the Remotion compositions in src/remotion/ and the drawn figures
-   (system map, pipeline map, pipeline figures, scrap figures, decision map and figures, design map and figures, auth map and figures), which read these variables and
-   fall back to the light values when rendered elsewhere. */
-.loop-animation,
-.system-map,
-.pipeline-map,
-.pipeline-figure,
-.scrap-figure,
-.decision-map,
-.decision-figure,
-.design-map,
-.design-figure,
-.auth-map,
-.auth-figure {
+/* Theme for the Remotion compositions in src/remotion/ and the drawn figures,
+   which read these variables and fall back to the light values when rendered
+   elsewhere. A figure gets them from the lv-theme class on its root element,
+   so a new figure needs no change here. */
+.lv-theme {
   --lv-surface: #ffffff;
   --lv-text: #1f2937;
   --lv-muted: #6b7280;
@@ -26,17 +17,7 @@
   --lv-bad: #e76f51;
   --lv-warn: #e9a23b;
 }
-.dark .loop-animation,
-.dark .system-map,
-.dark .pipeline-map,
-.dark .pipeline-figure,
-.dark .scrap-figure,
-.dark .decision-map,
-.dark .decision-figure,
-.dark .design-map,
-.dark .design-figure,
-.dark .auth-map,
-.dark .auth-figure {
+.dark .lv-theme {
   --lv-surface: #111827;
   --lv-text: #f3f4f6;
   --lv-muted: #9ca3af;

@@ -23,7 +23,7 @@ const png = `/images/blog/${Astro.params.slug}/map-${preset}.png`;
 {Astro.locals.confluence ? (
   <img src={png} alt={description} />
 ) : (
-  <figure class="design-map not-prose my-8" data-confluence-png={png}>
+  <figure class="design-map lv-theme not-prose my-8" data-confluence-png={png}>
     <div class="frame">
       <DesignMapSvg preset={preset} id={`map-${preset}`} />
     </div>

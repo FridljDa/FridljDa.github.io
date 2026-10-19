@@ -5,7 +5,9 @@
 All figures within a blog post share one visual style: the palette in
 `loop-animation.css`, the icons in `src/remotion/shared.tsx`, and short labels
 instead of explanatory text inside figures. Explanations go in the post's prose
-or a caption.
+or a caption. A figure takes the palette by putting the `lv-theme` class on its
+root element (`<figure class="quote-map lv-theme not-prose my-8">`); don't add
+its own class to `loop-animation.css`.
 
 - **Mockups:** raster mockups come from `scripts/mockups/` via
   `npm run mockup:png`, in a light and a dark version, and are shown with

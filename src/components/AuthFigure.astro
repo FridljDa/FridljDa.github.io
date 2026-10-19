@@ -22,7 +22,7 @@ const png = `/images/blog/${Astro.params.slug}/${name}.png`;
 {Astro.locals.confluence ? (
   <img src={png} alt={description} />
 ) : (
-  <figure class="auth-figure not-prose my-8" data-confluence-png={png}>
+  <figure class="auth-figure lv-theme not-prose my-8" data-confluence-png={png}>
     <div class="frame">
       <AuthFigureSvg name={name} id={name} />
     </div>
