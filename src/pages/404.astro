@@ -1,0 +1,31 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { SITE } from '../data/site';
+---
+
+<Layout
+  title={`Page not found - ${SITE.title}`}
+  description="The page you requested could not be found."
+  url={`${SITE.url}/404`}
+>
+  <section class="container mx-auto px-4 py-24 text-center max-w-xl">
+    <h1 class="text-5xl font-bold mb-4 text-heading">404</h1>
+    <p class="text-xl text-muted mb-8">
+      The page you are looking for does not exist or may have been moved.
+    </p>
+    <div class="flex flex-col sm:flex-row gap-4 justify-center">
+      <a
+        href="/"
+        class="inline-flex items-center justify-center px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+      >
+        Back to home
+      </a>
+      <a
+        href="/#posts"
+        class="inline-flex items-center justify-center px-6 py-3 border border-surface rounded-lg text-heading hover:bg-surface-alt transition-colors"
+      >
+        Browse posts
+      </a>
+    </div>
+  </section>
+</Layout>

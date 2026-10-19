@@ -11,104 +11,90 @@ export interface ExperienceItem {
 
 export const EXPERIENCE: ExperienceItem[] = [
   {
-    title: 'Software Consultant - Applied AI',
+    title: 'AI Engineer - Software Consultant',
     company: 'TNG Technology Consulting',
     companyUrl: 'https://www.tngtech.com/en/',
     companyLogo: 'tng_logo.svg',
     location: 'Munich, Germany',
     dateStart: '2025-12-01',
-    description: `* Architected a production-grade LLM-powered document validation system, integrating a three-stage cleaning pipeline and semantic text splitting for parallelized processing.
-* Designed an AI-powered customer support automation system (PoC) handling 2000+ tickets with 20 distinct intent categories, bridging natural language understanding with deterministic business logic.
-* Deployed solutions on Kubernetes with CI/CD pipelines, ensuring high availability and scalability for enterprise clients.
-* Tech Stack: Python, Streamlit, Docker, Kubernetes, PydanticAI, DSPy, Snakemake.`,
+    description: `* **Industrial Process Intelligence (Aug 2026 – present)**: Sole engineer on a scrap-rate prediction proof of concept for an industrial manufacturer. Benchmarked ~40 model and feature combinations under time-ordered cross-validation; order attributes fixed at booking predicted scrap as well as the full sensor set, making raw-material batch tracking the top data request to the client, ahead of new sensors.
+* **Retail Cashier-Fraud Detection (Jul 2026 – present)**: Scaled unsupervised point-of-sale anomaly scoring from a 7-store sample to a retail client's full estate by moving aggregation into SQL Server (~29.8M receipts to ~203K cashier-day rows), ranking cashiers comparably to the incumbent rule system without per-customer rule configuration.
+* **Sandboxed Agent Platform (Jun 2026 – present)**: One of three developers on a self-hosted platform (Tauri/React, Rust) that lets non-technical colleagues run agentic workflows on sensitive local files. It cleared a 15-person adversarial red team, unlocking expansion from a 10-user pilot to a full department.
+* **Document Validation and Email-to-Order Parsing (Apr – Jun 2026)**: Co-developed an LLM offer-review service on Kubernetes that inserts review comments directly into uploaded .docx offers, and designed an email-to-order pipeline (FastAPI, Streamlit review) with multimodal attachment handling.
+* **Customer Support Automation (Dec 2025 – Apr 2026, live in production)**: Sole AI engineer from discovery to live rollout at a cinema-ticketing SaaS. A hybrid deterministic/agentic workflow on Temporal drafts each resolution for staff review before customer contact: 811 tickets in its first three months at 86.6% reviewer approval.`,
   },
   {
-    title: 'Software Consultant - Enterprise Modernization',
+    title: 'Platform Engineer - Software Consultant',
     company: 'TNG Technology Consulting',
     companyUrl: 'https://www.tngtech.com/en/',
     companyLogo: 'tng_logo.svg',
     location: 'Munich, Germany',
     dateStart: '2024-12-01',
     dateEnd: '2025-12-01',
-    description: `* Modernizing and developing a supply chain management application within an international development team
-* Selected by the team to participate in Program Increment (PI) planning sessions, contributing to strategic planning and cross-team coordination
-* Maintaining up CI pipelines based on Jenkins, particularly the OWASP scan
-* Driving initiatives to address developer pain points across teams, reducing artifactory pipeline runtime from 8 hours to 30 seconds, minimizing wait times for feature developers using new libraries
-* Creating synergies between feature teams working on different applications
-* Navigating complex client projects with diverse stakeholder teams and legacy system constraints
-* Full-stack development using Java 17, JBoss, Spring, Oracle DB, Gradle, JUnit, Docker, Podman, Jenkins, React, and TypeScript
-* Co-organizing and contributing to the internal "AI Tool of the Week" blog series, providing weekly summaries of AI advancements including AI-assisted coding, agentic workflows, and multi-modal processing tools`,
+    description: `* Contributed to modernizing a supply-chain application from Java 8 to 17 and JBoss to WildFly, and migrated an internal virus-scanning service from SOAP to REST with Keycloak authentication.
+* Deployed a JFrog Artifactory proxy in 3 days after it had been scoped as a multi-month migration, cutting a recurring CI step from 8 hours to 30 seconds and saving each developer ~1–2 hours a week.
+* Built the CVE dashboards (OWASP scans in Jenkins, Prometheus, Grafana) that lead developers used to show modernization progress to management.
+* Became the team's reference point for AI tooling: ran a coding-assistant workshop for 20 colleagues and wrote three editions of TNG's firm-wide AI Tool of the Week, which led to my move into AI engineering.`,
   },
   {
-    title: 'Research Assistant',
+    title: 'Research Data Analyst - Computational Oncology',
     company: 'ETH Zürich',
-    companyUrl: 'https://applied.math.yale.edu/',
+    companyUrl: 'https://bsse.ethz.ch/',
     companyLogo: 'ETH_Logo.svg',
     location: 'Basel, Switzerland',
     dateStart: '2024-02-01',
     dateEnd: '2024-09-30',
-    description: `* Researching statistical methods for mutational patterns estimation with tree structures in the lab of [Niko Beerenwinkel](https://bsse.ethz.ch/cbg/group.html) with focus on data from the [Tumor Profiler](https://eth-nexus.github.io/tu-pro_website/).
-* Lecture on Statistical Models in Computational Biology covering hidden Markov models, EM algorithm, Variational inference.
-* I developed a novel Bayesian model using Hierarchical Dirichlet Processes (HDP) to analyze mutational signatures by integrating data from evolutionary trees. The model is designed to leverage the phylogenetic relationships between cancer subclones, assuming that evolutionarily closer cells exhibit more similar mutational signature activities. This non-parametric approach learns the number of signatures directly from the data while using the tree structure as a prior to guide the estimation of signature activities. A prototype was implemented and applied to single-cell sequencing data, allowing for the simultaneous discovery of signatures and the mapping of their activities across the cellular phylogeny. My blog post can be found [here](https://danielfridljand.de/post/mutational-signature-with-hierarchical-dirichlet-process/).`,
+    description: `* Extended a Bayesian non-parametric model (Hierarchical Dirichlet Process) with phylogenetic tree structure in R, so each subclone's signature distribution is drawn from its parent's.
+* Applied it to whole-exome data from 187 cells across 10 melanoma tumors in the Tumor Profiler Study, identifying eight latent mutational signatures.
+* Showed that reference signatures derived from bulk sequencing do not transfer to sparse single-cell data without informative priors.`,
   },
   {
-    title: 'Research Assistant',
-    company: 'Stanford University',
+    title: 'Research Data Analyst - Environmental Epidemiology',
+    company: 'Stanford University School of Medicine',
     companyUrl: 'https://www.stanford.edu/',
     companyLogo: 'Stanford_Cardinal_logo.svg',
     location: 'Palo Alto, USA',
     dateStart: '2023-07-01',
-    dateEnd: '2023-11-30',
-    description: `* Led the end-to-end statistical analysis for a landmark study on US health disparities, resulting in a [first-author publication in Nature Medicine](https://www.nature.com/articles/s41591-024-03117-0)
-* Analyzed the role of air pollution in the race-ethnicity to premature mortality causal chain, under [Pascal Geldsetzer](https://profiles.stanford.edu/pascal-geldsetzer)'s guidance
-* Spearheaded the project with minimal supervision, [implementing](https://github.com/FridljDa/pm25_inequality) comprehensive statistical analysis in R and synthesizing findings from 150 pertinent publications
-* <details><summary>Key achievements and detailed contributions</summary>
-  <ul>
-  <li>Harmonized geospatial and tabular data on air pollution, mortality, population numbers, and orchestrated analyses of 10 different steps.</li>
-  <li>Executed major revisions of the manuscript and conducted new analyses, including 15 new figures, within a strict 2-month deadline as part of the 'Revise and Resubmit' response.</li>
-  <li>Developed an interactive <a href="https://github.com/FridljDa/ui_pm_attributable">Shiny web application</a> to visualize 17-dimensional data, enhancing collaboration and data interpretation among the research team.</li>
-  <li>Collaborated with seven Stanford co-authors to systematically gather and integrate critical feedback throughout various project stages, driving a significant enhancement in research quality.</li>
-  </ul>
-  </details>`,
+    dateEnd: '2023-12-31',
+    description: `* Led the statistical analysis as co-first author of a [*Nature Medicine* paper](https://www.nature.com/articles/s41591-024-03117-0) (2024), cited 66 times: over half the Black–White age-adjusted mortality gap in the US is attributable to air pollution.
+* Engineered a [reproducible pipeline](https://github.com/FridljDa/pm25_inequality) harmonizing 63M+ death records with satellite pollution estimates and census demographics across 3,000+ US counties and 27 years (1990–2016).
+* Built and open-sourced an R Shiny application that lets readers explore the published estimates without writing code.`,
   },
   {
-    title: 'Exchange student',
+    title: 'Exchange Scholar',
     company: 'Yale University',
     companyUrl: 'https://www.yale.edu/',
     companyLogo: 'Yale_University_Shield_1.svg',
     location: 'New Haven, USA',
-    dateStart: '2022-09-01',
-    dateEnd: '2023-05-30',
-    description: `Chosen as one of two Master's students to represent the University of Heidelberg in a year-long study abroad program at Yale University. Hosted by the [Applied Mathematics Program](https://applied.math.yale.edu/). Advised by [Smita Krishnaswamy](https://krishnaswamylab.org/). Course work on Geometric & Topological Methods in Machine Learning, Differentiable Manifolds, Deep Learning, Statistical Methods in Human Genetics`,
+    dateStart: '2022-08-01',
+    dateEnd: '2023-05-31',
+    description: `* Selected as one of two university-wide representatives from Heidelberg for the year-long exchange; DAAD stipend.
+* Grade: Honors (full marks).
+* Coursework: Deep Learning, Geometric & Topological Methods in Machine Learning (Prof. Smita Krishnaswamy), Differentiable Manifolds, Statistical Methods in Human Genetics.`,
   },
   {
-    title: 'Research Assistant',
+    title: 'Research Data Analyst - Statistical Genomics (Master\'s Thesis)',
     company: 'European Molecular Biology Laboratory',
     companyUrl: 'https://www.embl.org/',
     companyLogo: 'European_Molecular_Biology_Laboratory_Logo.svg',
     location: 'Heidelberg, Germany',
     dateStart: '2021-10-01',
     dateEnd: '2022-05-31',
-    description: `* Developed IHW-Forest, a scalable solution to the "curse of dimensionality" that previously limited the standard [IHW method](https://bioconductor.org/packages/release/bioc/html/IHW.html) for high-dimensional datasets.
-* Supervised by [Wolfgang Huber](https://www.huber.embl.de/) and [Nikos Ignatiadis](https://nignatiadis.github.io/).
-* Designed an innovative stratification algorithm that automatically selects and ranks informative covariates, enhancing robustness to noisy and unknown features in real-world data.
-* Led the project from inception to dissemination, presenting results at seven scientific events, including invited talks at [Yale University](https://www.yale.edu/), [University of North Carolina at Chapel Hill](https://www.unc.edu/), and a competitively selected oral presentation at [DAGStat 2022](https://www.dagstat2022.uni-hamburg.de/bilder/booklet.pdf) before 100 scholars.
-* Applied IHW-Forest in a large-scale production analysis of 16 billion genetic tests, utilizing 11 covariates to boost the discovery of significant SNP-histone associations by over 30% compared to alternative methods.
-* Incorporated concepts from selective inference, machine learning, and empirical Bayes.
-* Served as a peer reviewer for Bioinformatics Advances and Cell Biology.`,
+    description: `* Developed **IHW-Forest**, a multiple-testing method using random forests for hypothesis weighting, yielding >30% more discoveries than standard corrections on 16 billion genetic association tests.
+* Optimized the core splitting and weighting logic in C++ via Rcpp.
+* Presented in seminars at Yale and UNC Chapel Hill and in a competitively selected talk at DAGStat 2022; peer-reviewed for Bioinformatics Advances and Cell Biology.`,
   },
   {
-    title: 'Master Student in Mathematics',
-    company: 'Heidelberg University',
+    title: 'M.Sc. in Mathematics',
+    company: 'University of Heidelberg',
     companyUrl: 'https://www.uni-heidelberg.de/en',
     companyLogo: 'Logo_University_of_Heidelberg.svg',
     location: 'Heidelberg, Germany',
     dateStart: '2020-10-01',
-    dateEnd: '2023-06-01',
-    description: `* Final Grade: 1.0
-* Thesis advisor: Dr. Wolfgang Huber (EMBL), Prof. Dr. Jan Johannes
-* Thesis title: Better Multiple Testing: Using multivariate co-data for hypotheses
-* Course work on high-dimensional statistics, Probability theory, nonparametric and parametric statistics, Algebraic Topology.`,
+    dateEnd: '2023-05-31',
+    description: `* Grade: 1.0 (full marks).
+* Master's thesis: 'Better multiple Testing: Using multivariate co-data for hypothesis weighting', conducted at EMBL.
+* Awards: Gerhard C. Starck Foundation Stipend, Baden-Württemberg Stipend.`,
   },
   {
     title: 'Exchange Student',
@@ -121,19 +107,14 @@ export const EXPERIENCE: ExperienceItem[] = [
     description: `* Graduate-level coursework in Functional Analysis, Algebraic Combinatorics, and Quantitative Models at the Einstein Institute of Mathematics.`,
   },
   {
-    title: 'Bachelor Student in Mathematics',
-    company: 'Heidelberg University',
+    title: 'B.Sc. in Mathematics',
+    company: 'University of Heidelberg',
     companyUrl: 'https://www.uni-heidelberg.de/en',
     companyLogo: 'Logo_University_of_Heidelberg.svg',
     location: 'Heidelberg, Germany',
     dateStart: '2017-10-01',
     dateEnd: '2020-09-30',
-    description: `* Final grade: 1.4
-* Thesis advisor: Prof. Dr. Jan Johannes
-* Thesis title: Online Estimation of the Geometric Median in Hilbert Spaces
-* Thesis summary: Mathematically analyzed a novel, efficient algorithm for estimating the geometric median in Hilbert spaces, proving its almost sure consistency, convergence rate, and asymptotic normality.
-* Minor in Computer Science
-* Coursework in Statistics, Algorithms and Data Structures, Linear Algebra, Abstract Algebra`,
+    description: `* Grade: 1.4 (top 10% of cohort).
+* Bachelor's thesis: 'Online estimation of the geometric median in a Hilbert space'.`,
   },
 ];
-

@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import type { Locator } from '@playwright/test';
+import { expandChatAndAcceptConsent } from './helpers/chat';
 
 /**
  * Helper function to get the "View as Markdown" button from an article element.
@@ -18,19 +19,15 @@ test.describe('Regression Tests', () => {
   });
 
   test('should navigate to posts section when clicking on Posts link', async ({ page }) => {
-    // Skip on mobile devices where navigation links are hidden
-    const projectName = test.info().project.name;
-    test.skip(projectName === 'iPhone 13' || projectName === 'Pixel 5', 'Navigation links hidden on mobile');
-    
-    // Wait for page to load
     await page.waitForLoadState('domcontentloaded');
-    
-    // Find the "Posts" navigation link in the header (not the section heading)
-    const postsLink = page.getByRole('navigation').getByRole('link', { name: /Posts/i });
-    await expect(postsLink).toBeVisible();
-    
-    // Click on the Posts link
-    await postsLink.click();
+
+    const menuButton = page.getByRole('button', { name: /Open menu/i });
+    if (await menuButton.isVisible()) {
+      await menuButton.click();
+      await page.locator('#mobile-nav-menu').getByRole('link', { name: 'Posts', exact: true }).click();
+    } else {
+      await page.getByRole('navigation').getByRole('link', { name: 'Posts', exact: true }).click();
+    }
     
     // Wait for posts section to be in viewport (replaces arbitrary timeout)
     const postsSection = page.locator('#posts');
@@ -76,53 +73,28 @@ test.describe('Regression Tests', () => {
   });
 
   test('should have chat widget present on the page', async ({ page }) => {
-    // Wait for the page and chat widget to load
     await page.waitForLoadState('domcontentloaded');
     await page.waitForLoadState('networkidle');
-    
-    // Check if chat is minimized (mobile devices auto-minimize)
-    const minimizedButton = page.locator('button[aria-label="Open chat"]');
-    const isMinimized = await minimizedButton.isVisible().catch(() => false);
-    
-    if (isMinimized) {
-      // Chat is minimized, click to expand
-      await minimizedButton.click();
-      // Wait for chat widget to expand - wait for the form to appear
-      const chatForm = page.locator('[data-testid="chat-form"]');
-      await expect(chatForm).toBeVisible({ timeout: 5000 });
-    }
-    
-    // Wait for chat input to be visible (replaces arbitrary timeout)
-    const chatInput = page.locator('input[placeholder*="Ask about skills"]');
+    await expandChatAndAcceptConsent(page);
+
+    const chatForm = page.locator('[data-testid="chat-form"]');
+    await expect(chatForm).toBeVisible({ timeout: 5000 });
+
+    const chatInput = page.locator('#chat-input');
     await expect(chatInput).toBeVisible({ timeout: 10000 });
-    
-    // Verify chat widget container is present
+
     const chatContainer = page.locator('div').filter({ hasText: /Ask me anything about Daniel/i }).or(
-      page.locator('form').filter({ has: page.locator('input[placeholder*="Ask about skills"]') })
+      page.locator('form').filter({ has: page.locator('#chat-input') })
     );
     await expect(chatContainer.first()).toBeAttached();
   });
 
   test('should interact with chat widget and get response', async ({ page }) => {
-    // Wait for the page and chat widget to load
     await page.waitForLoadState('domcontentloaded');
     await page.waitForLoadState('networkidle');
-    
-    // Check if chat is minimized (mobile devices auto-minimize)
-    const minimizedButton = page.locator('button[aria-label="Open chat"]');
-    const isMinimized = await minimizedButton.isVisible().catch(() => false);
-    
-    if (isMinimized) {
-      // Chat is minimized, click to expand
-      await minimizedButton.click();
-      // Wait for chat widget to expand - wait for the form to appear
-      const chatForm = page.locator('form').filter({ has: page.locator('input[placeholder*="Ask about skills"]') });
-      await expect(chatForm).toBeVisible({ timeout: 5000 });
-    }
-    
-    // Wait for chat input to be visible and enabled (replaces arbitrary timeout)
-    const chatInput = page.locator('input[placeholder*="Ask about skills"]');
-    await expect(chatInput).toBeVisible({ timeout: 10000 });
+    await expandChatAndAcceptConsent(page);
+
+    const chatInput = page.locator('#chat-input');
     await expect(chatInput).toBeEnabled({ timeout: 5000 });
     
     // Type a question - use pressSequentially() to trigger React onChange events properly
@@ -168,7 +140,7 @@ test.describe('Regression Tests', () => {
 
   test('should display publication about air pollution disparities', async ({ page }) => {
     // Scroll to publications section
-    const publicationsSection = page.locator('#publications');
+    const publicationsSection = page.locator('#publication');
     await publicationsSection.scrollIntoViewIfNeeded();
     
     // Wait for publications to be visible
@@ -242,7 +214,7 @@ test.describe('Regression Tests', () => {
     // Verify markdown content includes expected sections
     expect(content).toMatch(/# Daniel Fridljand/i);
     expect(content).toMatch(/# Experience/i);
-    expect(content).toMatch(/# Publications/i);
+    expect(content).toMatch(/# Publication\b/i);
     expect(content).toMatch(/# Blog Posts/i);
     
     // Verify content type is markdown (check response headers)
@@ -371,6 +343,89 @@ test.describe('Regression Tests', () => {
     // Try to access a non-existent blog post markdown
     const response = await page.goto('/post/non-existent-post.md');
     expect(response?.status()).toBe(404);
+  });
+
+  test('should include security headers', async ({ request }) => {
+    const projectName = test.info().project.name;
+    test.skip(projectName === 'iPhone 13' || projectName === 'iPad Pro' || projectName === 'Pixel 5', 'Server-side functionality, only needs desktop testing');
+
+    const response = await request.get('/');
+    expect(response.status()).toBe(200);
+    const headers = response.headers();
+    expect(headers['strict-transport-security']).toContain('max-age');
+    expect(headers['x-content-type-options']).toBe('nosniff');
+    expect(headers['content-security-policy']).toContain("frame-ancestors 'none'");
+    expect(headers['cache-control']).toContain('max-age=0');
+    expect(headers['cache-control']).toContain('must-revalidate');
+  });
+
+  test('should preserve immutable cache headers on fingerprinted assets', async ({ request }) => {
+    const projectName = test.info().project.name;
+    test.skip(projectName === 'iPhone 13' || projectName === 'iPad Pro' || projectName === 'Pixel 5', 'Server-side functionality, only needs desktop testing');
+
+    const homeResponse = await request.get('/');
+    const homeHtml = await homeResponse.text();
+    const assetMatch = homeHtml.match(/\/_astro\/[^"']+\.css/);
+    expect(assetMatch).not.toBeNull();
+
+    const assetResponse = await request.get(assetMatch![0]);
+    expect(assetResponse.status()).toBe(200);
+    expect(assetResponse.headers()['cache-control']).toContain('immutable');
+  });
+
+  test('should show branded 404 page for unknown routes', async ({ request }) => {
+    const projectName = test.info().project.name;
+    test.skip(projectName === 'iPhone 13' || projectName === 'iPad Pro' || projectName === 'Pixel 5', 'Server-side functionality, only needs desktop testing');
+
+    const response = await request.get('/nonexistent-page-xyz-audit');
+    expect(response.status()).toBe(404);
+    const body = await response.text();
+    expect(body).toContain('Back to home');
+    expect(body).toContain('Browse posts');
+  });
+
+  test('should show branded 500 page for server errors', async ({ request }) => {
+    const projectName = test.info().project.name;
+    test.skip(projectName === 'iPhone 13' || projectName === 'iPad Pro' || projectName === 'Pixel 5', 'Server-side functionality, only needs desktop testing');
+
+    const response = await request.get('/500');
+    expect(response.status()).toBe(500);
+    const body = await response.text();
+    expect(body).toContain('Back to home');
+    expect(body).toContain('Browse posts');
+  });
+
+  test('should show mobile nav menu with keyboard accessibility', async ({ page }) => {
+    const projectName = test.info().project.name;
+    test.skip(projectName !== 'iPhone 13' && projectName !== 'Pixel 5', 'Mobile-only navigation test');
+
+    await page.waitForLoadState('domcontentloaded');
+
+    const menuButton = page.locator('#mobile-nav-toggle');
+    await expect(menuButton).toBeVisible();
+    await expect(menuButton).toHaveAttribute('aria-expanded', 'false');
+    await expect(menuButton).toHaveAttribute('aria-label', 'Open menu');
+
+    const desktopNav = page.locator('nav ul.hidden.md\\:flex');
+    await expect(desktopNav).toBeHidden();
+
+    await menuButton.focus();
+    await page.keyboard.press('Enter');
+    await expect(menuButton).toHaveAttribute('aria-expanded', 'true');
+    await expect(menuButton).toHaveAttribute('aria-label', 'Close menu');
+    await expect(page.locator('#mobile-nav-menu')).toBeVisible();
+
+    await page.keyboard.press('Escape');
+    await expect(menuButton).toHaveAttribute('aria-expanded', 'false');
+    await expect(page.locator('#mobile-nav-menu')).toBeHidden();
+    await expect(menuButton).toBeFocused();
+
+    await menuButton.click();
+    await page.locator('#mobile-nav-menu').getByRole('link', { name: 'Posts', exact: true }).click();
+
+    const postsSection = page.locator('#posts');
+    await expect(postsSection).toBeVisible();
+    await expect(postsSection).toBeInViewport();
   });
 
   test('should have Suggest changes link on blog post page', async ({ page }) => {
@@ -531,4 +586,3 @@ test.describe('Regression Tests', () => {
     }
   });
 });
-

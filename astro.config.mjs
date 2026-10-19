@@ -14,6 +14,14 @@ export default defineConfig({
   // AI discoverability: Site URL configuration for proper canonical URLs and structured data
   site: 'https://danielfridljand.de',
   base: '/',
+
+  // The Missing Compiler was renamed The Missing Test Suite; keep its old links working.
+  redirects: {
+    '/post/the-missing-compiler': '/post/the-missing-test-suite',
+    '/post/the-missing-compiler/linkedin': '/post/the-missing-test-suite/linkedin',
+    '/post/the-missing-compiler/confluence': '/post/the-missing-test-suite/confluence',
+    '/post/the-missing-compiler.md': '/post/the-missing-test-suite.md',
+  },
   // Enable Server-Side Rendering
   output: 'server',
   
@@ -30,7 +38,12 @@ export default defineConfig({
   ],
   
   vite: {
-    plugins: [tailwind()]
+    plugins: [tailwind()],
+    // Pre-bundled at startup: otherwise the dev server discovers Remotion on a
+    // post's first visit, re-bundles it, and fails that page's requests with 504.
+    optimizeDeps: {
+      include: ['remotion', '@remotion/player'],
+    },
   },
   
   // Server configuration

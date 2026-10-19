@@ -1,0 +1,127 @@
+---
+title: "Architecture of a First-Level Support Automation"
+pubDate: 2026-05-16T00:00:00.000Z
+updatedDate: 2026-10-10T00:00:00.000Z
+tags:
+  - AI
+  - Customer Support
+  - Architecture
+description: "The four-step pipeline we landed on after iterating on live tickets: a rooted DAG of intents, grouped extraction, weighted-scoring fetch, and a mostly-hardcoded planner with an explicit LLM fallback."
+image: /images/blog/first-level-support-automation/featured.png
+confluence: true
+---
+
+import PipelineMap from '../../components/PipelineMap.astro';
+import PipelineFigure from '../../components/PipelineFigure.astro';
+import LoopAnimation from '../../components/LoopAnimation.astro';
+import ThemedImage from '../../components/ThemedImage.astro';
+
+Our architecture for first-level customer support splits the problem into small steps, uses LLMs for interpretation, and keeps everything else in code. It is the full version of the workflow approach in [Workflow or Agent](/post/workflow-vs-agent), which also explains why I would now invert its default.
+
+The system turns a customer message into a reply, possibly with attachments, and any required tool calls: updating a record, filing a follow-up ticket, or escalating to a human. A preprocessing layer first normalises inbound attachments.
+
+<PipelineMap preset="overview" />
+
+*The four steps. Intent recognition and extraction are LLM calls and run in parallel; fetch and plan generation are code. An intent of "Other" goes to a fallback agent. Each section below highlights its step.*
+
+We will trace this message through all four steps:
+
+<ThemedImage src="/images/blog/first-level-support-automation/customer-message.png" alt={"Customer message: I bank with Northstar Bank's Riverton branch. My name is Alex Carter, and my partner is Jamie Carter. Our account number is NSBO1234. We can no longer access the account; it keeps saying it is locked."} />
+
+All details are fictional. The message has three common complications: an ambiguous intent, two named people, and a `0`/`O` mix-up in the account number (`NSBO1234` or `NSB01234`).
+
+## Step 1: Intent recognition
+
+<PipelineMap preset="intent" />
+
+We classify the message against a **rooted DAG of intents, biased toward depth 2**. The root holds broad intents and an explicit "Other"; most parents hold a few leaves and another "Other". One constrained LLM call picks the parent, a second picks among its children. These Pydantic AI `Agent` calls have no tools or open-ended loop and return typed outputs; [Type-Safe Hybrid Workflows with Pydantic AI](/post/pydantic-ai-type-safe-hybrid-workflows) covers the mechanics.
+
+<PipelineFigure name="intent-dag" />
+
+*Alex's message (blue) takes Account access to Account locked. A card-PIN lockout (pink) reaches the same leaf through Card services.*
+
+**Depth 2 is a bias, not a rule.** Specific parents can resolve at depth 1; rare branches may need a third level. Two is usually deep enough to keep each classification narrow without making the labels hard to maintain.
+
+**Shared leaves make it a DAG, not a tree.** Whichever route reaches Account locked, the handling is identical. A tree would duplicate the unlock flow; the DAG keeps one plan, and everything downstream depends on the leaf, not the route.
+
+**"Other" makes coverage gaps explicit.** Requests outside the taxonomy land in a visible queue for future intents and go to the fallback agent.
+
+**Two narrow calls beat one wide classifier.** Each parent exposes only its own children as a typed `Literal`, so unrelated categories never compete. A shared leaf simply appears in more than one parent's options.
+
+**Expert feedback grows the DAG.** In shadow deployment, subject-matter experts graded every draft. A request they kept flagging in an "Other" bucket became a new leaf; one that needed an existing leaf's handling gave that leaf a second parent. [The Missing Test Suite](/post/the-missing-test-suite) covers that loop.
+
+<LoopAnimation
+  name="shadow-loop"
+  description="Customers write in one at a time. Each message runs through the intent DAG to a leaf, and a subject-matter expert grades the drafted reply. Most grades are checks. Three are crosses: a password reset and a locked account land in Account access's Other, and a card-PIN lockout lands in Card services' Other. Each cross's comment is stored with the case; I pick it up from the store and store a comment of my own on how to fix it. A coding agent's nightly run takes mine from the store and adds Password reset and Account locked as leaves under Account access, then gives Account locked Card services as a second parent. The next customer with the same request reaches the new leaf and gets a check."
+/>
+
+*In shadow deployment the expert grades every drafted reply. Most pass. A fail's comment is stored, I store mine on how to fix it, and the coding agent's nightly run grows the DAG.*
+
+Intent recognition is also the pipeline's cleanest eval target: labelled conversations yield precision, recall, and a confusion matrix.
+
+## Step 2: Information extraction
+
+<PipelineMap preset="extract" />
+
+In parallel with intent recognition, separate LLM calls extract **groups** of related fields, each with its own prompt and Pydantic output model, validation and retries. [The Pydantic AI post](/post/pydantic-ai-type-safe-hybrid-workflows) shows the wiring.
+
+<ThemedImage src="/images/blog/first-level-support-automation/extraction.png" alt={"The customer message with Riverton and NSBO1234 marked for the Account group, and Alex Carter and Jamie Carter for the People group. Below it, the two groups: People with the given names Alex and Jamie and the family name Carter; Account with the account number NSBO1234 and its 0/O variant NSB01234, and the branch Riverton."} />
+
+*The example's two groups: People finds both names; Account finds the branch and the account number, and adds its `0`/`O` variant.*
+
+**Groups preserve field relationships.** One prompt can split "Northstar Bank's Riverton branch" consistently, instead of extracting the bank and the branch independently and duplicating or losing information.
+
+**Groups are independent eval targets.** A regression is isolated to one dataset and component, which can be tuned, moved to another model, or replaced with NER without affecting the rest.
+
+Every group follows the same rules, all biased toward false positives, because a spurious match is easier to filter out downstream than a lost one is to recover:
+
+- **All fields optional:** customers rarely include everything, so we extract what is there.
+- **Lists where ambiguous:** both names come back, and fetch sorts them out.
+- **Automatic variants:** `NSBO1234` also yields `NSB01234`, covering `0`/`O`, `1`/`I` and `5`/`S` mix-ups.
+
+## Step 3: Fetch
+
+<PipelineMap preset="fetch" />
+
+Fetch uses a **weighted-scoring fan-out** to absorb extraction's false positives. Each field triggers its own API query, in parallel; the hits are merged by record ID, and every field a record matches adds that field's weight to its score. The weights reflect how discriminating a field is: a given name matches many customers, an account number one or none.
+
+<PipelineFigure name="fetch-scores" />
+
+*Each candidate record's score, stacked from the fields it matched. Only `acc_001` clears the threshold.*
+
+`acc_001` wins on all four fields, and its account-number hit comes from the generated variant: the customer wrote `NSBO1234`, the record says `NSB01234`. Jamie's name and the shared family name pull in three more candidates, none of them close. If nothing clears the threshold, fetch returns no record and the plan can ask for more information.
+
+## Step 4: Plan generation
+
+<PipelineMap preset="plan" />
+
+Plan generation receives the **resolved intent leaf**, the extracted fields, the fetched records and fetch's metadata. Dispatch is a keyed lookup, not another classification, so `account_locked` behaves the same whether the message reached it through account access or card services.
+
+Each known leaf owns a small decision tree over the fetched data, and each branch ends in a pre-written template plus any tool calls. These trees encode the business logic and grow as patterns emerge. [Workflow or Agent](/post/workflow-vs-agent) explains why we kept them in code, and why I would now make the agent the default instead.
+
+<PipelineFigure name="plan-tree" />
+
+*Account locked's tree. Alex's message finds one unflagged record, `acc_001`, and gets the unlock steps, a parametrised template.*
+
+**"Other" leaves are the exception.** With no plan in code, the pipeline's only autonomous agent inspects the fetched data and proposes one using constrained tools. Requests that keep landing in an "Other" leaf become hardcoded leaves through the expert feedback loop above, so fewer of them depend on the agent over time.
+
+Plans involving money, account access, or side effects require human review. [Temporal for Human-in-the-Loop](/post/temporal-human-in-the-loop) covers durable waits, signals, and recovery across restarts.
+
+## The practical payoff: local evals
+
+<PipelineMap preset="evals" />
+
+Each step has its own evaluation:
+
+- **Intent:** precision, recall, and a confusion matrix over labelled parents and leaves.
+- **Extraction:** field-level precision and recall for each group, allowing for the intended false-positive bias.
+- **Fetch:** integration tests over extracted fields, fixed API responses, weights, and thresholds.
+- **Plan:** unit tests for known leaves; a labelled golden set for fallback plans.
+
+A monolithic agent is mostly judged end to end, which makes regressions hard to locate. Decomposition isolates them.
+
+## Where the pattern fits
+
+<PipelineMap preset="default" />
+
+Typed steps make regressions easy to locate, and "Other" makes coverage gaps visible. Which path should be the default is a separate question. Here it is code, and the agent gets only the requests that land in an "Other" leaf; [Workflow or Agent](/post/workflow-vs-agent#next-time-make-the-agent-the-default) argues for the opposite.

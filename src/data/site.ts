@@ -1,6 +1,6 @@
 export const SITE = {
   title: 'Daniel Fridljand',
-  description: 'Software Consultant with a strong academic background in mathematics, statistics, and bioinformatics',
+  description: 'AI engineer building production systems, with a research background in computational oncology, environmental epidemiology, and statistical genomics',
   url: 'https://danielfridljand.de',
   github: {
     owner: 'FridljDa',
@@ -11,25 +11,30 @@ export const SITE = {
 
 export const BIOGRAPHY = {
   name: 'Daniel Fridljand',
-  role: 'Software Consultant',
+  role: 'AI Engineer',
   organization: {
     name: 'TNG Technology Consulting',
     url: 'https://www.tngtech.com/en/',
   },
-  bio: 'I am a driven software consultant with a strong academic background in mathematics, statistics, and bioinformatics. My passion for machine learning, software development, and statistics has led me to work on projects across diverse domains, including public health, genetics, and oncology. With three years of scientific software development experience and a first-author publication in a high-impact journal, I\'m committed to leveraging computational skills to solve real-world challenges.',
+  bio: 'I build AI systems that make it to production, including an LLM-based customer-support automation I took from discovery to live rollout as sole AI engineer. A mathematics background and a co-first-author Nature Medicine paper shape how I build: measuring whether a system works gets the same rigor as building it.',
   interests: [
-    'Statistics',
+    'Applied AI',
     'Machine Learning',
     'Software Development',
   ],
   education: [
     {
-      course: 'Msc in Mathematics',
+      course: 'M.Sc. in Mathematics',
       institution: 'University of Heidelberg',
       year: 2023,
     },
     {
-      course: 'BSc in Mathematics',
+      course: 'Exchange Scholar in Applied Mathematics',
+      institution: 'Yale University',
+      year: 2023,
+    },
+    {
+      course: 'B.Sc. in Mathematics',
       institution: 'University of Heidelberg',
       year: 2020,
     },

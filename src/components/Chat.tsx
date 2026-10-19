@@ -1,8 +1,15 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import type { Message } from '../types/chat';
+import type { GeminiQuota } from '../types/api';
 import ChatMessage from './ChatMessage';
 import { ErrorBoundary } from './ErrorBoundary';
 import { isRateLimitErrorMessage } from '../utils/error';
+
+const CHAT_CONSENT_KEY = 'chat-consent';
+
+function formatResetTime(quota: GeminiQuota) {
+  return new Date(quota.resetsAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
 
 function ChatContent() {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -10,32 +17,61 @@ function ChatContent() {
   const [isLoading, setIsLoading] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hasConsent, setHasConsent] = useState(false);
+  const [quota, setQuota] = useState<GeminiQuota | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (window.innerWidth < 768) {
       setIsMinimized(true);
     }
+    setHasConsent(sessionStorage.getItem(CHAT_CONSENT_KEY) === 'true');
   }, []);
 
-  // Auto-scroll to bottom when messages change
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const behavior = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      ? 'auto'
+      : 'smooth';
+    messagesEndRef.current?.scrollIntoView({ behavior });
   };
 
   useEffect(() => {
-    if (!isMinimized) {
+    if (!isMinimized && hasConsent) {
       scrollToBottom();
     }
-  }, [messages, isMinimized]);
+  }, [messages, isMinimized, hasConsent]);
+
+  const refreshQuota = useCallback(async () => {
+    try {
+      const response = await fetch('/api/chat', { cache: 'no-store' });
+      if (response.ok) {
+        setQuota(await response.json());
+      }
+    } catch {
+      // The counter is informational; the chat still works without it
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!isMinimized && hasConsent) {
+      refreshQuota();
+    }
+  }, [isMinimized, hasConsent, refreshQuota]);
+
+  const isQuotaExhausted = quota?.exhausted === true;
 
   const toggleMinimize = () => {
     setIsMinimized(!isMinimized);
   };
 
+  const acceptConsent = () => {
+    sessionStorage.setItem(CHAT_CONSENT_KEY, 'true');
+    setHasConsent(true);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim() || isLoading) return;
+    if (!input.trim() || isLoading || !hasConsent || isQuotaExhausted) return;
 
     const userMessage: Message = { role: 'user', content: input };
     setMessages((prev) => [...prev, userMessage]);
@@ -51,7 +87,6 @@ function ChatContent() {
       });
 
       if (!response.ok) {
-        // Try to get error message from response body
         let errorMessage = `HTTP error! status: ${response.status}`;
         try {
           const errorData = await response.json();
@@ -61,7 +96,6 @@ function ChatContent() {
             errorMessage = errorData.error;
           }
         } catch {
-          // If response is not JSON, use status-based message
           if (response.status === 429) {
             errorMessage = 'Rate limit exceeded';
           }
@@ -98,13 +132,14 @@ function ChatContent() {
       const errorMessage =
         error instanceof Error ? error.message : 'An unknown error occurred';
       setError(errorMessage);
-      
-      // Provide user-friendly error messages based on error type
+
       let userMessage = 'Sorry, I encountered an error. Please try again.';
       if (isRateLimitErrorMessage(errorMessage)) {
-        userMessage = 'The daily usage limit has been reached. The quota resets at 9:00 AM CET. Please try again later.';
+        userMessage = `The daily usage limit has been reached. The quota resets at ${
+          quota ? formatResetTime(quota) : '9:00 AM CET'
+        }. Please try again later.`;
       }
-      
+
       setMessages((prev) => [
         ...prev,
         {
@@ -114,15 +149,15 @@ function ChatContent() {
       ]);
     } finally {
       setIsLoading(false);
+      refreshQuota();
     }
   };
 
-  // Minimized state: Show only floating button
   if (isMinimized) {
     return (
       <button
         onClick={toggleMinimize}
-        className="fixed bottom-4 right-4 w-14 h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg z-[1000] flex items-center justify-center transition-all hover:scale-110"
+        className="btn-focus-ring fixed bottom-4 right-4 w-14 h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg z-[1000] flex items-center justify-center transition-all hover:scale-110"
         aria-label="Open chat"
       >
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
@@ -132,15 +167,22 @@ function ChatContent() {
     );
   }
 
-  // Expanded state: Show full chat interface
   return (
     <div className="fixed bottom-4 right-4 md:bottom-20 md:right-4 w-[calc(100%-2rem)] md:w-96 h-[calc(100vh-8rem)] md:h-[500px] border border-surface rounded-xl shadow-lg bg-surface overflow-hidden z-[1000] flex flex-col transition-all">
-      {/* Header with minimize button */}
       <div className="flex items-center justify-between p-3 bg-blue-600 text-white">
         <h3 className="font-semibold text-sm">AI Chat</h3>
+        {hasConsent && quota && (
+          <span
+            className="ml-auto mr-2 text-xs whitespace-nowrap"
+            title={`Shared by all visitors. Resets at ${formatResetTime(quota)}.`}
+            data-testid="chat-quota"
+          >
+            {quota.remaining} {quota.remaining === 1 ? 'question' : 'questions'} left today
+          </span>
+        )}
         <button
           onClick={toggleMinimize}
-          className="p-1 hover:bg-blue-700 rounded transition-colors"
+          className="btn-focus-ring p-1 hover:bg-blue-700 rounded transition-colors"
           aria-label="Minimize chat"
         >
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
@@ -149,53 +191,91 @@ function ChatContent() {
         </button>
       </div>
 
-      {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-surface-alt">
-        {messages.length === 0 ? (
-          <div className="text-center text-muted mt-8">
-            <p className="text-sm">Ask me anything about Daniel's experience, skills, or background!</p>
-          </div>
-        ) : (
-          messages.map((m, idx) => (
-            <div
-              key={idx}
-              className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}
-            >
-              <ChatMessage message={m} />
-            </div>
-          ))
-        )}
-        {error && (
-          <div className="text-xs text-red-600 dark:text-red-400 mt-2">
-            {error}
-          </div>
-        )}
-        <div ref={messagesEndRef} />
-      </div>
-
-      {/* Input Area */}
-      <form onSubmit={handleSubmit} className="p-3 bg-surface border-t border-surface" data-testid="chat-form">
-        <div className="flex gap-2">
-          <input
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="Ask about skills, experience..."
-            className="flex-1 px-4 py-2 border border-input rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-surface-elevated text-heading placeholder-text-subtle"
-            disabled={isLoading}
-          />
+      {!hasConsent ? (
+        <div
+          className="flex-1 flex flex-col justify-center p-6 bg-surface-alt text-body"
+          data-testid="chat-consent-panel"
+        >
+          <p className="text-sm mb-4">
+            Messages you send are processed by the Google Gemini API to generate
+            responses. Do not share sensitive personal data. See the{' '}
+            <a href="/privacy" className="text-link hover:underline">
+              privacy policy
+            </a>{' '}
+            for details.
+          </p>
           <button
-            type="submit"
-            disabled={isLoading || !input.trim()}
-            className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white rounded-full w-10 h-10 flex items-center justify-center transition-colors shadow-sm"
+            type="button"
+            onClick={acceptConsent}
+            className="btn-focus-ring self-start px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors"
+            data-testid="chat-consent-accept"
           >
-            {/* Simple Send Icon SVG */}
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
-              <path d="M3.478 2.405a.75.75 0 00-.926.94l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.405z" />
-            </svg>
+            I understand
           </button>
         </div>
-      </form>
+      ) : (
+        <>
+          <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-surface-alt">
+            {messages.length === 0 ? (
+              <div className="text-center text-muted mt-8">
+                <p className="text-sm">Ask me anything about Daniel's experience, skills, or background!</p>
+              </div>
+            ) : (
+              messages.map((m, idx) => (
+                <div
+                  key={idx}
+                  className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                >
+                  <ChatMessage message={m} />
+                </div>
+              ))
+            )}
+            {error && (
+              <div
+                id="chat-error"
+                role="alert"
+                className="text-xs text-red-600 dark:text-red-400 mt-2"
+              >
+                {error}
+              </div>
+            )}
+            <div ref={messagesEndRef} />
+          </div>
+
+          <form onSubmit={handleSubmit} className="p-3 bg-surface border-t border-surface" data-testid="chat-form">
+            <div className="flex gap-2">
+              <label htmlFor="chat-input" className="sr-only">
+                Ask about Daniel's experience, skills, or background
+              </label>
+              <input
+                id="chat-input"
+                type="text"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder={
+                  isQuotaExhausted
+                    ? `Daily quota used up until ${formatResetTime(quota)}`
+                    : 'Ask about skills, experience...'
+                }
+                className="flex-1 px-4 py-2 border border-input rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-transparent transition-all bg-surface-elevated text-heading placeholder-text-subtle"
+                disabled={isLoading || isQuotaExhausted}
+                aria-invalid={error ? true : undefined}
+                aria-describedby={error ? 'chat-error' : undefined}
+              />
+              <button
+                type="submit"
+                disabled={isLoading || isQuotaExhausted || !input.trim()}
+                aria-label="Send message"
+                className="btn-focus-ring bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white rounded-full w-10 h-10 flex items-center justify-center transition-colors shadow-sm"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+                  <path d="M3.478 2.405a.75.75 0 00-.926.94l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.405z" />
+                </svg>
+              </button>
+            </div>
+          </form>
+        </>
+      )}
     </div>
   );
 }
@@ -207,4 +287,3 @@ export default function Chat() {
     </ErrorBoundary>
   );
 }
-

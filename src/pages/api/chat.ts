@@ -11,15 +11,15 @@ import {
   createErrorResponse,
 } from '../../utils/validation';
 import { isRateLimitError, isRecoverableModelError } from '../../utils/error';
+import {
+  GEMINI_MODELS,
+  getGeminiQuota,
+  isModelAvailable,
+  recordModelFailure,
+  recordModelSuccess,
+} from '../../utils/gemini-quota';
 import type { ChatMessage, GeminiHistoryMessage } from '../../types/api';
 import type { ZodIssue } from 'zod';
-
-const GEMINI_MODELS = [
-  'gemini-2.5-flash',
-  'gemini-3-flash-preview',
-  'gemini-2.5-flash-lite',
-  'gemma-3-27b',
-] as const;
 
 /**
  * Attempts to get a chat stream using the specified model
@@ -53,6 +53,18 @@ async function tryModelChat(
   return await chat.sendMessageStream(userMessage);
 }
 
+/**
+ * Returns how many questions are left today, shared by all visitors
+ */
+export const GET: APIRoute = async () => {
+  return new Response(JSON.stringify(getGeminiQuota()), {
+    headers: {
+      'Content-Type': 'application/json',
+      'Cache-Control': 'no-store',
+    },
+  });
+};
+
 export const POST: APIRoute = async ({ request }) => {
   try {
     if (!validateContentType(request)) {
@@ -70,10 +82,10 @@ export const POST: APIRoute = async ({ request }) => {
     const validatedBody = parseResult.data;
 
     const apiKey = getEnvVar('GEMINI_API_KEY');
-    const secretPassword = import.meta.env.PUBLIC_SECRET_PASSWORD;
+    const secretPassword = import.meta.env.SECRET_PASSWORD;
     
     if (!secretPassword) {
-      logger.error('PUBLIC_SECRET_PASSWORD environment variable is not set');
+      logger.error('SECRET_PASSWORD environment variable is not set');
       return createErrorResponse(
         'Configuration error',
         'The prompt injection challenge is not properly configured. Please contact the site administrator.',
@@ -101,7 +113,7 @@ export const POST: APIRoute = async ({ request }) => {
     const allBlogPostsMarkdown = blogPostsMarkdown.join('\n');
 
     const systemInstruction = `
-      You are a professional AI assistant representing Daniel Fridljand, a Software Consultant with a strong academic background in mathematics, statistics, and bioinformatics.
+      You are a professional AI assistant representing Daniel Fridljand, an AI Engineer at TNG Technology Consulting with a strong academic background in mathematics, statistics, and bioinformatics.
       Your goal is to answer questions about Daniel's experience, skills, background, publications, certifications, projects, and blog posts based *strictly* on the provided content.
         
       tone: Professional, concise, yet approachable.
@@ -131,19 +143,22 @@ export const POST: APIRoute = async ({ request }) => {
 
     const lastUserMessage = validatedBody.messages[validatedBody.messages.length - 1].content;
 
-    // Try each model in sequence until one succeeds
+    // Try each model that still has quota today until one succeeds
+    const models = GEMINI_MODELS.map((model) => model.name).filter((name) => isModelAvailable(name));
     let result;
     let lastError: unknown;
 
-    for (let i = 0; i < GEMINI_MODELS.length; i++) {
-      const modelName = GEMINI_MODELS[i];
+    for (let i = 0; i < models.length; i++) {
+      const modelName = models[i];
       try {
         logger.info(`Attempting to use model: ${modelName}`);
         result = await tryModelChat(genAI, modelName, history, systemInstruction, lastUserMessage);
+        recordModelSuccess(modelName);
         logger.info(`Successfully using model: ${modelName}`);
         break;
       } catch (error) {
         lastError = error;
+        recordModelFailure(modelName, error);
         const isRecoverable = isRecoverableModelError(error);
         const isRateLimit = isRateLimitError(error);
         logger.warn(
@@ -153,7 +168,7 @@ export const POST: APIRoute = async ({ request }) => {
         );
 
         // If it's a recoverable error (rate limit or model not found) and we have more models to try, continue
-        if (isRecoverable && i < GEMINI_MODELS.length - 1) {
+        if (isRecoverable && i < models.length - 1) {
           logger.info(`Rotating to next model due to ${isRateLimit ? 'rate limit' : 'model unavailability'}`);
           continue;
         }
@@ -168,7 +183,8 @@ export const POST: APIRoute = async ({ request }) => {
     // If we exhausted all models, return an error
     if (!result) {
       logger.error('All models exhausted. Last error:', lastError instanceof Error ? lastError.message : String(lastError));
-      const isRateLimit = lastError && isRateLimitError(lastError);
+      // No error means no model was tried: all are used up for today
+      const isRateLimit = lastError === undefined || isRateLimitError(lastError);
       return createErrorResponse(
         'All models exhausted',
         isRateLimit

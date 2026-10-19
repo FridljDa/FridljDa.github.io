@@ -2,6 +2,7 @@ import type { APIRoute } from 'astro';
 import { getCollection } from 'astro:content';
 import { generateHomePageMarkdown } from '../utils/markdown-generator';
 import { logger } from '../utils/logger';
+import { createPlainTextErrorResponse } from '../utils/validation';
 
 export const GET: APIRoute = async () => {
   try {
@@ -18,7 +19,7 @@ export const GET: APIRoute = async () => {
       'Error generating home page markdown:',
       error instanceof Error ? error.message : String(error)
     );
-    return new Response('Internal Server Error', { status: 500 });
+    return createPlainTextErrorResponse('Internal Server Error');
   }
 };
 

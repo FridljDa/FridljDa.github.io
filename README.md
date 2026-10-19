@@ -21,7 +21,7 @@ npm install
    ```
    - Required variables:
      - `GEMINI_API_KEY` - Your Google Gemini API key (get from https://aistudio.google.com/app/apikey)
-     - `PUBLIC_SECRET_PASSWORD` - Secret password for the prompt injection hackathon challenge (used in the blog post)
+     - `SECRET_PASSWORD` - Secret password for the prompt injection hackathon challenge (used in the blog post)
 
 3. Start the development server:
 ```bash
@@ -32,8 +32,8 @@ The site will be available at `http://localhost:4321`.
 
 ## Features
 
-- **Server-Side Rendering (SSR)** - Built with Astro 5.x SSR mode
-- **AI Chat** - Interactive chat powered by Google Gemini API
+- **Server-Side Rendering (SSR)** - Built with Astro 6.x SSR mode
+- **AI Chat** - Interactive chat powered by Google Gemini API. The chat header shows how many questions are left today on the shared free Gemini quota (per-model limits in `src/utils/gemini-quota.ts`)
 - **Blog** - MDX-based blog posts with math support (KaTeX)
 - **Responsive Design** - Built with Tailwind CSS
 

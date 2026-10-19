@@ -1,0 +1,287 @@
+<!doctype html>
+<!--
+  Mockup of the screen subject-matter experts used to grade shadow replies
+  (the-missing-test-suite, "The loop we built", step 1). The queue bar on top
+  shows that each expert works through a batch, not single tickets.
+
+  Render to PNG with:  npm run mockup:png
+  That writes the screen (#mockup) at three stages of the loop, set as a
+  class on <html>: stage-reply (the drafted reply), stage-graded (the
+  expert's grade and comment) and stage-fix (my comment for the coding
+  agent). Without a stage class it shows everything at full strength, which
+  is what the LinkedIn repost uses. It also writes the customer's message
+  (#customer-message) on its own, which the posts show in place of a quote.
+  Each in a light and a dark version (<name>.png and <name>-dark.png).
+  Everything is fictional and follows the Northstar Bank framing used in the
+  posts. Keep it that way: no real vendors, intents, names or dates.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>SME review screen</title>
+<style>
+  /* The palette of the post's other figures (src/components/loop-animation.css),
+     light by default and dark with html.dark: render.mjs shoots both. */
+  :root {
+    --page: #ffffff;
+    --panel: #f8fafc;
+    --panel-inner: #f1f5f9;
+    --border: #cbd5e1;
+    --text: #1f2937;
+    --muted: #6b7280;
+    --node-border: #64748b;
+    --added: #2563eb;
+    --ok: #2a9d8f;
+    --bad: #e76f51;
+    /* Alex Carter, in the color customers get in the shadow loop (PALETTE[0]). */
+    --alex: #4f86c6;
+    --width: 672px; /* the blog's desktop content column, so the PNG shows at 1:1 */
+  }
+  html.dark {
+    --page: #111827;
+    --panel: #1f2937;
+    --panel-inner: #182231;
+    --border: #374151;
+    --text: #f3f4f6;
+    --muted: #9ca3af;
+    --node-border: #6b7280;
+    --added: #5b9cea;
+    --ok: #3bb3a4;
+    --bad: #ee8466;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: transparent; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    font-size: 15px;
+    line-height: 1.45;
+    color: var(--text);
+    padding: 16px;
+  }
+
+  #mockup {
+    width: var(--width);
+    background: var(--page);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .body { padding: 16px 16px 18px; }
+
+  /* The queue: experts work through a batch of drafts at their own pace. */
+  .queue {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 16px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+  }
+  .queue .title { font-weight: 650; }
+  .queue .count { color: var(--muted); margin-left: auto; }
+  .queue .btn { padding: 4px 10px; }
+
+  h3 {
+    margin: 0 0 8px;
+    font-size: 14px;
+    font-weight: 650;
+  }
+  .section + .section { margin-top: 16px; }
+
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px;
+  }
+  .msg {
+    display: flex;
+    gap: 10px;
+    padding: 10px 12px;
+    background: var(--panel-inner);
+    border-radius: 4px;
+  }
+  .msg + .msg { margin-top: 6px; }
+  .msg p { margin: 0 0 6px; }
+  .msg p:last-child { margin-bottom: 0; }
+
+  /* Each card is marked with the icon its object has in the post's other
+     figures (src/remotion/shared.tsx): the customer message an envelope, the
+     reply a page in the customer's color, the expert's comment a red speech
+     bubble and mine a blue one. */
+  .icon {
+    flex: none;
+    width: 28px;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding-top: 1px;
+  }
+  .icon svg { display: block; }
+  .icon.message svg { width: 26px; }
+  .icon.reply svg { height: 26px; color: var(--alex); }
+  .icon.comment svg { width: 28px; color: var(--bad); }
+  .icon.comment.mine svg { color: var(--added); }
+
+  .meta { font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+  .meta b { color: var(--text); font-weight: 600; }
+
+  hr { border: 0; border-top: 1px solid var(--border); margin: 18px 0; }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+  }
+  .btn {
+    font: inherit;
+    font-size: 11px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--text);
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 7px 8px;
+    text-align: center;
+    display: grid;
+    place-items: center;
+  }
+  /* The same green and red as the checks and crosses in the post's figures. */
+  .btn.selected {
+    background: var(--bad);
+    border-color: var(--bad);
+    color: #fff;
+    font-weight: 650;
+  }
+  .verdict { display: flex; gap: 6px; }
+  .verdict .btn { display: inline-flex; gap: 6px; align-items: center; padding: 7px 14px; font-weight: 650; }
+  .verdict .btn svg { width: 14px; height: 14px; }
+  .btn.approve { color: var(--ok); border-color: var(--ok); }
+  .rejected { color: var(--bad); font-weight: 650; }
+  .empty { padding: 10px 12px; color: var(--muted); font-size: 13px; }
+
+  /* Stages, like the post's maps: the stage's own part at full strength, the
+     rest greyed out as Dim in map-parts.tsx does it, and what hasn't happened
+     yet left empty. */
+  html[class*="stage-"] .part { opacity: 0.22; filter: grayscale(1); }
+  html.stage-reply .part.reply,
+  html.stage-graded .part.graded,
+  html.stage-fix .part.fix { opacity: 1; filter: none; }
+  html.stage-reply .graded-on,
+  html.stage-reply .fix-on,
+  html.stage-graded .fix-on { display: none; }
+  html:not(.stage-reply) .empty { display: none; }
+  html.stage-reply .btn.selected {
+    background: var(--panel);
+    border-color: var(--border);
+    color: var(--text);
+    font-weight: inherit;
+  }
+  html.stage-reply .verdict .btn.selected { font-weight: 650; }
+  html.stage-reply .btn.reject { color: var(--bad); border-color: var(--bad); }
+
+</style>
+</head>
+<body>
+<div id="mockup">
+  <div class="queue">
+    <span class="title">Annotation queue</span>
+    <span class="count">7 of 40</span>
+    <span class="btn">Previous</span>
+    <span class="btn">Next</span>
+  </div>
+  <div class="body">
+    <div class="section part reply">
+      <h3>Customer message</h3>
+      <div class="panel" id="customer-message">
+        <div class="msg">
+          <div class="icon message">
+            <svg viewBox="-16.5 -11.5 33 23"><rect x="-15" y="-10" width="30" height="20" rx="3" fill="var(--panel)" stroke="var(--node-border)" stroke-width="2"/><path d="M-15,-9 L0,2 L15,-9" fill="none" stroke="var(--node-border)" stroke-width="2" stroke-linejoin="round"/></svg>
+          </div>
+          <div>
+            <div class="meta"><b>Customer</b> · 2026-03-12 09:41</div>
+            <p>Hi, I'm Alex Carter and I bank with your Riverton branch. My account number is NSB01234 and I can't get in any more; it keeps saying the account is locked. Can you help me get back in?</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section part reply">
+      <h3>Suggested reply</h3>
+      <div class="panel">
+        <div class="msg">
+          <div class="icon reply">
+            <svg viewBox="-12.5 -15 25 30" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M-10,-13 h13 l7,7 v19 h-20 Z" fill="var(--page)" stroke-width="2.5"/><path d="M-5,0 h10 M-5,6 h8" stroke-width="2"/></svg>
+          </div>
+          <div>
+            <div class="meta"><b>Support agent</b></div>
+            <p>Dear Alex Carter,</p>
+            <p>To help with your login, please reply with the email address on your account.</p>
+            <p>Kind regards,<br>Northstar Bank</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <hr>
+
+    <div class="section part graded">
+      <h3>Verdict</h3>
+      <div class="verdict">
+        <div class="btn approve">
+          <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7.2l2.6 2.6L11 4.2"/></svg>
+          Approve
+        </div>
+        <div class="btn reject selected">
+          <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3.5 3.5l7 7M10.5 3.5l-7 7"/></svg>
+          Reject
+        </div>
+      </div>
+    </div>
+
+    <div class="section part graded">
+      <h3>Rejection reason</h3>
+      <div class="grid">
+        <div class="btn">Uncategorized</div>
+        <div class="btn">Wording</div>
+        <div class="btn selected">Wrong process</div>
+        <div class="btn">Long tail</div>
+        <div class="btn">AI missed record</div>
+        <div class="btn">Unverifiable data</div>
+      </div>
+    </div>
+
+    <hr>
+
+    <div class="section part graded fix">
+      <h3>Comments</h3>
+      <div class="panel">
+        <div class="empty">No comments yet</div>
+        <div class="msg part graded graded-on">
+          <div class="icon comment">
+            <svg viewBox="-26.5 -15.5 53 37" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M-20,-14 h40 a5,5 0 0 1 5,5 v16 a5,5 0 0 1 -5,5 h-26 l-8,7 v-7 h-6 a5,5 0 0 1 -5,-5 v-16 a5,5 0 0 1 5,-5 Z" fill="var(--page)" stroke-width="2.5"/><path d="M-13,-5 q4,-3 8,0 t8,0 t8,0 M-13,3 q4,-3 8,0 t8,0" stroke-width="2"/></svg>
+          </div>
+          <div>
+            <div class="meta"><b>Jordan M.</b> · Expert</div>
+            <p>We have the account number, so look them up: never ask for what we can find. Locked accounts get the unlock link, or go to security if flagged.</p>
+          </div>
+        </div>
+        <div class="msg part fix fix-on">
+          <div class="icon comment mine">
+            <svg viewBox="-26.5 -15.5 53 37" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M-20,-14 h40 a5,5 0 0 1 5,5 v16 a5,5 0 0 1 -5,5 h-26 l-8,7 v-7 h-6 a5,5 0 0 1 -5,-5 v-16 a5,5 0 0 1 5,-5 Z" fill="var(--page)" stroke-width="2.5"/><path d="M-13,-5 q4,-3 8,0 t8,0 t8,0 M-13,3 q4,-3 8,0 t8,0" stroke-width="2"/></svg>
+          </div>
+          <div>
+            <div class="meta"><b>Daniel F.</b></div>
+            <p>For the coding agent: add an Account locked intent. Look the customer up by account number, then send the unlock link, or route to security if flagged.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

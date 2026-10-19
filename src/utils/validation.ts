@@ -43,3 +43,15 @@ export function createErrorResponse(
   );
 }
 
+export function createPlainTextErrorResponse(
+  message: string,
+  status = 500
+): Response {
+  return new Response(message, {
+    status,
+    headers: {
+      'Content-Type': 'text/plain; charset=utf-8',
+    },
+  });
+}
+

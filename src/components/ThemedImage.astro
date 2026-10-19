@@ -1,0 +1,36 @@
+---
+/**
+ * A raster figure rendered in both themes, e.g. the mockups from
+ * scripts/mockups/: `src` is the light version and `<src>-dark.png` the dark
+ * one, shown when the site is in dark mode. The hidden one is lazy, so the
+ * browser doesn't fetch it. The Confluence copy gets the light version.
+ */
+interface Props {
+  src: string;
+  alt: string;
+}
+
+const { src, alt } = Astro.props;
+const dark = src.replace(/\.png$/, '-dark.png');
+---
+
+{Astro.locals.confluence ? (
+  <img src={src} alt={alt} />
+) : (
+  <p class="themed-image">
+    <img class="light" src={src} alt={alt} loading="lazy" />
+    <img class="dark" src={dark} alt={alt} loading="lazy" />
+  </p>
+)}
+
+<style>
+  .themed-image .dark {
+    display: none;
+  }
+  :global(.dark) .themed-image .light {
+    display: none;
+  }
+  :global(.dark) .themed-image .dark {
+    display: block;
+  }
+</style>
