@@ -41,12 +41,13 @@ const postUrl = `${SITE.url}/post/${post.id}`;
     <div class="toolbar">
       <p>
         Plain copy of <a href={postUrl}>this post</a> for Confluence. Copy the title into the page title and the
-        body into the page. Images load from {new URL(SITE.url).host}, as they will in Confluence, so a broken one
+        body into the page, or copy it as Markdown for Confluence's Insert Markdown. Images load from {new URL(SITE.url).host}, as they will in Confluence, so a broken one
         here has not been deployed yet.
       </p>
       <div class="actions">
         <button type="button" data-copy="title">Copy title</button>
         <button type="button" data-copy="body">Copy body</button>
+        <button type="button" data-copy="markdown">Copy body as Markdown</button>
         <span class="status" role="status"></span>
       </div>
     </div>
@@ -61,6 +62,8 @@ const postUrl = `${SITE.url}/post/${post.id}`;
     </main>
 
     <script>
+      import { htmlToMarkdown } from '../../../utils/markdown';
+
       const title = document.getElementById('title')!;
       const body = document.getElementById('body')!;
       const base = body.dataset.base!;
@@ -79,10 +82,15 @@ const postUrl = `${SITE.url}/post/${post.id}`;
 
       // A copy event rather than the async Clipboard API, which browsers deny
       // without a permission grant; this only needs the click.
-      function copy(el: HTMLElement): boolean {
+      // Markdown goes in as plain text only, so a paste keeps the `##` and `**`.
+      function copy(el: HTMLElement, markdown = false): boolean {
         const onCopy = (event: ClipboardEvent) => {
-          event.clipboardData?.setData('text/html', el.innerHTML);
-          event.clipboardData?.setData('text/plain', el.innerText);
+          if (markdown) {
+            event.clipboardData?.setData('text/plain', htmlToMarkdown(el.innerHTML));
+          } else {
+            event.clipboardData?.setData('text/html', el.innerHTML);
+            event.clipboardData?.setData('text/plain', el.innerText);
+          }
           event.preventDefault();
         };
         document.addEventListener('copy', onCopy);
@@ -94,11 +102,11 @@ const postUrl = `${SITE.url}/post/${post.id}`;
       }
 
       const status = document.querySelector('.status')!;
-      const targets = { title, body };
+      const targets = { title, body, markdown: body };
       for (const button of document.querySelectorAll<HTMLButtonElement>('[data-copy]')) {
         const what = button.dataset.copy as keyof typeof targets;
         button.addEventListener('click', () => {
-          status.textContent = copy(targets[what])
+          status.textContent = copy(targets[what], what === 'markdown')
             ? `Copied the ${what}.`
             : `Could not copy the ${what}; select it and copy by hand.`;
         });
