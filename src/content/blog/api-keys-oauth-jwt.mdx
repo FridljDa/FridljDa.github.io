@@ -1,11 +1,11 @@
 ---
-title: "API Keys, OAuth and JWT: Three Answers to Different Questions"
+title: "API Keys, OAuth and JWT for an Agent That Calls Three Systems"
 pubDate: 2026-10-18T00:00:00.000Z
 tags:
   - Architecture
   - Security
   - AI
-description: "API keys, OAuth and JWT get listed side by side, but they aren't three alternatives: an API key is a credential, OAuth is a protocol for getting one, and a JWT is a format a token can take. Worked through on a support agent that has to call three systems."
+description: "What an API key, OAuth 2.0 and a JWT each are and how they fit together: a long-lived credential, a protocol for getting short-lived tokens, and a format those tokens can take. Worked through on a support agent that calls three systems."
 image: /images/blog/api-keys-oauth-jwt/featured.png
 math: false
 confluence: true
@@ -21,7 +21,7 @@ An **API key** is a credential: a long-lived secret you send with every request.
 
 *The running example as one map: an agent that calls three systems, each authenticated its own way. Each section's map highlights its part.*
 
-## Three answers to different questions
+## What each one is
 
 Every authenticated API call answers some version of three questions: *who is calling*, *on whose behalf*, and *how does the API know*. The three terms answer different ones.
 
