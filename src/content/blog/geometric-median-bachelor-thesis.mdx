@@ -1,0 +1,57 @@
+---
+title: "Filling In the Steps a Paper Skips: My Bachelor Thesis"
+pubDate: 2020-10-20
+tags:
+  - Math
+  - Statistics
+math: true
+description: "My bachelor thesis took a published paper on estimating the geometric median online and wrote out the steps its authors skipped, aiming to use only theorems from my lectures. What the paper is about, what that involved, and the thesis itself."
+image: /images/blog/geometric-median-bachelor-thesis/featured.png
+---
+
+import MedianFigure from '../../components/MedianFigure.astro';
+
+Published mathematics is written for experts, so a step the authors consider obvious gets one line, or none. My bachelor thesis (Heidelberg, 2020, in German), supervised by [Jan Johannes](https://www.janjohannes.de/), took one such paper and wrote out the steps it skips. The aim was to use only theorems from my lectures and to prove everything else, however small. The results and proof ideas all come from the paper and a [follow-up](https://doi.org/10.1214/16-AOS1460) by Cardot, Cénac and Godichon-Baggioni; what I added is the detail.
+
+## The paper
+
+The median of real numbers is robust to outliers in a way the mean isn't. The **geometric median** carries it over to vectors, and to any Hilbert space $\mathcal{H}$, as the point with the smallest expected distance to the data:
+
+$$
+m = \arg\min_{h \in \mathcal{H}} \; \mathbb{E}\big[\,\|X - h\| - \|X\|\,\big]
+$$
+
+(subtracting $\|X\|$ keeps the expectation finite even when $X$ has no mean).
+
+[Cardot, Cénac and Zitt (2013)](https://doi.org/10.3150/11-BEJ390) estimate it with a stochastic gradient method: each new observation moves the estimate a small step towards itself,
+
+$$
+Z_{n+1} = Z_n + \gamma_n \frac{X_{n+1} - Z_n}{\|X_{n+1} - Z_n\|}, \qquad \gamma_n = c\,n^{-\alpha},\ \tfrac12 < \alpha < 1.
+$$
+
+Weiszfeld's algorithm, the usual method, passes over the whole sample at every iteration; this one reads each observation once, so it is fast on large, high-dimensional samples and can be updated as data arrives. The paper proves that the iterates $Z_n$ converge almost surely, gives their rate in $L^2$, and shows that their running average is asymptotically normal.
+
+In made-up data with a few outliers, the mean is dragged towards them while the median stays in the cloud, and the iterates start far off with large steps and settle around the median as the steps shrink:
+
+<MedianFigure name="median" />
+
+## What filling in meant
+
+Take the claim that the function above has gradient $-\mathbb{E}\big[(X-h)/\|X-h\|\big]$, which the step direction estimates. Informally you differentiate under the expectation. But the norm is not differentiable where $X = h$ and $\mathcal{H}$ can be infinite-dimensional, so in the thesis that claim takes a page and a half:
+
+<MedianFigure name="expansion" />
+
+Steps like that, plus background chapters, are how the thesis runs to 85 pages against the paper's 26. It ends with a small simulation of the asymptotic normality.
+
+## The thesis
+
+<iframe
+  src="/uploads/geometric-median-bachelor-thesis.pdf"
+  title="Online-Schätzung des geometrischen Medians in Hilberträumen"
+  width="100%"
+  height="900"
+  style={{ border: "1px solid #d1d5db", borderRadius: "12px" }}
+>
+</iframe>
+
+[Open the PDF in a new tab](/uploads/geometric-median-bachelor-thesis.pdf)

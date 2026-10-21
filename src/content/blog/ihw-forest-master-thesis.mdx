@@ -1,0 +1,55 @@
+---
+title: "Multiple Testing with Many Covariates: My Master Thesis"
+pubDate: 2022-11-06
+tags:
+  - Statistics
+  - Science
+math: true
+description: "My master thesis implemented and tested IHW-Forest, an extension of the multiple testing method IHW from one covariate to many, proposed by Nikolaos Ignatiadis. What the method does, which parts were mine, and the full thesis embedded."
+image: /images/blog/ihw-forest-master-thesis/featured.png
+---
+
+import IhwFigure from '../../components/IhwFigure.astro';
+
+My master thesis (Heidelberg, 2022) was written in [Wolfgang Huber](https://www.huber.embl.de/group/people/wolfgang-huber.html)'s group at EMBL, closely supervised by him and by [Nikolaos Ignatiadis](https://nignatiadis.github.io/), with [Jan Johannes](https://www.janjohannes.de/) co-supervising at the university. The method it builds on is theirs, and the idea for the extension was Nikolaos's. My part was the detail work: proofs, code and tests.
+
+## The method: IHW
+
+Biology often tests millions of hypotheses at once, and the [Benjamini–Hochberg procedure](https://doi.org/10.1111/j.2517-6161.1995.tb02031.x) keeps the expected share of false discoveries, the false discovery rate (FDR), below a level $\alpha$. Often, though, each test comes with side information, a covariate, that hints at how likely it is to be a real effect. [Independent Hypothesis Weighting](https://doi.org/10.1038/nmeth.3885) (IHW), by Ignatiadis, Huber and co-authors, turns the covariate $X_i$ into a weight $W_i$ and rejects when
+
+$$
+P_i \le W_i\, t,
+$$
+
+so hypotheses with a promising covariate get an easier bar. The weights are learned on the other folds of the data, never on the p-value they apply to, and [Ignatiadis and Huber (2021)](https://doi.org/10.1111/rssb.12411) proved that this controls the FDR asymptotically, and exactly for a censored variant.
+
+To learn the weights, IHW cuts the covariate into bins by quantile. With one covariate that works; with several, the bins multiply until many hold too few hypotheses, or none, and the method breaks. In practice IHW could use one or two covariates.
+
+## The extension: IHW-Forest
+
+Nikolaos proposed letting a random forest draw the bins instead, and gave me a detailed description of it before I started. The trees regress an indicator of a large p-value on the covariates, so their leaves group hypotheses with a similar estimated share of true nulls, stay populated, and largely skip covariates that carry no signal.
+
+With made-up hypotheses whose small p-values gather in one corner, the difference looks like this:
+
+<IhwFigure name="bins" />
+
+## What I did
+
+- Wrote out the proof that IHW controls the FDR asymptotically, following Ignatiadis and Huber (2021), with the steps a journal article leaves out.
+- Implemented IHW-Forest in a fork of the [IHW](https://bioconductor.org/packages/IHW) R package ([pull request](https://github.com/nignatiadis/IHW/pull/7)), with help from members of the group. It is switched on with `stratification_method = "forest"`.
+- Compared it with other methods in simulations, and revisited the histone QTL analysis of Ignatiadis and Huber (2021): about 16 billion tests, of which only those with $p < 10^{-4}$ were stored, now with up to eleven covariates instead of one. In the three covariate sets both could handle, IHW-Forest made more discoveries than quantile binning, and it still ran on all eleven, where quantile binning could not. The code is in [ihw-forest-paper](https://github.com/FridljDa/ihw-forest-paper).
+
+<IhwFigure name="results" />
+
+## The thesis
+
+<iframe
+  src="/uploads/ihw-forest-master-thesis.pdf"
+  title="Better multiple testing: using multivariate co-data for hypothesis weighting"
+  width="100%"
+  height="900"
+  style={{ border: "1px solid #d1d5db", borderRadius: "12px" }}
+>
+</iframe>
+
+[Open the PDF in a new tab](/uploads/ihw-forest-master-thesis.pdf)
