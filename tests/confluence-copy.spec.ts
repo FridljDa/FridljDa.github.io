@@ -47,3 +47,19 @@ test('the body copies as Markdown for Insert Markdown', async ({ page, context }
   expect(markdown).toMatch(/^## /m);
   expect(markdown).toContain('](https://danielfridljand.de/images/blog/the-missing-test-suite/shadow-timeline.png)');
 });
+
+test('the body copies as wiki markup with capped image widths', async ({ page, context }) => {
+  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  await page.goto(`${POST}/confluence`);
+  await page.getByRole('button', { name: 'Copy body as wiki markup' }).click();
+  await expect(page.getByRole('status')).toHaveText('Copied the wiki markup.');
+  const wiki = await page.evaluate(() => navigator.clipboard.readText());
+  expect(wiki).toMatch(/^h2\. /m);
+  expect(wiki).not.toContain('Originally published');
+  expect(wiki).toMatch(
+    /!https:\/\/danielfridljand\.de\/images\/blog\/the-missing-test-suite\/shadow-timeline\.png\|width=\d+!/,
+  );
+  for (const [, width] of wiki.matchAll(/\|width=(\d+)!/g)) {
+    expect(Number(width)).toBeLessThanOrEqual(760);
+  }
+});
