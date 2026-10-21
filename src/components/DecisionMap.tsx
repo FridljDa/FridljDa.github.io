@@ -3,9 +3,10 @@
  * goes to intent recognition, an LLM call, which routes it either to a
  * workflow in code or to an agent. Both act only through the same tools,
  * which are code. Every action goes out through the tools, the reply
- * included; experts grade
- * each reply, and their grades feed back into the workflow: a new branch while
- * code is the default, a request type graduating into code once the agent is.
+ * included; experts grade each reply, and their grades feed back into both
+ * deciders: into the workflow as a new branch while code is the default, or a
+ * request type graduating into code once the agent is; into the agent as its
+ * prompt and the past tickets it may look at.
  *
  * Each section of the post shows the same map with its part highlighted and
  * the rest greyed out, like PipelineMap.tsx does for
@@ -16,7 +17,7 @@ import { color, Agent, Envelope, Experts, Reply, type Point } from '../remotion/
 import { Dim, Tag, ArrowMarker } from './map-parts';
 
 type NodeId = 'message' | 'intent' | 'workflow' | 'agent' | 'tools' | 'reply' | 'experts';
-type EdgeId = 'toIntent' | 'direct' | 'known' | 'other' | 'workflowTools' | 'agentTools' | 'send' | 'grade' | 'feedback';
+type EdgeId = 'toIntent' | 'direct' | 'known' | 'other' | 'workflowTools' | 'agentTools' | 'send' | 'grade' | 'feedback' | 'guide';
 type Part = NodeId | EdgeId;
 type Route = 'code' | 'agent';
 
@@ -38,7 +39,7 @@ export const PRESETS = {
   overview: {
     focus: [],
     description:
-      'The system as one map: a message goes to intent recognition, an LLM call, which routes it to a workflow in code or to an agent. Both act through the same tools, which send the reply; experts grade it and their grades feed back into the workflow.',
+      'The system as one map: a message goes to intent recognition, an LLM call, which routes it to a workflow in code or to an agent. Both act through the same tools, which send the reply; experts grade it and their grades feed back into both the workflow and the agent.',
   },
 
   'agent-first': {
@@ -73,25 +74,14 @@ export const PRESETS = {
     description:
       'Highlighted: intent recognition sends known requests to the workflow, the default, and the rest by the dashed Other route to the agent.',
   },
-
-
-
   'next-time': {
-    focus: ['intent', 'known', 'other', 'workflow', 'agent', 'feedback', 'experts'],
+    focus: ['intent', 'known', 'other', 'workflow', 'agent', 'feedback', 'guide', 'experts'],
     default: 'agent',
     tags: [{ on: 'agent', text: 'Default' }],
     small: true,
     description:
-      'Highlighted: the routing next time. The agent is the default route; a request type takes the dashed route to the workflow only once it is common and the agent gets it wrong, or its action can’t be undone.',
+      'Highlighted: the routing next time. The agent is the default route; a request type takes the dashed route to the workflow only once it is common and the agent gets it wrong, or its action can’t be undone. The experts’ feedback goes into the agent’s prompt and examples, and graduates request types into the workflow.',
   },
-  start: {
-    focus: ['send', 'reply', 'grade', 'experts'],
-    default: 'agent',
-    tags: [{ on: 'experts', text: 'Fill the grid' }],
-    small: true,
-    description: 'Highlighted: the experts, grading every reply as early as possible.',
-  },
-
 } satisfies Record<string, Preset>;
 
 export type PresetName = keyof typeof PRESETS;
@@ -101,8 +91,8 @@ const NOT_DIRECT: Part[] = ['intent', 'workflow', 'toIntent', 'known', 'other', 
 
 /** What the routes and the feedback say, by which route is the default; the grade edge always says "Grade". */
 const ROUTE_LABELS: Record<Route, Partial<Record<EdgeId, string>>> = {
-  code: { known: 'Known', other: 'Other', feedback: 'New branch' },
-  agent: { known: 'Graduated', feedback: 'Graduate' },
+  code: { known: 'Known', other: 'Other', feedback: 'New branch', guide: 'Prompt, examples' },
+  agent: { known: 'Graduated', feedback: 'Graduate', guide: 'Prompt, examples' },
 };
 
 interface Label extends Point {
@@ -131,52 +121,52 @@ const FADED = 0.34;
 const BOX = { w: 160, h: 92 };
 
 const WIDE: Layout = {
-  width: 960,
-  height: 510,
+  width: 1050,
+  height: 530,
   labelSize: 21,
   edgeSize: 19,
   tagSize: 19,
+  // Symmetric about the middle line: the workflow above it, the agent below,
+  // and the experts' feedback reaching each by mirrored arcs.
   N: {
-    message: { x: 60, y: 270 },
-    intent: { x: 232, y: 270 },
-    workflow: { x: 480, y: 130 },
-    agent: { x: 480, y: 400 },
-    tools: { x: 716, y: 270 },
-    reply: { x: 892, y: 270 },
-    experts: { x: 892, y: 130 },
+    message: { x: 56, y: 270 },
+    intent: { x: 216, y: 270 },
+    workflow: { x: 450, y: 130 },
+    agent: { x: 450, y: 410 },
+    tools: { x: 680, y: 270 },
+    reply: { x: 834, y: 270 },
+    experts: { x: 1000, y: 270 },
   },
   edges: {
-    toIntent: { d: 'M104,270 H148' },
+    toIntent: { d: 'M100,270 H132' },
     // Under where the intent step would be: the first design had none.
-    direct: { d: 'M98,288 C200,352 320,400 429,400' },
-    known: { d: 'M316,252 C360,252 356,130 396,130', label: { x: 340, y: 182, anchor: 'end' } },
-    // Right of the curve, clear of the intent's "LLM".
-    other: { d: 'M316,288 C360,288 356,400 429,400', label: { x: 372, y: 332, anchor: 'start' } },
+    direct: { d: 'M94,288 C180,352 300,410 395,410' },
+    known: { d: 'M298,252 C336,252 330,130 366,130', label: { x: 322, y: 182, anchor: 'end' } },
+    other: { d: 'M298,288 C336,288 330,410 395,410', label: { x: 322, y: 394, anchor: 'end' } },
     // Calls go in, results come back: both deciders act through the same tools.
-    workflowTools: { d: 'M564,152 C612,152 596,252 632,252', twoWay: true },
-    agentTools: { d: 'M531,388 C600,388 596,288 632,288', twoWay: true },
-    send: { d: 'M800,270 H858' },
-    grade: { d: 'M892,230 V168', label: { x: 882, y: 198, anchor: 'end' } },
-    // Along the top, above the tools, crossing nothing.
-    feedback: { d: 'M848,130 C740,130 660,108 564,108', label: { x: 704, y: 104 } },
+    workflowTools: { d: 'M534,152 C580,152 562,252 596,252', twoWay: true },
+    agentTools: { d: 'M501,398 C570,398 562,288 596,288', twoWay: true },
+    send: { d: 'M764,270 H800' },
+    grade: { d: 'M870,270 H950', label: { x: 908, y: 300 } },
+    // Mirror images: up over the tools into the workflow, down under them into the agent.
+    feedback: { d: 'M992,226 C980,120 760,104 534,108', label: { x: 760, y: 98 } },
+    guide: { d: 'M992,314 C980,420 760,436 506,432', label: { x: 760, y: 462 } },
   },
   labels: {
-    message: { x: 60, y: 340 },
-    intent: { x: 232, y: 342 },
-    workflow: { x: 480, y: 202 },
-    agent: { x: 480, y: 466 },
-    tools: { x: 716, y: 342 },
-    reply: { x: 892, y: 336 },
-    // Above: the grade comes in underneath.
-    experts: { x: 892, y: 84 },
+    message: { x: 56, y: 340 },
+    intent: { x: 216, y: 342 },
+    workflow: { x: 450, y: 202 },
+    agent: { x: 450, y: 476 },
+    tools: { x: 680, y: 342 },
+    reply: { x: 834, y: 336 },
+    // Above and to the left: the grade comes in from the left, the feedback leaves at the top and bottom.
+    experts: { x: 980, y: 214, anchor: 'end' },
   },
   tags: {
-    intent: { x: 232, y: 192 },
-    workflow: { x: 480, y: 46 },
+    intent: { x: 216, y: 192 },
+    workflow: { x: 450, y: 46 },
     // Left of the agent, below the route coming in.
-    agent: { x: 346, y: 456 },
-    // Left of centre, to stay inside the map.
-    experts: { x: 838, y: 32 },
+    agent: { x: 300, y: 466 },
   },
 };
 
@@ -185,15 +175,16 @@ const WIDE_SMALL: Layout = { ...WIDE, labelSize: 25, edgeSize: 25, tagSize: 23 }
 
 /**
  * The same map for phones, top to bottom: the message and intent, the
- * workflow and the agent side by side, the tools under both, and the reply
- * with the experts next to it; the feedback goes up the left margin.
+ * workflow and the agent side by side, the tools under both, then the reply
+ * and the experts; the feedback goes up both margins.
  */
 const TALL: Layout = {
   width: 620,
-  height: 850,
+  height: 960,
   labelSize: 25,
   edgeSize: 23,
   tagSize: 23,
+  // Symmetric about the middle line, as the wide map is about its own.
   N: {
     message: { x: 310, y: 48 },
     intent: { x: 310, y: 176 },
@@ -201,7 +192,7 @@ const TALL: Layout = {
     agent: { x: 470, y: 350 },
     tools: { x: 310, y: 610 },
     reply: { x: 310, y: 750 },
-    experts: { x: 150, y: 750 },
+    experts: { x: 310, y: 880 },
   },
   edges: {
     toIntent: { d: 'M310,90 V125' },
@@ -211,8 +202,10 @@ const TALL: Layout = {
     workflowTools: { d: 'M234,362 C292,362 290,460 290,558', twoWay: true },
     agentTools: { d: 'M419,362 C330,362 330,460 330,558', twoWay: true },
     send: { d: 'M310,660 V708' },
-    grade: { d: 'M280,750 H195', label: { x: 238, y: 736 } },
-    feedback: { d: 'M108,754 C30,730 26,420 66,362', label: { x: 56, y: 560, anchor: 'start' } },
+    grade: { d: 'M310,794 V838', label: { x: 324, y: 824, anchor: 'start' } },
+    // Mirror images up the two margins.
+    feedback: { d: 'M262,884 C40,884 26,430 66,362', label: { x: 56, y: 700, anchor: 'start' } },
+    guide: { d: 'M358,884 C580,884 600,400 526,362', label: { x: 564, y: 700, anchor: 'end' } },
   },
   labels: {
     message: { x: 362, y: 56, anchor: 'start' },
@@ -221,14 +214,13 @@ const TALL: Layout = {
     agent: { x: 470, y: 428 },
     tools: { x: 216, y: 604, anchor: 'end' },
     reply: { x: 350, y: 758, anchor: 'start' },
-    experts: { x: 150, y: 704 },
+    experts: { x: 310, y: 946 },
   },
   tags: {
     // Under its labels, between the two routes.
     intent: { x: 310, y: 322 },
     workflow: { x: 150, y: 496 },
     agent: { x: 470, y: 496 },
-    experts: { x: 150, y: 816 },
   },
 };
 
@@ -350,7 +342,7 @@ function MapSvg({ layout, preset, id, className }: { layout: Layout; preset: Pre
   const on = (part: Part) => all || p.focus.includes(part);
   const shown = (part: Part) => (part === 'direct' ? !!p.direct : !(p.direct && NOT_DIRECT.includes(part)));
   // The exception route is dashed, and so is the feedback, which changes the system rather than answering a request.
-  const dashed = (e: EdgeId) => e === 'feedback' || (e === 'known' && p.default === 'agent') || (e === 'other' && p.default === 'code');
+  const dashed = (e: EdgeId) => e === 'feedback' || e === 'guide' || (e === 'known' && p.default === 'agent') || (e === 'other' && p.default === 'code');
   const text = (e: EdgeId) => (e === 'grade' ? 'Grade' : p.default && ROUTE_LABELS[p.default][e]);
   const marker = `${id}-arrow`;
 

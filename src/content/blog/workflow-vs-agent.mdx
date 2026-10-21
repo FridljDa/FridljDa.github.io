@@ -1,7 +1,7 @@
 ---
 title: "Workflow or Agent: Where the Decisions Live"
 pubDate: 2026-04-19T00:00:00.000Z
-updatedDate: 2026-10-18T00:00:00.000Z
+updatedDate: 2026-10-21T00:00:00.000Z
 tags:
   - AI
   - Customer Support
@@ -20,7 +20,7 @@ The first architectural decision in an LLM automation is how much of the work th
 
 <DecisionMap preset="overview" />
 
-*The system as one map: a message goes to a workflow in code or to an agent, both act through the same tools, and experts grade the replies. Each section's map highlights its part.*
+*The system as one map: a message goes to a workflow in code or to an agent, both act through the same tools, and experts grade the replies. Their feedback goes back into both: new branches for the workflow, the prompt and examples for the agent. Each section's map highlights its part.*
 
 ## The first design: one agent with every tool
 
@@ -32,13 +32,13 @@ The running example is invented to protect the client, but the project behind it
 
 To answer Alex, something has to work out what Alex wants and which account is theirs, check whether it is safe to help, and choose the reply. Each of those steps can be code or the model.
 
-Two facts pushed us toward code. No model was trained on Northstar's escalation rules or on Alex's account. And no test can tell us whether a reply to Alex is right, the way a test suite tells a coding agent its code works: someone who knows the bank has to read the reply. [The Missing Test Suite](/post/the-missing-test-suite) makes the longer argument for the second. This post is about who decides the order of operations.
+Two facts pushed us toward code. No model was trained on Northstar's escalation rules or on Alex's account. And no test can tell us whether a reply to Alex is right, the way a test suite tells a coding agent its code works: someone who knows the bank has to read the reply. [The Missing Test Suite](/post/the-missing-test-suite) makes the longer argument for the second.
 
 The first design we tried left all of it to the model: a single support agent that held every tool (account lookup, security-flag check, send unlock instructions, escalate to security), decided which to call next, and wrote the reply itself.
 
-Nothing in that design guarantees that the agent checks the security flag before it sends unlock instructions. That would be an expensive mistake. And if the model chooses the order, a customer's message can talk it out of the check: that is [prompt injection](/post/prompt-injection). A check inside the unlock tool would close that hole, but that is code deciding the order again. As the ServiceNow CEO [put it](https://open.spotify.com/episode/11xeL3QCAF77z1vxOp0am0?si=fc70f33f0dd64ab4): people forgive other people for making mistakes. They don't forgive software.
+Nothing in that design guarantees that the agent checks the security flag before it sends unlock instructions, and unlocking a flagged account is an expensive mistake. And if the model chooses the order, a customer's message can talk it out of the check: that is [prompt injection](/post/prompt-injection). A check inside the unlock tool would close that hole, but that is code deciding the order again. As the ServiceNow CEO [put it](https://open.spotify.com/episode/11xeL3QCAF77z1vxOp0am0?si=fc70f33f0dd64ab4): people forgive other people for making mistakes. They don't forgive software.
 
-In practice, though, a different complaint drove the decision: stakeholders said the agent's replies didn't match the established message templates. We tried to fix that with prompt engineering, but asking an LLM to be reliably deterministic works against its nature. Judged on template match, code can't lose, because code picks the template. So we tried a workflow, where code decides the next step and the model only fills in single steps.
+In practice, though, a different complaint drove the decision: stakeholders said the agent's replies didn't match the established message templates. We tried to fix that in the prompt, but a prompt makes a template more likely, never certain. Judged on template match, code can't lose, because code picks the template. So we tried a workflow, where code decides the next step and the model only fills in single steps.
 
 ## For well-understood requests, the workflow works
 
@@ -78,7 +78,7 @@ Eventually the workflow wasn't expressive enough, so we bolted an agent onto the
 
 The grading worked against it, too. Drafts were scored on template match rather than on whether the customer's issue got resolved, so a clearer, more helpful answer in the agent's own words still scored badly, purely for departing from a template. We were asking the agent to be a worse workflow.
 
-Before the tree had an Account locked intent, Alex's message landed in "Other", and the agent's draft asked Alex for the email address on the account. It was [rejected for "Wrong process"](/post/the-missing-test-suite#1-experts-grade). The reviewer wrote: "We have the account number, so look them up: never ask for what we can find. Locked accounts get the unlock link, or go to security if flagged." With code as the default, our fix was a new intent.
+Before the tree had an Account locked intent, Alex's message landed in "Other", and the agent's draft asked Alex for the email address on the account. It was [rejected for "Wrong process"](/post/the-missing-test-suite#1-experts-grade). The reviewer wrote: "We have the account number, so look them up: never ask for what we can find. Locked accounts get the unlock link, or go to security if flagged." With code as the default, our fix was a new intent. The reviewer's two sentences could just as well have gone into the agent's prompt.
 
 ## Next time: make the agent the default
 
@@ -96,18 +96,12 @@ I would start with an agent with a set of tools. For Alex, it would read the mes
 
 That is also the shortest path into shadow deployment, since an agent with a set of tools is much less to build than a tree of intents, plans and templates, and every week before the experts see real drafts is [a week of grades lost](/post/the-missing-test-suite#get-into-shadow-deployment-sooner).
 
-The caveats are real, though:
+The experts' feedback would reach the agent too, just not as a branch. A rejection like the one above becomes a line in the agent's prompt, and an approved reply becomes an example it can look up for the next ticket of that kind. A line in the prompt covers every ticket it fits, where a branch covers one cell; but the agent may still not follow it, which is when that request type moves into code.
 
-- **The agent doesn't shrink the grid; it spares you enumerating it.** That is a real advantage, since enumerating it was exactly where we hit the wall. But skipping a cell is not the same as answering it correctly.
-- **The agent arrives no better informed than the tree did.** It can read Alex's record, but how to get Alex back in depends on the bank's rules. A read tool only helps with the rules somebody wrote down, and most of them live in the heads of the people who answer the tickets.
-- **Resolved tickets are no clean fix.** The obvious remedy is to point the agent at them, but they are full of resolutions that contradict each other and current policy. The tree, for all its gaps, was at least a single curated source of truth.
-- **Privacy and security are hard to get right.** Those same tickets are full of personal data, and an agent that retrieves and reasons over them is a far larger exposure surface than a fixed tree.
+The agent has its own problems:
+
+- **The agent doesn't shrink the grid; it spares you enumerating it.** Enumerating it was where we hit the wall, but skipping a cell is not the same as answering it correctly.
+- **The agent starts out knowing no more than the tree did.** It can read Alex's record, but how to get Alex back in depends on the bank's rules, and most of them live in the heads of the people who answer the tickets.
+- **Resolved tickets need curating.** Pointing the agent at all of them is no fix: their resolutions contradict each other and current policy. The examples it looks up have to be chosen and kept current, as the tree's branches were.
+- **Past tickets carry personal data.** An agent that looks them up can leak one customer's details into a reply to another; a fixed tree reads only the record of the customer in front of it.
 - **An agent is [mostly judged end to end](/post/first-level-support-automation#the-practical-payoff-local-evals),** so a regression is hard to locate.
-
-## What actually settles it
-
-<DecisionMap preset="start" />
-
-Neither design tells you which cells of the grid matter. A workflow makes you guess them up front; an agent lets you skip writing them down. Only the people who know the business can settle which paths are worth freezing into code, and they settle it by grading the system's drafts.
-
-If I built this again, I would first [work out what the automation would actually save](/post/approval-rate-is-not-savings). Then I would [get the experts grading](/post/the-missing-test-suite) an agent's drafts before committing to a tree.
