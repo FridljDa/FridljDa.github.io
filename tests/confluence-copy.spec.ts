@@ -37,3 +37,13 @@ test.describe('Confluence copy of a post', () => {
     await expect(page.locator('figure.system-map svg.map-wide')).toHaveCount(16);
   });
 });
+
+test('the body copies as Markdown for Insert Markdown', async ({ page, context }) => {
+  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  await page.goto(`${POST}/confluence`);
+  await page.getByRole('button', { name: 'Copy body as Markdown' }).click();
+  await expect(page.getByRole('status')).toHaveText('Copied the markdown.');
+  const markdown = await page.evaluate(() => navigator.clipboard.readText());
+  expect(markdown).toMatch(/^## /m);
+  expect(markdown).toContain('](https://danielfridljand.de/images/blog/the-missing-test-suite/shadow-timeline.png)');
+});
