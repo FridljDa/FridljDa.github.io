@@ -19,7 +19,8 @@
     "test:production": "cross-env PLAYWRIGHT_BASE_URL=https://danielfridljand.de playwright test",
     "test:mobile": "playwright test --project=\"iPhone 13\" --project=\"iPad Pro\" --project=\"Pixel 5\"",
     "test:mobile:ui": "playwright test --ui --project=\"iPhone 13\" --project=\"iPad Pro\" --project=\"Pixel 5\"",
-    "test:mobile:headed": "playwright test --headed --project=\"iPhone 13\" --project=\"iPad Pro\" --project=\"Pixel 5\""
+    "test:mobile:headed": "playwright test --headed --project=\"iPhone 13\" --project=\"iPad Pro\" --project=\"Pixel 5\"",
+    "presentation:pdf": "node scripts/presentation/render-pdf.mjs"
   },
   "dependencies": {
     "@astrojs/mdx": "^6.0.3",
