@@ -82,7 +82,7 @@ The `client_id` names the client and is not a secret: it shows up in logs, and i
 
 *Two calls to get going: one to the auth server for a token, one to the API with it. After that, only the second, until the token expires.*
 
-The token request (1) is a form-encoded `POST`. The client authenticates with HTTP Basic: the two values joined by a colon, `northstar-support-agent:q8Zr2vLx7TfN4mKd9WbE`, then base64-encoded:
+The token request (1) is a form-encoded `POST`. The client authenticates with HTTP Basic: the two values joined by a colon, `northstar-support-agent:q8Zr2vLx7TfN4mKd9WbE`, then base64-encoded so that any character in them is safe to put in a header:
 
 ```http
 POST /oauth/token HTTP/1.1
@@ -91,15 +91,6 @@ Authorization: Basic bm9ydGhzdGFyLXN1cHBvcnQtYWdlbnQ6cThacjJ2THg3VGZONG1LZDlXYkU
 Content-Type: application/x-www-form-urlencoded
 
 grant_type=client_credentials&scope=contacts.read%20cases.write
-```
-
-With `curl`, `-u` does the joining and encoding:
-
-```sh
-curl -u northstar-support-agent:q8Zr2vLx7TfN4mKd9WbE \
-  -d grant_type=client_credentials \
-  -d scope="contacts.read cases.write" \
-  https://auth.crm.example.com/oauth/token
 ```
 
 Base64 is an encoding, not encryption: whoever sees that header has the secret. That is why it only ever travels over HTTPS, and only to the token endpoint.
