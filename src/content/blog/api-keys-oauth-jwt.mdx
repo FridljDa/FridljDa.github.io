@@ -15,7 +15,7 @@ import AuthMap from '../../components/AuthMap.astro';
 import AuthFigure from '../../components/AuthFigure.astro';
 
 ## TL;DR
-"API keys, OAuth or JWT?" sounds like a choice between three options, but they sit on different layers. An **API key** is a credential: a long-lived secret you send with every request. **OAuth 2.0** is a protocol for *getting* a credential: you trade something you hold for a short-lived, scoped access token, either as yourself (client credentials) or on behalf of a person who consented (authorization code). A **JWT** is a *format*: a signed JSON token the API can check on its own, without a database call. An OAuth access token is often a JWT, which is why the three get mixed up. As the one calling an API, I mostly need to know which credential the API wants, how to get and refresh it, and how to keep it out of places it doesn't belong, including the model's context.
+An **API key** is a credential: a long-lived secret you send with every request. **OAuth 2.0** is a protocol for *getting* a credential: you trade something you hold for a short-lived, scoped access token, either as yourself (client credentials) or on behalf of a person who consented (authorization code). A **JWT** is a *format*: a signed JSON token the API can check on its own, without a database call. An OAuth access token is often a JWT, which is why the three get mixed up. As the one calling an API, I mostly need to know which credential the API wants, how to get and refresh it, and how to keep it out of places it doesn't belong, including the model's context.
 
 <AuthMap preset="overview" />
 
@@ -30,8 +30,6 @@ Every authenticated API call answers some version of three questions: *who is ca
 | **API key** | A credential | "This request comes from application X" | Months, until someone rotates it |
 | **OAuth 2.0** | A protocol for getting credentials | "Application X may do *these things*, as itself or for user Y" | Access token: minutes to an hour |
 | **JWT** | A token format | "Here's who issued this, for whom, until when, and a signature proving it" | Whatever its `exp` claim says |
-
-So the honest comparison is not API key vs OAuth vs JWT. It is *static secret* vs *short-lived token*, and, for tokens, *opaque string* vs *self-contained JWT*.
 
 The running example is the invented Northstar Bank from my posts on support automation. Alex Carter writes in that their account is locked, and to help, the support agent calls three systems: a **ticketing system** to open an escalation, the **CRM** to look up Alex's account and its security flag, and **the calendar of Alex's personal advisor** to book a callback. Same agent, three integrations, three patterns.
 
