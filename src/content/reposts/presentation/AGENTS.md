@@ -36,10 +36,11 @@ As with LinkedIn, a talk is not the post read aloud. Ask what the audience
 should remember, then order the slides as a story. Unlike LinkedIn, a talk has
 room: about 1 to 1.5 minutes per slide, and a post of about 2,300 words reads
 aloud in under 20 minutes. A longer slot gets the post's own story told in more
-depth, drawn from the posts it links to, not new claims: The Missing Test
-Suite's 35-minute version walks one ticket through every step and spends its
-extra time on the coding agent's side of the loop (evals, failure triage),
-taken from Langfuse in Production.
+depth, drawn from the posts it links to, not new claims. A shorter one keeps
+the post's argument and moves the detail into the notes: The Missing Test
+Suite's 20-minute version still walks one ticket through every step, but its
+evals, failure triage and lessons that aren't about the bottleneck are a line
+in the notes, not slides of their own.
 
 What a talk takes as given goes on a slide of its own, early: The Missing Test
 Suite's opens by saying that whether to build a workflow or an agent was
