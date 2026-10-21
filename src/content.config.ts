@@ -52,4 +52,20 @@ const linkedin = defineCollection({
     .strict(),
 });
 
-export const collections = { blog, linkedin };
+/**
+ * Slides for a talk on a blog post, written by hand and never listed on the
+ * site. The filename is the post's slug and the body is MDX: one <Slide> per
+ * slide, with its speaker notes in <Notes>. See
+ * src/content/reposts/presentation/AGENTS.md.
+ */
+const presentation = defineCollection({
+  loader: glob({ pattern: ['*.mdx'], base: './src/content/reposts/presentation' }),
+  schema: z
+    .object({
+      // Roughly how long the talk runs, without questions.
+      minutes: z.number().int().positive(),
+    })
+    .strict(),
+});
+
+export const collections = { blog, linkedin, presentation };

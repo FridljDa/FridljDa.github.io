@@ -12,9 +12,9 @@ We intentionally **do not** use `astro:assets` (`<Image />`, `srcset`, WebP conv
 
 Assets live under `src/assets/images/` with `public/images` symlinked for stable `/images/...` URLs in MDX and frontmatter. Do not reintroduce responsive image optimization without explicit owner approval.
 
-## Reposts (LinkedIn, Confluence)
+## Reposts (LinkedIn, presentations, Confluence)
 
-LinkedIn versions of blog posts are written by hand: read `src/content/reposts/linkedin/AGENTS.md` before writing one. The Confluence copy is generated from the post by code and never rewritten, and only posts with `confluence: true` in their frontmatter get one: see `src/content/reposts/AGENTS.md`.
+LinkedIn versions of blog posts are written by hand: read `src/content/reposts/linkedin/AGENTS.md` before writing one. So are slides for a talk on a post: `src/content/reposts/presentation/AGENTS.md`. The Confluence copy is generated from the post by code and never rewritten, and only posts with `confluence: true` in their frontmatter get one: see `src/content/reposts/AGENTS.md`.
 
 ## Examples: invented, never passed off as the project
 

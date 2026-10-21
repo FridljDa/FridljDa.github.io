@@ -1,0 +1,302 @@
+---
+/**
+ * The slides for a talk on a blog post, for printing to PDF.
+ *
+ * Only posts with src/content/reposts/presentation/<slug>.mdx have one; the
+ * rest are a 404. Each <Slide> is a 1280×720 page. Print the page to get the
+ * slides; add ?notes to get each slide with its speaker notes on an A4 page.
+ * `npm run presentation:pdf` does both.
+ *
+ * Unlisted and noindex, like the LinkedIn and Confluence copies.
+ */
+import { getCollection, getEntry, render } from 'astro:content';
+import { SITE } from '../../../data/site';
+import '../../../components/loop-animation.css';
+
+const { slug } = Astro.params;
+const post = (await getCollection('blog')).find((p) => p.id === slug);
+const deck = slug ? await getEntry('presentation', slug) : undefined;
+
+if (!post || !deck) {
+  return Astro.redirect('/404', 404);
+}
+
+const { Content } = await render(deck);
+const postUrl = `${SITE.url}/post/${post.id}`;
+const notes = Astro.url.searchParams.has('notes');
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex" />
+    <link rel="canonical" href={postUrl} />
+    <title>{post.data.title} (slides)</title>
+  </head>
+  <body class:list={['lv-theme', { 'with-notes': notes }]}>
+    <div class="toolbar">
+      Slides for <a href={postUrl}>{post.data.title}</a>, about {deck.data.minutes} minutes without questions.
+      {notes ? <a href="?">Hide speaker notes</a> : <a href="?notes">Show speaker notes</a>}
+      Print the page, or run <code>npm run presentation:pdf</code>, for the PDF.
+    </div>
+    <main>
+      <Content />
+    </main>
+
+    <script>
+      // The notes are written inside their slide; move each below it.
+      for (const page of document.querySelectorAll('.page')) {
+        const out = page.querySelector('.notes-out')!;
+        for (const notes of page.querySelectorAll('.slide .notes')) out.append(notes);
+      }
+    </script>
+
+    <style is:global>
+      @page {
+        size: 1280px 720px;
+        margin: 0;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      body {
+        margin: 0;
+        padding: 0 1rem 4rem;
+        background: #e5e7eb;
+        color: var(--lv-text);
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, system-ui, sans-serif;
+      }
+      a {
+        color: var(--lv-added);
+      }
+      .toolbar {
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 0.75rem 0;
+        font-size: 0.875rem;
+      }
+      .toolbar a {
+        margin-left: 0.5rem;
+      }
+
+      .page {
+        width: 1280px;
+        margin: 0 auto 2rem;
+      }
+      .slide {
+        position: relative;
+        width: 1280px;
+        height: 720px;
+        overflow: hidden;
+        padding: 48px 72px 40px;
+        display: flex;
+        flex-direction: column;
+        background: var(--lv-surface);
+        box-shadow: 0 1px 4px rgb(0 0 0 / 0.15);
+      }
+      .slide h2 {
+        margin: 0 0 24px;
+        font-size: 40px;
+        line-height: 1.2;
+        letter-spacing: -0.01em;
+      }
+      .slide .body {
+        flex: 1;
+        min-height: 0;
+        font-size: 28px;
+        line-height: 1.45;
+      }
+      .slide p {
+        margin: 0 0 0.6em;
+      }
+      .slide ul,
+      .slide ol {
+        margin: 0 0 0.6em;
+        padding-left: 1.2em;
+      }
+      .slide li {
+        margin-bottom: 0.4em;
+      }
+      .slide li::marker {
+        color: var(--lv-muted);
+      }
+      .slide strong {
+        color: var(--lv-text);
+      }
+      .slide .small {
+        font-size: 18px;
+        color: var(--lv-muted);
+      }
+      .slide .caption {
+        margin: 8px 0 0;
+        font-size: 18px;
+        color: var(--lv-muted);
+        text-align: center;
+      }
+
+      /* Figures: as big as the space left for them, never cropped. */
+      .slide figure {
+        margin: 0;
+      }
+      .slide .body img {
+        display: block;
+        max-width: 100%;
+        max-height: 100%;
+        margin: 0 auto;
+        object-fit: contain;
+      }
+      .slide .body p:has(> img) {
+        height: 100%;
+        margin: 0;
+        display: flex;
+        align-items: center;
+      }
+      /* The drawn figures size their SVG to the column's width; on a slide the
+         height is what runs out, so they size to that instead. */
+      .slide figure svg:not(svg svg) {
+        width: auto !important;
+        max-width: 100%;
+        max-height: 100%;
+        margin: 0 auto;
+      }
+      .slide figure,
+      .slide figure > div {
+        height: 100%;
+        max-width: none !important;
+        overflow: visible;
+      }
+
+      .figure .body {
+        display: flex;
+        flex-direction: column;
+      }
+      .figure .body:not(:has(> figure, > p > img)) {
+        padding-top: 32px;
+      }
+      .figure .body > figure,
+      .figure .body > p:has(> img) {
+        flex: 1;
+        min-height: 0;
+      }
+
+      .split .body {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 56px;
+        align-items: center;
+      }
+      .split .body > figure,
+      .split .body > p:has(> img) {
+        height: 100%;
+        min-height: 0;
+      }
+      /* Two columns of text line up at the top. */
+      .split .body:not(:has(> figure, > p > img)) {
+        align-items: start;
+        padding-top: 32px;
+      }
+
+      .statement {
+        justify-content: center;
+      }
+      .statement .body {
+        flex: 0 1 auto;
+        font-size: 48px;
+        line-height: 1.25;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+      }
+      .statement .body p {
+        margin-bottom: 0.5em;
+      }
+      .statement .body .small {
+        font-size: 28px;
+        font-weight: 400;
+      }
+
+      .title {
+        justify-content: center;
+      }
+      .title .body {
+        flex: 0 1 auto;
+        display: grid;
+        grid-template-columns: 1fr 520px;
+        gap: 48px;
+        align-items: center;
+      }
+      .title h1 {
+        margin: 0 0 24px;
+        font-size: 60px;
+        line-height: 1.1;
+        letter-spacing: -0.02em;
+      }
+      .title .body p {
+        color: var(--lv-muted);
+      }
+
+      .notes-out {
+        display: none;
+      }
+
+      /* Speaker notes under each slide, on screen and in the notes PDF. */
+      .with-notes .page {
+        background: #fff;
+        padding: 24px;
+        box-shadow: 0 1px 4px rgb(0 0 0 / 0.15);
+      }
+      .with-notes .notes-out {
+        display: block;
+        padding-top: 16px;
+        font-size: 16px;
+        line-height: 1.55;
+      }
+      .with-notes .notes-out p {
+        margin: 0 0 0.75em;
+      }
+
+      @media print {
+        body {
+          padding: 0;
+          background: none;
+        }
+        .toolbar {
+          display: none;
+        }
+        .page {
+          margin: 0;
+          break-after: page;
+        }
+        .slide {
+          box-shadow: none;
+        }
+      }
+
+      /* The notes PDF: A4 portrait, the slide shrunk to the page's width and its notes below. */
+      @page notes {
+        size: A4 portrait;
+        margin: 14mm;
+      }
+      @media print {
+        .with-notes .page {
+          page: notes;
+          width: auto;
+          padding: 0;
+          box-shadow: none;
+        }
+        .with-notes .slide {
+          zoom: 0.53;
+          border: 2px solid var(--lv-edge);
+        }
+        .with-notes .notes-out {
+          font-size: 14px;
+        }
+      }
+    </style>
+  </body>
+</html>

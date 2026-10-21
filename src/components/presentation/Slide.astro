@@ -1,0 +1,30 @@
+---
+/**
+ * One slide of a presentation (src/content/reposts/presentation/), 1280×720.
+ *
+ * The slot is the slide; a <Notes> element inside it holds what I say over
+ * it, which the slides PDF leaves out and the notes PDF prints below the slide.
+ *
+ * Layouts:
+ * - `figure` (default): the title, then one figure filling the rest.
+ * - `split`: text on the left, a figure on the right; the figure is the last child.
+ * - `statement`: one big line or two, centred, no title bar.
+ * - `title`: the opening slide.
+ */
+interface Props {
+  title?: string;
+  layout?: 'figure' | 'split' | 'statement' | 'title';
+}
+
+const { title, layout = 'figure' } = Astro.props;
+---
+
+<section class="page">
+  <div class:list={['slide', layout]}>
+    {title && <h2>{title}</h2>}
+    <div class="body">
+      <slot />
+    </div>
+  </div>
+  <div class="notes-out"></div>
+</section>
