@@ -41,13 +41,15 @@ const postUrl = `${SITE.url}/post/${post.id}`;
     <div class="toolbar">
       <p>
         Plain copy of <a href={postUrl}>this post</a> for Confluence. Copy the title into the page title and the
-        body into the page, or copy it as Markdown for Confluence's Insert Markdown. Images load from {new URL(SITE.url).host}, as they will in Confluence, so a broken one
+        body into the page, or copy it as Markdown or wiki markup for Confluence's Insert markup. Wiki markup keeps images at most
+        760px wide. Images load from {new URL(SITE.url).host}, as they will in Confluence, so a broken one
         here has not been deployed yet.
       </p>
       <div class="actions">
         <button type="button" data-copy="title">Copy title</button>
         <button type="button" data-copy="body">Copy body</button>
         <button type="button" data-copy="markdown">Copy body as Markdown</button>
+        <button type="button" data-copy="wiki markup">Copy body as wiki markup</button>
         <span class="status" role="status"></span>
       </div>
     </div>
@@ -55,7 +57,6 @@ const postUrl = `${SITE.url}/post/${post.id}`;
     <main>
       <h1 id="title">{post.data.title}</h1>
       <article id="body" data-base={postUrl}>
-        <p><em>Originally published at <a href={postUrl}>{postUrl.replace(/^https:\/\//, '')}</a>.</em></p>
         {post.data.image && <img src={post.data.image} alt={post.data.title} />}
         <Content />
       </article>
@@ -63,6 +64,7 @@ const postUrl = `${SITE.url}/post/${post.id}`;
 
     <script>
       import { htmlToMarkdown } from '../../../utils/markdown';
+      import { htmlToConfluenceWiki } from '../../../utils/confluence-wiki';
 
       const title = document.getElementById('title')!;
       const body = document.getElementById('body')!;
@@ -82,15 +84,9 @@ const postUrl = `${SITE.url}/post/${post.id}`;
 
       // A copy event rather than the async Clipboard API, which browsers deny
       // without a permission grant; this only needs the click.
-      // Markdown goes in as plain text only, so a paste keeps the `##` and `**`.
-      function copy(el: HTMLElement, markdown = false): boolean {
+      function copy(data: Record<string, string>): boolean {
         const onCopy = (event: ClipboardEvent) => {
-          if (markdown) {
-            event.clipboardData?.setData('text/plain', htmlToMarkdown(el.innerHTML));
-          } else {
-            event.clipboardData?.setData('text/html', el.innerHTML);
-            event.clipboardData?.setData('text/plain', el.innerText);
-          }
+          for (const [type, value] of Object.entries(data)) event.clipboardData?.setData(type, value);
           event.preventDefault();
         };
         document.addEventListener('copy', onCopy);
@@ -101,12 +97,26 @@ const postUrl = `${SITE.url}/post/${post.id}`;
         }
       }
 
+      // Markdown and wiki markup go in as plain text only, so a paste keeps the
+      // markup for Insert markup to convert.
+      const formats: Record<string, () => Record<string, string>> = {
+        title: () => ({ 'text/html': title.innerHTML, 'text/plain': title.innerText }),
+        body: () => ({ 'text/html': body.innerHTML, 'text/plain': body.innerText }),
+        markdown: () => ({ 'text/plain': htmlToMarkdown(body.innerHTML) }),
+        'wiki markup': () => {
+          // The converter works on a copy, which has no loaded size to cap the width at.
+          for (const img of body.querySelectorAll('img')) {
+            if (img.naturalWidth) img.dataset.width = String(img.naturalWidth);
+          }
+          return { 'text/plain': htmlToConfluenceWiki(body) };
+        },
+      };
+
       const status = document.querySelector('.status')!;
-      const targets = { title, body, markdown: body };
       for (const button of document.querySelectorAll<HTMLButtonElement>('[data-copy]')) {
-        const what = button.dataset.copy as keyof typeof targets;
+        const what = button.dataset.copy!;
         button.addEventListener('click', () => {
-          status.textContent = copy(targets[what], what === 'markdown')
+          status.textContent = copy(formats[what]())
             ? `Copied the ${what}.`
             : `Could not copy the ${what}; select it and copy by hand.`;
         });
