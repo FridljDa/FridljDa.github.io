@@ -36,7 +36,7 @@ With made-up hypotheses whose small p-values gather in one corner, the differenc
 ## What I did
 
 - Wrote out the proof that IHW controls the FDR asymptotically, following Ignatiadis and Huber (2021), with the steps a journal article leaves out.
-- Implemented IHW-Forest in a fork of the [IHW](https://bioconductor.org/packages/IHW) R package ([pull request](https://github.com/nignatiadis/IHW/pull/7)), with help from members of the group. It is switched on with `stratification_method = "forest"`.
+- Implemented IHW-Forest in a fork of the [IHW](https://bioconductor.org/packages/IHW) R package ([pull request](https://github.com/nignatiadis/IHW/pull/7)), with help from members of the group. It was never merged into the released package.
 - Compared it with other methods in simulations, and revisited the histone QTL analysis of Ignatiadis and Huber (2021): about 16 billion tests, of which only those with $p < 10^{-4}$ were stored, now with up to eleven covariates instead of one. In the three covariate sets both could handle, IHW-Forest made more discoveries than quantile binning, and it still ran on all eleven, where quantile binning could not. The code is in [ihw-forest-paper](https://github.com/FridljDa/ihw-forest-paper).
 
 <IhwFigure name="results" />
