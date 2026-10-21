@@ -11,7 +11,7 @@ image: /images/blog/ihw-forest-master-thesis/featured.png
 
 import IhwFigure from '../../components/IhwFigure.astro';
 
-My master thesis (Heidelberg, 2022) was written in [Wolfgang Huber](https://www.huber.embl.de/group/people/wolfgang-huber.html)'s group at EMBL, closely supervised by him and by [Nikolaos Ignatiadis](https://nignatiadis.github.io/), with [Jan Johannes](https://www.janjohannes.de/) co-supervising at the university. The method it builds on is theirs, and the idea for the extension was Nikolaos's. My part was the detail work: proofs, code and tests.
+My master thesis (Heidelberg, 2022) was written in [Wolfgang Huber](https://www.huber.embl.de/group/people/wolfgang-huber.html)'s group at EMBL, closely supervised by him and by [Nikolaos Ignatiadis](https://nignatiadis.github.io/), with [Jan Johannes](https://www.janjohannes.de/) co-supervising at the university. The method it builds on is theirs, and the idea for the extension was Nikolaos's. My part was the proofs, the code and the tests.
 
 ## The method: IHW
 
@@ -23,7 +23,7 @@ $$
 
 so hypotheses with a promising covariate get an easier bar. The weights are learned on the other folds of the data, never on the p-value they apply to, and [Ignatiadis and Huber (2021)](https://doi.org/10.1111/rssb.12411) proved that this controls the FDR asymptotically, and exactly for a censored variant.
 
-To learn the weights, IHW cuts the covariate into bins by quantile. With one covariate that works; with several, the bins multiply until many hold too few hypotheses, or none, and the method breaks. In practice IHW could use one or two covariates.
+To learn the weights, IHW cuts the covariate into bins by quantile. That works well for one covariate; with several, the bins multiply and each holds few hypotheses.
 
 ## The extension: IHW-Forest
 
@@ -37,7 +37,7 @@ With made-up hypotheses whose small p-values gather in one corner, the differenc
 
 - Wrote out the proof that IHW controls the FDR asymptotically, following Ignatiadis and Huber (2021), with the steps a journal article leaves out.
 - Implemented IHW-Forest in a fork of the [IHW](https://bioconductor.org/packages/IHW) R package ([pull request](https://github.com/nignatiadis/IHW/pull/7)), with help from members of the group.
-- Compared it with other methods in simulations, and revisited the histone QTL analysis of Ignatiadis and Huber (2021): about 16 billion tests, of which only those with $p < 10^{-4}$ were stored, now with up to eleven covariates instead of one. In the three covariate sets both could handle, IHW-Forest made more discoveries than quantile binning, and it still ran on all eleven, where quantile binning could not. The code is in [ihw-forest-paper](https://github.com/FridljDa/ihw-forest-paper).
+- Compared it with other methods in simulations, and revisited the histone QTL analysis of Ignatiadis and Huber (2021): about 16 billion tests, now with up to eleven covariates instead of one. In the three covariate sets both could handle, IHW-Forest made more discoveries than quantile binning, and it still ran on all eleven, where quantile binning could not. The code is in [ihw-forest-paper](https://github.com/FridljDa/ihw-forest-paper).
 
 <IhwFigure name="results" />
 
