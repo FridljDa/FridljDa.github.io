@@ -33,8 +33,12 @@ names.
 A post never says why it was written or who it is for. It does not address,
 name or hint at a particular company, team or role as its reader or occasion
 ("for the X team", "as X does it", "what X looks for"). Naming tools,
-open-source projects and cited sources is fine; naming an employer or
-organisation as context is not, unless the owner asks. The same applies to
+open-source projects and cited sources is fine. So is naming a place the
+owner works or has worked at (TNG Technology Consulting, EMBL, ETH Zürich,
+Stanford), since the CV makes that public, for example where a talk is
+given. Never name a client, or a company from any other context that isn't
+public knowledge, such as a job application: describe a client only in
+generic terms, as in the section above. The same applies to
 reposts, file names, slugs, frontmatter, figure text, commit messages and PR
 descriptions, since this repo is public.
 
