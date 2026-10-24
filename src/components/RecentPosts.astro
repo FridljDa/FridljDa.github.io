@@ -1,0 +1,36 @@
+---
+/**
+ * The home page's newest posts and a link to all of them on /posts. Rendered
+ * on the server, no JavaScript: a tag on a card links to /posts filtered by it.
+ */
+import { BlogPostCard, type BlogPost } from './BlogPostsSection';
+
+interface Props {
+  posts: BlogPost[];
+  total: number;
+}
+
+const { posts, total } = Astro.props;
+---
+
+<section id="posts" class="py-16 bg-surface scroll-mt-20">
+  <div class="container mx-auto px-4">
+    <div class="max-w-4xl mx-auto">
+      <h2 class="text-3xl font-bold mb-6 text-heading text-mobile-center">
+        <a href="#posts" class="heading-link" aria-label="Link to Recent posts section">Recent posts</a>
+      </h2>
+      <div class="grid md:grid-cols-2 gap-6">
+        {posts.map((post) => <BlogPostCard post={post} />)}
+      </div>
+      <div class="mt-10 text-center">
+        <a
+          href="/posts"
+          class="inline-block px-6 py-3 rounded-lg bg-link text-white font-semibold hover:opacity-90 transition-opacity"
+          data-testid="all-posts"
+        >
+          See all {total} posts →
+        </a>
+      </div>
+    </div>
+  </div>
+</section>

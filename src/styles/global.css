@@ -291,6 +291,11 @@
   .text-link-hover {
     @apply text-primary-600 dark:text-primary-400 hover:underline;
   }
+
+  /* A filled button or selected tag in the link colour, with white text */
+  .bg-link {
+    @apply bg-primary-600 dark:bg-primary-500;
+  }
   
   /* Button utilities */
   .btn-secondary {

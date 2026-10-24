@@ -2,6 +2,7 @@
 import type { APIRoute } from 'astro';
 import { getCollection, type CollectionEntry } from 'astro:content';
 import { SITE } from '../data/site';
+import { POSTS_PER_PAGE, postsPageUrl } from '../utils/post-cards';
 
 export const GET: APIRoute = async () => {
   const blogPosts = await getCollection('blog');
@@ -25,6 +26,13 @@ export const GET: APIRoute = async () => {
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
+  <!-- The list of all posts, POSTS_PER_PAGE to a page -->
+${Array.from({ length: Math.max(1, Math.ceil(blogPosts.length / POSTS_PER_PAGE)) }, (_, i) => `  <url>
+    <loc>${SITE.url}${postsPageUrl(i + 1)}</loc>
+    <lastmod>${today}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>`).join('\n')}
   <!-- AI discoverability: Blog posts -->
   ${blogPosts
     .sort((a: CollectionEntry<'blog'>, b: CollectionEntry<'blog'>) => b.data.pubDate.getTime() - a.data.pubDate.getTime())

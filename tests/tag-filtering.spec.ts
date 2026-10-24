@@ -2,11 +2,10 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Tag Filtering Tests', () => {
   test.beforeEach(async ({ page }) => {
-    // Navigate to homepage before each test
-    await page.goto('/');
-    
-    // Navigate to posts section
-    await page.goto('/#posts');
+    // Tag filtering lives on the page of all posts
+    await page.goto('/posts');
+    // The tag buttons only work once React has hydrated the list
+    await expect(page.locator('astro-island[ssr]')).toHaveCount(0);
     await page.waitForLoadState('domcontentloaded');
   });
 
@@ -191,9 +190,8 @@ test.describe('Tag Filtering Tests', () => {
     // Resize to mobile viewport
     await page.setViewportSize({ width: 375, height: 667 });
     
-    // Navigate to posts section
-    await page.goto('/#posts');
-    await page.waitForLoadState('domcontentloaded');
+    await page.goto('/posts');
+    await expect(page.locator('astro-island[ssr]')).toHaveCount(0);
     
     // Check that tag filters are still visible and functional
     const tagFilters = page.locator('[data-testid="tag-filters"]');

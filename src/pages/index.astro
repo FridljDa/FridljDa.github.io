@@ -2,7 +2,7 @@
 import Layout from '../layouts/Layout.astro';
 import Biography from '../components/Biography.astro';
 import Experience from '../components/Experience.astro';
-import BlogPostsSection from '../components/BlogPostsSection';
+import RecentPosts from '../components/RecentPosts.astro';
 import PublicationCard from '../components/PublicationCard.astro';
 import ViewAsMarkdown from '../components/ViewAsMarkdown';
 import { getCollection } from 'astro:content';
@@ -13,38 +13,12 @@ import {
   generateCollectionPageSchema,
   generateDetailedPersonSchema,
 } from '../utils/schema';
-import { calculateReadingTime } from '../utils/reading-time';
-import { readBlogPostFile, extractMarkdownContent } from '../utils/content-reader';
+import { getPostCards, RECENT_POSTS } from '../utils/post-cards';
 const blogPosts = (await getCollection('blog')).sort(
   (a, b) => b.data.pubDate.getTime() - a.data.pubDate.getTime()
 );
 
-// Calculate reading time for each blog post
-const blogPostsWithReadingTime = await Promise.all(
-  blogPosts.map(async (post) => {
-    try {
-      const fileContent = await readBlogPostFile(post.id);
-      const markdownContent = extractMarkdownContent(fileContent);
-      const readingTime = calculateReadingTime(markdownContent);
-      return { post, readingTime };
-    } catch (error) {
-      // If we can't read the file, skip reading time
-      return { post, readingTime: undefined };
-    }
-  })
-);
-
-// Transform posts for BlogPostsSection component
-const postsForComponent = blogPostsWithReadingTime.map(({ post, readingTime }) => ({
-  id: post.id,
-  title: post.data.title,
-  description: post.data.description,
-  pubDate: post.data.pubDate.toISOString(),
-  slug: post.id,
-  image: post.data.image,
-  tags: post.data.tags,
-  readingTime,
-}));
+const postCards = await getPostCards();
 
 const homePageMarkdown = generateHomePageMarkdown(blogPosts);
 const collectionPageSchema = generateCollectionPageSchema();
@@ -74,11 +48,7 @@ const detailedPersonSchema = generateDetailedPersonSchema();
 
   <Biography markdownHref="/index.md" />
 
-  <section id="posts" class="py-16 bg-surface scroll-mt-20">
-    <div class="container mx-auto px-4">
-      <BlogPostsSection posts={postsForComponent} client:load />
-    </div>
-  </section>
+  <RecentPosts posts={postCards.slice(0, RECENT_POSTS)} total={postCards.length} />
 
   <Experience />
 

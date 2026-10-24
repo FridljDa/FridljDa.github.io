@@ -14,11 +14,24 @@ export interface BlogPost {
   readingTime?: number;
 }
 
-interface BlogPostsSectionProps {
-  posts: BlogPost[];
+/** Which slice of `posts` this page of /posts shows, and where its neighbours are. */
+export interface PostsPage {
+  start: number;
+  end: number;
+  current: number;
+  last: number;
+  prevUrl?: string;
+  nextUrl?: string;
 }
 
-export default function BlogPostsSection({ posts }: BlogPostsSectionProps) {
+interface BlogPostsSectionProps {
+  /** All posts, newest first: a tag filter searches all of them, not just this page. */
+  posts: BlogPost[];
+  page: PostsPage;
+}
+
+/** The post list of /posts: one page of posts, or every post matching the selected tags. */
+export default function BlogPostsSection({ posts, page }: BlogPostsSectionProps) {
   const [selectedTags, setSelectedTags] = useState<Set<string>>(new Set());
 
   // Extract all unique tags from posts
@@ -58,12 +71,12 @@ export default function BlogPostsSection({ posts }: BlogPostsSectionProps) {
   // Filter posts based on selected tags (OR logic)
   const filteredPosts = useMemo(() => {
     if (selectedTags.size === 0) {
-      return posts;
+      return posts.slice(page.start, page.end);
     }
     return posts.filter((post) => 
       post.tags?.some((tag) => selectedTags.has(tag))
     );
-  }, [posts, selectedTags]);
+  }, [posts, page, selectedTags]);
 
   const handleTagClick = (e: React.MouseEvent<HTMLButtonElement>, tag: string) => {
     e.preventDefault();
@@ -86,21 +99,9 @@ export default function BlogPostsSection({ posts }: BlogPostsSectionProps) {
   return (
     <div className="max-w-4xl mx-auto">
       <div className="mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-3xl font-bold text-heading text-mobile-center">
-            <a href="#posts" className="heading-link" aria-label="Link to Posts section">Posts</a>
-          </h2>
-          {selectedTags.size > 0 && (
-            <button
-              onClick={handleClearFilter}
-              className="px-3 py-1 text-xs bg-surface-elevated hover:bg-surface-alt rounded text-muted hover:text-heading transition-colors"
-              aria-label="Clear all filters"
-              data-testid="clear-filters"
-            >
-              Clear all
-            </button>
-          )}
-        </div>
+        <h1 className="text-3xl font-bold text-heading text-mobile-center mb-4">
+          Posts{page.current > 1 && <span className="text-muted font-normal">, page {page.current}</span>}
+        </h1>
         {allTags.length > 0 && (
           <div className="flex items-center gap-2 flex-wrap" data-testid="tag-filters">
             <span className="text-sm text-muted">Filter by tag:</span>
@@ -119,6 +120,17 @@ export default function BlogPostsSection({ posts }: BlogPostsSectionProps) {
                 {tag}
               </button>
             ))}
+            {/* In the tag row, not at the far right: the chat panel covers that corner on wide screens. */}
+            {selectedTags.size > 0 && (
+              <button
+                onClick={handleClearFilter}
+                className="px-3 py-1 text-sm rounded text-link hover:underline"
+                aria-label="Clear all filters"
+                data-testid="clear-filters"
+              >
+                Clear all
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -144,17 +156,35 @@ export default function BlogPostsSection({ posts }: BlogPostsSectionProps) {
           ))}
         </div>
       )}
+      {selectedTags.size === 0 && page.last > 1 && (
+        <nav className="flex items-center justify-between mt-10 text-sm" aria-label="Pages of posts" data-testid="posts-pagination">
+          {page.prevUrl ? (
+            <a href={page.prevUrl} className="text-link hover:underline">← Newer posts</a>
+          ) : (
+            <span />
+          )}
+          <span className="text-muted">
+            Page {page.current} of {page.last}
+          </span>
+          {page.nextUrl ? (
+            <a href={page.nextUrl} className="text-link hover:underline">Older posts →</a>
+          ) : (
+            <span />
+          )}
+        </nav>
+      )}
     </div>
   );
 }
 
 interface BlogPostCardProps {
   post: BlogPost;
-  onTagClick: (e: React.MouseEvent<HTMLButtonElement>, tag: string) => void;
-  selectedTags: Set<string>;
+  /** Filters the list in place. Without it, a tag links to /posts filtered by it. */
+  onTagClick?: (e: React.MouseEvent<HTMLButtonElement>, tag: string) => void;
+  selectedTags?: Set<string>;
 }
 
-function BlogPostCard({ post, onTagClick, selectedTags }: BlogPostCardProps) {
+export function BlogPostCard({ post, onTagClick, selectedTags = new Set() }: BlogPostCardProps) {
   return (
     <div className="bg-surface rounded-lg shadow-sm border border-surface hover:shadow-md transition-shadow overflow-hidden group">
       <a href={`/post/${post.slug}`} className="block">
@@ -169,21 +199,33 @@ function BlogPostCard({ post, onTagClick, selectedTags }: BlogPostCardProps) {
       </a>
       <div className="p-6">
         <div className="flex items-center gap-2 mb-2 justify-mobile-center flex-wrap">
-          {post.tags?.map((tag) => (
-            <button
-              key={tag}
-              onClick={(e) => onTagClick(e, tag)}
-              className={`px-2 py-1 text-xs rounded text-muted transition-colors cursor-pointer ${
-                selectedTags.has(tag)
-                  ? 'bg-link text-white'
-                  : 'bg-surface-elevated hover:bg-surface-alt'
-              }`}
-              aria-label={`Filter by ${tag}`}
-              data-testid={`post-tag-${tag}`}
-            >
-              {tag}
-            </button>
-          ))}
+          {post.tags?.map((tag) =>
+            !onTagClick ? (
+              <a
+                key={tag}
+                href={`/posts?tags=${encodeURIComponent(tag)}`}
+                className="px-2 py-1 text-xs rounded text-muted transition-colors bg-surface-elevated hover:bg-surface-alt"
+                aria-label={`All posts tagged ${tag}`}
+                data-testid={`post-tag-${tag}`}
+              >
+                {tag}
+              </a>
+            ) : (
+              <button
+                key={tag}
+                onClick={(e) => onTagClick(e, tag)}
+                className={`px-2 py-1 text-xs rounded text-muted transition-colors cursor-pointer ${
+                  selectedTags.has(tag)
+                    ? 'bg-link text-white'
+                    : 'bg-surface-elevated hover:bg-surface-alt'
+                }`}
+                aria-label={`Filter by ${tag}`}
+                data-testid={`post-tag-${tag}`}
+              >
+                {tag}
+              </button>
+            )
+          )}
         </div>
         <a href={`/post/${post.slug}`} className="block">
           <h3 className="text-xl font-semibold mb-2 text-heading group-hover:text-link transition-colors text-mobile-center">

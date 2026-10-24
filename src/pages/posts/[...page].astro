@@ -1,0 +1,44 @@
+---
+/**
+ * All blog posts, newest first, POSTS_PER_PAGE to a page: /posts, /posts/2, ...
+ * The home page shows only the newest few and links here. Built at build time.
+ */
+import Layout from '../../layouts/Layout.astro';
+import BlogPostsSection from '../../components/BlogPostsSection';
+import { SITE } from '../../data/site';
+import { getPostCards, POSTS_PER_PAGE, postsPageUrl } from '../../utils/post-cards';
+
+export const prerender = true;
+
+export async function getStaticPaths() {
+  const total = (await getPostCards()).length;
+  const last = Math.max(1, Math.ceil(total / POSTS_PER_PAGE));
+  return Array.from({ length: last }, (_, i) => ({
+    params: { page: i === 0 ? undefined : String(i + 1) },
+    props: { current: i + 1, last },
+  }));
+}
+
+const { current, last } = Astro.props;
+const posts = await getPostCards();
+const page = {
+  start: (current - 1) * POSTS_PER_PAGE,
+  end: current * POSTS_PER_PAGE,
+  current,
+  last,
+  prevUrl: current > 1 ? postsPageUrl(current - 1) : undefined,
+  nextUrl: current < last ? postsPageUrl(current + 1) : undefined,
+};
+---
+
+<Layout
+  title={current === 1 ? `Posts - ${SITE.title}` : `Posts, page ${current} - ${SITE.title}`}
+  description={`All ${posts.length} blog posts by Daniel Fridljand, newest first.`}
+  url={`${SITE.url}${postsPageUrl(current)}`}
+>
+  <section id="posts" class="py-16 bg-surface scroll-mt-20">
+    <div class="container mx-auto px-4">
+      <BlogPostsSection posts={posts} page={page} client:load />
+    </div>
+  </section>
+</Layout>
