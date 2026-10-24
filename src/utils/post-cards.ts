@@ -1,4 +1,4 @@
-import { getCollection } from 'astro:content';
+import { getCollection, type CollectionEntry } from 'astro:content';
 import type { BlogPost } from '../components/BlogPostsSection';
 import { calculateReadingTime } from './reading-time';
 import { readBlogPostFile, extractMarkdownContent } from './content-reader';
@@ -11,10 +11,10 @@ export const POSTS_PER_PAGE = 50;
 /** Every blog post as a card, newest first. */
 export async function getPostCards(): Promise<BlogPost[]> {
   const blogPosts = (await getCollection('blog')).sort(
-    (a, b) => b.data.pubDate.getTime() - a.data.pubDate.getTime()
+    (a: CollectionEntry<'blog'>, b: CollectionEntry<'blog'>) => b.data.pubDate.getTime() - a.data.pubDate.getTime()
   );
   return Promise.all(
-    blogPosts.map(async (post) => {
+    blogPosts.map(async (post: CollectionEntry<'blog'>) => {
       let readingTime: number | undefined;
       try {
         readingTime = calculateReadingTime(extractMarkdownContent(await readBlogPostFile(post.id)));

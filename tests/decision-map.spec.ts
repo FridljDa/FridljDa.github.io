@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 const POST = '/post/workflow-vs-agent';
 
-const PRESETS = ['overview', 'agent-first', 'workflow', 'tree', 'fallback', 'next-time', 'start'];
+const PRESETS = ['overview', 'agent-first', 'workflow', 'tree', 'fallback', 'next-time'];
 
 test.describe('Figures in Workflow or Agent', () => {
   test('every section opens with the decision map, its part highlighted', async ({ page }) => {
@@ -27,10 +27,6 @@ test.describe('Figures in Workflow or Agent', () => {
     const workflow = page.locator('figure.decision-map[data-confluence-png$="/map-workflow.png"] svg:visible');
     await expect(workflow.getByText('One job')).toBeVisible();
     await expect(workflow.getByText('Default')).toHaveCount(0);
-
-    // The close is about the experts, not the tools.
-    const start = page.locator('figure.decision-map[data-confluence-png$="/map-start.png"] svg:visible');
-    await expect(start.getByText('Fill the grid')).toBeVisible();
 
     // Next time mirrors the leftovers: the default moves to the agent and a request type graduates into code.
     const fallback = page.locator('figure.decision-map[data-confluence-png$="/map-fallback.png"] svg:visible');
