@@ -21,7 +21,7 @@ export const EXPERIENCE: ExperienceItem[] = [
 * **Retail Cashier-Fraud Detection (Jul 2026 – present)**: Scaled unsupervised point-of-sale anomaly scoring from a 7-store sample to a retail client's full estate by moving aggregation into SQL Server (~29.8M receipts to ~203K cashier-day rows), ranking cashiers comparably to the incumbent rule system without per-customer rule configuration.
 * **Sandboxed Agent Platform (Jun 2026 – present)**: One of three developers on a self-hosted platform (Tauri/React, Rust) that lets non-technical colleagues run agentic workflows on sensitive local files. It cleared a 15-person adversarial red team, unlocking expansion from a 10-user pilot to a full department.
 * **Document Validation and Email-to-Order Parsing (Apr – Jun 2026)**: Co-developed an LLM offer-review service on Kubernetes that inserts review comments directly into uploaded .docx offers, and designed an email-to-order pipeline (FastAPI, Streamlit review) with multimodal attachment handling.
-* **Customer Support Automation (Dec 2025 – Apr 2026, live in production)**: Sole AI engineer from discovery to live rollout at a cinema-ticketing SaaS. A hybrid deterministic/agentic workflow on Temporal drafts each resolution for staff review before customer contact: 811 tickets in its first three months at 86.6% reviewer approval.`,
+* **Customer Support Automation (Dec 2025 – Apr 2026, live in production)**: Sole AI engineer from discovery to live rollout at a cinema-ticketing SaaS. Fixed code paths cover the >80% of tickets with a known intent and an agent takes the long tail, on Temporal workflows that pause for staff sign-off, so nothing reaches a customer without approval: 811 tickets in its first three months at 86.6% reviewer approval, with daily volume up ~5x after an internal CEO showcase. Migrated the persistence layer under live load, bringing reviewer requests back under 2 minutes.`,
   },
   {
     title: 'Platform Engineer - Software Consultant',
@@ -56,7 +56,7 @@ export const EXPERIENCE: ExperienceItem[] = [
     location: 'Palo Alto, USA',
     dateStart: '2023-07-01',
     dateEnd: '2023-12-31',
-    description: `* Led the statistical analysis as co-first author of a [*Nature Medicine* paper](https://www.nature.com/articles/s41591-024-03117-0) (2024), cited 66 times: over half the Black–White age-adjusted mortality gap in the US is attributable to air pollution.
+    description: `* Led the statistical analysis as co-first author of a [*Nature Medicine* paper](https://www.nature.com/articles/s41591-024-03117-0) (2024), cited 76 times: over half the Black–White age-adjusted mortality gap in the US is attributable to air pollution. Wrote the initial manuscript and led the revise-and-resubmit.
 * Engineered a [reproducible pipeline](https://github.com/FridljDa/pm25_inequality) harmonizing 63M+ death records with satellite pollution estimates and census demographics across 3,000+ US counties and 27 years (1990–2016).
 * Built and open-sourced an R Shiny application that lets readers explore the published estimates without writing code.`,
   },
@@ -80,8 +80,8 @@ export const EXPERIENCE: ExperienceItem[] = [
     location: 'Heidelberg, Germany',
     dateStart: '2021-10-01',
     dateEnd: '2022-05-31',
-    description: `* Developed **IHW-Forest**, a multiple-testing method using random forests for hypothesis weighting, yielding >30% more discoveries than standard corrections on 16 billion genetic association tests.
-* Optimized the core splitting and weighting logic in C++ via Rcpp.
+    description: `* Implemented and evaluated **IHW-Forest**, Nikolaos Ignatiadis's extension of hypothesis weighting from one covariate to many using random forests: on ~16 billion genetic association tests it made more discoveries than the original method wherever both ran.
+* Wrote the core splitting and weighting logic in C++ via Rcpp.
 * Presented in seminars at Yale and UNC Chapel Hill and in a competitively selected talk at DAGStat 2022; peer-reviewed for Bioinformatics Advances and Cell Biology.`,
   },
   {

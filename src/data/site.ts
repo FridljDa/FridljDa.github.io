@@ -16,7 +16,7 @@ export const BIOGRAPHY = {
     name: 'TNG Technology Consulting',
     url: 'https://www.tngtech.com/en/',
   },
-  bio: 'I build AI systems that make it to production, including an LLM-based customer-support automation I took from discovery to live rollout as sole AI engineer. A mathematics background and a co-first-author Nature Medicine paper shape how I build: measuring whether a system works gets the same rigor as building it.',
+  bio: 'I build AI systems that make it to production, including an LLM-based customer-support automation I took from discovery to live rollout as sole AI engineer. My mathematics background shapes how I measure: at a manufacturer, simple comparisons blamed extra scrap on a production line, but once I compared runs of the same recipe, the difference disappeared.',
   interests: [
     'Applied AI',
     'Machine Learning',
