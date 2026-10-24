@@ -29,7 +29,7 @@ What a shared conversation would help with:
 
 There are downsides, of course. Most people would understandably feel uneasy sharing their AI conversations with everyone.
 
-HumanLayer seems to be heading in this direction. Doing everything from Slack does have its merits.
+HumanLayer seems to be heading in this direction. Slack might get you most of the way with less effort: everyone is already there, and the integration exists.
 
 Full post in the first comment.
 
