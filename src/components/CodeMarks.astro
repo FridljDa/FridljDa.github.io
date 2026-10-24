@@ -1,0 +1,57 @@
+---
+/**
+ * A code block with some of its values in colour, so the text can point at them
+ * with <Mark c="..."> in the same colour. Give the same value the same colour in
+ * every block it appears in, and a reader can follow it through a flow.
+ *
+ *   <CodeMarks marks={{ 'state=Xq7p…': 'teal' }}>
+ *
+ *   ```text
+ *   …
+ *   ```
+ *
+ *   </CodeMarks>
+ *
+ * The code is an ordinary fenced block, so its whitespace survives MDX (which
+ * strips indentation inside a multi-line {`…`} expression), and the Confluence
+ * copy and the post's Markdown show it as a plain code block. Every occurrence
+ * of a key is marked. Looks like the site's other code blocks, without their
+ * syntax colours, so only the marks stand out.
+ */
+import './code-marks.css';
+
+export type MarkColor = 'blue' | 'orange' | 'teal' | 'amber';
+
+interface Props {
+  marks: Record<string, MarkColor>;
+}
+
+const { marks } = Astro.props;
+const html = await Astro.slots.render('default');
+
+const lang = html.match(/data-language="([^"]*)"/)?.[1] ?? 'text';
+const code = (html.match(/<code[^>]*>([\s\S]*)<\/code>/)?.[1] ?? '')
+  .replace(/<[^>]+>/g, '')
+  .replace(/&(#x[0-9a-f]+|#\d+|lt|gt|quot|apos|amp);/gi, (_, e: string) =>
+    e[0] === '#'
+      ? String.fromCodePoint(e[1] === 'x' || e[1] === 'X' ? parseInt(e.slice(2), 16) : Number(e.slice(1)))
+      : ({ lt: '<', gt: '>', quot: '"', apos: "'", amp: '&' } as Record<string, string>)[e.toLowerCase()]
+  )
+  .replace(/\n+$/, '');
+
+// Split the code into plain runs and marked runs, longest key first so a key
+// that contains another wins.
+const keys = Object.keys(marks).sort((a, b) => b.length - a.length);
+const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const parts = keys.length ? code.split(new RegExp(`(${keys.map(escape).join('|')})`)) : [code];
+---
+
+{Astro.locals.confluence ? (
+  <Fragment set:html={html} />
+) : (
+  <pre
+    class="astro-code github-dark code-marks"
+    style="background-color:#24292e;color:#e1e4e8;overflow-x:auto;white-space:pre-wrap;word-wrap:break-word"
+    tabindex="0"
+    data-language={lang}><code>{parts.map((p) => (marks[p] ? <span class={`cm cm-${marks[p]}`}>{p}</span> : p))}</code></pre>
+)}

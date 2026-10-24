@@ -1,0 +1,16 @@
+---
+/**
+ * A name in the text, in the colour its value has in a CodeMarks block:
+ * <Mark c="teal">state</Mark> next to a block that marks state=... teal.
+ */
+import './code-marks.css';
+import type { MarkColor } from './CodeMarks.astro';
+
+interface Props {
+  c: MarkColor;
+}
+
+const { c } = Astro.props;
+---
+
+<code class={`cm cm-${c}`}><slot /></code>

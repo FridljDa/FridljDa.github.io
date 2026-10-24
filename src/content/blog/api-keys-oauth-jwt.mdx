@@ -14,27 +14,27 @@ confluence: true
 import AuthMap from '../../components/AuthMap.astro';
 import AuthFigure from '../../components/AuthFigure.astro';
 import AuthSteps from '../../components/AuthSteps.astro';
+import CodeMarks from '../../components/CodeMarks.astro';
+import Mark from '../../components/Mark.astro';
 
 ## TL;DR
-"API keys, OAuth or JWT?" sounds like a choice between three options, but they sit on different layers. An **API key** is a credential: a long-lived secret you send with every request. **OAuth 2.0** is a protocol for *getting* a credential: you trade something you hold for a short-lived, scoped access token, either as yourself (client credentials) or on behalf of a person who consented (authorization code). A **JWT** is a *format*: a signed JSON token the API can check on its own, without a database call. An OAuth access token is often a JWT, which is why the three get mixed up. As the one calling an API, I mostly need to know which credential the API wants, how to get and refresh it, and how to keep it out of places it doesn't belong, including the model's context.
+"API keys, OAuth or JWT?" sounds like a choice between three options, but each sits on a different layer. An **API key** is a credential: a long-lived secret sent with every request. **OAuth 2.0** is a protocol for *getting* a credential: you trade a secret you hold for a short-lived access token with limited scopes, either as yourself (client credentials) or for a person who agreed to it (authorization code). A **JWT** is a *format* a token can take: signed JSON the API can check without asking anyone. OAuth access tokens are often JWTs, which is why the three get mixed up. As the one calling an API, I need to know which credential it wants, how to get and renew it, and how to keep it out of places it doesn't belong, the model's context included.
+
+## One agent, three systems
+
+The running example is the invented Northstar Bank from my posts on support automation. Alex Carter writes in that their account is locked. To help, the support agent calls three systems:
+
+- the **ticketing system**, to open an escalation
+- the **CRM**, to look up Alex's account and its security flag
+- **the calendar of Alex's personal advisor**, to book a callback.
+
+Each wants a different credential, and the sections below go through them in that order.
+
+The model never sees any of them. It picks a tool and its arguments, like `lookup_account(account_number="NSB01234")`, and the tool's code attaches the credential and makes the call. Nothing a [prompt injection](/post/prompt-injection) could extract enters the model's context.
 
 <AuthMap preset="overview" />
 
-*The running example as one map: an agent that calls three systems, each authenticated its own way. Each section's map highlights its part.*
-
-## Three answers to different questions
-
-Every authenticated API call answers some version of three questions: *who is calling*, *on whose behalf*, and *how does the API know*. The three terms answer different ones.
-
-| | What it is | What it answers | Lifetime |
-|---|---|---|---|
-| **API key** | A credential | "This request comes from application X" | Months, until someone rotates it |
-| **OAuth 2.0** | A protocol for getting credentials | "Application X may do *these things*, as itself or for user Y" | Access token: minutes to an hour |
-| **JWT** | A token format | "Here's who issued this, for whom, until when, and a signature proving it" | Whatever its `exp` claim says |
-
-So the honest comparison is not API key vs OAuth vs JWT. It is *static secret* vs *short-lived token*, and, for tokens, *opaque string* vs *self-contained JWT*.
-
-The running example is the invented Northstar Bank from my posts on support automation. Alex Carter writes in that their account is locked, and to help, the support agent calls three systems: a **ticketing system** to open an escalation, the **CRM** to look up Alex's account and its security flag, and **the calendar of Alex's personal advisor** to book a callback. Same agent, three integrations, three patterns. In all three, the model never sees a credential: it picks a tool and its arguments, like `lookup_account(account_number="NSB01234")`, and the tool's code attaches the credential and makes the call, so nothing a [prompt injection](/post/prompt-injection) could extract enters its context.
+*The running example as one map: one agent, three systems, a different credential for each. Each section's map highlights its part.*
 
 ## API keys: one secret, one header
 
@@ -62,7 +62,7 @@ A fine fit when the calling application *is* the actor, the key lives in a secre
 
 ## OAuth 2.0: trade a secret for a short-lived token
 
-[OAuth](https://datatracker.ietf.org/doc/html/rfc6749) fixes the long-lived part with a middleman, the **authorization server**. The client, our agent's tools, sends its long-lived secret only there, once in a while, and gets back an **access token**: valid for minutes to an hour, and limited to the **scopes** that were granted, like `contacts.read`. The API, the **resource server**, only ever sees the access token. If it leaks, it is useless within the hour.
+[OAuth](https://datatracker.ietf.org/doc/html/rfc6749) fixes the long-lived part with a middleman, the **authorization server**. The client, our agent's tools, sends its long-lived secret only there, once in a while, and gets back an **access token**: valid for minutes to an hour, and limited to the **scopes** that were granted, like `contacts.read`. The API, the **resource server**, only ever sees the access token.
 
 How the client gets the token is the **grant type**. Two cover almost every integration.
 
@@ -81,7 +81,9 @@ The `client_id` names the client and is not a secret: it shows up in logs, and i
 
 <AuthSteps name="client-credentials" caption="Two calls to get going: one to the auth server for a token, one to the API with it. After that, only the second, until the token expires.">
 
-The token request (1) is a form-encoded `POST`. The client authenticates with HTTP Basic: the two values joined by a colon, `northstar-support-agent:q8Zr2vLx7TfN4mKd9WbE`, then base64-encoded:
+The token request (1) is a form-encoded `POST`. The client authenticates with HTTP Basic: the two values joined by a colon, `northstar-support-agent:q8Zr2vLx7TfN4mKd9WbE`, then <Mark c="teal">base64-encoded</Mark>:
+
+<CodeMarks marks={{ 'bm9ydGhzdGFyLXN1cHBvcnQtYWdlbnQ6cThacjJ2THg3VGZONG1LZDlXYkU=': 'teal' }}>
 
 ```http
 POST /oauth/token HTTP/1.1
@@ -92,9 +94,13 @@ Content-Type: application/x-www-form-urlencoded
 grant_type=client_credentials&scope=contacts.read%20cases.write
 ```
 
+</CodeMarks>
+
 Base64 is there for transport, not secrecy: a header may only carry plain ASCII characters, and base64 turns any ID and secret into those, in a form the server decodes back. It is an encoding, not encryption: whoever sees that header has the secret. That is why it only ever travels over HTTPS, and only to the token endpoint.
 
-The answer (2):
+The answer (2) holds the <Mark c="blue">access token</Mark> and how long it lasts, <Mark c="amber">expires_in</Mark>:
+
+<CodeMarks marks={{ 'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6ImNybS0yMDI2LTEwIn0.eyJpc3Mi...': 'blue', '"expires_in": 3600': 'amber' }}>
 
 ```json
 {
@@ -105,9 +111,13 @@ The answer (2):
 }
 ```
 
-`expires_in` is a duration, valid for 3600 seconds from now, not a time of day. The client doesn't decide when the token expires: the auth server does, and after that the API answers `401`. `expires_in` only tells the client how long it can count on the token, so it can fetch the next one in time. A duration rather than a timestamp, because the two machines' clocks don't have to agree: the client adds it to its own.
+</CodeMarks>
 
-Every CRM call (3) then carries the token:
+<Mark c="amber">expires_in</Mark> is seconds from now, not a time of day, so the two machines' clocks don't have to agree. It doesn't decide when the token expires: the auth server does, and after that the API answers `401`. It tells the client how long it can count on the token, so it can fetch the next one in time.
+
+Every CRM call (3) then carries the <Mark c="blue">access token</Mark>:
+
+<CodeMarks marks={{ 'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6ImNybS0yMDI2LTEwIn0.eyJpc3Mi...': 'blue' }}>
 
 ```http
 GET /v2/contacts?account_number=NSB01234 HTTP/1.1
@@ -115,31 +125,9 @@ Host: api.crm.example.com
 Authorization: Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6ImNybS0yMDI2LTEwIn0.eyJpc3Mi...
 ```
 
-The CRM API doesn't ask the auth server about every token. Once, and again when a token names a key it doesn't know, it fetches the auth server's public keys (4), a **JWKS** (JSON Web Key Set) at a well-known URL (5):
+</CodeMarks>
 
-```http
-GET /.well-known/jwks.json HTTP/1.1
-Host: auth.crm.example.com
-```
-
-```json
-{
-  "keys": [
-    {
-      "kid": "crm-2026-10",
-      "kty": "RSA",
-      "alg": "RS256",
-      "use": "sig",
-      "n": "u1SU1LfVLPHCozMxH2Mo4lgOEePzNm0tRgeLezV6ffAt0gunVTLw7onLRnrq0_IzW7yWR7QkrmBL7jTKEn5u...",
-      "e": "AQAB"
-    }
-  ]
-}
-```
-
-`n` and `e` are the RSA public key. Publishing it is safe: it can check signatures, not make them.
-
-With the key named by the token's `kid`, the API checks the JWT (6) on its own: the signature, then whether the token is meant for this API, from the auth server it trusts, not expired, and allows the call. [The JWT section](#jwt-a-token-the-api-can-check-on-its-own) takes these apart. Then it answers (7):
+The CRM API checks it without asking the auth server each time: it fetches the auth server's public keys once (4, 5) and checks the JWT with them (6), as [the JWT section](#jwt-a-token-the-api-can-check-on-its-own) shows. Then it answers (7):
 
 ```http
 HTTP/1.1 200 OK
@@ -163,9 +151,16 @@ The `client_secret` is long-lived too, so this can look like an API key with ext
 
 The calendar belongs to the advisor. The agent shouldn't hold a key to *every* advisor's calendar; it should act for the advisors who agreed to it, on their calendars only. This delegation is what OAuth was built for, and the flow behind every "Allow this app to…" screen: the **authorization code** grant.
 
-<AuthSteps name="authorization-code" caption="The advisor is in the loop once, for steps 1 to 4. Everything after happens between our backend and the auth server.">
+<AuthSteps name="authorization-code" caption="The advisor is in the loop once, for steps 1 to 5. Everything after happens between our backend and the auth server.">
 
-It starts in our app: the advisor clicks "Connect calendar" (1). Our backend answers with a redirect (2), a `302` whose `Location` sends the advisor's browser on to the calendar provider's auth server, here with one parameter per line:
+It starts in our app: the advisor clicks "Connect calendar" (1). Before answering, the backend makes up two random values for this one login (2) and keeps them in the advisor's session:
+
+- **<Mark c="teal">state</Mark>** goes along as it is. When the code comes back, the backend checks it matches, so an attacker can't splice their code into someone else's session.
+- **[PKCE](https://datatracker.ietf.org/doc/html/rfc7636)**: a <Mark c="blue">code_verifier</Mark>, of which only the hash, the <Mark c="blue">code_challenge</Mark>, goes along now. The verifier itself only travels in step 7, so only whoever started the flow can finish it. Current best practice asks for PKCE on every client.
+
+Then it answers with a redirect (3), a `302` whose `Location` sends the advisor's browser on to the calendar provider's auth server, here with one parameter per line:
+
+<CodeMarks marks={{ 'state=Xq7pV2mL9sKw': 'teal', 'code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM': 'blue', 'code_challenge_method=S256': 'blue' }}>
 
 ```text
 https://auth.calendar.example.com/authorize
@@ -178,18 +173,25 @@ https://auth.calendar.example.com/authorize
   &code_challenge_method=S256
 ```
 
-- **`state`** is a random value the backend keeps and checks when the code comes back, so an attacker can't splice their code into someone else's session.
-- **[PKCE](https://datatracker.ietf.org/doc/html/rfc7636)**: the `code_challenge` is the hash of a random `code_verifier` the backend keeps. The verifier itself only travels in step 5, so only whoever started the flow can finish it. Current best practice asks for PKCE on every client.
+</CodeMarks>
 
-The advisor logs in and approves (3) at the calendar provider, never at our app. We never see their password.
+The advisor logs in and approves (4) at the calendar provider, never at our app. We never see their password.
 
-The auth server sends the browser back to our `redirect_uri` with a code (4):
+The auth server sends the browser back to our `redirect_uri` with a <Mark c="orange">code</Mark> and the same <Mark c="teal">state</Mark> (5):
+
+<CodeMarks marks={{ 'code=SplxlOBeZQQYbYS6WxSbIA': 'orange', 'state=Xq7pV2mL9sKw': 'teal' }}>
 
 ```text
 https://agent.northstar.example.com/oauth/callback?code=SplxlOBeZQQYbYS6WxSbIA&state=Xq7pV2mL9sKw
 ```
 
-The code is worth nothing on its own. Our backend trades it (5) at the token endpoint, together with its own client credentials and the PKCE verifier, so a code intercepted in the browser can't be redeemed by someone else:
+</CodeMarks>
+
+The backend checks the <Mark c="teal">state</Mark> against the one in the session (6) and drops it: it was only good for these few minutes.
+
+The <Mark c="orange">code</Mark> is worth nothing on its own. Our backend trades it (7) at the token endpoint, together with its own client credentials and the PKCE <Mark c="blue">code_verifier</Mark>, so a code intercepted in the browser can't be redeemed by someone else:
+
+<CodeMarks marks={{ 'code=SplxlOBeZQQYbYS6WxSbIA': 'orange', 'code_verifier=dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk': 'blue' }}>
 
 ```http
 POST /oauth/token HTTP/1.1
@@ -200,7 +202,11 @@ Content-Type: application/x-www-form-urlencoded
 grant_type=authorization_code&code=SplxlOBeZQQYbYS6WxSbIA&redirect_uri=https%3A%2F%2Fagent.northstar.example.com%2Foauth%2Fcallback&code_verifier=dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk
 ```
 
-The answer (6) has one field more than in client credentials:
+</CodeMarks>
+
+The auth server hashes the <Mark c="blue">code_verifier</Mark> and compares it with the <Mark c="blue">code_challenge</Mark> from step 3 (8). If they match, it answers (9), with one field more than in client credentials, the <Mark c="amber">refresh token</Mark>:
+
+<CodeMarks marks={{ '"refresh_token": "cal_rt_9KdLw3ZnQ8bY..."': 'amber' }}>
 
 ```json
 {
@@ -212,7 +218,9 @@ The answer (6) has one field more than in client credentials:
 }
 ```
 
-The access token goes on the calendar call (7), as a bearer token like any other:
+</CodeMarks>
+
+These tokens are **opaque**: random strings the calendar can only check by looking them up, unlike the CRM's JWT. The access token goes on the calendar call (10), as a bearer token like any other:
 
 ```http
 POST /v1/me/events HTTP/1.1
@@ -223,7 +231,9 @@ Content-Type: application/json
 {"title": "Callback: Alex Carter, locked account", "start": "2026-10-27T10:00:00+01:00", "duration_minutes": 15}
 ```
 
-The refresh token is the long-lived secret here. It goes in the secrets store, one per advisor, and an hour later gets a new access token without the advisor (8):
+The <Mark c="amber">refresh token</Mark> is the long-lived secret here. It goes in the secrets store, one per advisor, and an hour later gets a new access token without the advisor (11):
+
+<CodeMarks marks={{ 'refresh_token=cal_rt_9KdLw3ZnQ8bY...': 'amber' }}>
 
 ```http
 POST /oauth/token HTTP/1.1
@@ -234,7 +244,11 @@ Content-Type: application/x-www-form-urlencoded
 grant_type=refresh_token&refresh_token=cal_rt_9KdLw3ZnQ8bY...
 ```
 
-Many providers **rotate** it: the answer (9) holds a new refresh token as well and invalidates the old one.
+</CodeMarks>
+
+Many providers **rotate** it: the answer (12) holds a <Mark c="amber">new refresh token</Mark> as well and invalidates the old one.
+
+<CodeMarks marks={{ '"refresh_token": "cal_rt_Bw6Hs2Mk4Pz..."': 'amber' }}>
 
 ```json
 {
@@ -245,6 +259,8 @@ Many providers **rotate** it: the answer (9) holds a new refresh token as well a
   "scope": "calendar.events.write"
 }
 ```
+
+</CodeMarks>
 
 An integration that forgets to store the new one works for exactly one hour.
 
@@ -264,15 +280,43 @@ The CRM's access token starts with `eyJ`, base64 for `{"`: it is a [**JSON Web T
 
 The payload's fields are **claims**: `iss` who issued it, `sub` who it is about (our agent here, a user in a delegated flow), `aud` which API it is for, `exp` when it expires, `scope` what it allows.
 
-The signature is what JWTs buy: with the auth server's public key, the API verifies the token **without asking anyone**, as in steps 4 to 6 of [client credentials](#client-credentials-the-agent-as-itself).
+The signature is what JWTs buy: the API verifies the token with the auth server's public key, **without asking anyone**. It fetches the keys once, as a **JWKS** (JSON Web Key Set) at a well-known URL, and picks the one the token's header names as <Mark c="teal">kid</Mark> (steps 4 to 6 of [client credentials](#client-credentials-the-agent-as-itself)):
+
+```http
+GET /.well-known/jwks.json HTTP/1.1
+Host: auth.crm.example.com
+```
+
+<CodeMarks marks={{ '"kid": "crm-2026-10"': 'teal' }}>
+
+```json
+{
+  "keys": [
+    {
+      "kid": "crm-2026-10",
+      "kty": "RSA",
+      "alg": "RS256",
+      "use": "sig",
+      "n": "u1SU1LfVLPHCozMxH2Mo4lgOEePzNm0tRgeLezV6ffAt0gunVTLw7onLRnrq0_IzW7yWR7QkrmBL7jTKEn5u...",
+      "e": "AQAB"
+    }
+  ]
+}
+```
+
+</CodeMarks>
+
+`n` and `e` are the RSA public key. Publishing it is safe: it can check signatures, not make them.
 
 - **Signed, not encrypted.** Anyone holding the token can read the claims. No secrets go in them, and until `exp` the token is as good as a password to whoever holds it.
-- **Can't be taken back.** A leaked JWT stays valid until `exp`. That is why access tokens are short-lived and the refresh token, which the auth server *does* check on every use, carries the long-lived trust. An **opaque** token, a random string the API checks by asking the auth server ([introspection](https://datatracker.ietf.org/doc/html/rfc7662)), is revocable at once, at the cost of a network call per request.
+- **Can't be taken back.** A leaked JWT stays valid until `exp`. That is why access tokens are short-lived and the refresh token, which the auth server *does* check on every use, carries the long-lived trust. An opaque token like the calendar's is revocable at once, at the cost of a lookup per request ([introspection](https://datatracker.ietf.org/doc/html/rfc7662)).
 - **Opaque to the caller.** The agent calling the CRM doesn't need to decode its token: it is addressed to the API, and the provider may change its format. Decoding it is still the fastest way to debug a `403`: the `scope` or `aud` is usually wrong.
 
-### Checking one
+### If you run the API: checking one
 
-Step 6 in code, for when you are the API: verifying a JWT is more than checking the signature. With [PyJWT](https://pyjwt.readthedocs.io/):
+Step 6 in code. Verifying a JWT is more than checking the signature. With [PyJWT](https://pyjwt.readthedocs.io/):
+
+<CodeMarks marks={{ 'algorithms=["RS256"]': 'blue', 'audience="https://api.crm.example.com"': 'orange', 'options={"require": ["exp", "iss", "aud"]}': 'teal' }}>
 
 ```python
 import jwt  # PyJWT
@@ -292,9 +336,11 @@ def verify(token: str) -> dict:
     )
 ```
 
-- **`algorithms`** pins the algorithm. Early libraries trusted the header, so an attacker could set `"alg": "none"` and drop the signature, or switch `RS256` to `HS256` and sign with the *public* key as if it were a shared secret. The [JWT best practices](https://datatracker.ietf.org/doc/html/rfc8725) describe both.
-- **`audience`** stops a token minted for the ticketing API from being replayed against the CRM.
-- **`require`** rejects tokens that leave `exp` out and would otherwise never expire.
+</CodeMarks>
+
+- **<Mark c="blue">algorithms</Mark>** pins the algorithm. Early libraries trusted the header, so an attacker could set `"alg": "none"` and drop the signature, or switch `RS256` to `HS256` and sign with the *public* key as if it were a shared secret. The [JWT best practices](https://datatracker.ietf.org/doc/html/rfc8725) describe both.
+- **<Mark c="orange">audience</Mark>** stops a token minted for the ticketing API from being replayed against the CRM.
+- **<Mark c="teal">require</Mark>** rejects tokens that leave `exp` out and would otherwise never expire.
 
 ### Where else JWTs show up
 
@@ -307,18 +353,34 @@ def verify(token: str) -> dict:
 
 The status code says which layer failed, as the [bearer token spec](https://datatracker.ietf.org/doc/html/rfc6750#section-3.1) defines them:
 
-**`401 Unauthorized`: "I don't know who you are."** The token is missing, expired, malformed or signed by someone the API doesn't trust. Fetch a new one and retry *once*.
+**`401 Unauthorized`: "I don't know who you are."** The token is missing, expired, malformed or signed by someone the API doesn't trust: <Mark c="orange">invalid_token</Mark>. Fetch a new one and retry *once*.
+
+<CodeMarks marks={{ 'error="invalid_token"': 'orange' }}>
 
 ```http
 HTTP/1.1 401 Unauthorized
 WWW-Authenticate: Bearer error="invalid_token", error_description="The access token expired"
 ```
 
-**`403 Forbidden`: "I know who you are, and you may not do this."** A missing scope or role, here the agent trying to unlock Alex's account with a token that only has `contacts.read`. A new token with the same grants won't help; the fix is in the client's configuration, usually on the provider's side.
+</CodeMarks>
+
+**`403 Forbidden`: "I know who you are, and you may not do this."** A missing scope or role: <Mark c="teal">insufficient_scope</Mark>, here the agent trying to unlock Alex's account with a token that only has `contacts.read`. A new token with the same grants won't help; the fix is in the client's configuration, usually on the provider's side.
+
+<CodeMarks marks={{ 'error="insufficient_scope"': 'teal' }}>
 
 ```http
 HTTP/1.1 403 Forbidden
 WWW-Authenticate: Bearer error="insufficient_scope", scope="contacts.write"
 ```
 
+</CodeMarks>
+
 Retrying a `403` in a loop is a bug.
+
+## Three systems, three credentials
+
+- **Ticketing:** an API key, sent with every call. The agent acts as itself, and the key lives until someone rotates it.
+- **CRM:** client credentials. The agent trades its secret for an hour-long token, a JWT the API checks on its own.
+- **Calendar:** authorization code. The advisor agrees once, and the agent keeps a refresh token per advisor to get short-lived, opaque tokens for their calendar.
+
+So the question for a new API is not which of the three to use. It is whose data the call touches, which decides the grant, and which secret our code has to keep, which decides where it is stored.
