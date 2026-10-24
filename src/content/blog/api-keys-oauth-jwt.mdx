@@ -264,7 +264,7 @@ The CRM's access token starts with `eyJ`, base64 for `{"`: it is a [**JSON Web T
 
 The payload's fields are **claims**: `iss` who issued it, `sub` who it is about (our agent here, a user in a delegated flow), `aud` which API it is for, `exp` when it expires, `scope` what it allows.
 
-The signature is what JWTs buy. The CRM API fetches the auth server's public keys once, as a **JWKS** (JSON Web Key Set), picks the one named by `kid`, and verifies the token **without asking anyone** (steps 4 to 6 of [client credentials](#client-credentials-the-agent-as-itself)). No lookup per request.
+The signature is what JWTs buy: with the auth server's public key, the API verifies the token **without asking anyone**, as in steps 4 to 6 of [client credentials](#client-credentials-the-agent-as-itself).
 
 - **Signed, not encrypted.** Anyone holding the token can read the claims. No secrets go in them, and until `exp` the token is as good as a password to whoever holds it.
 - **Can't be taken back.** A leaked JWT stays valid until `exp`. That is why access tokens are short-lived and the refresh token, which the auth server *does* check on every use, carries the long-lived trust. An **opaque** token, a random string the API checks by asking the auth server ([introspection](https://datatracker.ietf.org/doc/html/rfc7662)), is revocable at once, at the cost of a network call per request.
@@ -272,7 +272,7 @@ The signature is what JWTs buy. The CRM API fetches the auth server's public key
 
 ### Checking one
 
-If you are the API receiving a JWT, verifying it is more than checking the signature. With [PyJWT](https://pyjwt.readthedocs.io/):
+Step 6 in code, for when you are the API: verifying a JWT is more than checking the signature. With [PyJWT](https://pyjwt.readthedocs.io/):
 
 ```python
 import jwt  # PyJWT
