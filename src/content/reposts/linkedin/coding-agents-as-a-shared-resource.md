@@ -29,7 +29,7 @@ What a shared conversation would help with:
 
 There are downsides, of course. Most people would understandably feel uneasy sharing their AI conversations with everyone.
 
-HumanLayer seems to be heading in this direction. Slack might get you most of the way with less effort: everyone is already there, and the integration exists.
+The simplest version might just be Slack, where the Claude Code team already works in the open: everyone is there, and the integration exists. HumanLayer seems to be heading in the same direction.
 
 Full post in the first comment.
 
