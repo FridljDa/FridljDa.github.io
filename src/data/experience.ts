@@ -17,11 +17,11 @@ export const EXPERIENCE: ExperienceItem[] = [
     companyLogo: 'tng_logo.svg',
     location: 'Munich, Germany',
     dateStart: '2025-12-01',
-    description: `* **Industrial Process Intelligence (Aug 2026 – present)**: Sole engineer on a scrap-rate prediction proof of concept for an industrial manufacturer. Benchmarked ~40 model and feature combinations under time-ordered cross-validation; order attributes fixed at booking predicted scrap as well as the full sensor set, making raw-material batch tracking the top data request to the client, ahead of new sensors.
+    description: `* **Industrial Process Intelligence (Aug 2026 – present)**: Sole engineer on a scrap-rate prediction proof of concept for an industrial manufacturer. Benchmarked ~40 model and feature combinations under time-ordered cross-validation; [order attributes fixed at booking predicted scrap as well as the full sensor set](/post/scrap-conditional-independence), making raw-material batch tracking the top data request to the client, ahead of new sensors.
 * **Retail Cashier-Fraud Detection (Jul 2026 – present)**: Scaled unsupervised point-of-sale anomaly scoring from a 7-store sample to a retail client's full estate by moving aggregation into SQL Server (~29.8M receipts to ~203K cashier-day rows), ranking cashiers comparably to the incumbent rule system without per-customer rule configuration.
 * **Sandboxed Agent Platform (Jun 2026 – present)**: One of three developers on a self-hosted platform (Tauri/React, Rust) that lets non-technical colleagues run agentic workflows on sensitive local files. It cleared a 15-person adversarial red team, unlocking expansion from a 10-user pilot to a full department.
 * **Document Validation and Email-to-Order Parsing (Apr – Jun 2026)**: Co-developed an LLM offer-review service on Kubernetes that inserts review comments directly into uploaded .docx offers, and designed an email-to-order pipeline (FastAPI, Streamlit review) with multimodal attachment handling.
-* **Customer Support Automation (Dec 2025 – Apr 2026, live in production)**: Sole AI engineer from discovery to live rollout at a cinema-ticketing SaaS. Fixed code paths cover the >80% of tickets with a known intent and an agent takes the long tail, on Temporal workflows that pause for staff sign-off, so nothing reaches a customer without approval: 811 tickets in its first three months at 86.6% reviewer approval, with daily volume up ~5x after an internal CEO showcase. Migrated the persistence layer under live load, bringing reviewer requests back under 2 minutes.`,
+* **Customer Support Automation (Dec 2025 – Apr 2026, live in production)**: Sole AI engineer from discovery to live rollout at a SaaS company ([architecture](/post/first-level-support-automation)). Fixed code paths cover the >80% of tickets with a known intent and an agent takes the long tail, on [Temporal workflows that pause for staff sign-off](/post/temporal-human-in-the-loop), so nothing reaches a customer without approval: 811 tickets in its first three months at 86.6% reviewer approval, with daily volume up ~5x after an internal CEO showcase. Migrated the persistence layer under live load, bringing reviewer requests back under 2 minutes.`,
   },
   {
     title: 'Platform Engineer - Software Consultant',
@@ -44,7 +44,7 @@ export const EXPERIENCE: ExperienceItem[] = [
     location: 'Basel, Switzerland',
     dateStart: '2024-02-01',
     dateEnd: '2024-09-30',
-    description: `* Extended a Bayesian non-parametric model (Hierarchical Dirichlet Process) with phylogenetic tree structure in R, so each subclone's signature distribution is drawn from its parent's.
+    description: `* [Extended a Bayesian non-parametric model (Hierarchical Dirichlet Process) with phylogenetic tree structure](/post/mapping-mutational-signatures-to-trees) in R, so each subclone's signature distribution is drawn from its parent's.
 * Applied it to whole-exome data from 187 cells across 10 melanoma tumors in the Tumor Profiler Study, identifying eight latent mutational signatures.
 * Showed that reference signatures derived from bulk sequencing do not transfer to sparse single-cell data without informative priors.`,
   },
@@ -80,7 +80,7 @@ export const EXPERIENCE: ExperienceItem[] = [
     location: 'Heidelberg, Germany',
     dateStart: '2021-10-01',
     dateEnd: '2022-05-31',
-    description: `* Implemented and evaluated **IHW-Forest**, Nikolaos Ignatiadis's extension of hypothesis weighting from one covariate to many using random forests: on ~16 billion genetic association tests it made more discoveries than the original method wherever both ran.
+    description: `* Implemented and evaluated [**IHW-Forest**](/post/ihw-forest-master-thesis), Nikolaos Ignatiadis's extension of hypothesis weighting from one covariate to many using random forests: on ~16 billion genetic association tests it made more discoveries than the original method wherever both ran.
 * Wrote the core splitting and weighting logic in C++ via Rcpp.
 * Presented in seminars at Yale and UNC Chapel Hill and in a competitively selected talk at DAGStat 2022; peer-reviewed for Bioinformatics Advances and Cell Biology.`,
   },
