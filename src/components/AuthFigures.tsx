@@ -163,7 +163,8 @@ function AuthorizationCode({ id }: { id: string }) {
         { name: 'Calendar', role: 'external', x: 420 },
       ]}
       rows={[
-        { from: 2, to: 0, label: 'Redirect: scope, state, PKCE' },
+        { from: 0, to: 2, label: 'Connect calendar' },
+        { from: 2, to: 0, label: 'Redirect: scope, state, PKCE', reply: true },
         { from: 0, to: 1, label: 'Log in, approve' },
         { from: 1, to: 2, label: 'Code, via browser' },
         { from: 2, to: 1, label: 'Code + verifier' },
@@ -174,7 +175,7 @@ function AuthorizationCode({ id }: { id: string }) {
         { from: 1, to: 2, label: 'New pair', reply: true },
       ]}
       tag="Store the new refresh token"
-      tagStep={8}
+      tagStep={9}
     />
   );
 }
@@ -281,7 +282,7 @@ export const DESCRIPTIONS = {
   'client-credentials':
     'Client credentials: the tools send the client ID and secret to the CRM’s auth server and get an access token valid for an hour. They send it as a bearer token to the CRM API, which checks the JWT itself and returns Alex’s account.',
   'authorization-code':
-    'Authorization code: our backend redirects the advisor to the auth server with the scope, a state value and a PKCE challenge. The advisor logs in and approves; the auth server sends a code back through the browser, and the backend trades code and verifier for an access and a refresh token, then calls the calendar. An hour later it trades the refresh token for a new pair, without the advisor.',
+    'Authorization code: the advisor clicks Connect calendar in our app, and our backend redirects them to the auth server with the scope, a state value and a PKCE challenge. The advisor logs in and approves; the auth server sends a code back through the browser, and the backend trades code and verifier for an access and a refresh token, then calls the calendar. An hour later it trades the refresh token for a new pair, without the advisor.',
   jwt: 'The CRM’s access token is a JWT in three dot-separated parts. The header names the algorithm and the key; the payload holds the claims iss, sub, aud, scope and exp, readable by anyone; the signature over both is made with the auth server’s private key.',
 } as const;
 
