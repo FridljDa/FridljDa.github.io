@@ -170,10 +170,13 @@ function AuthorizationCode({ id }: { id: string }) {
       ]}
       rows={[
         { from: 0, to: 2, label: 'Connect calendar' },
+        { from: 2, label: 'New state, verifier', numbered: true },
         { from: 2, to: 0, label: 'Redirect: scope, state, PKCE', reply: true },
         { from: 0, to: 1, label: 'Log in, approve' },
         { from: 1, to: 2, label: 'Code, via browser' },
+        { from: 2, label: 'Checks state', numbered: true },
         { from: 2, to: 1, label: 'Code + verifier' },
+        { from: 1, label: 'Checks verifier', numbered: true },
         { from: 1, to: 2, label: 'Access + refresh', reply: true },
         { from: 2, to: 3, label: 'Bearer access token' },
         { gap: 'An hour later, without the advisor' },
@@ -181,7 +184,7 @@ function AuthorizationCode({ id }: { id: string }) {
         { from: 1, to: 2, label: 'New pair', reply: true },
       ]}
       tag="Store the new refresh token"
-      tagStep={9}
+      tagStep={12}
     />
   );
 }
@@ -288,7 +291,7 @@ export const DESCRIPTIONS = {
   'client-credentials':
     'Client credentials: the tools send the client ID and secret to the CRM’s auth server and get an access token valid for an hour. They send it as a bearer token to the CRM API, which fetches the auth server’s public keys once, checks the JWT with them and returns Alex’s account.',
   'authorization-code':
-    'Authorization code: the advisor clicks Connect calendar in our app, and our backend redirects them to the auth server with the scope, a state value and a PKCE challenge. The advisor logs in and approves; the auth server sends a code back through the browser, and the backend trades code and verifier for an access and a refresh token, then calls the calendar. An hour later it trades the refresh token for a new pair, without the advisor.',
+    'Authorization code: the advisor clicks Connect calendar in our app. Our backend makes a new state value and PKCE verifier for this login and redirects the advisor to the auth server with the scope, the state and the PKCE challenge. The advisor logs in and approves; the auth server sends a code back through the browser, and the backend checks the state. It trades code and verifier for an access and a refresh token; the auth server checks the verifier first. The backend then calls the calendar. An hour later it trades the refresh token for a new pair, without the advisor.',
   jwt: 'The CRM’s access token is a JWT in three dot-separated parts. The header names the algorithm and the key; the payload holds the claims iss, sub, aud, scope and exp, readable by anyone; the signature over both is made with the auth server’s private key.',
 } as const;
 

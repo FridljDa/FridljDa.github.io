@@ -36,6 +36,13 @@ its own class to `loop-animation.css`.
   While pinned, the figure highlights the step being read: a paragraph naming
   steps in brackets, "(4)" or "(7, 8)", starts that step, so name the step
   there, and tag the figure's rows with `data-step` (`AuthFigures.tsx`).
+  Draw the steps nobody sees too, such as a value being generated or checked,
+  as numbered notes (`numbered: true`).
+- **Colour-coded code:** where the text explains values in a code block,
+  `<CodeMarks code={...} marks={{ 'state=...': 'teal' }} />` colours them and
+  `<Mark c="teal">state</Mark>` names them in the same colour. Give a value
+  the same colour in every block it appears in, so a reader can follow it
+  through a flow (`code-marks.css`: blue, orange, teal, amber).
 - **Animations:** `<LoopAnimation name="..." />`; see `src/remotion/AGENTS.md`.
 - **Confluence:** a paste into Confluence drops inline SVG, so the drawn figures
   show a PNG in the Confluence copy (their `Astro.locals.confluence` branch).
