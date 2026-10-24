@@ -1,13 +1,10 @@
 name: Production Tests
 
 on:
-  schedule:
-    # Run every Monday at 9:00 AM UTC
-    - cron: '0 9 * * 1'
-  push:
-    branches:
-      - master
-  workflow_dispatch: # Allow manual triggering
+  # Manual only. Every run loads the live site's pages and full-resolution
+  # images in fresh browsers on four device profiles, and that traffic is
+  # billed as Render bandwidth, so it no longer runs on every push to master.
+  workflow_dispatch:
 
 # Set default permissions for all jobs
 permissions:
@@ -24,13 +21,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - name: Wait 5 minutes after merge to master
-        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
-        run: |
-          echo "Waiting 5 minutes for production deployment to stabilize..."
-          sleep 300
-          echo "Wait complete, proceeding with tests"
-
       - name: Checkout code
         uses: actions/checkout@v7
 
