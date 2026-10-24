@@ -10,10 +10,10 @@ test.describe('Pinned figures in API Keys, OAuth and JWT', () => {
     const lit = () => block.locator('.pinned [data-step]:not(.off)').evaluateAll((els) => [...new Set(els.map((e) => (e as HTMLElement).dataset.step))]);
 
     // Bring the paragraph about the code exchange to the reading line.
-    const exchange = block.locator('.steps > p', { hasText: 'trades it (4)' });
+    const exchange = block.locator('.steps > p', { hasText: 'trades it (5)' });
     const top = await exchange.evaluate((e) => e.getBoundingClientRect().top + window.scrollY);
     await page.evaluate((y) => window.scrollTo(0, y - window.innerHeight * 0.4 + 10), top);
-    await expect.poll(lit).toEqual(['4']);
+    await expect.poll(lit).toEqual(['5']);
 
     // Above the block, nothing is greyed out.
     await page.evaluate(() => window.scrollTo(0, 0));
@@ -24,7 +24,7 @@ test.describe('Pinned figures in API Keys, OAuth and JWT', () => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto(POST);
     const block = page.locator('.auth-steps').nth(1);
-    await block.locator('.steps > p', { hasText: 'trades it (4)' }).scrollIntoViewIfNeeded();
+    await block.locator('.steps > p', { hasText: 'trades it (5)' }).scrollIntoViewIfNeeded();
     await expect(block.locator('.pinned .off')).toHaveCount(0);
   });
 });

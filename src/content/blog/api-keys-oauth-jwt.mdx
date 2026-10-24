@@ -120,9 +120,9 @@ The `client_secret` is long-lived too, so this can look like an API key with ext
 
 The calendar belongs to the advisor. The agent shouldn't hold a key to *every* advisor's calendar; it should act for the advisors who agreed to it, on their calendars only. This delegation is what OAuth was built for, and the flow behind every "Allow this app to…" screen: the **authorization code** grant.
 
-<AuthSteps name="authorization-code" caption="The advisor is in the loop once, for steps 1 to 3. Everything after happens between our backend and the auth server.">
+<AuthSteps name="authorization-code" caption="The advisor is in the loop once, for steps 1 to 4. Everything after happens between our backend and the auth server.">
 
-The redirect (1) sends the advisor's browser to the calendar provider's auth server, here with one parameter per line:
+It starts in our app: the advisor clicks "Connect calendar" (1). Our backend answers with a redirect (2), a `302` whose `Location` sends the advisor's browser on to the calendar provider's auth server, here with one parameter per line:
 
 ```text
 https://auth.calendar.example.com/authorize
@@ -136,17 +136,17 @@ https://auth.calendar.example.com/authorize
 ```
 
 - **`state`** is a random value the backend keeps and checks when the code comes back, so an attacker can't splice their code into someone else's session.
-- **[PKCE](https://datatracker.ietf.org/doc/html/rfc7636)**: the `code_challenge` is the hash of a random `code_verifier` the backend keeps. The verifier itself only travels in step 4, so only whoever started the flow can finish it. Current best practice asks for PKCE on every client.
+- **[PKCE](https://datatracker.ietf.org/doc/html/rfc7636)**: the `code_challenge` is the hash of a random `code_verifier` the backend keeps. The verifier itself only travels in step 5, so only whoever started the flow can finish it. Current best practice asks for PKCE on every client.
 
-The advisor logs in and approves (2) at the calendar provider, never at our app. We never see their password.
+The advisor logs in and approves (3) at the calendar provider, never at our app. We never see their password.
 
-The auth server sends the browser back to our `redirect_uri` with a code (3):
+The auth server sends the browser back to our `redirect_uri` with a code (4):
 
 ```text
 https://agent.northstar.example.com/oauth/callback?code=SplxlOBeZQQYbYS6WxSbIA&state=Xq7pV2mL9sKw
 ```
 
-The code is worth nothing on its own. Our backend trades it (4) at the token endpoint, together with its own client credentials and the PKCE verifier, so a code intercepted in the browser can't be redeemed by someone else:
+The code is worth nothing on its own. Our backend trades it (5) at the token endpoint, together with its own client credentials and the PKCE verifier, so a code intercepted in the browser can't be redeemed by someone else:
 
 ```http
 POST /oauth/token HTTP/1.1
@@ -157,7 +157,7 @@ Content-Type: application/x-www-form-urlencoded
 grant_type=authorization_code&code=SplxlOBeZQQYbYS6WxSbIA&redirect_uri=https%3A%2F%2Fagent.northstar.example.com%2Foauth%2Fcallback&code_verifier=dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk
 ```
 
-The answer (5) has one field more than in client credentials:
+The answer (6) has one field more than in client credentials:
 
 ```json
 {
@@ -169,7 +169,7 @@ The answer (5) has one field more than in client credentials:
 }
 ```
 
-The access token goes on the calendar call (6), as a bearer token like any other. The refresh token is the long-lived secret here. It goes in the secrets store, one per advisor, and an hour later gets a new access token without the advisor (7):
+The access token goes on the calendar call (7), as a bearer token like any other. The refresh token is the long-lived secret here. It goes in the secrets store, one per advisor, and an hour later gets a new access token without the advisor (8):
 
 ```http
 POST /oauth/token HTTP/1.1
@@ -180,7 +180,7 @@ Content-Type: application/x-www-form-urlencoded
 grant_type=refresh_token&refresh_token=cal_rt_9KdLw3ZnQ8bY...
 ```
 
-Many providers **rotate** it: the answer (8) holds a new refresh token as well and invalidates the old one. An integration that forgets to store the new one works for exactly one hour.
+Many providers **rotate** it: the answer (9) holds a new refresh token as well and invalidates the old one. An integration that forgets to store the new one works for exactly one hour.
 
 </AuthSteps>
 
@@ -253,13 +253,3 @@ Retrying a `403` in a loop is a bug.
 An LLM agent adds a rule none of these specs mention: **the model never sees a credential.** It picks a tool and its arguments, like `lookup_account(account_number="NSB01234")`; the tool's code takes the cached token from the secrets store, attaches the header and makes the call. Nothing the model could repeat, log or be talked out of by a [prompt injection](/post/prompt-injection) enters its context.
 
 The same split decides whose permissions apply. Alex never logs in to the CRM, so the CRM can't check what *Alex* may see: it sees the agent's identity with all its scopes. Whether this caller may hear about this account is a check the tool code makes before the call, in code rather than in the prompt, as [Workflow or Agent](/post/workflow-vs-agent) argues for the order of operations.
-
-## Reading a new API's auth docs: my checklist
-
-1. **Which credential does it want?** An API key, an OAuth access token, or something else: HTTP Basic, mutual TLS, a signed request.
-2. **If OAuth, which grant?** Whose data is it: a person's (authorization code), or does the integration act as itself (client credentials)?
-3. **Where is the token endpoint, and how does the client authenticate there?** The provider's `/.well-known/openid-configuration` or `/.well-known/oauth-authorization-server` lists it.
-4. **Which scopes, at minimum?** Ask for those and no more.
-5. **How long do tokens live, and do refresh tokens rotate?** That decides the caching and storage code.
-6. **What do a `401` and a `403` look like here?** Some APIs answer `400` with an error body instead.
-7. **Who rotates which secret, and how?** Write it down before go-live, not after the first expiry.
