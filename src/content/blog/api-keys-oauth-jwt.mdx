@@ -242,12 +242,14 @@ The second grant is for the calendar, which belongs to the advisor. The agent sh
 
 It starts in our app: the advisor clicks "Connect calendar" (1). Before answering, the backend makes up two random values for this one login (2) and keeps them in the advisor's session:
 
-- **<Mark c="teal">state</Mark>** goes along as it is. When the code comes back, the backend checks it matches, so an attacker can't splice their code into someone else's session.
-- **[PKCE](https://datatracker.ietf.org/doc/html/rfc7636)**: a <Mark c="blue">code_verifier</Mark>, of which only the hash, the <Mark c="blue">code_challenge</Mark>, goes along now. The verifier itself only travels in step 7, so only whoever started the flow can finish it. Current best practice asks for PKCE on every client.
+- **<Mark c="teal">state</Mark>**, an identifier for this login.
+- **[PKCE](https://datatracker.ietf.org/doc/html/rfc7636)**: a <Mark c="blue">code_verifier</Mark>, a secret, and its hash, the <Mark c="blue">code_challenge</Mark>. The verifier itself only travels in step 7, so only whoever started the flow can finish it. Current best practice asks for PKCE on every client.
 
-Then it answers with a redirect (3), a `302` whose `Location` sends the advisor's browser on to the calendar provider's auth server, here with one parameter per line:
+Both tie the code that comes back to the login that asked for it. [What they stop](#what-state-and-pkce-stop) shows the two attacks.
 
-<CodeMarks marks={{ 'state=Xq7pV2mL9sKw': 'teal', 'code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM': 'blue', 'code_challenge_method=S256': 'blue' }}>
+Then it answers with a redirect (3), a `302` whose `Location` sends the advisor's browser on to the calendar provider's auth server, here with one parameter per line. It carries the <Mark c="teal">state</Mark> and the <Mark c="blue">code_challenge</Mark>, not the verifier:
+
+<CodeMarks marks={{ 'state=Xq7pV2mL9sKw': 'teal', 'code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM': 'blue', 'code_challenge_method=S256': 'blue', 'northstar-support-agent': 'orange' }}>
 
 ```text
 https://auth.calendar.example.com/authorize
@@ -264,9 +266,9 @@ https://auth.calendar.example.com/authorize
 
 The advisor logs in and approves (4) at the calendar provider, never at our app. We never see their password.
 
-The auth server sends the browser back to our `redirect_uri` with a <Mark c="orange">code</Mark> and the same <Mark c="teal">state</Mark> (5):
+The auth server sends the browser back to our `redirect_uri` with a <Mark c="pink">code</Mark> and the same <Mark c="teal">state</Mark> (5):
 
-<CodeMarks marks={{ 'code=SplxlOBeZQQYbYS6WxSbIA': 'orange', 'state=Xq7pV2mL9sKw': 'teal' }}>
+<CodeMarks marks={{ 'code=SplxlOBeZQQYbYS6WxSbIA': 'pink', 'state=Xq7pV2mL9sKw': 'teal' }}>
 
 ```text
 https://agent.northstar.example.com/oauth/callback?code=SplxlOBeZQQYbYS6WxSbIA&state=Xq7pV2mL9sKw
@@ -276,9 +278,9 @@ https://agent.northstar.example.com/oauth/callback?code=SplxlOBeZQQYbYS6WxSbIA&s
 
 The backend checks the <Mark c="teal">state</Mark> against the one in the session (6) and drops it: it was only good for these few minutes.
 
-The <Mark c="orange">code</Mark> is worth nothing on its own. Our backend trades it (7) at the token endpoint, together with its own client credentials and the PKCE <Mark c="blue">code_verifier</Mark>, so a code intercepted in the browser can't be redeemed by someone else:
+The <Mark c="pink">code</Mark> is worth nothing on its own. Our backend trades it (7) at the token endpoint, together with its own <Mark c="orange">client_id</Mark> and <Mark c="purple">client_secret</Mark> and the PKCE <Mark c="blue">code_verifier</Mark>:
 
-<CodeMarks marks={{ 'code=SplxlOBeZQQYbYS6WxSbIA': 'orange', 'code_verifier=dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk': 'blue' }}>
+<CodeMarks marks={{ 'code=SplxlOBeZQQYbYS6WxSbIA': 'pink', 'client_id': 'orange', 'client_secret': 'purple', 'code_verifier=dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk': 'blue' }}>
 
 ```http
 POST /oauth/token HTTP/1.1
@@ -320,7 +322,7 @@ Content-Type: application/json
 
 The <Mark c="amber">refresh token</Mark> is the long-lived secret here. It goes in the secrets store, one per advisor, and an hour later gets a new access token without the advisor (11):
 
-<CodeMarks marks={{ 'refresh_token=cal_rt_9KdLw3ZnQ8bY...': 'amber' }}>
+<CodeMarks marks={{ 'refresh_token=cal_rt_9KdLw3ZnQ8bY...': 'amber', 'client_id': 'orange', 'client_secret': 'purple' }}>
 
 ```http
 POST /oauth/token HTTP/1.1
@@ -353,19 +355,58 @@ An integration that forgets to store the new one works for exactly one hour.
 
 </AuthSteps>
 
+### What state and PKCE stop
+
+The code travels through the browser, which our backend doesn't control. Each of the two values stops one way of abusing that: an attacker's code in the advisor's session, and the advisor's code in the attacker's session.
+
+<AuthSteps name="swapped-code" caption="The attacker's code in the advisor's session. The state check in step 5 rejects it.">
+
+The attacker logs in at the calendar provider with their own account and approves access to *their own* calendar (1). They keep the code it sends back (2) rather than let their browser redeem it.
+
+They get the advisor, who is logged in to our app, to open a link to our callback with that code (3), in an email or on a web page. The advisor's browser follows it (4).
+
+Without a state check, our backend would trade the code and store tokens for the attacker's calendar under the advisor. Every callback the agent books, "Alex Carter, locked account" included, would land in the attacker's calendar.
+
+With it, the backend finds no matching state in the advisor's session (5): the advisor never started this login. It rejects the callback (6) before trading anything.
+
+</AuthSteps>
+
+PKCE stops this one too: the attacker's code was issued against the attacker's challenge, and the advisor's session holds no verifier for it. That is why [current best practice](https://datatracker.ietf.org/doc/html/rfc9700#section-4.7.1) lets a client rely on PKCE alone when the auth server supports it. The mirror image is the attack only PKCE stops.
+
+<AuthSteps name="stolen-code" caption="The advisor's code in the attacker's session. The state check passes; the verifier check in step 7 rejects it.">
+
+The advisor connects their calendar as usual, but the code leaks to the attacker (1), from a log or a malicious browser extension, before our backend redeems it. Codes are single-use, so the attacker has to be quicker.
+
+The attacker, who has an account in our app, clicks "Connect calendar" themselves (2). Our backend makes a state and a verifier for *the attacker's* session and answers with the redirect (3).
+
+The attacker stops there and calls our callback directly, with the stolen code and their own state (4). The state matches the attacker's session (5): state only proves the callback belongs to a login this browser started, not whose code it carries.
+
+Our backend trades the code with the verifier it holds for the attacker's session (6). Our client secret is no obstacle, since it is our own backend making the call. The auth server hashes that verifier and compares it with the challenge the code was issued for, the advisor's (7). They don't match, and it answers with an error instead of tokens (8):
+
+```http
+HTTP/1.1 400 Bad Request
+Content-Type: application/json
+
+{"error": "invalid_grant", "error_description": "PKCE verification failed"}
+```
+
+Without PKCE, the auth server would hand our backend tokens for the advisor's calendar, filed under the attacker's session: whatever our app does with a connected calendar, it would now do on the advisor's calendar for the attacker.
+
+</AuthSteps>
+
 Two more grants are in the original spec, and current best practice ([RFC 9700](https://datatracker.ietf.org/doc/html/rfc9700)) says not to use them: the **implicit** grant, which returned the token in the URL, and the **password** grant, where the client collects the user's password itself.
 
 ## When a call fails: 401 or 403
 
 <AuthMap preset="errors" />
 
-<AuthFigure name="errors" />
+The status code says which layer failed, as the [bearer token spec](https://datatracker.ietf.org/doc/html/rfc6750#section-3.1) defines them. Both fail the same CRM call, and the agent's first reaction, a new token and a retry, fixes one and not the other.
 
-*The same CRM call failing twice: once on the token, which a new one fixes, once on the scopes, which no retry fixes.*
+**`401 Unauthorized`: "I don't know who you are."**
 
-The status code says which layer failed, as the [bearer token spec](https://datatracker.ietf.org/doc/html/rfc6750#section-3.1) defines them:
+<AuthSteps name="expired-token" caption="An expired token: one new token and one retry fix it.">
 
-**`401 Unauthorized`: "I don't know who you are."** The token is missing, expired, malformed or signed by someone the API doesn't trust: <Mark c="orange">invalid_token</Mark> (1, 2). Fetch a new one (3, 4) and retry *once* (5, 6).
+The agent calls the CRM with the token it cached an hour ago (1). The CRM checks the JWT and finds `exp` in the past (2). A missing or malformed token, or one signed by someone the API doesn't trust, ends the same way: it answers <Mark c="orange">invalid_token</Mark> (3):
 
 <CodeMarks marks={{ 'error="invalid_token"': 'orange' }}>
 
@@ -376,7 +417,17 @@ WWW-Authenticate: Bearer error="invalid_token", error_description="The access to
 
 </CodeMarks>
 
-**`403 Forbidden`: "I know who you are, and you may not do this."** A missing scope or role: <Mark c="teal">insufficient_scope</Mark>, here the agent trying to unlock Alex's account with a token that only has `contacts.read` (7, 8). A new token with the same grants won't help; the fix is in the client's configuration, usually on the provider's side.
+The agent fetches a new token (4, 5), exactly as in client credentials.
+
+It retries *once* (6), and gets Alex's account (7). A second `401` right after a fresh token means the problem isn't the token's age, and another retry won't help.
+
+</AuthSteps>
+
+**`403 Forbidden`: "I know who you are, and you may not do this."**
+
+<AuthSteps name="missing-scope" caption="A missing scope: a new token carries the same scopes, so the retry fails the same way.">
+
+The agent tries to unlock Alex's account (1). The token is valid, but its `scope` only says `contacts.read` (2), and unlocking needs `contacts.write`. The CRM answers <Mark c="teal">insufficient_scope</Mark> and names the scope it wanted (3):
 
 <CodeMarks marks={{ 'error="insufficient_scope"': 'teal' }}>
 
@@ -387,7 +438,11 @@ WWW-Authenticate: Bearer error="insufficient_scope", scope="contacts.write"
 
 </CodeMarks>
 
-Retrying a `403` in a loop is a bug.
+Handled like a `401`, the agent fetches a new token (4, 5). The auth server grants what the client is registered for, so the new token has the same scopes.
+
+The retry (6) gets the same `403` (7). The fix is in the client's configuration, usually on the provider's side. Until then, retrying a `403` in a loop is a bug.
+
+</AuthSteps>
 
 ## Three systems, three credentials
 

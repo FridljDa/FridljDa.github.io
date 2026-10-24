@@ -2,10 +2,10 @@
  * The figures of api-keys-oauth-jwt other than its section map (AuthMap.tsx):
  * sequence figures for the ticketing system's API key, the two OAuth grants
  * (client credentials for the CRM, authorization code for the advisor's
- * calendar) and a failing call, 401 against 403, and the anatomy of the CRM's
- * access token, a JWT. Same palette, box style and outlines as the map:
- * blue for the model, grey for our code, orange for someone else's system,
- * teal for a person. Narrow enough to share one layout between phones and wide
+ * calendar), the two attacks state and PKCE stop, and a failing call, 401
+ * against 403, and the anatomy of the CRM's access token, a JWT. Same palette,
+ * box style and outlines as the map: blue for the model, grey for our code,
+ * orange for someone else's system, teal for a person, red for an attacker. Narrow enough to share one layout between phones and wide
  * screens. Static: rendered on the server, no JavaScript.
  *
  * Each row of a sequence figure carries the step it belongs to as data-step,
@@ -17,12 +17,13 @@ import type { ReactNode } from 'react';
 import { color } from '../remotion/shared';
 import { ArrowMarker, Badge, Tag } from './map-parts';
 
-type Role = 'code' | 'external' | 'human';
+type Role = 'code' | 'external' | 'human' | 'attacker';
 
 const STROKE: Record<Role, string> = {
   code: color('node-border'),
   external: color('other'),
   human: color('ok'),
+  attacker: color('bad'),
 };
 
 const W = 480;
@@ -194,8 +195,8 @@ function AuthorizationCode({ id }: { id: string }) {
       ]}
       rows={[
         { from: 0, to: 2, label: 'Connect calendar' },
-        { from: 2, label: 'New state, verifier', numbered: true },
-        { from: 2, to: 0, label: 'Redirect: scope, state, PKCE', reply: true },
+        { from: 2, label: 'State, verifier, challenge', numbered: true },
+        { from: 2, to: 0, label: 'Redirect: state, challenge', reply: true },
         { from: 0, to: 1, label: 'Log in, approve' },
         { from: 1, to: 2, label: 'Code, via browser' },
         { from: 2, label: 'Checks state', numbered: true },
@@ -213,29 +214,104 @@ function AuthorizationCode({ id }: { id: string }) {
   );
 }
 
-function Errors({ id }: { id: string }) {
+function SwappedCode({ id }: { id: string }) {
   return (
     <Sequence
       id={id}
-      label={DESCRIPTIONS.errors}
+      label={DESCRIPTIONS['swapped-code']}
+      lanes={[
+        { name: 'Attacker', role: 'attacker', x: 60 },
+        { name: 'Advisor', role: 'human', x: 180 },
+        { name: 'Auth server', role: 'external', x: 300 },
+        { name: 'Our backend', role: 'code', x: 420 },
+      ]}
+      rows={[
+        { from: 0, to: 2, label: 'Approves own calendar' },
+        { from: 2, to: 0, label: 'Code, kept', reply: true },
+        { from: 0, to: 1, label: 'Link with that code' },
+        { from: 1, to: 3, label: 'Callback, attacker’s code' },
+        { from: 3, label: 'Checks state: no match', numbered: true },
+        { from: 3, to: 1, label: 'Login rejected', reply: true },
+      ]}
+      tag="The advisor’s session stays clean"
+      tagStep={6}
+    />
+  );
+}
+
+function StolenCode({ id }: { id: string }) {
+  return (
+    <Sequence
+      id={id}
+      label={DESCRIPTIONS['stolen-code']}
+      lanes={[
+        { name: 'Advisor', role: 'human', x: 60 },
+        { name: 'Attacker', role: 'attacker', x: 180 },
+        { name: 'Our backend', role: 'code', x: 300 },
+        { name: 'Auth server', role: 'external', x: 420 },
+      ]}
+      rows={[
+        { from: 0, to: 1, label: 'Code leaks' },
+        { from: 1, to: 2, label: 'Connect calendar' },
+        { from: 2, to: 1, label: 'Own state, challenge', reply: true },
+        { from: 1, to: 2, label: 'Stolen code, own state' },
+        { from: 2, label: 'Checks state: match', numbered: true },
+        { from: 2, to: 3, label: 'Code + verifier' },
+        { from: 3, label: 'Checks verifier: no match', numbered: true },
+        { from: 3, to: 2, label: '400: invalid_grant', reply: true },
+      ]}
+      tag="No tokens for the attacker"
+      tagStep={8}
+    />
+  );
+}
+
+function ExpiredToken({ id }: { id: string }) {
+  return (
+    <Sequence
+      id={id}
+      label={DESCRIPTIONS['expired-token']}
       lanes={[
         { name: 'Tools', role: 'code', x: 72 },
         { name: 'Auth server', role: 'external', x: 240 },
         { name: 'CRM API', role: 'external', x: 408 },
       ]}
       rows={[
-        { from: 0, to: 2, label: 'Expired token' },
+        { from: 0, to: 2, label: 'Bearer access token' },
+        { from: 2, label: 'Checks exp: passed', numbered: true },
         { from: 2, to: 0, label: '401: invalid_token', reply: true },
         { from: 0, to: 1, label: 'Client ID + secret' },
         { from: 1, to: 0, label: 'New access token', reply: true },
         { from: 0, to: 2, label: 'Retry once' },
         { from: 2, to: 0, label: '200: Alex’s account', reply: true },
-        { gap: 'With contacts.read only' },
-        { from: 0, to: 2, label: 'Unlock the account' },
-        { from: 2, to: 0, label: '403: insufficient_scope', reply: true },
       ]}
-      tag="No retry: fix the scopes"
-      tagStep={8}
+      tag="One retry fixes it"
+      tagStep={7}
+    />
+  );
+}
+
+function MissingScope({ id }: { id: string }) {
+  return (
+    <Sequence
+      id={id}
+      label={DESCRIPTIONS['missing-scope']}
+      lanes={[
+        { name: 'Tools', role: 'code', x: 72 },
+        { name: 'Auth server', role: 'external', x: 240 },
+        { name: 'CRM API', role: 'external', x: 408 },
+      ]}
+      rows={[
+        { from: 0, to: 2, label: 'Unlock the account' },
+        { from: 2, label: 'Checks scope: contacts.read', numbered: true },
+        { from: 2, to: 0, label: '403: insufficient_scope', reply: true },
+        { from: 0, to: 1, label: 'Client ID + secret' },
+        { from: 1, to: 0, label: 'Same scopes again', reply: true },
+        { from: 0, to: 2, label: 'Unlock the account' },
+        { from: 2, to: 0, label: '403 again', reply: true },
+      ]}
+      tag="No retry fixes it"
+      tagStep={7}
     />
   );
 }
@@ -344,9 +420,15 @@ export const DESCRIPTIONS = {
   'client-credentials':
     'Client credentials: the tools send the client ID and secret to the CRM’s auth server and get an access token valid for an hour. They send it as a bearer token to the CRM API, which fetches the auth server’s public keys once, checks the JWT with them and returns Alex’s account.',
   'authorization-code':
-    'Authorization code: the advisor clicks Connect calendar in our app. Our backend makes a new state value and PKCE verifier for this login and redirects the advisor to the auth server with the scope, the state and the PKCE challenge. The advisor logs in and approves; the auth server sends a code back through the browser, and the backend checks the state. It trades code and verifier for an access and a refresh token; the auth server checks the verifier first. The backend then calls the calendar. An hour later it trades the refresh token for a new pair, without the advisor.',
-  errors:
-    'A failing call: the tools call the CRM with an expired token and get 401 invalid_token. They fetch a new access token from the auth server with the client ID and secret, retry once and get Alex’s account. Later they try to unlock the account with a token that only has contacts.read and get 403 insufficient_scope: no retry, the scopes have to be fixed.',
+    'Authorization code: the advisor clicks Connect calendar in our app. Our backend makes a new state, a PKCE verifier and its hash, the challenge, for this login, and redirects the advisor to the auth server with the state and the challenge. The advisor logs in and approves; the auth server sends a code back through the browser, and the backend checks the state. It trades code and verifier for an access and a refresh token; the auth server checks the verifier first. The backend then calls the calendar. An hour later it trades the refresh token for a new pair, without the advisor.',
+  'swapped-code':
+    'A swapped code: the attacker approves access to their own calendar and keeps the code instead of redeeming it. They get the advisor to open a link to our callback with that code. Our backend checks the state against the advisor’s session, finds no match and rejects the login, so the advisor’s session never gets the attacker’s calendar.',
+  'stolen-code':
+    'A stolen code: the advisor’s code leaks to the attacker. The attacker starts their own Connect calendar flow in our app, gets their own state and challenge, and sends our callback the stolen code with their own state. The state matches, so our backend trades the code with the attacker’s verifier. The auth server checks the verifier against the advisor’s challenge, finds no match and answers 400 invalid_grant: no tokens.',
+  'expired-token':
+    'An expired token: the tools call the CRM, which checks the token’s exp, finds it passed and answers 401 invalid_token. The tools fetch a new access token from the auth server with the client ID and secret, retry once and get Alex’s account.',
+  'missing-scope':
+    'A missing scope: the tools try to unlock Alex’s account. The CRM checks the token’s scope, finds only contacts.read and answers 403 insufficient_scope. A new token from the auth server has the same scopes, and the retry gets another 403.',
   jwt: 'The CRM’s access token is a JWT in three dot-separated parts. The header names the algorithm and the key; the payload holds the claims iss, sub, aud, scope and exp, readable by anyone; the signature over both is made with the auth server’s private key.',
 } as const;
 
@@ -356,7 +438,10 @@ const FIGURES: Record<FigureName, (props: { id: string }) => ReactNode> = {
   'api-key': ApiKey,
   'client-credentials': ClientCredentials,
   'authorization-code': AuthorizationCode,
-  errors: Errors,
+  'swapped-code': SwappedCode,
+  'stolen-code': StolenCode,
+  'expired-token': ExpiredToken,
+  'missing-scope': MissingScope,
   jwt: JwtAnatomy,
 };
 
