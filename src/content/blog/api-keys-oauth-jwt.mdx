@@ -232,6 +232,54 @@ def verify(token: str) -> dict:
 - **As the client's credential.** Some providers replace the `client_secret` with a JWT the client signs with its own private key ([RFC 7523](https://datatracker.ietf.org/doc/html/rfc7523)). Service accounts on large cloud and CRM platforms work like this: nothing reusable travels at all.
 - **As an ID token.** [**OpenID Connect**](https://openid.net/specs/openid-connect-core-1_0.html) adds login on top of OAuth: the auth server also returns an **ID token**, a JWT that tells the *client* who the user is. The access token is for the API, the ID token for the client; sending an ID token to an API is a classic mix-up.
 
+### When a call fails: 401 or 403
+
+<AuthMap preset="errors" />
+
+The status code says which layer failed, as the [bearer token spec](https://datatracker.ietf.org/doc/html/rfc6750#section-3.1) defines them. Both fail the same CRM call, and the agent's first reaction, a new token and a retry, fixes one and not the other.
+
+**`401 Unauthorized`: "I don't know who you are."**
+
+<AuthSteps name="expired-token" caption="An expired token: one new token and one retry fix it.">
+
+The agent calls the CRM with the token it cached an hour ago (1). The CRM checks the JWT and finds `exp` in the past (2). A missing or malformed token, or one signed by someone the API doesn't trust, ends the same way: it answers <Mark c="orange">invalid_token</Mark> (3):
+
+<CodeMarks marks={{ 'error="invalid_token"': 'orange' }}>
+
+```http
+HTTP/1.1 401 Unauthorized
+WWW-Authenticate: Bearer error="invalid_token", error_description="The access token expired"
+```
+
+</CodeMarks>
+
+The agent fetches a new token (4, 5), exactly as in client credentials.
+
+It retries *once* (6), and gets Alex's account (7). A second `401` right after a fresh token means the problem isn't the token's age, and another retry won't help.
+
+</AuthSteps>
+
+**`403 Forbidden`: "I know who you are, and you may not do this."**
+
+<AuthSteps name="missing-scope" caption="A missing scope: a new token carries the same scopes, so the retry fails the same way.">
+
+The agent tries to unlock Alex's account (1). The token is valid, but its `scope` only says `contacts.read` (2), and unlocking needs `contacts.write`. The CRM answers <Mark c="teal">insufficient_scope</Mark> and names the scope it wanted (3):
+
+<CodeMarks marks={{ 'error="insufficient_scope"': 'teal' }}>
+
+```http
+HTTP/1.1 403 Forbidden
+WWW-Authenticate: Bearer error="insufficient_scope", scope="contacts.write"
+```
+
+</CodeMarks>
+
+Handled like a `401`, the agent fetches a new token (4, 5). The auth server grants what the client is registered for, so the new token has the same scopes.
+
+The retry (6) gets the same `403` (7). The fix is in the client's configuration, usually on the provider's side. Until then, retrying a `403` in a loop is a bug.
+
+</AuthSteps>
+
 ### Authorization code: the agent on someone's behalf
 
 <AuthMap preset="auth-code" />
@@ -355,6 +403,8 @@ An integration that forgets to store the new one works for exactly one hour.
 
 </AuthSteps>
 
+Two more grants are in the original spec, and current best practice ([RFC 9700](https://datatracker.ietf.org/doc/html/rfc9700)) says not to use them: the **implicit** grant, which returned the token in the URL, and the **password** grant, where the client collects the user's password itself.
+
 ### What state and PKCE stop
 
 The code travels through the browser, which our backend doesn't control. Each of the two values stops one way of abusing that: an attacker's code in the advisor's session, and the advisor's code in the attacker's session.
@@ -391,56 +441,6 @@ Content-Type: application/json
 ```
 
 Without PKCE, the auth server would hand our backend tokens for the advisor's calendar, filed under the attacker's session: whatever our app does with a connected calendar, it would now do on the advisor's calendar for the attacker.
-
-</AuthSteps>
-
-Two more grants are in the original spec, and current best practice ([RFC 9700](https://datatracker.ietf.org/doc/html/rfc9700)) says not to use them: the **implicit** grant, which returned the token in the URL, and the **password** grant, where the client collects the user's password itself.
-
-## When a call fails: 401 or 403
-
-<AuthMap preset="errors" />
-
-The status code says which layer failed, as the [bearer token spec](https://datatracker.ietf.org/doc/html/rfc6750#section-3.1) defines them. Both fail the same CRM call, and the agent's first reaction, a new token and a retry, fixes one and not the other.
-
-**`401 Unauthorized`: "I don't know who you are."**
-
-<AuthSteps name="expired-token" caption="An expired token: one new token and one retry fix it.">
-
-The agent calls the CRM with the token it cached an hour ago (1). The CRM checks the JWT and finds `exp` in the past (2). A missing or malformed token, or one signed by someone the API doesn't trust, ends the same way: it answers <Mark c="orange">invalid_token</Mark> (3):
-
-<CodeMarks marks={{ 'error="invalid_token"': 'orange' }}>
-
-```http
-HTTP/1.1 401 Unauthorized
-WWW-Authenticate: Bearer error="invalid_token", error_description="The access token expired"
-```
-
-</CodeMarks>
-
-The agent fetches a new token (4, 5), exactly as in client credentials.
-
-It retries *once* (6), and gets Alex's account (7). A second `401` right after a fresh token means the problem isn't the token's age, and another retry won't help.
-
-</AuthSteps>
-
-**`403 Forbidden`: "I know who you are, and you may not do this."**
-
-<AuthSteps name="missing-scope" caption="A missing scope: a new token carries the same scopes, so the retry fails the same way.">
-
-The agent tries to unlock Alex's account (1). The token is valid, but its `scope` only says `contacts.read` (2), and unlocking needs `contacts.write`. The CRM answers <Mark c="teal">insufficient_scope</Mark> and names the scope it wanted (3):
-
-<CodeMarks marks={{ 'error="insufficient_scope"': 'teal' }}>
-
-```http
-HTTP/1.1 403 Forbidden
-WWW-Authenticate: Bearer error="insufficient_scope", scope="contacts.write"
-```
-
-</CodeMarks>
-
-Handled like a `401`, the agent fetches a new token (4, 5). The auth server grants what the client is registered for, so the new token has the same scopes.
-
-The retry (6) gets the same `403` (7). The fix is in the client's configuration, usually on the provider's side. Until then, retrying a `403` in a loop is a bug.
 
 </AuthSteps>
 
