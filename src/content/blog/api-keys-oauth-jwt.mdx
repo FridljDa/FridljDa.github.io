@@ -92,7 +92,7 @@ Content-Type: application/x-www-form-urlencoded
 grant_type=client_credentials&scope=contacts.read%20cases.write
 ```
 
-Base64 is an encoding, not encryption: whoever sees that header has the secret. That is why it only ever travels over HTTPS, and only to the token endpoint.
+Base64 is there for transport, not secrecy: a header may only carry plain ASCII characters, and base64 turns any ID and secret into those, in a form the server decodes back. It is an encoding, not encryption: whoever sees that header has the secret. That is why it only ever travels over HTTPS, and only to the token endpoint.
 
 The answer (2):
 
