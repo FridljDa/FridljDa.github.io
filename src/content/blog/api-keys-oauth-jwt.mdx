@@ -34,7 +34,7 @@ Every authenticated API call answers some version of three questions: *who is ca
 
 So the honest comparison is not API key vs OAuth vs JWT. It is *static secret* vs *short-lived token*, and, for tokens, *opaque string* vs *self-contained JWT*.
 
-The running example is the invented Northstar Bank from my posts on support automation. Alex Carter writes in that their account is locked, and to help, the support agent calls three systems: a **ticketing system** to open an escalation, the **CRM** to look up Alex's account and its security flag, and **the calendar of Alex's personal advisor** to book a callback. Same agent, three integrations, three patterns.
+The running example is the invented Northstar Bank from my posts on support automation. Alex Carter writes in that their account is locked, and to help, the support agent calls three systems: a **ticketing system** to open an escalation, the **CRM** to look up Alex's account and its security flag, and **the calendar of Alex's personal advisor** to book a callback. Same agent, three integrations, three patterns. In all three, the model never sees a credential: it picks a tool and its arguments, like `lookup_account(account_number="NSB01234")`, and the tool's code attaches the credential and makes the call, so nothing a [prompt injection](/post/prompt-injection) could extract enters its context.
 
 ## API keys: one secret, one header
 
@@ -105,7 +105,50 @@ The answer (2):
 }
 ```
 
-Every CRM call (3) then sends `Authorization: Bearer <access_token>`, and the API answers (4) once it has checked the JWT. Two things are easy to get wrong:
+`expires_in` is a duration, valid for 3600 seconds from now, not a time of day. The client doesn't decide when the token expires: the auth server does, and after that the API answers `401`. `expires_in` only tells the client how long it can count on the token, so it can fetch the next one in time. A duration rather than a timestamp, because the two machines' clocks don't have to agree: the client adds it to its own.
+
+Every CRM call (3) then carries the token:
+
+```http
+GET /v2/contacts?account_number=NSB01234 HTTP/1.1
+Host: api.crm.example.com
+Authorization: Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6ImNybS0yMDI2LTEwIn0.eyJpc3Mi...
+```
+
+The CRM API doesn't ask the auth server about every token. Once, and again when a token names a key it doesn't know, it fetches the auth server's public keys (4), a **JWKS** (JSON Web Key Set) at a well-known URL (5):
+
+```http
+GET /.well-known/jwks.json HTTP/1.1
+Host: auth.crm.example.com
+```
+
+```json
+{
+  "keys": [
+    {
+      "kid": "crm-2026-10",
+      "kty": "RSA",
+      "alg": "RS256",
+      "use": "sig",
+      "n": "u1SU1LfVLPHCozMxH2Mo4lgOEePzNm0tRgeLezV6ffAt0gunVTLw7onLRnrq0_IzW7yWR7QkrmBL7jTKEn5u...",
+      "e": "AQAB"
+    }
+  ]
+}
+```
+
+`n` and `e` are the RSA public key. Publishing it is safe: it can check signatures, not make them.
+
+With the key named by the token's `kid`, the API checks the JWT (6) on its own: the signature, then whether the token is meant for this API, from the auth server it trusts, not expired, and allows the call. [The JWT section](#jwt-a-token-the-api-can-check-on-its-own) takes these apart. Then it answers (7):
+
+```http
+HTTP/1.1 200 OK
+Content-Type: application/json
+
+{"account_number": "NSB01234", "name": "Alex Carter", "status": "locked", "security_flag": "suspicious_login"}
+```
+
+Two things are easy to get wrong:
 
 - **Cache the token.** A fresh one per call doubles the latency, and auth servers rate-limit the token endpoint. Keep it until shortly before `expires_in` runs out, and fetch a new one on a `401`.
 - **No refresh token here.** The agent still has its client secret, so it just asks again.
@@ -169,7 +212,18 @@ The answer (6) has one field more than in client credentials:
 }
 ```
 
-The access token goes on the calendar call (7), as a bearer token like any other. The refresh token is the long-lived secret here. It goes in the secrets store, one per advisor, and an hour later gets a new access token without the advisor (8):
+The access token goes on the calendar call (7), as a bearer token like any other:
+
+```http
+POST /v1/me/events HTTP/1.1
+Host: api.calendar.example.com
+Authorization: Bearer cal_at_7Hq2Lm9xPv4T...
+Content-Type: application/json
+
+{"title": "Callback: Alex Carter, locked account", "start": "2026-10-27T10:00:00+01:00", "duration_minutes": 15}
+```
+
+The refresh token is the long-lived secret here. It goes in the secrets store, one per advisor, and an hour later gets a new access token without the advisor (8):
 
 ```http
 POST /oauth/token HTTP/1.1
@@ -180,7 +234,19 @@ Content-Type: application/x-www-form-urlencoded
 grant_type=refresh_token&refresh_token=cal_rt_9KdLw3ZnQ8bY...
 ```
 
-Many providers **rotate** it: the answer (9) holds a new refresh token as well and invalidates the old one. An integration that forgets to store the new one works for exactly one hour.
+Many providers **rotate** it: the answer (9) holds a new refresh token as well and invalidates the old one.
+
+```json
+{
+  "access_token": "cal_at_Rt5Vn1qXc8Jw...",
+  "token_type": "Bearer",
+  "expires_in": 3600,
+  "refresh_token": "cal_rt_Bw6Hs2Mk4Pz...",
+  "scope": "calendar.events.write"
+}
+```
+
+An integration that forgets to store the new one works for exactly one hour.
 
 </AuthSteps>
 
@@ -198,7 +264,7 @@ The CRM's access token starts with `eyJ`, base64 for `{"`: it is a [**JSON Web T
 
 The payload's fields are **claims**: `iss` who issued it, `sub` who it is about (our agent here, a user in a delegated flow), `aud` which API it is for, `exp` when it expires, `scope` what it allows.
 
-The signature is what JWTs buy. The CRM API fetches the auth server's public keys once, as a **JWKS** (JSON Web Key Set) at a well-known URL, picks the one named by `kid`, and verifies the token **without asking anyone**. No lookup per request.
+The signature is what JWTs buy. The CRM API fetches the auth server's public keys once, as a **JWKS** (JSON Web Key Set), picks the one named by `kid`, and verifies the token **without asking anyone** (steps 4 to 6 of [client credentials](#client-credentials-the-agent-as-itself)). No lookup per request.
 
 - **Signed, not encrypted.** Anyone holding the token can read the claims. No secrets go in them, and until `exp` the token is as good as a password to whoever holds it.
 - **Can't be taken back.** A leaked JWT stays valid until `exp`. That is why access tokens are short-lived and the refresh token, which the auth server *does* check on every use, carries the long-lived trust. An **opaque** token, a random string the API checks by asking the auth server ([introspection](https://datatracker.ietf.org/doc/html/rfc7662)), is revocable at once, at the cost of a network call per request.
@@ -241,15 +307,18 @@ def verify(token: str) -> dict:
 
 The status code says which layer failed, as the [bearer token spec](https://datatracker.ietf.org/doc/html/rfc6750#section-3.1) defines them:
 
-- **`401 Unauthorized`: "I don't know who you are."** The token is missing, expired, malformed or signed by someone the API doesn't trust. Fetch a new one and retry *once*.
-- **`403 Forbidden`: "I know who you are, and you may not do this."** A missing scope or role. A new token with the same grants won't help; the fix is in the client's configuration, usually on the provider's side.
+**`401 Unauthorized`: "I don't know who you are."** The token is missing, expired, malformed or signed by someone the API doesn't trust. Fetch a new one and retry *once*.
+
+```http
+HTTP/1.1 401 Unauthorized
+WWW-Authenticate: Bearer error="invalid_token", error_description="The access token expired"
+```
+
+**`403 Forbidden`: "I know who you are, and you may not do this."** A missing scope or role, here the agent trying to unlock Alex's account with a token that only has `contacts.read`. A new token with the same grants won't help; the fix is in the client's configuration, usually on the provider's side.
+
+```http
+HTTP/1.1 403 Forbidden
+WWW-Authenticate: Bearer error="insufficient_scope", scope="contacts.write"
+```
 
 Retrying a `403` in a loop is a bug.
-
-## Credentials stay out of the model
-
-<AuthMap preset="model" />
-
-An LLM agent adds a rule none of these specs mention: **the model never sees a credential.** It picks a tool and its arguments, like `lookup_account(account_number="NSB01234")`; the tool's code takes the cached token from the secrets store, attaches the header and makes the call. Nothing the model could repeat, log or be talked out of by a [prompt injection](/post/prompt-injection) enters its context.
-
-The same split decides whose permissions apply. Alex never logs in to the CRM, so the CRM can't check what *Alex* may see: it sees the agent's identity with all its scopes. Whether this caller may hear about this account is a check the tool code makes before the call, in code rather than in the prompt, as [Workflow or Agent](/post/workflow-vs-agent) argues for the order of operations.

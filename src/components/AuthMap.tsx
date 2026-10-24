@@ -59,11 +59,6 @@ export const PRESETS = {
     tags: [{ on: 'tools', text: 'Retry once' }],
     description: 'Highlighted: the tools and the three systems, where a call fails with 401 or 403.',
   },
-  model: {
-    focus: ['agent', 'tools'],
-    tags: [{ on: 'agent', text: 'No secrets' }],
-    description: 'Highlighted: the agent and its tools. The agent only names a tool and its arguments; the tools, code, hold the secrets.',
-  },
 } satisfies Record<string, Preset>;
 
 export type PresetName = keyof typeof PRESETS;
