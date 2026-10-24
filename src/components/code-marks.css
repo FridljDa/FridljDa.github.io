@@ -1,11 +1,12 @@
 /* Colours that tie a value in a code block (CodeMarks.astro) to where the text
    names it (Mark.astro). The figure palette in loop-animation.css: blue, orange,
-   teal, amber. Code blocks are always dark, so they take the dark values. */
+   teal, amber, and purple for a fifth value. Code blocks are always dark, so they take the dark values. */
 :root {
   --cm-blue: #2563eb;
   --cm-orange: #ea580c;
   --cm-teal: #2a9d8f;
   --cm-amber: #b7791f;
+  --cm-purple: #7c3aed;
 }
 .dark,
 .code-marks {
@@ -13,11 +14,13 @@
   --cm-orange: #f97316;
   --cm-teal: #3bb3a4;
   --cm-amber: #f0b552;
+  --cm-purple: #a78bfa;
 }
 .cm-blue { --cm: var(--cm-blue); }
 .cm-orange { --cm: var(--cm-orange); }
 .cm-teal { --cm: var(--cm-teal); }
 .cm-amber { --cm: var(--cm-amber); }
+.cm-purple { --cm: var(--cm-purple); }
 
 .code-marks .cm,
 .prose code.cm {

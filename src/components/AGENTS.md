@@ -42,7 +42,7 @@ its own class to `loop-animation.css`.
   `<CodeMarks code={...} marks={{ 'state=...': 'teal' }} />` colours them and
   `<Mark c="teal">state</Mark>` names them in the same colour. Give a value
   the same colour in every block it appears in, so a reader can follow it
-  through a flow (`code-marks.css`: blue, orange, teal, amber).
+  through a flow (`code-marks.css`: blue, orange, teal, amber, purple).
 - **Animations:** `<LoopAnimation name="..." />`; see `src/remotion/AGENTS.md`.
 - **Confluence:** a paste into Confluence drops inline SVG, so the drawn figures
   show a PNG in the Confluence copy (their `Astro.locals.confluence` branch).

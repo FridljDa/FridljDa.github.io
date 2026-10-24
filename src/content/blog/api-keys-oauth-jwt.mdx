@@ -72,16 +72,20 @@ How the client gets the token is the **grant type**. Two cover almost every inte
 
 The CRM integration has no human in it: the agent reads accounts as itself. The CRM admin registers our agent as a client, and the CRM's admin console shows two values:
 
+<CodeMarks marks={{ 'northstar-support-agent': 'orange', 'q8Zr2vLx7TfN4mKd9WbE': 'purple' }}>
+
 ```text
 client_id:     northstar-support-agent
 client_secret: q8Zr2vLx7TfN4mKd9WbE
 ```
 
-The `client_id` names the client and is not a secret: it shows up in logs, and in the calendar flow below, in the browser's address bar. The `client_secret` is the password. Consoles often show it only once, so it goes straight into the secrets store.
+</CodeMarks>
+
+The <Mark c="orange">client_id</Mark> names the client and is not a secret: it shows up in logs, and in the calendar flow below, in the browser's address bar. The <Mark c="purple">client_secret</Mark> is the password. Consoles often show it only once, so it goes straight into the secrets store.
 
 <AuthSteps name="client-credentials" caption="Two calls to get going: one to the auth server for a token, one to the API with it. After that, only the second, until the token expires.">
 
-The token request (1) is a form-encoded `POST`. The client authenticates with HTTP Basic: the two values joined by a colon, `northstar-support-agent:q8Zr2vLx7TfN4mKd9WbE`, then <Mark c="teal">base64-encoded</Mark>:
+The token request (1) is a form-encoded `POST`. The client authenticates with HTTP Basic: the two values joined by a colon, <Mark c="orange">northstar-support-agent</Mark>:<Mark c="purple">q8Zr2vLx7TfN4mKd9WbE</Mark>, then <Mark c="teal">base64-encoded</Mark>:
 
 <CodeMarks marks={{ 'bm9ydGhzdGFyLXN1cHBvcnQtYWdlbnQ6cThacjJ2THg3VGZONG1LZDlXYkU=': 'teal' }}>
 
@@ -127,7 +131,7 @@ Authorization: Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6ImNybS0yMDI2LT
 
 </CodeMarks>
 
-The CRM API checks it without asking the auth server each time: it fetches the auth server's public keys once (4, 5) and checks the JWT with them (6), as [the JWT section](#jwt-a-token-the-api-can-check-on-its-own) shows. Then it answers (7):
+The CRM API checks it without asking the auth server each time: it fetches the auth server's public keys once (4, 5) and checks the JWT with them (6), as [the next section](#the-crms-token-is-a-jwt) shows. Then it answers (7):
 
 ```http
 HTTP/1.1 200 OK
@@ -145,11 +149,90 @@ The `client_secret` is long-lived too, so this can look like an API key with ext
 
 </AuthSteps>
 
+### The CRM's token is a JWT
+
+<AuthMap preset="jwt" />
+
+The CRM's access token starts with `eyJ`, base64 for `{"`: it is a [**JSON Web Token**](https://datatracker.ietf.org/doc/html/rfc7519), three base64url parts separated by dots.
+
+<AuthFigure name="jwt" />
+
+*The CRM's access token, decoded. The claims are what the API checks; the signature is why it can trust them.*
+
+The payload's fields are **claims**: `iss` who issued it, `sub` who it is about (our agent here, a user in a delegated flow), `aud` which API it is for, `exp` when it expires, `scope` what it allows.
+
+The signature is what JWTs buy: the API verifies the token with the auth server's public key, **without asking anyone**. It fetches the keys once, as a **JWKS** (JSON Web Key Set) at a well-known URL, and picks the one the token's header names as <Mark c="teal">kid</Mark>. These are steps 4 to 6 above:
+
+```http
+GET /.well-known/jwks.json HTTP/1.1
+Host: auth.crm.example.com
+```
+
+<CodeMarks marks={{ '"kid": "crm-2026-10"': 'teal' }}>
+
+```json
+{
+  "keys": [
+    {
+      "kid": "crm-2026-10",
+      "kty": "RSA",
+      "alg": "RS256",
+      "use": "sig",
+      "n": "u1SU1LfVLPHCozMxH2Mo4lgOEePzNm0tRgeLezV6ffAt0gunVTLw7onLRnrq0_IzW7yWR7QkrmBL7jTKEn5u...",
+      "e": "AQAB"
+    }
+  ]
+}
+```
+
+</CodeMarks>
+
+`n` and `e` are the RSA public key. Publishing it is safe: it can check signatures, not make them.
+
+- **Signed, not encrypted.** Anyone holding the token can read the claims. No secrets go in them, and until `exp` the token is as good as a password to whoever holds it.
+- **Can't be taken back.** A leaked JWT stays valid until `exp`. That is why access tokens are short-lived, and the long-lived trust sits in something the auth server checks on every use: the client secret here, the refresh token in the calendar flow below. An **opaque** token, a random string the API checks by asking the auth server ([introspection](https://datatracker.ietf.org/doc/html/rfc7662)), is revocable at once, at the cost of a lookup per request. The calendar's tokens below are opaque.
+- **Not meant for the caller.** The agent calling the CRM doesn't need to decode its token: it is addressed to the API, and the provider may change its format. Decoding it is still the fastest way to debug a `403`: the `scope` or `aud` is usually wrong.
+
+#### If you run the API: checking one
+
+Step 6 in code. Verifying a JWT is more than checking the signature. With [PyJWT](https://pyjwt.readthedocs.io/):
+
+<CodeMarks marks={{ 'algorithms=["RS256"]': 'blue', 'audience="https://api.crm.example.com"': 'orange', 'options={"require": ["exp", "iss", "aud"]}': 'teal' }}>
+
+```python
+import jwt  # PyJWT
+
+jwks = jwt.PyJWKClient("https://auth.crm.example.com/.well-known/jwks.json")
+
+def verify(token: str) -> dict:
+    signing_key = jwks.get_signing_key_from_jwt(token)  # picks the key by "kid"
+    return jwt.decode(
+        token,
+        signing_key.key,
+        algorithms=["RS256"],                    # never trust the token's own "alg"
+        audience="https://api.crm.example.com",  # minted for this API, not another one
+        issuer="https://auth.crm.example.com",   # by the server we trust
+        leeway=30,                               # tolerate small clock skew
+        options={"require": ["exp", "iss", "aud"]},
+    )
+```
+
+</CodeMarks>
+
+- **<Mark c="blue">algorithms</Mark>** pins the algorithm. Early libraries trusted the header, so an attacker could set `"alg": "none"` and drop the signature, or switch `RS256` to `HS256` and sign with the *public* key as if it were a shared secret. The [JWT best practices](https://datatracker.ietf.org/doc/html/rfc8725) describe both.
+- **<Mark c="orange">audience</Mark>** stops a token minted for the ticketing API from being replayed against the CRM.
+- **<Mark c="teal">require</Mark>** rejects tokens that leave `exp` out and would otherwise never expire.
+
+#### Where else JWTs show up
+
+- **As the client's credential.** Some providers replace the `client_secret` with a JWT the client signs with its own private key ([RFC 7523](https://datatracker.ietf.org/doc/html/rfc7523)). Service accounts on large cloud and CRM platforms work like this: nothing reusable travels at all.
+- **As an ID token.** [**OpenID Connect**](https://openid.net/specs/openid-connect-core-1_0.html) adds login on top of OAuth: the auth server also returns an **ID token**, a JWT that tells the *client* who the user is. The access token is for the API, the ID token for the client; sending an ID token to an API is a classic mix-up.
+
 ### Authorization code: the agent on someone's behalf
 
 <AuthMap preset="auth-code" />
 
-The calendar belongs to the advisor. The agent shouldn't hold a key to *every* advisor's calendar; it should act for the advisors who agreed to it, on their calendars only. This delegation is what OAuth was built for, and the flow behind every "Allow this app to…" screen: the **authorization code** grant.
+The second grant is for the calendar, which belongs to the advisor. The agent shouldn't hold a key to *every* advisor's calendar; it should act for the advisors who agreed to it, on their calendars only. This delegation is what OAuth was built for, and the flow behind every "Allow this app to…" screen: the **authorization code** grant.
 
 <AuthSteps name="authorization-code" caption="The advisor is in the loop once, for steps 1 to 5. Everything after happens between our backend and the auth server.">
 
@@ -220,7 +303,7 @@ The auth server hashes the <Mark c="blue">code_verifier</Mark> and compares it w
 
 </CodeMarks>
 
-These tokens are **opaque**: random strings the calendar can only check by looking them up, unlike the CRM's JWT. The access token goes on the calendar call (10), as a bearer token like any other:
+Unlike the CRM's JWT, these tokens are **opaque**: random strings the calendar can only check by looking them up. The access token goes on the calendar call (10), as a bearer token like any other:
 
 ```http
 POST /v1/me/events HTTP/1.1
@@ -267,85 +350,6 @@ An integration that forgets to store the new one works for exactly one hour.
 </AuthSteps>
 
 Two more grants are in the original spec, and current best practice ([RFC 9700](https://datatracker.ietf.org/doc/html/rfc9700)) says not to use them: the **implicit** grant, which returned the token in the URL, and the **password** grant, where the client collects the user's password itself.
-
-## JWT: a token the API can check on its own
-
-<AuthMap preset="jwt" />
-
-The CRM's access token starts with `eyJ`, base64 for `{"`: it is a [**JSON Web Token**](https://datatracker.ietf.org/doc/html/rfc7519), three base64url parts separated by dots.
-
-<AuthFigure name="jwt" />
-
-*The CRM's access token, decoded. The claims are what the API checks; the signature is why it can trust them.*
-
-The payload's fields are **claims**: `iss` who issued it, `sub` who it is about (our agent here, a user in a delegated flow), `aud` which API it is for, `exp` when it expires, `scope` what it allows.
-
-The signature is what JWTs buy: the API verifies the token with the auth server's public key, **without asking anyone**. It fetches the keys once, as a **JWKS** (JSON Web Key Set) at a well-known URL, and picks the one the token's header names as <Mark c="teal">kid</Mark> (steps 4 to 6 of [client credentials](#client-credentials-the-agent-as-itself)):
-
-```http
-GET /.well-known/jwks.json HTTP/1.1
-Host: auth.crm.example.com
-```
-
-<CodeMarks marks={{ '"kid": "crm-2026-10"': 'teal' }}>
-
-```json
-{
-  "keys": [
-    {
-      "kid": "crm-2026-10",
-      "kty": "RSA",
-      "alg": "RS256",
-      "use": "sig",
-      "n": "u1SU1LfVLPHCozMxH2Mo4lgOEePzNm0tRgeLezV6ffAt0gunVTLw7onLRnrq0_IzW7yWR7QkrmBL7jTKEn5u...",
-      "e": "AQAB"
-    }
-  ]
-}
-```
-
-</CodeMarks>
-
-`n` and `e` are the RSA public key. Publishing it is safe: it can check signatures, not make them.
-
-- **Signed, not encrypted.** Anyone holding the token can read the claims. No secrets go in them, and until `exp` the token is as good as a password to whoever holds it.
-- **Can't be taken back.** A leaked JWT stays valid until `exp`. That is why access tokens are short-lived and the refresh token, which the auth server *does* check on every use, carries the long-lived trust. An opaque token like the calendar's is revocable at once, at the cost of a lookup per request ([introspection](https://datatracker.ietf.org/doc/html/rfc7662)).
-- **Opaque to the caller.** The agent calling the CRM doesn't need to decode its token: it is addressed to the API, and the provider may change its format. Decoding it is still the fastest way to debug a `403`: the `scope` or `aud` is usually wrong.
-
-### If you run the API: checking one
-
-Step 6 in code. Verifying a JWT is more than checking the signature. With [PyJWT](https://pyjwt.readthedocs.io/):
-
-<CodeMarks marks={{ 'algorithms=["RS256"]': 'blue', 'audience="https://api.crm.example.com"': 'orange', 'options={"require": ["exp", "iss", "aud"]}': 'teal' }}>
-
-```python
-import jwt  # PyJWT
-
-jwks = jwt.PyJWKClient("https://auth.crm.example.com/.well-known/jwks.json")
-
-def verify(token: str) -> dict:
-    signing_key = jwks.get_signing_key_from_jwt(token)  # picks the key by "kid"
-    return jwt.decode(
-        token,
-        signing_key.key,
-        algorithms=["RS256"],                    # never trust the token's own "alg"
-        audience="https://api.crm.example.com",  # minted for this API, not another one
-        issuer="https://auth.crm.example.com",   # by the server we trust
-        leeway=30,                               # tolerate small clock skew
-        options={"require": ["exp", "iss", "aud"]},
-    )
-```
-
-</CodeMarks>
-
-- **<Mark c="blue">algorithms</Mark>** pins the algorithm. Early libraries trusted the header, so an attacker could set `"alg": "none"` and drop the signature, or switch `RS256` to `HS256` and sign with the *public* key as if it were a shared secret. The [JWT best practices](https://datatracker.ietf.org/doc/html/rfc8725) describe both.
-- **<Mark c="orange">audience</Mark>** stops a token minted for the ticketing API from being replayed against the CRM.
-- **<Mark c="teal">require</Mark>** rejects tokens that leave `exp` out and would otherwise never expire.
-
-### Where else JWTs show up
-
-- **As the client's credential.** Some providers replace the `client_secret` with a JWT the client signs with its own private key ([RFC 7523](https://datatracker.ietf.org/doc/html/rfc7523)). Service accounts on large cloud and CRM platforms work like this: nothing reusable travels at all.
-- **As an ID token.** [**OpenID Connect**](https://openid.net/specs/openid-connect-core-1_0.html) adds login on top of OAuth: the auth server also returns an **ID token**, a JWT that tells the *client* who the user is. The access token is for the API, the ID token for the client; sending an ID token to an API is a classic mix-up.
 
 ## When a call fails: 401 or 403
 
