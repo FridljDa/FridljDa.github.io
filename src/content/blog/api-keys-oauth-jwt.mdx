@@ -105,7 +105,7 @@ The answer (2):
 }
 ```
 
-Every CRM call (3) then sends `Authorization: Bearer <access_token>`. Two things are easy to get wrong:
+Every CRM call (3) then sends `Authorization: Bearer <access_token>`, and the API answers (4) once it has checked the JWT. Two things are easy to get wrong:
 
 - **Cache the token.** A fresh one per call doubles the latency, and auth servers rate-limit the token endpoint. Keep it until shortly before `expires_in` runs out, and fetch a new one on a `401`.
 - **No refresh token here.** The agent still has its client secret, so it just asks again.
