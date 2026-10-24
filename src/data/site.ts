@@ -7,6 +7,8 @@ export const SITE = {
     repo: 'FridljDa.github.io',
     branch: 'master',
   },
+  // Visit counting: https://danielfridljand.goatcounter.com
+  goatcounterCode: 'danielfridljand',
 } as const;
 
 export const BIOGRAPHY = {

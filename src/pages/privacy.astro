@@ -13,7 +13,7 @@ const linkedInUrl = BIOGRAPHY.social.find((s) => s.name === 'LinkedIn')?.url;
 
 <Layout
   title={`Privacy Policy - ${SITE.title}`}
-  description="Privacy policy for danielfridljand.de, including AI chat and theme preferences."
+  description="Privacy policy for danielfridljand.de, including AI chat, visit statistics and theme preferences."
   url={`${SITE.url}/privacy`}
 >
   <article class="container mx-auto px-4 py-16 max-w-3xl">
@@ -58,9 +58,28 @@ const linkedInUrl = BIOGRAPHY.social.find((s) => s.name === 'LinkedIn')?.url;
         is not stored in your browser.
       </p>
 
+      <h2>Visit statistics</h2>
+      <p>
+        To see how many people read the site, page views are counted with{' '}
+        <a href="https://www.goatcounter.com" target="_blank" rel="noopener noreferrer">
+          GoatCounter
+        </a>
+        . It records the page visited, the referring site, your browser,
+        screen size and country, without cookies and without storing your IP
+        address or any identifier that follows you across sites. See the{' '}
+        <a
+          href="https://www.goatcounter.com/help/privacy"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          GoatCounter privacy policy
+        </a>
+        .
+      </p>
+
       <h2>What we do not collect</h2>
       <p>
-        This site does not use analytics cookies, advertising trackers, or
+        This site does not use cookies for analytics, advertising trackers, or
         third-party marketing pixels.
       </p>
 
