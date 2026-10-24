@@ -27,7 +27,7 @@ What a shared conversation would help with:
 
 5. Visibility into token spend. If the conversations are shared, so is what they cost.
 
-There are downsides, of course. Most people would understandably feel uneasy sharing their AI conversations with everyone.
+The obvious downside: most people would feel uneasy sharing their AI conversations with everyone.
 
 The simplest version might just be Slack, where the Claude Code team already works in the open: everyone is there, and the integration exists. HumanLayer seems to be heading in the same direction.
 
