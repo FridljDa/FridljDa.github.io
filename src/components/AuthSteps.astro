@@ -6,7 +6,13 @@
  * and the figure stays pinned on the left while the steps scroll past on the
  * right, so the arrow a step refers to stays in view. Narrower, and in the
  * Confluence copy, the figure comes first and the text below it, as for any
- * other figure. Plain CSS (sticky in a grid, a container query), no JavaScript.
+ * other figure. Plain CSS (sticky in a grid, a container query).
+ *
+ * While the figure is pinned, a small script highlights the step the reader is
+ * at and greys out the rest. A paragraph naming steps in brackets, "(1)" or
+ * "(7, 8)", starts that step; what follows it, code blocks and lists, belongs
+ * to it until the next such paragraph. The figure's rows carry their step as
+ * data-step (AuthFigures.tsx). Without JavaScript the figure stays as it is.
  */
 import AuthFigure from './AuthFigure.astro';
 import type { FigureName } from './AuthFigures';
@@ -65,5 +71,60 @@ const { name, caption } = Astro.props;
     .steps > :global(:first-child) {
       margin-top: 0;
     }
+    /* Like Dim in map-parts.tsx. */
+    .pinned :global([data-step]) {
+      transition: opacity 0.2s, filter 0.2s;
+    }
+    .pinned :global([data-step].off) {
+      opacity: 0.22;
+      filter: grayscale(1);
+    }
   }
 </style>
+
+<script>
+  /** A step number in brackets, "(3)", or several, "(7, 8)". */
+  const MARK = /\((\d+(?:,\s*\d+)*)\)/g;
+  /** How far down the viewport the reader is taken to be reading. */
+  const LINE = 0.4;
+
+  for (const root of document.querySelectorAll<HTMLElement>('.auth-steps')) {
+    const pinned = root.querySelector<HTMLElement>('.pinned')!;
+    const rows = [...root.querySelectorAll<SVGElement>('.pinned [data-step]')];
+    const chunks: { start: Element; steps: Set<string> }[] = [];
+    for (const el of root.querySelectorAll('.steps > *')) {
+      const marks = el.tagName === 'P' ? [...(el.textContent ?? '').matchAll(MARK)] : [];
+      if (marks.length) {
+        chunks.push({ start: el, steps: new Set(marks.flatMap((m) => m[1].split(/,\s*/))) });
+      }
+    }
+
+    let active: Set<string> | null = null;
+    const show = (steps: Set<string> | null) => {
+      if (steps === active) return;
+      active = steps;
+      for (const row of rows) row.classList.toggle('off', !!steps && !steps.has(row.dataset.step ?? ''));
+    };
+    const update = () => {
+      if (getComputedStyle(pinned).position !== 'sticky') return show(null);
+      const line = window.innerHeight * LINE;
+      const box = root.getBoundingClientRect();
+      if (box.top > line || box.bottom < line) return show(null);
+      const current = chunks.filter((c) => c.start.getBoundingClientRect().top <= line).at(-1);
+      show(current?.steps ?? null);
+    };
+
+    let queued = false;
+    const schedule = () => {
+      if (queued) return;
+      queued = true;
+      requestAnimationFrame(() => {
+        queued = false;
+        update();
+      });
+    };
+    window.addEventListener('scroll', schedule, { passive: true });
+    window.addEventListener('resize', schedule);
+    update();
+  }
+</script>

@@ -6,6 +6,11 @@
  * blue for the model, grey for our code, orange for someone else's system,
  * teal for a person. Narrow enough to share one layout between phones and wide
  * screens. Static: rendered on the server, no JavaScript.
+ *
+ * Each row of a sequence figure carries the step it belongs to as data-step,
+ * so AuthSteps.astro can highlight the step the reader is at and grey out the
+ * rest. A note and the bottom tag belong to the step they comment on, a gap
+ * row to the step after it.
  */
 import type { ReactNode } from 'react';
 import { color } from '../remotion/shared';
@@ -39,7 +44,7 @@ interface Message {
 }
 
 /** One row of a sequence: a message, or a line of text across the figure that marks time passing. */
-type Row = Message | { gap: string };
+type Row = (Message & { step?: number }) | { gap: string };
 
 const HEAD = { y: 12, h: 44 };
 const ROW = 58;
@@ -48,7 +53,7 @@ const ROW = 58;
  * A sequence diagram drawn in the map's style: a box per party along the top,
  * a dashed lifeline under each, and a numbered row per message.
  */
-function Sequence({ id, lanes, rows, tag, label }: { id: string; lanes: Lane[]; rows: Row[]; tag?: string; label: string }) {
+function Sequence({ id, lanes, rows, tag, tagStep, label }: { id: string; lanes: Lane[]; rows: Row[]; tag?: string; tagStep?: number; label: string }) {
   const m = `${id}-arrow`;
   const top = HEAD.y + HEAD.h;
   const bottom = top + 24 + rows.length * ROW;
@@ -72,7 +77,7 @@ function Sequence({ id, lanes, rows, tag, label }: { id: string; lanes: Lane[]; 
         const y = top + 24 + i * ROW + ROW / 2;
         if ('gap' in r) {
           return (
-            <text key={i} x={W / 2} y={y} dy="0.35em" textAnchor="middle" fontSize={LABEL} fontWeight={600} fontStyle="italic" fill={color('muted')}>
+            <text key={i} data-step={n + 1} x={W / 2} y={y} dy="0.35em" textAnchor="middle" fontSize={LABEL} fontWeight={600} fontStyle="italic" fill={color('muted')}>
               {r.gap}
             </text>
           );
@@ -82,7 +87,7 @@ function Sequence({ id, lanes, rows, tag, label }: { id: string; lanes: Lane[]; 
           const w = r.label.length * LABEL * 0.56 + 28;
           const x = Math.min(Math.max(from - w / 2, 4), W - 4 - w);
           return (
-            <g key={i}>
+            <g key={i} data-step={r.step ?? n}>
               <rect x={x} y={y - 17} width={w} height={34} rx={9} fill={color('node-bg')} stroke={STROKE[lanes[r.from].role]} strokeWidth={2} />
               <text x={x + w / 2} y={y} dy="0.35em" textAnchor="middle" fontSize={LABEL} fontWeight={600} fill={color('text')}>
                 {r.label}
@@ -96,7 +101,7 @@ function Sequence({ id, lanes, rows, tag, label }: { id: string; lanes: Lane[]; 
         const mid = (from + to) / 2;
         const w = r.label.length * LABEL * 0.56 + 12;
         return (
-          <g key={i}>
+          <g key={i} data-step={n}>
             <path
               d={`M${from},${y + 8} H${to - dir * 6}`}
               fill="none"
@@ -114,7 +119,11 @@ function Sequence({ id, lanes, rows, tag, label }: { id: string; lanes: Lane[]; 
           </g>
         );
       })}
-      {tag && <Tag x={W / 2} y={bottom + 30} text={tag} size={15} />}
+      {tag && (
+        <g data-step={tagStep}>
+          <Tag x={W / 2} y={bottom + 30} text={tag} size={15} />
+        </g>
+      )}
     </svg>
   );
 }
@@ -137,6 +146,7 @@ function ClientCredentials({ id }: { id: string }) {
         { from: 2, to: 0, label: '200: Alex’s account', reply: true },
       ]}
       tag="Reuse the token for the hour"
+      tagStep={3}
     />
   );
 }
@@ -164,6 +174,7 @@ function AuthorizationCode({ id }: { id: string }) {
         { from: 1, to: 2, label: 'New pair', reply: true },
       ]}
       tag="Store the new refresh token"
+      tagStep={8}
     />
   );
 }
