@@ -40,7 +40,11 @@ The model never sees any of them. It picks a tool and its arguments, like `looku
 
 <AuthMap preset="api-key" />
 
-The ticketing system's admin generates a key in its settings page and gives it to us. From then on, every request carries it:
+<AuthFigure name="api-key" />
+
+*One handover, then one call per request. Nothing to fetch, nothing that expires.*
+
+The ticketing system's admin generates a key in its settings page and gives it to us (1). From then on, every request carries it (2):
 
 ```http
 POST /v2/tickets HTTP/1.1
@@ -51,7 +55,7 @@ Content-Type: application/json
 {"subject": "Locked account, security flag set", "customer_id": "NSB01234", "priority": "high"}
 ```
 
-Some APIs want it in a custom header (`X-API-Key`) or as the username of HTTP Basic auth; the docs say which. The server looks the key up and lets the request through. Nothing to fetch, nothing expires mid-conversation, and a `curl` with one header works. The costs come from the same simplicity:
+Some APIs want it in a custom header (`X-API-Key`) or as the username of HTTP Basic auth; the docs say which. The server looks the key up (3) and opens the ticket (4). Nothing to fetch, nothing expires mid-conversation, and a `curl` with one header works. The costs come from the same simplicity:
 
 - **It identifies an application, not a person.** The ticket is created "by the integration", whoever the agent is talking to.
 - **It lives until someone rotates it.** A key leaked into a log or a Git commit keeps working until someone notices.
@@ -355,9 +359,13 @@ Two more grants are in the original spec, and current best practice ([RFC 9700](
 
 <AuthMap preset="errors" />
 
+<AuthFigure name="errors" />
+
+*The same CRM call failing twice: once on the token, which a new one fixes, once on the scopes, which no retry fixes.*
+
 The status code says which layer failed, as the [bearer token spec](https://datatracker.ietf.org/doc/html/rfc6750#section-3.1) defines them:
 
-**`401 Unauthorized`: "I don't know who you are."** The token is missing, expired, malformed or signed by someone the API doesn't trust: <Mark c="orange">invalid_token</Mark>. Fetch a new one and retry *once*.
+**`401 Unauthorized`: "I don't know who you are."** The token is missing, expired, malformed or signed by someone the API doesn't trust: <Mark c="orange">invalid_token</Mark> (1, 2). Fetch a new one (3, 4) and retry *once* (5, 6).
 
 <CodeMarks marks={{ 'error="invalid_token"': 'orange' }}>
 
@@ -368,7 +376,7 @@ WWW-Authenticate: Bearer error="invalid_token", error_description="The access to
 
 </CodeMarks>
 
-**`403 Forbidden`: "I know who you are, and you may not do this."** A missing scope or role: <Mark c="teal">insufficient_scope</Mark>, here the agent trying to unlock Alex's account with a token that only has `contacts.read`. A new token with the same grants won't help; the fix is in the client's configuration, usually on the provider's side.
+**`403 Forbidden`: "I know who you are, and you may not do this."** A missing scope or role: <Mark c="teal">insufficient_scope</Mark>, here the agent trying to unlock Alex's account with a token that only has `contacts.read` (7, 8). A new token with the same grants won't help; the fix is in the client's configuration, usually on the provider's side.
 
 <CodeMarks marks={{ 'error="insufficient_scope"': 'teal' }}>
 

@@ -1,8 +1,9 @@
 /**
  * The figures of api-keys-oauth-jwt other than its section map (AuthMap.tsx):
- * the two OAuth grants as sequence figures, client credentials for the CRM
- * and authorization code for the advisor's calendar, and the anatomy of the
- * CRM's access token, a JWT. Same palette, box style and outlines as the map:
+ * sequence figures for the ticketing system's API key, the two OAuth grants
+ * (client credentials for the CRM, authorization code for the advisor's
+ * calendar) and a failing call, 401 against 403, and the anatomy of the CRM's
+ * access token, a JWT. Same palette, box style and outlines as the map:
  * blue for the model, grey for our code, orange for someone else's system,
  * teal for a person. Narrow enough to share one layout between phones and wide
  * screens. Static: rendered on the server, no JavaScript.
@@ -132,6 +133,29 @@ function Sequence({ id, lanes, rows, tag, tagStep, label }: { id: string; lanes:
   );
 }
 
+function ApiKey({ id }: { id: string }) {
+  return (
+    <Sequence
+      id={id}
+      label={DESCRIPTIONS['api-key']}
+      lanes={[
+        { name: 'Admin', role: 'human', x: 72 },
+        { name: 'Tools', role: 'code', x: 240 },
+        { name: 'Ticketing', role: 'external', x: 408 },
+      ]}
+      rows={[
+        { from: 0, to: 1, label: 'API key, once' },
+        { gap: 'On every call after that' },
+        { from: 1, to: 2, label: 'Key in the header' },
+        { from: 2, label: 'Looks up the key', numbered: true },
+        { from: 2, to: 1, label: '201: ticket opened', reply: true },
+      ]}
+      tag="Same key until rotated"
+      tagStep={4}
+    />
+  );
+}
+
 function ClientCredentials({ id }: { id: string }) {
   return (
     <Sequence
@@ -185,6 +209,33 @@ function AuthorizationCode({ id }: { id: string }) {
       ]}
       tag="Store the new refresh token"
       tagStep={12}
+    />
+  );
+}
+
+function Errors({ id }: { id: string }) {
+  return (
+    <Sequence
+      id={id}
+      label={DESCRIPTIONS.errors}
+      lanes={[
+        { name: 'Tools', role: 'code', x: 72 },
+        { name: 'Auth server', role: 'external', x: 240 },
+        { name: 'CRM API', role: 'external', x: 408 },
+      ]}
+      rows={[
+        { from: 0, to: 2, label: 'Expired token' },
+        { from: 2, to: 0, label: '401: invalid_token', reply: true },
+        { from: 0, to: 1, label: 'Client ID + secret' },
+        { from: 1, to: 0, label: 'New access token', reply: true },
+        { from: 0, to: 2, label: 'Retry once' },
+        { from: 2, to: 0, label: '200: Alex’s account', reply: true },
+        { gap: 'With contacts.read only' },
+        { from: 0, to: 2, label: 'Unlock the account' },
+        { from: 2, to: 0, label: '403: insufficient_scope', reply: true },
+      ]}
+      tag="No retry: fix the scopes"
+      tagStep={8}
     />
   );
 }
@@ -288,18 +339,24 @@ function JwtAnatomy({ id }: { id: string }) {
 }
 
 export const DESCRIPTIONS = {
+  'api-key':
+    'API key: the ticketing system’s admin gives our tools an API key once. On every call after that, the tools send the key in a header; the ticketing system looks it up and opens the ticket. The same key works until someone rotates it.',
   'client-credentials':
     'Client credentials: the tools send the client ID and secret to the CRM’s auth server and get an access token valid for an hour. They send it as a bearer token to the CRM API, which fetches the auth server’s public keys once, checks the JWT with them and returns Alex’s account.',
   'authorization-code':
     'Authorization code: the advisor clicks Connect calendar in our app. Our backend makes a new state value and PKCE verifier for this login and redirects the advisor to the auth server with the scope, the state and the PKCE challenge. The advisor logs in and approves; the auth server sends a code back through the browser, and the backend checks the state. It trades code and verifier for an access and a refresh token; the auth server checks the verifier first. The backend then calls the calendar. An hour later it trades the refresh token for a new pair, without the advisor.',
+  errors:
+    'A failing call: the tools call the CRM with an expired token and get 401 invalid_token. They fetch a new access token from the auth server with the client ID and secret, retry once and get Alex’s account. Later they try to unlock the account with a token that only has contacts.read and get 403 insufficient_scope: no retry, the scopes have to be fixed.',
   jwt: 'The CRM’s access token is a JWT in three dot-separated parts. The header names the algorithm and the key; the payload holds the claims iss, sub, aud, scope and exp, readable by anyone; the signature over both is made with the auth server’s private key.',
 } as const;
 
 export type FigureName = keyof typeof DESCRIPTIONS;
 
 const FIGURES: Record<FigureName, (props: { id: string }) => ReactNode> = {
+  'api-key': ApiKey,
   'client-credentials': ClientCredentials,
   'authorization-code': AuthorizationCode,
+  errors: Errors,
   jwt: JwtAnatomy,
 };
 
