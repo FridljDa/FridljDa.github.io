@@ -41,6 +41,8 @@ interface Message {
   label: string;
   /** Answers are dashed, as in a sequence diagram. */
   reply?: boolean;
+  /** A note that is a step of its own gets a number, like a message. */
+  numbered?: boolean;
 }
 
 /** One row of a sequence: a message, or a line of text across the figure that marks time passing. */
@@ -86,12 +88,14 @@ function Sequence({ id, lanes, rows, tag, tagStep, label }: { id: string; lanes:
         if (r.to === undefined) {
           const w = r.label.length * LABEL * 0.56 + 28;
           const x = Math.min(Math.max(from - w / 2, 4), W - 4 - w);
+          if (r.numbered) n += 1;
           return (
             <g key={i} data-step={r.step ?? n}>
               <rect x={x} y={y - 17} width={w} height={34} rx={9} fill={color('node-bg')} stroke={STROKE[lanes[r.from].role]} strokeWidth={2} />
               <text x={x + w / 2} y={y} dy="0.35em" textAnchor="middle" fontSize={LABEL} fontWeight={600} fill={color('text')}>
                 {r.label}
               </text>
+              {r.numbered && <Badge x={x} y={y} text={String(n)} />}
             </g>
           );
         }
@@ -142,11 +146,13 @@ function ClientCredentials({ id }: { id: string }) {
         { from: 0, to: 1, label: 'Client ID + secret' },
         { from: 1, to: 0, label: 'Access token, 1 h', reply: true },
         { from: 0, to: 2, label: 'Bearer access token' },
-        { from: 2, label: 'Checks the JWT' },
+        { from: 2, to: 1, label: 'Public keys, once' },
+        { from: 1, to: 2, label: 'JWKS', reply: true },
+        { from: 2, label: 'Checks the JWT', numbered: true },
         { from: 2, to: 0, label: '200: Alex’s account', reply: true },
       ]}
       tag="Reuse the token for the hour"
-      tagStep={3}
+      tagStep={7}
     />
   );
 }
@@ -280,7 +286,7 @@ function JwtAnatomy({ id }: { id: string }) {
 
 export const DESCRIPTIONS = {
   'client-credentials':
-    'Client credentials: the tools send the client ID and secret to the CRM’s auth server and get an access token valid for an hour. They send it as a bearer token to the CRM API, which checks the JWT itself and returns Alex’s account.',
+    'Client credentials: the tools send the client ID and secret to the CRM’s auth server and get an access token valid for an hour. They send it as a bearer token to the CRM API, which fetches the auth server’s public keys once, checks the JWT with them and returns Alex’s account.',
   'authorization-code':
     'Authorization code: the advisor clicks Connect calendar in our app, and our backend redirects them to the auth server with the scope, a state value and a PKCE challenge. The advisor logs in and approves; the auth server sends a code back through the browser, and the backend trades code and verifier for an access and a refresh token, then calls the calendar. An hour later it trades the refresh token for a new pair, without the advisor.',
   jwt: 'The CRM’s access token is a JWT in three dot-separated parts. The header names the algorithm and the key; the payload holds the claims iss, sub, aud, scope and exp, readable by anyone; the signature over both is made with the auth server’s private key.',
