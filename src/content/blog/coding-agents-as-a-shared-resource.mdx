@@ -15,12 +15,12 @@ In [How the Claude Code team does code review](https://claude.dev/blog/solving-c
 
 I think this is one of the most interesting points in the post. Treating coding agents as a shared resource, with the conversation visible to the team rather than private to one developer, would address several problems at once.
 
-1. **Ownership of PRs.** "Another slop PR by *that* guy. I'm sure there was little thought behind it, and the thinking is being outsourced to me." If everyone can see your prompt, you take more ownership of the result, and there is less risk of slop.
-2. **Intent.** What did the person actually prompt? I don't want to read a diff to reconstruct the intent. [Entire](https://entire.io/) addresses part of this by saving the agent session alongside each commit; I wrote about reviewing from that transcript in [On the Future of Pull Requests](/post/future-of-pull-requests).
-3. **Nitpicks.** If I leave a suggestion as a PR comment, the author will copy-paste it into their coding agent. That is a detour. I would rather add it to the agent conversation directly.
-4. **Learning from others.** A colleague clearly knows their stuff. How do they prompt their agent?
-5. **Observability into token spend.** If the conversations are shared, so is what they cost.
-6. **Collaboration.** A shared conversation is easier to join than a branch. Another developer can pick up where I left off, and someone who doesn't write code can add a requirement or correct a misunderstanding in plain language. Everyone could contribute more easily.
+1. **Collaboration.** Someone who doesn't write code is never going to clone a repo and run a coding agent. They can join a conversation, though: add a requirement, correct a misunderstanding, or steer the work in plain language, while it happens rather than after a PR is up. Between developers, too, a shared conversation is easier to pick up than someone else's branch. Everyone could contribute.
+2. **Ownership of PRs.** "Another slop PR by *that* guy. I'm sure there was little thought behind it, and the thinking is being outsourced to me." If everyone can see your prompt, you take more ownership of the result, and there is less risk of slop.
+3. **Intent.** What did the person actually prompt? I don't want to read a diff to reconstruct the intent. [Entire](https://entire.io/) addresses part of this by saving the agent session alongside each commit; I wrote about reviewing from that transcript in [On the Future of Pull Requests](/post/future-of-pull-requests).
+4. **Nitpicks.** If I leave a suggestion as a PR comment, the author will copy-paste it into their coding agent. That is a detour. I would rather add it to the agent conversation directly.
+5. **Learning from others.** A colleague clearly knows their stuff. How do they prompt their agent?
+6. **Observability into token spend.** If the conversations are shared, so is what they cost.
 
 There are obvious downsides. Most people would feel uneasy sharing their AI conversations with everyone.
 

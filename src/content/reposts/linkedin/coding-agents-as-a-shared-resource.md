@@ -13,17 +13,17 @@ In their post on code review, the Claude Code team mention this almost in passin
 "Our culture of defaulting to working on open Slack channels helps too, since you see what others are building while they build it."
 
 What a shared conversation would help with:
-1. Ownership of PRs. An AI-written PR can leave the reviewer wondering how much thought went into it, and whether the thinking is being handed to them. If everyone can see the prompt, authors take more ownership of the result, and low-effort PRs become less likely.
+1. Collaboration. Someone who doesn't write code is never going to clone a repo and run a coding agent. They can join a conversation, though: add a requirement, correct a misunderstanding, or steer the work in plain language, while it happens rather than after a PR is up. Between developers, too, a shared conversation is easier to pick up than someone else's branch. Everyone could contribute.
 
-2. Intent. What did the author actually ask the agent for? I would rather not reconstruct that from a diff. Entire addresses part of this by saving the agent session alongside each commit.
+2. Ownership of PRs. An AI-written PR can leave the reviewer wondering how much thought went into it, and whether the thinking is being handed to them. If everyone can see the prompt, authors take more ownership of the result, and low-effort PRs become less likely.
 
-3. Review comments. When I leave a suggestion on a PR, the author often pastes it into their coding agent. That is a detour; I would rather add it to the agent conversation directly.
+3. Intent. What did the author actually ask the agent for? I would rather not reconstruct that from a diff. Entire addresses part of this by saving the agent session alongside each commit.
 
-4. Learning from others. When a colleague clearly knows their stuff, I'd like to see how they prompt their agent.
+4. Review comments. When I leave a suggestion on a PR, the author often pastes it into their coding agent. That is a detour; I would rather add it to the agent conversation directly.
 
-5. Visibility into token spend. If the conversations are shared, so is what they cost.
+5. Learning from others. When a colleague clearly knows their stuff, I'd like to see how they prompt their agent.
 
-6. Collaboration. A shared conversation is easier to join than a branch. Another developer can pick up where I left off, and someone who doesn't write code can add a requirement or correct a misunderstanding in plain language. Everyone could contribute more easily.
+6. Visibility into token spend. If the conversations are shared, so is what they cost.
 
 The obvious downside: most people would feel uneasy sharing their AI conversations with everyone.
 
