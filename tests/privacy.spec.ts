@@ -21,8 +21,13 @@ test.describe('Privacy and consent', () => {
   test('should show chat consent panel before accepting', async ({ page }) => {
     await page.goto('/');
     await page.evaluate(() => sessionStorage.removeItem('chat-consent'));
+    // As in expandChatAndAcceptConsent: wait for the chat to hydrate before looking for its button.
+    await expect(page.locator('astro-island[component-url*="Chat."]')).not.toHaveAttribute('ssr', '');
 
     const minimizedButton = page.locator('button[aria-label="Open chat"]');
+    if ((page.viewportSize()?.width ?? 768) < 768) {
+      await expect(minimizedButton).toBeVisible();
+    }
     if (await minimizedButton.isVisible().catch(() => false)) {
       await minimizedButton.click();
     }

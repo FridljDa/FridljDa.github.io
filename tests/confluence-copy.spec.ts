@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 
 const POST = '/post/the-missing-test-suite';
 
@@ -38,22 +38,37 @@ test.describe('Confluence copy of a post', () => {
   });
 });
 
-test('the body copies as Markdown for Insert Markdown', async ({ page, context }) => {
-  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+/**
+ * The plain text the page puts on the clipboard. The page fills the clipboard
+ * from a copy event, so we read the event: WebKit has no clipboard permissions
+ * to grant for navigator.clipboard.readText().
+ */
+async function captureCopies(page: Page): Promise<() => Promise<string>> {
+  await page.addInitScript(() => {
+    // On window, so it runs after the page's handler on document has set the data.
+    window.addEventListener('copy', (event) => {
+      (window as unknown as { copied: string }).copied = event.clipboardData?.getData('text/plain') ?? '';
+    });
+  });
+  return () => page.evaluate(() => (window as unknown as { copied: string }).copied);
+}
+
+test('the body copies as Markdown for Insert Markdown', async ({ page }) => {
+  const copied = await captureCopies(page);
   await page.goto(`${POST}/confluence`);
   await page.getByRole('button', { name: 'Copy body as Markdown' }).click();
   await expect(page.getByRole('status')).toHaveText('Copied the markdown.');
-  const markdown = await page.evaluate(() => navigator.clipboard.readText());
+  const markdown = await copied();
   expect(markdown).toMatch(/^## /m);
   expect(markdown).toContain('](https://danielfridljand.de/images/blog/the-missing-test-suite/shadow-timeline.png)');
 });
 
-test('the body copies as wiki markup with capped image widths', async ({ page, context }) => {
-  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+test('the body copies as wiki markup with capped image widths', async ({ page }) => {
+  const copied = await captureCopies(page);
   await page.goto(`${POST}/confluence`);
   await page.getByRole('button', { name: 'Copy body as wiki markup' }).click();
   await expect(page.getByRole('status')).toHaveText('Copied the wiki markup.');
-  const wiki = await page.evaluate(() => navigator.clipboard.readText());
+  const wiki = await copied();
   expect(wiki).toMatch(/^h2\. /m);
   expect(wiki).not.toContain('Originally published');
   expect(wiki).toMatch(
