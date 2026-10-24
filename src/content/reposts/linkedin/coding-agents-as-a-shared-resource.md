@@ -7,9 +7,9 @@ comments:
 
       I wrote about reviewing from the agent session in On the Future of Pull Requests: https://danielfridljand.de/post/future-of-pull-requests
 ---
-Coding agents could be a shared resource, with the conversation visible to the team rather than private to one developer. I think that would address several problems at once.
+Coding agents could be a shared resource, with the conversation visible to the team rather than private to one developer. I think that would fix more than one thing.
 
-One sentence in the Claude Code team's post on how they do code review stood out to me:
+In their post on code review, the Claude Code team mention this almost in passing:
 
 "Our culture of defaulting to working on open Slack channels helps too, since you see what others are building while they build it."
 
