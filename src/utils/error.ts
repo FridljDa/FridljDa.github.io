@@ -37,7 +37,7 @@ export function isRateLimitError(error: unknown): boolean {
 
 /**
  * Checks if an error is a recoverable error that should trigger model rotation
- * This includes rate limits (429) and model not found errors (404)
+ * This includes rate limits (429), model not found errors (404) and server errors (5xx)
  * @param error - The error to check (can be Error object, string, or unknown)
  * @returns true if the error indicates a recoverable issue that should try next model
  */
@@ -49,6 +49,12 @@ export function isRecoverableModelError(error: unknown): boolean {
 
   // Check for model not found errors (404)
   if (errorString.includes('404') || errorString.includes('not found') || errorString.includes('is not found')) {
+    return true;
+  }
+
+  // Check for server errors (5xx), e.g. "503 The model is overloaded": another model may still answer
+  const status = (error as { status?: unknown } | null)?.status;
+  if ((typeof status === 'number' && status >= 500) || /\[5\d\d /.test(errorMessage)) {
     return true;
   }
 
