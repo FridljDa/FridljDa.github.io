@@ -107,7 +107,8 @@ message or supporting points changed. Don't carry every new detail across.
   text or in the first comment. A link in the text gets a preview card from the
   post's `og:image` only when no image is attached. Moving it to the first
   comment is common because links in the text are widely reported, though not
-  documented, to reduce reach.
+  documented, to reduce reach. Don't announce it in the text ("Full post in
+  the first comment"): readers can see the comments.
 - **Hashtags:** 3–5 at the end, on their own line.
 - **Mentions** (`@Name`) only resolve when typed in LinkedIn's composer, so add
   them there after pasting.

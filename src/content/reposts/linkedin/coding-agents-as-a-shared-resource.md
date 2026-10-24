@@ -10,13 +10,9 @@ comments:
 Coding agents could be a shared resource, with the conversation visible to the team rather than private to one developer. I think that would fix more than one thing.
 
 In their post on code review, the Claude Code team mention this almost in passing:
-
 "Our culture of defaulting to working on open Slack channels helps too, since you see what others are building while they build it."
 
-https://claude.dev/blog/solving-code-review-at-anthropic/
-
 What a shared conversation would help with:
-
 1. Ownership of PRs. An AI-written PR can leave the reviewer wondering how much thought went into it, and whether the thinking is being handed to them. If everyone can see the prompt, authors take more ownership of the result, and low-effort PRs become less likely.
 
 2. Intent. What did the author actually ask the agent for? I would rather not reconstruct that from a diff. Entire addresses part of this by saving the agent session alongside each commit.
@@ -27,10 +23,10 @@ What a shared conversation would help with:
 
 5. Visibility into token spend. If the conversations are shared, so is what they cost.
 
+6. Collaboration. A shared conversation is easier to join than a branch. Another developer can pick up where I left off, and someone who doesn't write code can add a requirement or correct a misunderstanding in plain language. Everyone could contribute more easily.
+
 The obvious downside: most people would feel uneasy sharing their AI conversations with everyone.
 
 The simplest version might just be Slack, where the Claude Code team already works in the open: everyone is there, and the integration exists. HumanLayer could be an interesting alternative.
-
-Full post in the first comment.
 
 #AgenticCoding #CodeReview #SoftwareEngineering #AI
