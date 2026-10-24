@@ -9,6 +9,7 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
+    "typecheck": "astro sync && tsc --noEmit",
     "astro": "astro",
     "mermaid:png": "node scripts/mermaid-png/render.mjs",
     "mockup:png": "node scripts/mockups/render.mjs",
