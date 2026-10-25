@@ -19,7 +19,7 @@ cv:
         end_date: present
         summary: "Building AI and predictive-analytics systems for clients and for TNG, from discovery through live operation."
         highlights:
-          - "Architected a cinema-ticketing support system as a hybrid: deterministic paths for the recurring-intent majority, agentic fallback for the long tail, every draft reviewed by staff before customer contact."
+          - "Architected a customer-support system for a SaaS company as a hybrid: deterministic paths for the recurring-intent majority, agentic fallback for the long tail, every draft reviewed by staff before customer contact."
           - "Built a feedback-driven improvement loop: reviewer corrections became shipped code changes, each gated against a growing Langfuse evaluation suite, on Temporal workflows that pause for staff sign-off."
           - "Sole engineer on a scrap-prediction proof of concept for a manufacturer: across ~40 benchmarked models, order attributes fixed at booking matched the full sensor set, steering the client toward tracking raw-material batches."
           - "One of three developers on an internal sandboxed platform (Tauri/React, Rust) for agentic workflows on sensitive local files; it cleared a 15-person adversarial red-team, unlocking expansion beyond the pilot."
