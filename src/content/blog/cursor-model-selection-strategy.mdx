@@ -1,7 +1,7 @@
 ---
 title: "Strategic Model Selection in Cursor: Balancing Cost and Performance"
 pubDate: 2026-02-06
-updatedDate: 2026-10-10T00:00:00.000Z
+updatedDate: 2026-10-27T00:00:00.000Z
 tags:
   - AI
   - Productivity
@@ -12,6 +12,8 @@ math: false
 
 import ModelPerformanceChart from '../../components/ModelPerformanceChart';
 import ModelRecommendations from '../../components/ModelRecommendations';
+
+> **Note:** This post is no longer maintained. Cursor now publishes its own benchmark, CursorBench, next to each model's price in its [model docs](https://cursor.com/docs/models/deepseek-v4-1-flash-1017), which answers the cost-versus-performance question better than the chart below. The chart and recommendations are a snapshot from October 2026 and are no longer updated.
 
 Checking Cursor’s [pricing](https://cursor.com/docs/models-and-pricing#model-pricing) and a [leaderboard](https://arena.ai/leaderboard/code) back and forth is tedious; using “the best” model for everything can lead to surprisingly high bills. A simpler approach uses one stronger model for planning and one cheaper model for execution.
 
@@ -29,7 +31,7 @@ Planning takes a few requests; execution takes many, and each one re-sends the g
 
 ## Cost vs performance at a glance
 
-The chart below plots cost (weighted $/1M tokens: 70% input, 30% output) against benchmark performance. Data comes from Cursor’s pricing and public benchmarks; a [workflow](https://github.com/FridljDa/FridljDa.github.io/blob/master/.github/workflows/update-model-data.yaml) fetches fresh data daily and proposes it as a pull request. The weighting ignores cache-read pricing, which, as the next section shows, is how most agent tokens are billed.
+The chart below plots cost (weighted $/1M tokens: 70% input, 30% output) against benchmark performance. Data comes from Cursor’s pricing and public benchmarks, as of the last update in October 2026. The weighting ignores cache-read pricing, which, as the next section shows, is how most agent tokens are billed.
 
 <ModelPerformanceChart client:load />
 
@@ -59,8 +61,6 @@ The chart shows Pareto frontiers as dashed lines (purple for planning, green for
 2. **Category.** Planning needs a score of at least 1300; execution needs a weighted cost of at most \$2.50 per 1M tokens. A model that qualifies for both is listed under planning.
 3. **Pareto optimality.** Within each category, drop any model that another model matches or beats on both score and cost, and strictly beats on at least one.
 4. **Efficiency.** Rank the rest by score per dollar and keep the top three per category.
-
-The same [workflow](https://github.com/FridljDa/FridljDa.github.io/blob/master/.github/workflows/update-model-data.yaml) that fetches the data reruns this selection.
 
 ## Example workflow
 
