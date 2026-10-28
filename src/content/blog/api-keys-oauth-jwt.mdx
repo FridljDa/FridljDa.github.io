@@ -230,7 +230,7 @@ def verify(token: str) -> dict:
 #### Where else JWTs show up
 
 - **As the client's credential.** Some providers replace the `client_secret` with a JWT the client signs with its own private key ([RFC 7523](https://datatracker.ietf.org/doc/html/rfc7523)). Service accounts on large cloud and CRM platforms work like this: nothing reusable travels at all.
-- **As an ID token.** [**OpenID Connect**](https://openid.net/specs/openid-connect-core-1_0.html) adds login on top of OAuth: the auth server also returns an **ID token**, a JWT that tells the *client* who the user is. The access token is for the API, the ID token for the client; sending an ID token to an API is a classic mix-up.
+- **As an ID token.** OAuth answers "may this app call the API?", but not "who is this person?": the access token is meant for the API, and the client isn't supposed to read it. [**OpenID Connect**](https://openid.net/specs/openid-connect-core-1_0.html) (OIDC) is a thin layer on OAuth that adds the second answer. Add `openid` to the scopes of an authorization code flow, and the auth server returns an **ID token** next to the access token: a JWT addressed to the client (its `aud` is the `client_id`) with claims like `sub`, a stable user ID, and `email`. "Sign in with Google" is this. At Northstar, it is how the advisor would log into our app before clicking "Connect calendar". The rule of thumb: the access token is for the API, the ID token for the client; sending an ID token to an API is a classic mix-up.
 
 ### When a call fails: 401 or 403
 
