@@ -1,7 +1,7 @@
 ---
 title: "Architecture of a First-Level Support Automation"
 pubDate: 2026-05-16T00:00:00.000Z
-updatedDate: 2026-10-10T00:00:00.000Z
+updatedDate: 2026-10-31T00:00:00.000Z
 tags:
   - AI
   - Customer Support
@@ -16,7 +16,7 @@ import PipelineFigure from '../../components/PipelineFigure.astro';
 import LoopAnimation from '../../components/LoopAnimation.astro';
 import ThemedImage from '../../components/ThemedImage.astro';
 
-Our architecture for first-level customer support splits the problem into small steps, uses LLMs for interpretation, and keeps everything else in code. It is the full version of the workflow approach in [Workflow or Agent](/post/workflow-vs-agent), which also explains why I would now invert its default.
+Our architecture for first-level customer support splits the problem into small steps, uses LLMs for interpretation, and keeps everything else in code. It is the full version of the workflow approach in [Workflow or Agent](/post/workflow-vs-agent), which also explains why I would now invert its default. Since then, Anthropic has [found the same](https://claude.com/resources/articles/building-agents-when-to-fold-subagents-into-your-main-agent-loop): designs like this one mostly do work the model no longer needs done for it.
 
 The system turns a customer message into a reply, possibly with attachments, and any required tool calls: updating a record, filing a follow-up ticket, or escalating to a human. A preprocessing layer first normalises inbound attachments.
 
