@@ -1,7 +1,7 @@
 ---
 title: "Workflow or Agent: Where the Decisions Live"
 pubDate: 2026-04-19T00:00:00.000Z
-updatedDate: 2026-10-21T00:00:00.000Z
+updatedDate: 2026-10-31T00:00:00.000Z
 tags:
   - AI
   - Customer Support
@@ -86,7 +86,7 @@ Before the tree had an Account locked intent, Alex's message landed in "Other", 
 
 *Compare the map in "The agent got the leftovers": the same routes, the default swapped.*
 
-I would invert the default, following Will Larson's [Building an internal agent](https://lethain.com/agents-coordinators/), which starts every workflow with the LLM in charge. A path graduates into a workflow only once it shows up often and the agent handles it unreliably, or when the action is irreversible enough that you don't want a model deciding it. Rarer request types stay with the agent.
+I would invert the default, following Will Larson's [Building an internal agent](https://lethain.com/agents-coordinators/), which starts every workflow with the LLM in charge. A path graduates into a workflow only once it shows up often and the agent handles it unreliably, or when the action is irreversible enough that you don't want a model deciding it. Rarer request types stay with the agent. Anthropic has since [reached the same conclusion](https://claude.com/resources/articles/building-agents-when-to-fold-subagents-into-your-main-agent-loop).
 
 <DecisionFigure name="default" />
 
