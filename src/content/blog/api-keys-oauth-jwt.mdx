@@ -16,6 +16,7 @@ import AuthFigure from '../../components/AuthFigure.astro';
 import AuthSteps from '../../components/AuthSteps.astro';
 import CodeMarks from '../../components/CodeMarks.astro';
 import Mark from '../../components/Mark.astro';
+import ThemedImage from '../../components/ThemedImage.astro';
 
 ## TL;DR
 "API keys, OAuth or JWT?" sounds like a choice between three options, but each sits on a different layer. An **API key** is a credential: a long-lived secret sent with every request. **OAuth 2.0** is a protocol for *getting* a credential: you trade a secret you hold for a short-lived access token with limited scopes, either as yourself (client credentials) or for a person who agreed to it (authorization code). A **JWT** is a *format* a token can take: signed JSON the API can check without asking anyone. OAuth access tokens are often JWTs, which is why the three get mixed up. As the one calling an API, I need to know which credential it wants, how to get and renew it, and how to keep it out of places it doesn't belong, the model's context included.
@@ -285,6 +286,10 @@ The retry (6) gets the same `403` (7). The fix is in the client's configuration,
 <AuthMap preset="auth-code" />
 
 The second grant is for the calendar, which belongs to the advisor. The agent shouldn't hold a key to *every* advisor's calendar; it should act for the advisors who agreed to it, on their calendars only. This delegation is what OAuth was built for, and the flow behind every "Allow this app to…" screen: the **authorization code** grant.
+
+<ThemedImage src="/images/blog/api-keys-oauth-jwt/redirect-flow.png" alt={"Four browser windows. 1: our app at agent.northstar.example.com, Integrations, Calendar not connected, the advisor clicks Connect calendar. 4: redirected to auth.calendar.example.com/authorize with client_id and state in the URL, a Sign in page \"to continue to Northstar Support Agent\" with email and password. 4: still at auth.calendar.example.com, a consent page: Northstar Support Agent wants to access your calendar, create and edit events (calendar.events.write), Cancel or Allow. 5: redirected back to agent.northstar.example.com/oauth/callback with a code and the state in the URL; the calendar now shows as connected."} />
+
+*What the advisor sees: our app sends them to the calendar provider, and the provider sends them back. Only the address bar shows whose page they are on.*
 
 <AuthSteps name="authorization-code" caption="The advisor is in the loop once, for steps 1 to 5. Everything after happens between our backend and the auth server.">
 

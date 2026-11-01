@@ -1,0 +1,276 @@
+<!doctype html>
+<!--
+  Mockup of what the advisor sees in the authorization code flow
+  (api-keys-oauth-jwt, "Authorization code: the agent on someone's behalf"):
+  four browser windows, numbered with the steps of the post's sequence figure.
+  Our app's domain is in the colour of "Our backend" in that figure, the auth
+  server's in the colour of "Auth server", so the hop between sites shows in
+  the address bar.
+
+  Render to PNG with:  npm run mockup:png
+  That writes #flow, light and dark, to
+  src/assets/images/blog/api-keys-oauth-jwt/redirect-flow(-dark).png.
+  Everything is fictional and follows the Northstar Bank framing used in the
+  posts: no real provider, no real login page.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>OAuth redirect flow</title>
+<style>
+  /* The palette of the post's other figures (src/components/loop-animation.css). */
+  :root {
+    --page: #ffffff;
+    --panel: #f8fafc;
+    --panel-inner: #f1f5f9;
+    --border: #cbd5e1;
+    --text: #1f2937;
+    --muted: #6b7280;
+    --node-border: #64748b;
+    --ours: #2563eb;      /* --lv-added: our backend */
+    --ours-bg: #dbeafe;
+    --theirs: #ea580c;    /* --lv-other: the auth server */
+    --theirs-bg: #fff7ed;
+    --ok: #2a9d8f;
+    --teal: #2a9d8f;  /* code-marks.css, as the state and code in the post */
+    --pink: #db2777;
+    --width: 672px;
+  }
+  html.dark {
+    --page: #111827;
+    --panel: #1f2937;
+    --panel-inner: #182231;
+    --border: #374151;
+    --text: #f3f4f6;
+    --muted: #9ca3af;
+    --node-border: #6b7280;
+    --ours: #5b9cea;
+    --ours-bg: #172338;
+    --theirs: #f97316;
+    --theirs-bg: #2a1c12;
+    --ok: #3bb3a4;
+    --teal: #3bb3a4;
+    --pink: #f472b6;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: transparent; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    font-size: 12px;
+    line-height: 1.4;
+    color: var(--text);
+    padding: 16px;
+  }
+  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+
+  #flow {
+    width: var(--width);
+    display: grid;
+    grid-template-columns: 1fr 28px 1fr;
+    grid-template-rows: auto 28px auto;
+    align-items: stretch;
+  }
+  .step { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+  .label { display: flex; align-items: center; gap: 7px; font-weight: 650; font-size: 12.5px; }
+  .num {
+    width: 20px; height: 20px; border-radius: 50%;
+    display: grid; place-items: center;
+    font-size: 11px; font-weight: 700; color: #fff;
+  }
+  .ours .num { background: var(--ours); }
+  .theirs .num { background: var(--theirs); }
+  .label .where { font-weight: 400; color: var(--muted); }
+
+  /* Arrows between the windows: right, down-left (as a bend), right. */
+  .arrow { display: grid; place-items: center; color: var(--node-border); }
+  .arrow svg { display: block; }
+  .bend { grid-column: 1 / 4; padding: 0 calc(25% - 10px) 0 4px; }
+  .bend svg { width: 100%; height: 28px; overflow: visible; }
+
+  .window {
+    flex: 1;
+    background: var(--page);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .chrome {
+    display: flex; align-items: center; gap: 8px;
+    padding: 7px 9px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+  }
+  .dots { display: flex; gap: 4px; flex: none; }
+  .dots i { width: 7px; height: 7px; border-radius: 50%; background: var(--border); display: block; }
+  .url {
+    flex: 1; min-width: 0;
+    display: flex; align-items: center; gap: 5px;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 10.5px;
+    white-space: nowrap; overflow: hidden;
+    color: var(--muted);
+    border: 1.5px solid transparent;
+  }
+  .url svg { flex: none; width: 9px; height: 11px; }
+  .url .rest { overflow: hidden; text-overflow: ellipsis; }
+  .url.wrap { white-space: normal; align-items: flex-start; display: block; line-height: 1.45; overflow-wrap: anywhere; }
+  .url.wrap svg { display: inline; vertical-align: -1px; margin-right: 5px; }
+  .ours .url { background: var(--ours-bg); border-color: var(--ours); }
+  .ours .url .host { color: var(--ours); font-weight: 700; }
+  .theirs .url { background: var(--theirs-bg); border-color: var(--theirs); }
+  .theirs .url .host { color: var(--theirs); font-weight: 700; }
+  .url .state { color: var(--teal); }
+  .url .code { color: var(--pink); }
+
+  .content { flex: 1; padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 10px; }
+  .content.center { align-items: center; text-align: center; }
+
+  .appbar { display: flex; align-items: center; gap: 7px; font-weight: 650; font-size: 12.5px; }
+  .appbar .logo { width: 18px; height: 18px; border-radius: 5px; background: var(--ours); display: grid; place-items: center; color: #fff; font-size: 10px; font-weight: 800; }
+  .appbar .who { margin-left: auto; font-weight: 400; color: var(--muted); font-size: 11px; }
+  h4 { margin: 0; font-size: 11px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+
+  .card {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 12px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+  }
+  .card .cal { flex: none; color: var(--node-border); }
+  .card .name { font-weight: 650; }
+  .card .sub { color: var(--muted); font-size: 11px; }
+  .card .grow { flex: 1; min-width: 0; }
+
+  .btn {
+    font: inherit; font-size: 11.5px; font-weight: 650;
+    padding: 6px 12px; border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--panel); color: var(--text);
+    white-space: nowrap; position: relative;
+  }
+  .btn.primary-ours { background: var(--ours); border-color: var(--ours); color: #fff; }
+  .btn.primary-theirs { background: var(--theirs); border-color: var(--theirs); color: #fff; }
+  .cursor { position: absolute; right: -9px; bottom: -13px; width: 15px; height: 19px; }
+
+  .provider { display: flex; align-items: center; gap: 6px; font-weight: 700; color: var(--theirs); font-size: 13px; }
+  .provider svg { color: var(--theirs); }
+  .title { font-size: 15px; font-weight: 650; margin: 0; }
+  .muted { color: var(--muted); }
+  .field {
+    width: 100%; text-align: left;
+    border: 1px solid var(--border); border-radius: 6px;
+    padding: 6px 9px; background: var(--page);
+  }
+  .field .k { display: block; font-size: 9.5px; color: var(--muted); }
+  .row { display: flex; gap: 8px; width: 100%; justify-content: flex-end; margin-top: auto; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 3px 9px 3px 4px; border-radius: 999px;
+    border: 1px solid var(--border); font-size: 11px;
+  }
+  .avatar { width: 16px; height: 16px; border-radius: 50%; background: var(--ok); color: #fff; font-size: 8.5px; font-weight: 700; display: grid; place-items: center; }
+  .perm { width: 100%; text-align: left; display: flex; gap: 8px; align-items: flex-start; padding: 8px 10px; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; }
+  .perm svg { flex: none; margin-top: 1px; }
+  .perm .scope { display: block; font-size: 10px; color: var(--muted); }
+  .ok { color: var(--ok); }
+  .connected { color: var(--ok); font-weight: 650; display: inline-flex; align-items: center; gap: 4px; font-size: 11px; }
+</style>
+</head>
+<body>
+<div id="flow">
+
+  <!-- 1: our app -->
+  <div class="step ours">
+    <div class="label"><span class="num">1</span>Our app <span class="where">· connect</span></div>
+    <div class="window">
+      <div class="chrome">
+        <div class="dots"><i></i><i></i><i></i></div>
+        <div class="url mono"><svg viewBox="0 0 9 11" fill="currentColor"><rect x="0" y="4.5" width="9" height="6.5" rx="1.3"/><path d="M2 4.5V3a2.5 2.5 0 0 1 5 0v1.5" fill="none" stroke="currentColor" stroke-width="1.3"/></svg><span class="host">agent.northstar.example.com</span><span class="rest">/settings</span></div>
+      </div>
+      <div class="content">
+        <div class="appbar"><span class="logo">N</span>Support Agent<span class="who">Sam Rivera</span></div>
+        <h4>Integrations</h4>
+        <div class="card">
+          <svg class="cal" width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="2" y="4" width="18" height="16" rx="3"/><path d="M2 9h18M7 2v4M15 2v4"/></svg>
+          <div class="grow"><div class="name">Calendar</div><div class="sub">Not connected</div></div>
+          <span class="btn primary-ours">Connect calendar
+            <svg class="cursor" viewBox="0 0 15 19"><path d="M1 1v14l3.6-3.4 2.6 5.8 2.4-1-2.6-5.7H12Z" fill="#fff" stroke="#111827" stroke-width="1.3" stroke-linejoin="round"/></svg>
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="arrow"><svg width="22" height="14" viewBox="0 0 22 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 7h17M14 2l5 5-5 5"/></svg></div>
+
+  <!-- 3, 4: redirected to the auth server, log in -->
+  <div class="step theirs">
+    <div class="label"><span class="num">4</span>Redirected (3) to the provider <span class="where">· log in</span></div>
+    <div class="window">
+      <div class="chrome">
+        <div class="dots"><i></i><i></i><i></i></div>
+        <div class="url mono wrap"><span style="white-space:nowrap"><svg viewBox="0 0 9 11" fill="currentColor"><rect x="0" y="4.5" width="9" height="6.5" rx="1.3"/><path d="M2 4.5V3a2.5 2.5 0 0 1 5 0v1.5" fill="none" stroke="currentColor" stroke-width="1.3"/></svg><span class="host">auth.calendar.example.com</span></span>/authorize<wbr>?client_id=northstar-support-agent&amp;<wbr><span class="state">state=Xq7pV2mL9sKw</span>&amp;…</div>
+      </div>
+      <div class="content center">
+        <div class="provider"><svg width="18" height="18" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="4" width="18" height="16" rx="3"/><path d="M2 9h18M7 2v4M15 2v4"/></svg>Calendar</div>
+        <p class="title">Sign in</p>
+        <div class="muted">to continue to <b style="color:var(--text)">Northstar Support Agent</b></div>
+        <div class="field"><span class="k">Email</span>sam.rivera@northstar.example.com</div>
+        <div class="field"><span class="k">Password</span>••••••••••••</div>
+        <div class="row"><span class="btn primary-theirs">Next</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bend arrow"><svg viewBox="0 0 400 28" preserveAspectRatio="none" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M398 1v6a5 5 0 0 1-5 5H12a5 5 0 0 0-5 5v8" vector-effect="non-scaling-stroke"/><path d="M2 20l5 5 5-5" vector-effect="non-scaling-stroke"/></svg></div>
+
+  <!-- 4: the auth server, consent -->
+  <div class="step theirs">
+    <div class="label"><span class="num">4</span>Still the provider <span class="where">· approve</span></div>
+    <div class="window">
+      <div class="chrome">
+        <div class="dots"><i></i><i></i><i></i></div>
+        <div class="url mono"><svg viewBox="0 0 9 11" fill="currentColor"><rect x="0" y="4.5" width="9" height="6.5" rx="1.3"/><path d="M2 4.5V3a2.5 2.5 0 0 1 5 0v1.5" fill="none" stroke="currentColor" stroke-width="1.3"/></svg><span class="host">auth.calendar.example.com</span><span class="rest">/consent</span></div>
+      </div>
+      <div class="content center">
+        <span class="chip"><span class="avatar">SR</span>sam.rivera@northstar.example.com</span>
+        <p class="title">Northstar Support Agent wants to access your calendar</p>
+        <div class="perm">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="var(--ok)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8.4l3 3L13 4.6"/></svg>
+          <div>Create and edit events in your calendar<span class="scope mono">calendar.events.write</span></div>
+        </div>
+        <div class="row"><span class="btn">Cancel</span><span class="btn primary-theirs">Allow</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="arrow"><svg width="22" height="14" viewBox="0 0 22 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 7h17M14 2l5 5-5 5"/></svg></div>
+
+  <!-- 5: back in our app -->
+  <div class="step ours">
+    <div class="label"><span class="num">5</span>Redirected back to our app <span class="where">· with a code</span></div>
+    <div class="window">
+      <div class="chrome">
+        <div class="dots"><i></i><i></i><i></i></div>
+        <div class="url mono wrap"><span style="white-space:nowrap"><svg viewBox="0 0 9 11" fill="currentColor"><rect x="0" y="4.5" width="9" height="6.5" rx="1.3"/><path d="M2 4.5V3a2.5 2.5 0 0 1 5 0v1.5" fill="none" stroke="currentColor" stroke-width="1.3"/></svg><span class="host">agent.northstar.example.com</span></span><wbr>/oauth/callback?<span class="code">code=SplxlOBeZQ…</span>&amp;<span class="state">state=Xq7pV2mL9sKw</span></div>
+      </div>
+      <div class="content">
+        <div class="appbar"><span class="logo">N</span>Support Agent<span class="who">Sam Rivera</span></div>
+        <h4>Integrations</h4>
+        <div class="card">
+          <svg class="cal" width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="2" y="4" width="18" height="16" rx="3"/><path d="M2 9h18M7 2v4M15 2v4"/></svg>
+          <div class="grow"><div class="name">Calendar</div><div class="connected"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8.4l3 3L13 4.6"/></svg>Connected</div></div>
+          <span class="btn">Disconnect</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
