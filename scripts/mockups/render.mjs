@@ -14,7 +14,9 @@
  * plus the whole screen and linkedin-verdict.html, light only, for the post's
  * LinkedIn repost; and
  * scripts/mockups/support-message.html, its customer message and the
- * extraction figure, to src/assets/images/blog/first-level-support-automation/.
+ * extraction figure, to src/assets/images/blog/first-level-support-automation/;
+ * and scripts/mockups/oauth-redirect.html, the browser windows of the
+ * authorization code flow, to src/assets/images/blog/api-keys-oauth-jwt/.
  * Any other file without --out is written next to its HTML source.
  *
  * A target's stage is set as the class stage-<stage> on <html>. Each target
@@ -31,6 +33,7 @@ const DEFAULT_FILE = 'scripts/mockups/sme-review-screen.html';
 const TEST_SUITE_DIR = 'src/assets/images/blog/the-missing-test-suite';
 const SUPPORT_FILE = 'scripts/mockups/support-message.html';
 const SUPPORT_DIR = 'src/assets/images/blog/first-level-support-automation';
+const AUTH_DIR = 'src/assets/images/blog/api-keys-oauth-jwt';
 const DEFAULT_TARGETS = [
   ...['reply', 'graded', 'fix'].map((stage) => ({
     file: DEFAULT_FILE,
@@ -43,6 +46,7 @@ const DEFAULT_TARGETS = [
   { file: DEFAULT_FILE, selector: '#customer-message', out: `${TEST_SUITE_DIR}/customer-message.png` },
   { file: SUPPORT_FILE, selector: '#customer-message', out: `${SUPPORT_DIR}/customer-message.png` },
   { file: SUPPORT_FILE, selector: '#extraction', out: `${SUPPORT_DIR}/extraction.png` },
+  { file: 'scripts/mockups/oauth-redirect.html', selector: '#flow', out: `${AUTH_DIR}/redirect-flow.png` },
 ];
 
 function parseArgs(argv) {
