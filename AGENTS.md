@@ -69,9 +69,8 @@ for f in src/content/blog/*.mdx; do
 done | sort -rn | head
 ```
 
-In October 2026 these were Workflow or Agent, Documented but Never Coded
-(uncoded-hospital-revenue), The Missing Test Suite and Architecture of a
-First-Level Support Automation. Kernel to Attention has many commits, but most
+In October 2026 these were Workflow or Agent, The Missing Test Suite and
+Architecture of a First-Level Support Automation. Kernel to Attention has many commits, but most
 are from April, so it is not a reference.
 
 ## Figures: one style per post

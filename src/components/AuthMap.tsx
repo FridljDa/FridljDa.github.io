@@ -7,7 +7,7 @@
  * calendar by a token the advisor consented to.
  *
  * Each section of the post shows the same map with its part highlighted and
- * the rest greyed out, like DesignMap.tsx does for uncoded-hospital-revenue.
+ * the rest greyed out.
  * Vertical, so phones and wide screens share one layout. Static: rendered on
  * the server, no JavaScript.
  */
