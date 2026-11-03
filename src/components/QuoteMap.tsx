@@ -6,8 +6,7 @@
  * reviews, and handover produces the offer and the ERP fields. The expert's
  * changes go back to assessment as rule proposals.
  *
- * Like the design map of uncoded-hospital-revenue (DesignMap.tsx), it gains
- * detail as the post goes on: a black box while the requirements are open,
+ * It gains detail as the post goes on: a black box while the requirements are open,
  * then seven abstract boxes, then the components inside each box. Later
  * sections highlight their part, grey out the rest, and show the components
  * only for the highlighted boxes. Vertical by design, so phones and wide

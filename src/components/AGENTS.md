@@ -25,9 +25,8 @@ its own class to `loop-animation.css`.
   highlighted and with its components, the rest greyed out by name only
   (`Dim` in `map-parts.tsx`). Keep what a part does in the map, as short
   labels, icons and amber tags, and keep the prose after it short: a few
-  bullets, not one big figure followed by a wall of text. The Uncoded
-  Hospital Revenue post does this with `<DesignMap preset="..." />`, and
-  API Keys, OAuth and JWT with `<AuthMap preset="..." />` and
+  bullets, not one big figure followed by a wall of text. API Keys, OAuth
+  and JWT does this with `<AuthMap preset="..." />` and
   `<AuthFigure name="..." />` (`AuthFigures.tsx`).
 - **Pinned figures:** where the prose walks through a figure's numbered
   steps, `<AuthSteps name="..." caption="...">` keeps the figure pinned
