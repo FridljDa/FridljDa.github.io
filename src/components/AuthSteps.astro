@@ -1,6 +1,7 @@
 ---
 /**
- * A sequence figure of api-keys-oauth-jwt (AuthFigure) with the text that
+ * A sequence figure of api-keys-oauth-jwt (AuthFigure) or of mcp-server-authorization
+ * (McpAuthFigure, with figures="mcp") with the text that
  * walks through its numbered steps. On wide screens the block reaches into the
  * empty spacer left of the content column (w-64 plus gap-8 in post/[slug].astro),
  * and the figure stays pinned on the left while the steps scroll past on the
@@ -15,19 +16,22 @@
  * data-step (AuthFigures.tsx). Without JavaScript the figure stays as it is.
  */
 import AuthFigure from './AuthFigure.astro';
+import McpAuthFigure from './McpAuthFigure.astro';
 import type { FigureName } from './AuthFigures';
+import type { FigureName as McpFigureName } from './McpAuthFigures';
 
-interface Props {
-  name: FigureName;
-  caption: string;
-}
+/** Which post's figures `name` comes from: AuthFigures.tsx (default) or McpAuthFigures.tsx. */
+type Props =
+  | { figures?: 'auth'; name: FigureName; caption: string }
+  | { figures: 'mcp'; name: McpFigureName; caption: string };
 
-const { name, caption } = Astro.props;
+const { figures = 'auth', name, caption } = Astro.props;
+const Figure = figures === 'mcp' ? McpAuthFigure : AuthFigure;
 ---
 
 {Astro.locals.confluence ? (
   <>
-    <AuthFigure name={name} />
+    <Figure name={name as never} />
     <p><em>{caption}</em></p>
     <slot />
   </>
@@ -35,7 +39,7 @@ const { name, caption } = Astro.props;
   <div class="auth-steps">
     <div class="split">
       <div class="pinned">
-        <AuthFigure name={name} />
+        <Figure name={name as never} />
         <p class="caption"><em>{caption}</em></p>
       </div>
       <div class="steps">
@@ -65,7 +69,8 @@ const { name, caption } = Astro.props;
       position: sticky;
       top: 5rem;
     }
-    .pinned :global(.auth-figure) {
+    .pinned :global(.auth-figure),
+    .pinned :global(.mcp-auth-figure) {
       margin-top: 0;
     }
     .steps > :global(:first-child) {
