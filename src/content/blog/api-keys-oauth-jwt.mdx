@@ -62,9 +62,13 @@ Some APIs want it in a custom header (`X-API-Key`) or as the username of HTTP Ba
 - **It is often all-or-nothing.** Some platforms let you scope a key to read-only or one project; many don't.
 - **It goes in a header, never in the URL.** Query strings end up in proxy logs and browser history.
 
-Whether those costs matter depends on whose action the call is. Opening an escalation is something our app does on its own account: no customer or employee has to allow it, and "created by the integration" is simply true, since the integration did open it. A credential that names the integration, and nobody else, fits. Booking into the advisor's calendar is different: the calendar belongs to a person, and the call should only work for advisors who consented to it. An API key can't express that, which is why the calendar uses OAuth [below](#authorization-code-the-agent-on-someones-behalf).
+Whether those costs matter depends on whom the call acts for.
 
-So an API key fits when the calling application is the one acting, the key lives in a secrets store rather than in code or on a laptop, and the API offers nothing better.
+Opening an escalation is something our app does as itself. Nobody has to authorize it, and a credential that identifies only the integration is exactly right.
+
+Booking into an advisor's calendar is different: the calendar belongs to a person, and the call should work only for advisors who consented. An API key identifies the application, not the person, so the calendar uses OAuth [below](#authorization-code-the-agent-on-someones-behalf).
+
+Use an API key when the application acts as itself, the key lives in a secrets store rather than in code or on a laptop, and the API offers nothing better.
 
 ## OAuth 2.0: trade a secret for a short-lived token
 
