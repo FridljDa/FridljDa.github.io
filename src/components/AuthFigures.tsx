@@ -385,8 +385,13 @@ const PARTS: Part[] = [
     name: 'Signature',
     tone: 'ok',
     encoded: 'Kq3xT9…',
-    lines: [['over', 'header.payload']],
-    note: 'Auth server’s private key',
+    lines: [
+      ['input', 'eyJhbGci….eyJpc3Mi…'],
+      ['signer', 'auth server, private key crm-2026-10'],
+      ['check', 'CRM: same input + public key crm-2026-10'],
+      ['edit', 'change one claim → check fails'],
+    ],
+    note: 'Proves who issued it',
   },
 ];
 
@@ -463,7 +468,7 @@ export const DESCRIPTIONS = {
     'A missing scope: our app tries to unlock Alex’s account. The CRM checks the token’s scope, finds only contacts.read and answers 403 insufficient_scope. A new token from the auth server has the same scopes, and the retry gets another 403.',
   'sign-in':
     'Logging in: the advisor opens our app, which redirects them to the bank’s identity provider, Keycloak. They log in there with password and second factor, and Keycloak starts a session. It sends a code back through the browser; our app trades it with its verifier for an ID token and an access token, and checks the ID token. Later, when the advisor connects their calendar, the calendar’s auth server sends them to Keycloak to log in. Keycloak finds its session, asks for no password and tells the calendar’s auth server who the advisor is; only the consent screen is left.',
-  jwt: 'The CRM’s access token is a JWT in three dot-separated parts. The header names the algorithm and the key; the payload holds the claims iss, sub, aud, scope and exp, readable by anyone; the signature over both is made with the auth server’s private key.',
+  jwt: 'The CRM’s access token is a JWT in three dot-separated parts. The header names the algorithm and the key; the payload holds the claims iss, sub, aud, scope and exp, readable by anyone; the signature is computed over the first two encoded parts with the auth server’s private key crm-2026-10. The CRM recomputes the check with the matching public key, so changing a single claim makes it fail.',
 } as const;
 
 export type FigureName = keyof typeof DESCRIPTIONS;
