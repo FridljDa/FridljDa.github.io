@@ -18,7 +18,7 @@ import Mark from '../../components/Mark.astro';
 import ThemedImage from '../../components/ThemedImage.astro';
 
 ## TL;DR
-"API keys, OAuth or JWT?" sounds like a choice between three options, but each sits on a different layer. An **API key** is a credential: a long-lived secret sent with every request. **OAuth 2.0** is a protocol for *getting* a credential: you trade a secret you hold for a short-lived access token with limited scopes, either as yourself (client credentials) or for a person who agreed to it (authorization code). A **JWT** is a *format* a token can take: signed JSON the API can check without asking anyone. OAuth access tokens are often JWTs, which is why the three get mixed up. As the one calling an API, I need to know which credential it wants, how to get and renew it, and how to keep it out of places it doesn't belong, the model's context included.
+API keys, OAuth and JWT come up together whenever an API needs authentication, but they sit on three different layers. An **API key** is a credential: a long-lived secret sent with every request. **OAuth 2.0** is a protocol for *getting* a credential: you trade a secret you hold for a short-lived access token with limited scopes, either as yourself (client credentials) or for a person who agreed to it (authorization code). A **JWT** is a *format* a token can take: signed JSON the API can check without asking anyone. OAuth access tokens are often JWTs, which is why the three get mixed up. As the one calling an API, I need to know which credential it wants, how to get and renew it, and how to keep it out of places it doesn't belong, the model's context included.
 
 ## One agent, three systems
 
