@@ -5,8 +5,8 @@
  * walks through its numbered steps. On wide screens the block reaches into the
  * empty spacer left of the content column (w-64 plus gap-8 in post/[slug].astro),
  * and the figure stays pinned on the left while the steps scroll past on the
- * right, so the arrow a step refers to stays in view. Narrower, and in the
- * Confluence copy, the figure comes first and the text below it, as for any
+ * right, so the arrow a step refers to stays in view. Narrower, the figure
+ * comes first and the text below it, as for any
  * other figure. Plain CSS (sticky in a grid, a container query).
  *
  * While the figure is pinned, a small script highlights the step the reader is
@@ -29,25 +29,17 @@ const { figures = 'auth', name, caption } = Astro.props;
 const Figure = figures === 'mcp' ? McpAuthFigure : AuthFigure;
 ---
 
-{Astro.locals.confluence ? (
-  <>
-    <Figure name={name as never} />
-    <p><em>{caption}</em></p>
-    <slot />
-  </>
-) : (
-  <div class="auth-steps">
-    <div class="split">
-      <div class="pinned">
-        <Figure name={name as never} />
-        <p class="caption"><em>{caption}</em></p>
-      </div>
-      <div class="steps">
-        <slot />
-      </div>
+<div class="auth-steps">
+  <div class="split">
+    <div class="pinned">
+      <Figure name={name as never} />
+      <p class="caption"><em>{caption}</em></p>
+    </div>
+    <div class="steps">
+      <slot />
     </div>
   </div>
-)}
+</div>
 
 <style>
   .auth-steps {

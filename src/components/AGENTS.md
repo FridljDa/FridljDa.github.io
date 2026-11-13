@@ -43,7 +43,3 @@ its own class to `loop-animation.css`.
   the same colour in every block it appears in, so a reader can follow it
   through a flow (`code-marks.css`: blue, orange, teal, amber, purple, pink).
 - **Animations:** `<LoopAnimation name="..." />`; see `src/remotion/AGENTS.md`.
-- **Confluence:** a paste into Confluence drops inline SVG, so the drawn figures
-  show a PNG in the Confluence copy (their `Astro.locals.confluence` branch).
-  Regenerate the PNGs with `npm run confluence:figures` (dev server running)
-  and commit only the PNGs that changed on purpose.

@@ -2,10 +2,6 @@
 /**
  * One of the figures of workflow-vs-agent (see DecisionFigures.tsx). Rendered
  * on the server, no JavaScript.
- *
- * A paste into Confluence drops inline SVG, so the Confluence copy shows a PNG
- * of the figure, <name>.png in the post's image folder. Regenerate them after
- * changing a figure: npm run confluence:figures
  */
 import { FIGURES, type FigureName } from './DecisionFigures';
 import './loop-animation.css';
@@ -16,18 +12,13 @@ interface Props {
 
 const { name } = Astro.props;
 const { component: Figure, description, width } = FIGURES[name];
-const png = `/images/blog/${Astro.params.slug}/${name}.png`;
 ---
 
-{Astro.locals.confluence ? (
-  <img src={png} alt={description} />
-) : (
-  <figure class="decision-figure lv-theme not-prose my-8" data-confluence-png={png}>
-    <div class="frame" style={`--width: ${width}px`}>
-      <Figure />
-    </div>
-  </figure>
-)}
+<figure class="decision-figure lv-theme not-prose my-8" data-figure={name}>
+  <div class="frame" style={`--width: ${width}px`}>
+    <Figure />
+  </div>
+</figure>
 
 <style>
   /* As in DecisionMap.astro: in a narrow column the wide layout's type gets

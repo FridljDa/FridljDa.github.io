@@ -1,14 +1,13 @@
 ---
-title: "How an Agent Authenticates to Three APIs"
+title: "How One App Authenticates to Three APIs"
 pubDate: 2026-10-18T00:00:00.000Z
 tags:
   - Architecture
   - Security
   - AI
-description: "API keys, OAuth and JWT get listed side by side, but they aren't three alternatives: an API key is a credential, OAuth is a protocol for getting one, and a JWT is a format a token can take. Worked through on a support agent that has to call three systems."
+description: "API keys, OAuth and JWT get listed side by side, but they aren't three alternatives: an API key is a credential, OAuth is a protocol for getting one, and a JWT is a format a token can take. Worked through on a support app that has to call three systems."
 image: /images/blog/api-keys-oauth-jwt/featured.png
 math: false
-confluence: true
 ---
 
 import AuthMap from '../../components/AuthMap.astro';
@@ -19,23 +18,23 @@ import Mark from '../../components/Mark.astro';
 import ThemedImage from '../../components/ThemedImage.astro';
 
 ## TL;DR
-"API keys, OAuth or JWT?" sounds like a choice between three options, but each sits on a different layer. An **API key** is a credential: a long-lived secret sent with every request. **OAuth 2.0** is a protocol for *getting* a credential: you trade a secret you hold for a short-lived access token with limited scopes, either as yourself (client credentials) or for a person who agreed to it (authorization code). A **JWT** is a *format* a token can take: signed JSON the API can check without asking anyone. OAuth access tokens are often JWTs, which is why the three get mixed up. As the one calling an API, I need to know which credential it wants, how to get and renew it, and how to keep it out of places it doesn't belong, the model's context included.
+API keys, OAuth and JWT come up together whenever an API needs authentication, but they sit on three different layers. An **API key** is a credential: a long-lived secret sent with every request. **OAuth 2.0** is a protocol for *getting* a credential: you trade a secret you hold for a short-lived access token with limited scopes, either as yourself (client credentials) or for a person who consented to it (authorization code). A **JWT** is a *format* a token can take: signed JSON the API can check without asking anyone. OAuth access tokens are often JWTs, which is why the three get mixed up. Signing people in is one more layer on top: OpenID Connect, run by an identity provider such as Keycloak, which is where single sign-on comes from. As the one calling an API, I need to know which credential it wants, how to get and renew it, and where to keep it.
 
-## One agent, three systems
+## One app, three systems
 
-The running example is the invented Northstar Bank from my posts on support automation. Alex Carter writes in that their account is locked. To help, the support agent calls three systems:
+The running example is the invented Northstar Bank from my posts on support automation. Alex Carter writes in that their account is locked. To help, our app, the support automation, calls three systems:
 
 - the **ticketing system**, to open an escalation
 - the **CRM**, to look up Alex's account and its security flag
-- **the calendar of Alex's personal advisor**, to book a callback.
+- **the calendar of Alex's personal advisor**, to book a call with Alex.
 
 Each wants a different credential, and the sections below go through them in that order.
 
-The model never sees any of them. It picks a tool and its arguments, like `lookup_account(account_number="NSB01234")`, and the tool's code attaches the credential and makes the call. Nothing a [prompt injection](/post/prompt-injection) could extract enters the model's context.
+Our app holds every credential, in a secrets store, and attaches the right one to each call. In an agent, this code sits behind the tools, so the model never sees a credential; that is a topic of its own.
 
 <AuthMap preset="overview" />
 
-*The running example as one map: one agent, three systems, a different credential for each. Each section's map highlights its part.*
+*The running example as one map: one app, three systems, a different credential for each. Each section's map highlights its part.*
 
 ## API keys: one secret, one header
 
@@ -45,7 +44,7 @@ The model never sees any of them. It picks a tool and its arguments, like `looku
 
 *One handover, then one call per request. Nothing to fetch, nothing that expires.*
 
-The ticketing system's admin generates a key in its settings page and gives it to us (1). From then on, every request carries it (2):
+The ticketing system issues the key once (1): whoever administers it generates one in its settings page, and it goes straight into our secrets store. From then on, every request to open a ticket carries it (2):
 
 ```http
 POST /v2/tickets HTTP/1.1
@@ -58,29 +57,31 @@ Content-Type: application/json
 
 Some APIs want it in a custom header (`X-API-Key`) or as the username of HTTP Basic auth; the docs say which. The server looks the key up (3) and opens the ticket (4). Nothing to fetch, nothing expires mid-conversation, and a `curl` with one header works. The costs come from the same simplicity:
 
-- **It identifies an application, not a person.** The ticket is created "by the integration", whoever the agent is talking to.
+- **It identifies an application, not a person.** The ticket is created "by the integration", whichever customer or advisor it concerns.
 - **It lives until someone rotates it.** A key leaked into a log or a Git commit keeps working until someone notices.
 - **It is often all-or-nothing.** Some platforms let you scope a key to read-only or one project; many don't.
 - **It goes in a header, never in the URL.** Query strings end up in proxy logs and browser history.
 
-A fine fit when the calling application *is* the actor, the key lives in a secrets manager, and the API offers nothing better.
+Whether those costs matter depends on whose action the call is. Opening an escalation is something our app does on its own account: no customer or employee has to allow it, and "created by the integration" is simply true, since the integration did open it. A credential that names the integration, and nobody else, fits. Booking into the advisor's calendar is different: the calendar belongs to a person, and the call should only work for advisors who consented to it. An API key can't express that, which is why the calendar uses OAuth [below](#authorization-code-the-agent-on-someones-behalf).
+
+So an API key fits when the calling application is the one acting, the key lives in a secrets store rather than in code or on a laptop, and the API offers nothing better.
 
 ## OAuth 2.0: trade a secret for a short-lived token
 
-[OAuth](https://datatracker.ietf.org/doc/html/rfc6749) fixes the long-lived part with a middleman, the **authorization server**. The client, our agent's tools, sends its long-lived secret only there, once in a while, and gets back an **access token**: valid for minutes to an hour, and limited to the **scopes** that were granted, like `contacts.read`. The API, the **resource server**, only ever sees the access token.
+[OAuth](https://datatracker.ietf.org/doc/html/rfc6749) fixes the long-lived part with a middleman, the **authorization server**, or auth server for short. The client, our app, sends its long-lived secret only there, once in a while, and gets back an **access token**: valid for minutes to an hour, and limited to the **scopes** that were granted, like `contacts.read`. The API, the **resource server**, only ever sees the access token.
 
 How the client gets the token is the **grant type**. Two cover almost every integration.
 
-### Client credentials: the agent as itself
+### Client credentials: our app as itself
 
 <AuthMap preset="client-credentials" />
 
-The CRM integration has no human in it: the agent reads accounts as itself. The CRM admin registers our agent as a client, and the CRM's admin console shows two values:
+The CRM integration has no human in it: our app reads accounts as itself. The CRM admin registers our app as a client, and the CRM's admin console shows two values:
 
-<CodeMarks marks={{ 'northstar-support-agent': 'orange', 'q8Zr2vLx7TfN4mKd9WbE': 'purple' }}>
+<CodeMarks marks={{ 'northstar-support': 'orange', 'q8Zr2vLx7TfN4mKd9WbE': 'purple' }}>
 
 ```text
-client_id:     northstar-support-agent
+client_id:     northstar-support
 client_secret: q8Zr2vLx7TfN4mKd9WbE
 ```
 
@@ -90,14 +91,14 @@ The <Mark c="orange">client_id</Mark> names the client and is not a secret: it s
 
 <AuthSteps name="client-credentials" caption="Two calls to get going: one to the auth server for a token, one to the API with it. After that, only the second, until the token expires.">
 
-The token request (1) is a form-encoded `POST`. The client authenticates with HTTP Basic: the two values joined by a colon, <Mark c="orange">northstar-support-agent</Mark>:<Mark c="purple">q8Zr2vLx7TfN4mKd9WbE</Mark>, then <Mark c="teal">base64-encoded</Mark>:
+The token request (1) is a form-encoded `POST`. The client authenticates with HTTP Basic: the two values joined by a colon, <Mark c="orange">northstar-support</Mark>:<Mark c="purple">q8Zr2vLx7TfN4mKd9WbE</Mark>, then <Mark c="teal">base64-encoded</Mark>:
 
-<CodeMarks marks={{ 'bm9ydGhzdGFyLXN1cHBvcnQtYWdlbnQ6cThacjJ2THg3VGZONG1LZDlXYkU=': 'teal' }}>
+<CodeMarks marks={{ 'bm9ydGhzdGFyLXN1cHBvcnQ6cThacjJ2THg3VGZONG1LZDlXYkU=': 'teal' }}>
 
 ```http
 POST /oauth/token HTTP/1.1
 Host: auth.crm.example.com
-Authorization: Basic bm9ydGhzdGFyLXN1cHBvcnQtYWdlbnQ6cThacjJ2THg3VGZONG1LZDlXYkU=
+Authorization: Basic bm9ydGhzdGFyLXN1cHBvcnQ6cThacjJ2THg3VGZONG1LZDlXYkU=
 Content-Type: application/x-www-form-urlencoded
 
 grant_type=client_credentials&scope=contacts.read%20cases.write
@@ -148,7 +149,7 @@ Content-Type: application/json
 Two things are easy to get wrong:
 
 - **Cache the token.** A fresh one per call doubles the latency, and auth servers rate-limit the token endpoint. Keep it until shortly before `expires_in` runs out, and fetch a new one on a `401`.
-- **No refresh token here.** The agent still has its client secret, so it just asks again.
+- **No refresh token here.** Our app still has its client secret, so it just asks again.
 
 The `client_secret` is long-lived too, so this can look like an API key with extra steps. What OAuth buys: the secret travels to one endpoint occasionally rather than on every call, what *does* travel expires, and it carries scopes.
 
@@ -164,7 +165,7 @@ The CRM's access token starts with `eyJ`, base64 for `{"`: it is a [**JSON Web T
 
 *The CRM's access token, decoded. The claims are what the API checks; the signature is why it can trust them.*
 
-The payload's fields are **claims**: `iss` who issued it, `sub` who it is about (our agent here, a user in a delegated flow), `aud` which API it is for, `exp` when it expires, `scope` what it allows.
+The payload's fields are **claims**: `iss` who issued it, `sub` who it is about (our app here, a user in a delegated flow), `aud` which API it is for, `exp` when it expires, `scope` what it allows.
 
 The signature is what JWTs buy: the API verifies the token with the auth server's public key, **without asking anyone**. It fetches the keys once, as a **JWKS** (JSON Web Key Set) at a well-known URL, and picks the one the token's header names as <Mark c="teal">kid</Mark>. These are steps 4 to 6 above:
 
@@ -196,7 +197,7 @@ Host: auth.crm.example.com
 
 - **Signed, not encrypted.** Anyone holding the token can read the claims. No secrets go in them, and until `exp` the token is as good as a password to whoever holds it.
 - **Can't be taken back.** A leaked JWT stays valid until `exp`. That is why access tokens are short-lived, and the long-lived trust sits in something the auth server checks on every use: the client secret here, the refresh token in the calendar flow below. An **opaque** token, a random string the API checks by asking the auth server ([introspection](https://datatracker.ietf.org/doc/html/rfc7662)), is revocable at once, at the cost of a lookup per request. The calendar's tokens below are opaque.
-- **Not meant for the caller.** The agent calling the CRM doesn't need to decode its token: it is addressed to the API, and the provider may change its format. Decoding it is still the fastest way to debug a `403`: the `scope` or `aud` is usually wrong.
+- **Not meant for the caller.** Our app doesn't need to decode its token: it is addressed to the API, and the provider may change its format. Decoding it is still the fastest way to debug a `403`: the `scope` or `aud` is usually wrong.
 
 #### If you run the API: checking one
 
@@ -231,19 +232,21 @@ def verify(token: str) -> dict:
 #### Where else JWTs show up
 
 - **As the client's credential.** Some providers replace the `client_secret` with a JWT the client signs with its own private key ([RFC 7523](https://datatracker.ietf.org/doc/html/rfc7523)). Service accounts on large cloud and CRM platforms work like this: nothing reusable travels at all.
-- **As an ID token.** OAuth answers "may this app call the API?", but not "who is this person?": the access token is meant for the API, and the client isn't supposed to read it. [**OpenID Connect**](https://openid.net/specs/openid-connect-core-1_0.html) (OIDC) is a thin layer on OAuth that adds the second answer. Add `openid` to the scopes of an authorization code flow, and the auth server returns an **ID token** next to the access token: a JWT addressed to the client (its `aud` is the `client_id`) with claims like `sub`, a stable user ID, and `email`. "Sign in with Google" is this. At Northstar, it is how the advisor would log into our app before clicking "Connect calendar". The rule of thumb: the access token is for the API, the ID token for the client; sending an ID token to an API is a classic mix-up.
+- **As an ID token.** It tells an app who logged in, not what it may do at an API. [Logging in](#logging-in-openid-connect-and-sso) shows the one the advisor gets when logging in to our app.
 
 ### When a call fails: 401 or 403
 
 <AuthMap preset="errors" />
 
-The status code says which layer failed, as the [bearer token spec](https://datatracker.ietf.org/doc/html/rfc6750#section-3.1) defines them. Both fail the same CRM call, and the agent's first reaction, a new token and a retry, fixes one and not the other.
+The status code says which layer failed, as the [bearer token spec](https://datatracker.ietf.org/doc/html/rfc6750#section-3.1) defines them. Both fail the same CRM call, and the obvious first reaction, a new token and a retry, fixes one and not the other.
+
+The two codes split along two words that sound alike: **authentication** (AuthN), proving who someone is, and **authorization** (AuthZ), deciding what they may do. Despite its name, `401 Unauthorized` is about authentication.
 
 **`401 Unauthorized`: "I don't know who you are."**
 
 <AuthSteps name="expired-token" caption="An expired token: one new token and one retry fix it.">
 
-The agent calls the CRM with the token it cached an hour ago (1). The CRM checks the JWT and finds `exp` in the past (2). A missing or malformed token, or one signed by someone the API doesn't trust, ends the same way: it answers <Mark c="orange">invalid_token</Mark> (3):
+Our app calls the CRM with the token it cached an hour ago (1). The CRM checks the JWT and finds `exp` in the past (2). A missing or malformed token, or one signed by someone the API doesn't trust, ends the same way: it answers <Mark c="orange">invalid_token</Mark> (3):
 
 <CodeMarks marks={{ 'error="invalid_token"': 'orange' }}>
 
@@ -254,7 +257,7 @@ WWW-Authenticate: Bearer error="invalid_token", error_description="The access to
 
 </CodeMarks>
 
-The agent fetches a new token (4, 5), exactly as in client credentials.
+Our app fetches a new token (4, 5), exactly as in client credentials.
 
 It retries *once* (6), and gets Alex's account (7). A second `401` right after a fresh token means the problem isn't the token's age, and another retry won't help.
 
@@ -264,7 +267,7 @@ It retries *once* (6), and gets Alex's account (7). A second `401` right after a
 
 <AuthSteps name="missing-scope" caption="A missing scope: a new token carries the same scopes, so the retry fails the same way.">
 
-The agent tries to unlock Alex's account (1). The token is valid, but its `scope` only says `contacts.read` (2), and unlocking needs `contacts.write`. The CRM answers <Mark c="teal">insufficient_scope</Mark> and names the scope it wanted (3):
+Our app tries to unlock Alex's account (1). The token is valid, but its `scope` only says `contacts.read` (2), and unlocking needs `contacts.write`. The CRM answers <Mark c="teal">insufficient_scope</Mark> and names the scope it wanted (3):
 
 <CodeMarks marks={{ 'error="insufficient_scope"': 'teal' }}>
 
@@ -275,25 +278,25 @@ WWW-Authenticate: Bearer error="insufficient_scope", scope="contacts.write"
 
 </CodeMarks>
 
-Handled like a `401`, the agent fetches a new token (4, 5). The auth server grants what the client is registered for, so the new token has the same scopes.
+Handled like a `401`, our app fetches a new token (4, 5). The auth server grants what the client is registered for, so the new token has the same scopes.
 
 The retry (6) gets the same `403` (7). The fix is in the client's configuration, usually on the provider's side. Until then, retrying a `403` in a loop is a bug.
 
 </AuthSteps>
 
-### Authorization code: the agent on someone's behalf
+### Authorization code: our app on someone's behalf
 
 <AuthMap preset="auth-code" />
 
-The second grant is for the calendar, which belongs to the advisor. The agent shouldn't hold a key to *every* advisor's calendar; it should act for the advisors who agreed to it, on their calendars only. This delegation is what OAuth was built for, and the flow behind every "Allow this app to…" screen: the **authorization code** grant.
+The second grant is for the calendar, which belongs to the advisor. Our app shouldn't hold a key to *every* advisor's calendar; it should act for the advisors who consented to it, on their calendars only. This delegation is what OAuth was built for, and the flow behind every "Allow this app to…" screen: the **authorization code** grant.
 
-<ThemedImage src="/images/blog/api-keys-oauth-jwt/redirect-flow.png" alt={"Four browser windows. 1: our app at agent.northstar.example.com, Integrations, Calendar not connected, the advisor clicks Connect calendar. 4: redirected to auth.calendar.example.com/authorize with client_id and state in the URL, a Sign in page \"to continue to Northstar Support Agent\" with email and password. 4: still at auth.calendar.example.com, a consent page: Northstar Support Agent wants to access your calendar, create and edit events (calendar.events.write), Cancel or Allow. 5: redirected back to agent.northstar.example.com/oauth/callback with a code and the state in the URL; the calendar now shows as connected."} />
+<ThemedImage src="/images/blog/api-keys-oauth-jwt/redirect-flow.png" alt={"Four browser windows. 1: our app at support.northstar.example.com, Integrations, Calendar not connected, the advisor clicks Connect calendar. 4: redirected to auth.calendar.example.com/authorize with client_id and state in the URL, a Sign in page \"to continue to Northstar Support\" with email and password. 4: still at auth.calendar.example.com, a consent page: Northstar Support wants to access your calendar, create and edit events (calendar.events.write), Cancel or Allow. 5: redirected back to support.northstar.example.com/oauth/callback with a code and the state in the URL; the calendar now shows as connected."} />
 
 *What the advisor sees: our app sends them to the calendar provider, and the provider sends them back. Only the address bar shows whose page they are on.*
 
-<AuthSteps name="authorization-code" caption="The advisor is in the loop once, for steps 1 to 5. Everything after happens between our backend and the auth server.">
+<AuthSteps name="authorization-code" caption="The advisor is in the loop once, for steps 1 to 5. Everything after happens between our app and the auth server.">
 
-It starts in our app: the advisor clicks "Connect calendar" (1). Before answering, the backend makes up two random values for this one login (2) and keeps them in the advisor's session:
+It starts in our app: the advisor clicks "Connect calendar" (1). Before answering, our app makes up two random values for this one login (2) and keeps them in the advisor's session:
 
 - **<Mark c="teal">state</Mark>**, an identifier for this login.
 - **[PKCE](https://datatracker.ietf.org/doc/html/rfc7636)**: a <Mark c="blue">code_verifier</Mark>, a secret, and its hash, the <Mark c="blue">code_challenge</Mark>. The verifier itself only travels in step 7, so only whoever started the flow can finish it. Current best practice asks for PKCE on every client.
@@ -302,13 +305,13 @@ Both tie the code that comes back to the login that asked for it. [What they sto
 
 Then it answers with a redirect (3), a `302` whose `Location` sends the advisor's browser on to the calendar provider's auth server, here with one parameter per line. It carries the <Mark c="teal">state</Mark> and the <Mark c="blue">code_challenge</Mark>, not the verifier:
 
-<CodeMarks marks={{ 'state=Xq7pV2mL9sKw': 'teal', 'code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM': 'blue', 'code_challenge_method=S256': 'blue', 'northstar-support-agent': 'orange' }}>
+<CodeMarks marks={{ 'state=Xq7pV2mL9sKw': 'teal', 'code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM': 'blue', 'code_challenge_method=S256': 'blue', 'northstar-support': 'orange' }}>
 
 ```text
 https://auth.calendar.example.com/authorize
   ?response_type=code
-  &client_id=northstar-support-agent
-  &redirect_uri=https://agent.northstar.example.com/oauth/callback
+  &client_id=northstar-support
+  &redirect_uri=https://support.northstar.example.com/oauth/callback
   &scope=calendar.events.write
   &state=Xq7pV2mL9sKw
   &code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM
@@ -317,21 +320,21 @@ https://auth.calendar.example.com/authorize
 
 </CodeMarks>
 
-The advisor logs in and approves (4) at the calendar provider, never at our app. We never see their password.
+The advisor logs in and consents (4) at the calendar provider, never at our app. We never see their password. With [single sign-on](#logging-in-openid-connect-and-sso), they may not even have to type it.
 
 The auth server sends the browser back to our `redirect_uri` with a <Mark c="pink">code</Mark> and the same <Mark c="teal">state</Mark> (5):
 
 <CodeMarks marks={{ 'code=SplxlOBeZQQYbYS6WxSbIA': 'pink', 'state=Xq7pV2mL9sKw': 'teal' }}>
 
 ```text
-https://agent.northstar.example.com/oauth/callback?code=SplxlOBeZQQYbYS6WxSbIA&state=Xq7pV2mL9sKw
+https://support.northstar.example.com/oauth/callback?code=SplxlOBeZQQYbYS6WxSbIA&state=Xq7pV2mL9sKw
 ```
 
 </CodeMarks>
 
-The backend checks the <Mark c="teal">state</Mark> against the one in the session (6) and drops it: it was only good for these few minutes.
+Our app checks the <Mark c="teal">state</Mark> against the one in the session (6) and drops it: it was only good for these few minutes.
 
-The <Mark c="pink">code</Mark> is worth nothing on its own. Our backend trades it (7) at the token endpoint, together with its own <Mark c="orange">client_id</Mark> and <Mark c="purple">client_secret</Mark> and the PKCE <Mark c="blue">code_verifier</Mark>:
+The <Mark c="pink">code</Mark> is worth nothing on its own. Our app trades it (7) at the token endpoint, together with its own <Mark c="orange">client_id</Mark> and <Mark c="purple">client_secret</Mark> and the PKCE <Mark c="blue">code_verifier</Mark>:
 
 <CodeMarks marks={{ 'code=SplxlOBeZQQYbYS6WxSbIA': 'pink', 'client_id': 'orange', 'client_secret': 'purple', 'code_verifier=dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk': 'blue' }}>
 
@@ -341,7 +344,7 @@ Host: auth.calendar.example.com
 Authorization: Basic <client_id:client_secret, base64-encoded>
 Content-Type: application/x-www-form-urlencoded
 
-grant_type=authorization_code&code=SplxlOBeZQQYbYS6WxSbIA&redirect_uri=https%3A%2F%2Fagent.northstar.example.com%2Foauth%2Fcallback&code_verifier=dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk
+grant_type=authorization_code&code=SplxlOBeZQQYbYS6WxSbIA&redirect_uri=https%3A%2F%2Fsupport.northstar.example.com%2Foauth%2Fcallback&code_verifier=dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk
 ```
 
 </CodeMarks>
@@ -370,7 +373,7 @@ Host: api.calendar.example.com
 Authorization: Bearer cal_at_7Hq2Lm9xPv4T...
 Content-Type: application/json
 
-{"title": "Callback: Alex Carter, locked account", "start": "2026-10-27T10:00:00+01:00", "duration_minutes": 15}
+{"title": "Call: Alex Carter, locked account", "start": "2026-10-27T10:00:00+01:00", "duration_minutes": 15}
 ```
 
 The <Mark c="amber">refresh token</Mark> is the long-lived secret here. It goes in the secrets store, one per advisor, and an hour later gets a new access token without the advisor (11):
@@ -412,17 +415,17 @@ Two more grants are in the original spec, and current best practice ([RFC 9700](
 
 ### What state and PKCE stop
 
-The code travels through the browser, which our backend doesn't control. Each of the two values stops one way of abusing that: an attacker's code in the advisor's session, and the advisor's code in the attacker's session.
+The code travels through the browser, which our app doesn't control. Each of the two values stops one way of abusing that: an attacker's code in the advisor's session, and the advisor's code in the attacker's session.
 
 <AuthSteps name="swapped-code" caption="The attacker's code in the advisor's session. The state check in step 5 rejects it.">
 
-The attacker logs in at the calendar provider with their own account and approves access to *their own* calendar (1). They keep the code it sends back (2) rather than let their browser redeem it.
+The attacker logs in at the calendar provider with their own account and consents to access to *their own* calendar (1). They keep the code it sends back (2) rather than let their browser redeem it.
 
 They get the advisor, who is logged in to our app, to open a link to our callback with that code (3), in an email or on a web page. The advisor's browser follows it (4).
 
-Without a state check, our backend would trade the code and store tokens for the attacker's calendar under the advisor. Every callback the agent books, "Alex Carter, locked account" included, would land in the attacker's calendar.
+Without a state check, our app would trade the code and store tokens for the attacker's calendar under the advisor. Every call our app books, "Alex Carter, locked account" included, would land in the attacker's calendar.
 
-With it, the backend finds no matching state in the advisor's session (5): the advisor never started this login. It rejects the callback (6) before trading anything.
+With it, our app finds no matching state in the advisor's session (5): the advisor never started this login. It rejects the callback (6) before trading anything.
 
 </AuthSteps>
 
@@ -430,13 +433,13 @@ PKCE stops this one too: the attacker's code was issued against the attacker's c
 
 <AuthSteps name="stolen-code" caption="The advisor's code in the attacker's session. The state check passes; the verifier check in step 7 rejects it.">
 
-The advisor connects their calendar as usual, but the code leaks to the attacker (1), from a log or a malicious browser extension, before our backend redeems it. Codes are single-use, so the attacker has to be quicker.
+The advisor connects their calendar as usual, but the code leaks to the attacker (1), from a log or a malicious browser extension, before our app redeems it. Codes are single-use, so the attacker has to be quicker.
 
-The attacker, who has an account in our app, clicks "Connect calendar" themselves (2). Our backend makes a state and a verifier for *the attacker's* session and answers with the redirect (3).
+The attacker, who has an account in our app, clicks "Connect calendar" themselves (2). Our app makes a state and a verifier for *the attacker's* session and answers with the redirect (3).
 
 The attacker stops there and calls our callback directly, with the stolen code and their own state (4). The state matches the attacker's session (5): state only proves the callback belongs to a login this browser started, not whose code it carries.
 
-Our backend trades the code with the verifier it holds for the attacker's session (6). Our client secret is no obstacle, since it is our own backend making the call. The auth server hashes that verifier and compares it with the challenge the code was issued for, the advisor's (7). They don't match, and it answers with an error instead of tokens (8):
+Our app trades the code with the verifier it holds for the attacker's session (6). Our client secret is no obstacle, since it is our own app making the call. The auth server hashes that verifier and compares it with the challenge the code was issued for, the advisor's (7). They don't match, and it answers with an error instead of tokens (8):
 
 ```http
 HTTP/1.1 400 Bad Request
@@ -445,16 +448,40 @@ Content-Type: application/json
 {"error": "invalid_grant", "error_description": "PKCE verification failed"}
 ```
 
-Without PKCE, the auth server would hand our backend tokens for the advisor's calendar, filed under the attacker's session: whatever our app does with a connected calendar, it would now do on the advisor's calendar for the attacker.
+Without PKCE, the auth server would hand our app tokens for the advisor's calendar, filed under the attacker's session: whatever our app does with a connected calendar, it would now do on the advisor's calendar for the attacker.
+
+</AuthSteps>
+
+### Logging in: OpenID Connect and SSO
+
+The authorization code flow began with the advisor clicking "Connect calendar" in our app, so our app already knew who they were. OAuth can't have told it. OAuth is authorization: its access token says what an app may do at an API, it is addressed to that API, and the app isn't meant to read it. Knowing who someone is, authentication, takes one more layer.
+
+<AuthSteps name="sign-in" caption="The advisor types a password once, at the IdP. Every app after that, the calendar's auth server included, gets their identity from it.">
+
+In the morning the advisor opens our app (1). It has no login form of its own: it redirects them (2) to the bank's **identity provider** (IdP), the one system that holds the employees' accounts, passwords and second factors, and that every internal app sends its users to for login. Say Northstar runs [Keycloak](https://www.keycloak.org/), an open-source IdP a company hosts itself; Microsoft Entra ID and Okta are common hosted ones. Under the hood an IdP is an OAuth auth server like the CRM's or the calendar's, with people as its main business. It hands out tokens to machines too: an in-house CRM could sit behind Keycloak, and client credentials would work against it unchanged.
+
+The advisor logs in there (3), not at our app, and Keycloak remembers that with a session of its own (4).
+
+The rest is the authorization code flow from above, state and PKCE included, with one more scope, `openid`. Keycloak sends a code back through the browser (5), and our app trades it (6).
+
+The `openid` scope switches on [**OpenID Connect**](https://openid.net/specs/openid-connect-core-1_0.html) (OIDC), a thin layer on OAuth that adds authentication. Next to the access token, Keycloak returns (7) an **ID token**: a JWT addressed to our app (its `aud` is our `client_id`), with claims like `sub`, a stable ID for the advisor, and `email`. "Sign in with Google" works the same way, with Google as the IdP.
+
+Our app checks the ID token like any JWT (8) and starts its own session for the advisor. The rule of thumb: the access token is for the API, the ID token for the app; sending an ID token to an API is a classic mix-up.
+
+Later the advisor clicks "Connect calendar", and the calendar's auth server wants them to log in (9). If the bank set it up to trust its IdP, it shows no password field and sends them on to Keycloak (10). One auth server handing its login to another like this is **federation**.
+
+Keycloak finds the session from the morning (11) and tells the calendar's auth server who the advisor is (12), without asking for a password. Only the consent screen is left (13).
+
+That is **single sign-on** (SSO): not a protocol, but what you get when many apps hand their login to one IdP. Older enterprise apps often do the same over [SAML](https://docs.oasis-open.org/security/saml/v2.0/saml-core-2.0-os.pdf), an XML-based predecessor of OIDC; Keycloak speaks both.
 
 </AuthSteps>
 
 ## Three systems, three credentials
 
-- **Ticketing:** an API key, sent with every call. The agent acts as itself, and the key lives until someone rotates it.
-- **CRM:** client credentials. The agent trades its secret for an hour-long token, a JWT the API checks on its own.
-- **Calendar:** authorization code. The advisor agrees once, and the agent keeps a refresh token per advisor to get short-lived, opaque tokens for their calendar.
+- **Ticketing:** an API key, sent with every call. Our app acts as itself, and the key lives until someone rotates it.
+- **CRM:** client credentials. Our app trades its secret for an hour-long token, a JWT the API checks on its own.
+- **Calendar:** authorization code. The advisor consents once, and our app keeps a refresh token per advisor to get short-lived, opaque tokens for their calendar.
 
-So the question for a new API is not which of the three to use. It is whose data the call touches, which decides the grant, and which secret our code has to keep, which decides where it is stored.
+So the question for a new API is not which of the three to use. It is whose data the call touches, which decides the grant, and which secret our app has to keep, which decides where it is stored.
 
 This post looks at it from the caller's side. [When the Agent Calls You](/post/mcp-server-authorization) turns it around: an MCP server whose callers are AI apps it has never met.

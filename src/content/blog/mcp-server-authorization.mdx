@@ -16,11 +16,11 @@ import CodeMarks from '../../components/CodeMarks.astro';
 import Mark from '../../components/Mark.astro';
 
 ## TL;DR
-In [my post on API credentials](/post/api-keys-oauth-jwt), the agent was the caller. Here my code is the API: an MCP server, called by an AI app I didn't build, for a user I have never seen. The app starts with only the server's URL, and a `401` leads it to the login page. It identifies itself with a **client ID that is a URL**, so nobody registers it in advance. The token comes from the authorization code flow with PKCE, plus a `resource` parameter that binds it to one server and an `iss` check that stops a mix-up attack. The server checks the token's audience and never forwards it. As of the MCP spec revision `2026-07-28`, November 2026.
+In [my post on API credentials](/post/api-keys-oauth-jwt), my app was the caller. Here my code is the API: an MCP server, called by an AI app I didn't build, for a user I have never seen. The app starts with only the server's URL, and a `401` leads it to the login page. It identifies itself with a **client ID that is a URL**, so nobody registers it in advance. The token comes from the authorization code flow with PKCE, plus a `resource` parameter that binds it to one server and an `iss` check that stops a mix-up attack. The server checks the token's audience and never forwards it. As of the MCP spec revision `2026-07-28`, November 2026.
 
 ## One server, callers I never met
 
-The running example is still the invented Northstar Bank from my posts on support automation. In the earlier post, each API's admin handed the support agent a credential. Now Northstar wants its employees to look up accounts from the company's AI assistant, Claude or ChatGPT, so it puts an MCP server in front of its data: `https://mcp.northstar.example.com/mcp`, with tools like `lookup_account` and `open_case`. The [Model Context Protocol](https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization) (MCP) is the standard way for an AI app to discover and call such tools.
+The running example is still the invented Northstar Bank from my posts on support automation. In the earlier post, each API handed our app a credential. Now Northstar wants its employees to look up accounts from the company's AI assistant, Claude or ChatGPT, so it puts an MCP server in front of its data: `https://mcp.northstar.example.com/mcp`, with tools like `lookup_account` and `open_case`. The [Model Context Protocol](https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization) (MCP) is the standard way for an AI app to discover and call such tools.
 
 The sides have swapped. The advisor from the earlier post asks the assistant about Alex Carter's locked account, and the call arrives at *our* server. The server doesn't know which app is calling, or which user it acts for. And the app doesn't know where to log in: it only has the URL someone pasted into its settings.
 
@@ -38,7 +38,7 @@ MCP authorization is OAuth 2.1, with the [same three roles](/post/api-keys-oauth
 
 - **Resource server:** the MCP server. It checks access tokens.
 - **Client:** the MCP client inside the AI app, acting for the user.
-- **Authorization server:** issues the tokens after the user logs in and agrees. Here, Northstar's identity provider, issuer `https://login.northstar.example.com`.
+- **Authorization server:** issues the tokens after the user logs in and agrees. Here, Northstar's [identity provider](/post/api-keys-oauth-jwt#logging-in-openid-connect-and-sso), issuer `https://login.northstar.example.com`.
 
 The MCP server never logs anyone in and never issues a token. The authorization server can be an existing system like Okta, Entra ID or Keycloak, and [OpenAI's docs](https://developers.openai.com/plugins/build/auth) strongly recommend that over writing your own. Northstar's employees already log in there.
 
@@ -60,7 +60,7 @@ WWW-Authenticate: Bearer resource_metadata="https://mcp.northstar.example.com/.w
 
 </CodeMarks>
 
-In the earlier post, a `401` meant "get a new token", and the agent knew where. This one also says *where*.
+In the earlier post, a `401` meant "get a new token", and our app knew where. This one also says *where*.
 
 The client fetches the <Mark c="blue">resource_metadata</Mark> document (3). This is **Protected Resource Metadata** ([RFC 9728](https://datatracker.ietf.org/doc/html/rfc9728)), which MCP servers **must** publish: the server says which authorization server issues its tokens (4).
 
@@ -109,7 +109,7 @@ Before using the document, the client checks that the <Mark c="amber">issuer</Ma
 
 <McpAuthMap preset="client-id" />
 
-In the earlier post, the calendar provider's admin registered our agent and handed over a `client_id`. Nobody does that here: Northstar can't register every AI app in the world, and the app can't register by hand at every server it meets.
+In the earlier post, the calendar provider's admin registered our app and handed over a `client_id`. Nobody does that here: Northstar can't register every AI app in the world, and the app can't register by hand at every server it meets.
 
 The answer is a **Client ID Metadata Document** (CIMD, an [IETF draft](https://datatracker.ietf.org/doc/draft-ietf-oauth-client-id-metadata-document/)): the <Mark c="orange">client_id</Mark> *is* an HTTPS URL, and the authorization server reads the client's description from it. For the walkthrough, an invented client:
 
@@ -147,7 +147,7 @@ The older way, **Dynamic Client Registration** (DCR, [RFC 7591](https://datatrac
 
 <McpAuthMap preset="consent" />
 
-From here on it is the [authorization code flow](/post/api-keys-oauth-jwt#authorization-code-the-agent-on-someones-behalf) of the earlier post, with <Mark c="teal">state</Mark> and PKCE doing [the same jobs](/post/api-keys-oauth-jwt#what-state-and-pkce-stop). Two things are new: the <Mark c="purple">resource</Mark> parameter, and the issuer the client records and later checks.
+From here on it is the [authorization code flow](/post/api-keys-oauth-jwt#authorization-code-our-app-on-someones-behalf) of the earlier post, with <Mark c="teal">state</Mark> and PKCE doing [the same jobs](/post/api-keys-oauth-jwt#what-state-and-pkce-stop). Two things are new: the <Mark c="purple">resource</Mark> parameter, and the issuer the client records and later checks.
 
 <AuthSteps figures="mcp" name="authorization-code" caption="The advisor is in the loop for steps 2 and 3. The client checks two things on the callback, the auth server one, and the MCP server the token on every call.">
 
@@ -320,7 +320,7 @@ All of this serves one decision the server makes on every call: whose data may t
 
 `lookup_account` needs the CRM, and it is tempting to forward the token that just arrived. The spec forbids this **token passthrough**: MCP servers **must not** accept or pass on tokens that weren't issued for them. The [MCP security best practices](https://modelcontextprotocol.io/docs/tutorials/security/security_best_practices) give the reasons: the downstream API's rate limits and monitoring are bypassed, the audit trail is lost, and a token several services accept lets an attacker who compromises one reach the others.
 
-So Northstar's MCP server calls the CRM as the support agent did in the earlier post, with its own [client credentials](/post/api-keys-oauth-jwt#client-credentials-the-agent-as-itself) token.
+So Northstar's MCP server calls the CRM as our app did in the earlier post, with its own [client credentials](/post/api-keys-oauth-jwt#client-credentials-our-app-as-itself) token.
 
 <AuthSteps figures="mcp" name="two-audiences" caption="The advisor's token stops at the MCP server. The CRM sees only the MCP server's own token.">
 
