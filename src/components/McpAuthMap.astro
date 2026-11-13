@@ -1,0 +1,32 @@
+---
+/**
+ * The section map of mcp-server-authorization, with one section's part highlighted
+ * (see McpAuthMap.tsx for the presets). Rendered on the server, no JavaScript.
+ */
+import McpAuthMapSvg, { PRESETS, type PresetName } from './McpAuthMap';
+import './loop-animation.css';
+
+interface Props {
+  preset: PresetName;
+}
+
+const { preset } = Astro.props;
+const { description } = PRESETS[preset];
+---
+
+<figure class="mcp-auth-map lv-theme not-prose my-8" data-figure={`map-${preset}`}>
+  <div class="frame">
+    <McpAuthMapSvg preset={preset} id={`map-${preset}`} />
+  </div>
+</figure>
+
+<style>
+  /* One vertical layout for every width. */
+  .mcp-auth-map .frame {
+    max-width: 480px;
+    margin: 0 auto;
+  }
+  .mcp-auth-map :global(svg) {
+    display: block;
+  }
+</style>

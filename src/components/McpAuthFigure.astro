@@ -1,0 +1,31 @@
+---
+/**
+ * One of the figures of mcp-server-authorization (see
+ * McpAuthFigures.tsx). Rendered on the server, no JavaScript.
+ */
+import McpAuthFigureSvg, { DESCRIPTIONS, type FigureName } from './McpAuthFigures';
+import './loop-animation.css';
+
+interface Props {
+  name: FigureName;
+}
+
+const { name } = Astro.props;
+const description = DESCRIPTIONS[name];
+---
+
+<figure class="mcp-auth-figure lv-theme not-prose my-8" data-figure={name}>
+  <div class="frame">
+    <McpAuthFigureSvg name={name} id={name} />
+  </div>
+</figure>
+
+<style>
+  .mcp-auth-figure .frame {
+    max-width: 520px;
+    margin: 0 auto;
+  }
+  .mcp-auth-figure :global(svg) {
+    display: block;
+  }
+</style>

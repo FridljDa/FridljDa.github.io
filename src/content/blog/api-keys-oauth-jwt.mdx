@@ -489,3 +489,5 @@ That is **single sign-on** (SSO): not a protocol, but what you get when many app
 - **Calendar:** authorization code. The advisor consents once, and our app keeps a refresh token per advisor to get short-lived, opaque tokens for their calendar.
 
 So the question for a new API is not which of the three to use. It is whose data the call touches, which decides the grant, and which secret our app has to keep, which decides where it is stored.
+
+This post looks at it from the caller's side. [When the Agent Calls You](/post/mcp-server-authorization) turns it around: an MCP server whose callers are AI apps it has never met.
