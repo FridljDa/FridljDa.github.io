@@ -452,15 +452,27 @@ Without PKCE, the auth server would hand our backend tokens for the advisor's ca
 
 ### Signing in: OpenID Connect and SSO
 
-The authorization code flow began with the advisor clicking "Connect calendar" in our app (step 1), so our app already knew who they were. OAuth can't have told it. OAuth is authorization: its access token says what an app may do at an API, it is addressed to that API, and the app isn't meant to read it. Knowing who someone is, authentication, takes one more layer.
+The authorization code flow began with the advisor clicking "Connect calendar" in our app, so our app already knew who they were. OAuth can't have told it. OAuth is authorization: its access token says what an app may do at an API, it is addressed to that API, and the app isn't meant to read it. Knowing who someone is, authentication, takes one more layer.
 
-Here is how the advisor got that far. In the morning they open our app, which has no login form of its own: it sends them to the bank's **identity provider** (IdP), the one system that holds the employees' accounts, passwords and second factors, and that every internal app sends its users to for login. Say Northstar runs [Keycloak](https://www.keycloak.org/), an open-source IdP a company hosts itself; Microsoft Entra ID and Okta are common hosted ones. Under the hood an IdP is an OAuth auth server like the CRM's or the calendar's, with people as its main business. It hands out tokens to machines too: an in-house CRM could sit behind Keycloak, and client credentials would work against it unchanged.
+<AuthSteps name="sign-in" caption="The advisor types a password once, at the IdP. Every app after that, the calendar included, gets their identity from it.">
 
-The redirect to the IdP is the authorization code flow from above, with one more scope, `openid`. That scope switches on [**OpenID Connect**](https://openid.net/specs/openid-connect-core-1_0.html) (OIDC), a thin layer on OAuth that adds authentication. Next to the access token, the IdP returns an **ID token**: a JWT addressed to our app (its `aud` is our `client_id`), with claims like `sub`, a stable ID for the advisor, and `email`. Our app checks it like any JWT and starts a session. "Sign in with Google" works the same way, with Google as the IdP. The rule of thumb: the access token is for the API, the ID token for the app; sending an ID token to an API is a classic mix-up.
+In the morning the advisor opens our app (1). It has no login form of its own: it redirects them (2) to the bank's **identity provider** (IdP), the one system that holds the employees' accounts, passwords and second factors, and that every internal app sends its users to for login. Say Northstar runs [Keycloak](https://www.keycloak.org/), an open-source IdP a company hosts itself; Microsoft Entra ID and Okta are common hosted ones. Under the hood an IdP is an OAuth auth server like the CRM's or the calendar's, with people as its main business. It hands out tokens to machines too: an in-house CRM could sit behind Keycloak, and client credentials would work against it unchanged.
 
-The advisor typed their password at the IdP, not at our app, and the IdP remembers that with a session of its own. When the next app sends them over, the IdP finds that session and sends them straight back without asking again. That is **single sign-on** (SSO): not a protocol, but what you get when many apps hand their login to one IdP. Older enterprise apps often do the same over [SAML](https://docs.oasis-open.org/security/saml/v2.0/saml-core-2.0-os.pdf), an XML-based predecessor of OIDC; Keycloak speaks both.
+The advisor logs in there (3), not at our app, and Keycloak remembers that with a session of its own (4).
 
-The calendar can join in. If the bank set up the calendar provider to trust its IdP, step 4 shows no password field: the calendar's auth server sends the advisor on to Keycloak, which already has a session, and only the consent screen is left. One auth server handing its login to another like this is **federation**.
+The rest is the authorization code flow from above, state and PKCE included, with one more scope, `openid`. Keycloak sends a code back through the browser (5), and our app trades it (6).
+
+The `openid` scope switches on [**OpenID Connect**](https://openid.net/specs/openid-connect-core-1_0.html) (OIDC), a thin layer on OAuth that adds authentication. Next to the access token, Keycloak returns (7) an **ID token**: a JWT addressed to our app (its `aud` is our `client_id`), with claims like `sub`, a stable ID for the advisor, and `email`. "Sign in with Google" works the same way, with Google as the IdP.
+
+Our app checks the ID token like any JWT (8) and starts its own session for the advisor. The rule of thumb: the access token is for the API, the ID token for the app; sending an ID token to an API is a classic mix-up.
+
+Later the advisor clicks "Connect calendar", and the calendar provider wants them to log in (9). If the bank set it up to trust its IdP, it shows no password field and sends them on to Keycloak (10). One auth server handing its login to another like this is **federation**.
+
+Keycloak finds the session from the morning (11) and tells the calendar who the advisor is (12), without asking for a password. Only the consent screen is left (13).
+
+That is **single sign-on** (SSO): not a protocol, but what you get when many apps hand their login to one IdP. Older enterprise apps often do the same over [SAML](https://docs.oasis-open.org/security/saml/v2.0/saml-core-2.0-os.pdf), an XML-based predecessor of OIDC; Keycloak speaks both.
+
+</AuthSteps>
 
 ## Three systems, three credentials
 

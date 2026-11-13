@@ -2,7 +2,7 @@
  * The figures of api-keys-oauth-jwt other than its section map (AuthMap.tsx):
  * sequence figures for the ticketing system's API key, the two OAuth grants
  * (client credentials for the CRM, authorization code for the advisor's
- * calendar), the two attacks state and PKCE stop, and a failing call, 401
+ * calendar), the two attacks state and PKCE stop, the advisor signing in through the bank's identity provider, and a failing call, 401
  * against 403, and the anatomy of the CRM's access token, a JWT. Same palette,
  * box style and outlines as the map: blue for the model, grey for our code,
  * orange for someone else's system, teal for a person, red for an attacker. Narrow enough to share one layout between phones and wide
@@ -266,6 +266,39 @@ function StolenCode({ id }: { id: string }) {
   );
 }
 
+function SignIn({ id }: { id: string }) {
+  return (
+    <Sequence
+      id={id}
+      label={DESCRIPTIONS['sign-in']}
+      lanes={[
+        { name: 'Advisor', role: 'human', x: 60 },
+        { name: 'Our app', role: 'code', x: 180 },
+        { name: 'Keycloak', role: 'external', x: 300 },
+        { name: 'Calendar', role: 'external', x: 420 },
+      ]}
+      rows={[
+        { from: 0, to: 1, label: 'Opens the app' },
+        { from: 1, to: 0, label: 'Redirect to IdP', reply: true },
+        { from: 0, to: 2, label: 'Password, 2nd factor' },
+        { from: 2, label: 'Starts IdP session', numbered: true },
+        { from: 2, to: 1, label: 'Code, via browser' },
+        { from: 1, to: 2, label: 'Code + verifier' },
+        { from: 2, to: 1, label: 'ID + access token', reply: true },
+        { from: 1, label: 'Checks ID token', numbered: true },
+        { gap: 'Later: Connect calendar' },
+        { from: 0, to: 3, label: 'Sent there to log in' },
+        { from: 3, to: 2, label: 'Login, via browser' },
+        { from: 2, label: 'Session found', numbered: true },
+        { from: 2, to: 3, label: 'Who it is', reply: true },
+        { from: 3, to: 0, label: 'Consent screen only', reply: true },
+      ]}
+      tag="One login, every app"
+      tagStep={13}
+    />
+  );
+}
+
 function ExpiredToken({ id }: { id: string }) {
   return (
     <Sequence
@@ -429,6 +462,8 @@ export const DESCRIPTIONS = {
     'An expired token: the tools call the CRM, which checks the token’s exp, finds it passed and answers 401 invalid_token. The tools fetch a new access token from the auth server with the client ID and secret, retry once and get Alex’s account.',
   'missing-scope':
     'A missing scope: the tools try to unlock Alex’s account. The CRM checks the token’s scope, finds only contacts.read and answers 403 insufficient_scope. A new token from the auth server has the same scopes, and the retry gets another 403.',
+  'sign-in':
+    'Signing in: the advisor opens our app, which redirects them to the bank’s identity provider, Keycloak. They log in there with password and second factor, and Keycloak starts a session. It sends a code back through the browser; our app trades it with its verifier for an ID token and an access token, and checks the ID token. Later, when the advisor connects their calendar, the calendar provider sends them to Keycloak to log in. Keycloak finds its session, asks for no password and tells the calendar who the advisor is; only the consent screen is left.',
   jwt: 'The CRM’s access token is a JWT in three dot-separated parts. The header names the algorithm and the key; the payload holds the claims iss, sub, aud, scope and exp, readable by anyone; the signature over both is made with the auth server’s private key.',
 } as const;
 
@@ -442,6 +477,7 @@ const FIGURES: Record<FigureName, (props: { id: string }) => ReactNode> = {
   'stolen-code': StolenCode,
   'expired-token': ExpiredToken,
   'missing-scope': MissingScope,
+  'sign-in': SignIn,
   jwt: JwtAnatomy,
 };
 
