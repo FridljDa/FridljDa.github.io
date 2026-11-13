@@ -18,7 +18,7 @@ import Mark from '../../components/Mark.astro';
 import ThemedImage from '../../components/ThemedImage.astro';
 
 ## TL;DR
-API keys, OAuth and JWT come up together whenever an API needs authentication, but they sit on three different layers. An **API key** is a credential: a long-lived secret sent with every request. **OAuth 2.0** is a protocol for *getting* a credential: you trade a secret you hold for a short-lived access token with limited scopes, either as yourself (client credentials) or for a person who agreed to it (authorization code). A **JWT** is a *format* a token can take: signed JSON the API can check without asking anyone. OAuth access tokens are often JWTs, which is why the three get mixed up. As the one calling an API, I need to know which credential it wants, how to get and renew it, and how to keep it out of places it doesn't belong, the model's context included.
+API keys, OAuth and JWT come up together whenever an API needs authentication, but they sit on three different layers. An **API key** is a credential: a long-lived secret sent with every request. **OAuth 2.0** is a protocol for *getting* a credential: you trade a secret you hold for a short-lived access token with limited scopes, either as yourself (client credentials) or for a person who agreed to it (authorization code). A **JWT** is a *format* a token can take: signed JSON the API can check without asking anyone. OAuth access tokens are often JWTs, which is why the three get mixed up. Signing people in is one more layer on top: OpenID Connect, run by an identity provider such as Keycloak, which is where single sign-on comes from. As the one calling an API, I need to know which credential it wants, how to get and renew it, and how to keep it out of places it doesn't belong, the model's context included.
 
 ## One agent, three systems
 
@@ -230,13 +230,15 @@ def verify(token: str) -> dict:
 #### Where else JWTs show up
 
 - **As the client's credential.** Some providers replace the `client_secret` with a JWT the client signs with its own private key ([RFC 7523](https://datatracker.ietf.org/doc/html/rfc7523)). Service accounts on large cloud and CRM platforms work like this: nothing reusable travels at all.
-- **As an ID token.** OAuth answers "may this app call the API?", but not "who is this person?": the access token is meant for the API, and the client isn't supposed to read it. [**OpenID Connect**](https://openid.net/specs/openid-connect-core-1_0.html) (OIDC) is a thin layer on OAuth that adds the second answer. Add `openid` to the scopes of an authorization code flow, and the auth server returns an **ID token** next to the access token: a JWT addressed to the client (its `aud` is the `client_id`) with claims like `sub`, a stable user ID, and `email`. "Sign in with Google" is this. At Northstar, it is how the advisor would log into our app before clicking "Connect calendar". The rule of thumb: the access token is for the API, the ID token for the client; sending an ID token to an API is a classic mix-up.
+- **As an ID token.** OpenID Connect adds a JWT that tells the client who signed in. [Signing in](#signing-in-openid-connect-and-sso) below covers it.
 
 ### When a call fails: 401 or 403
 
 <AuthMap preset="errors" />
 
 The status code says which layer failed, as the [bearer token spec](https://datatracker.ietf.org/doc/html/rfc6750#section-3.1) defines them. Both fail the same CRM call, and the agent's first reaction, a new token and a retry, fixes one and not the other.
+
+The two codes split along two words that sound alike: **authentication** (AuthN), proving who someone is, and **authorization** (AuthZ), deciding what they may do. Despite its name, `401 Unauthorized` is about authentication.
 
 **`401 Unauthorized`: "I don't know who you are."**
 
@@ -447,6 +449,18 @@ Content-Type: application/json
 Without PKCE, the auth server would hand our backend tokens for the advisor's calendar, filed under the attacker's session: whatever our app does with a connected calendar, it would now do on the advisor's calendar for the attacker.
 
 </AuthSteps>
+
+### Signing in: OpenID Connect and SSO
+
+The authorization code flow started with the advisor clicking "Connect calendar" in our app (step 1), so our app already knew who they were. OAuth can't have told it: OAuth is authorization, it answers "may this app call the API?", not "who is this person?". The access token is addressed to the API, and the client isn't supposed to read it.
+
+[**OpenID Connect**](https://openid.net/specs/openid-connect-core-1_0.html) (OIDC) is a thin layer on OAuth that adds authentication. Our app runs the same authorization code flow, with `openid` among the scopes, and the auth server returns an **ID token** next to the access token: a JWT addressed to the client (its `aud` is our `client_id`) with claims like `sub`, a stable user ID, and `email`. "Sign in with Google" is this. The rule of thumb: the access token is for the API, the ID token for the client; sending an ID token to an API is a classic mix-up.
+
+Whose auth server signs the advisor in? The bank's **identity provider** (IdP): the system that holds the employees' accounts, passwords and second factors. Technically it is an OAuth auth server like the CRM's and the calendar's, but its job is people rather than API access, and every internal app hands its login to it. [Keycloak](https://www.keycloak.org/) is an open-source IdP a company runs itself; Microsoft Entra ID and Okta are hosted ones. An IdP issues access tokens too: if the CRM were an in-house system behind Keycloak, the agent would get its token from Keycloak exactly as in [client credentials](#client-credentials-the-agent-as-itself).
+
+Because every app sends the advisor to the same IdP, they log in once, and the next app finds the IdP's session and lets them in without asking again. That is **single sign-on** (SSO): not a protocol, but the effect of many apps trusting one IdP. Besides OIDC, most enterprise IdPs still offer [SAML](https://docs.oasis-open.org/security/saml/v2.0/saml-core-2.0-os.pdf), an older XML-based protocol that does the same job for web logins. Keycloak speaks both.
+
+SSO can reach the calendar too. If the bank set up the calendar provider to trust its IdP, the login in step 4 of the authorization code flow shows no password field: the calendar's auth server sends the advisor on to the bank's IdP, which already has a session, and only the consent screen is left. One auth server handing the login to another like this is **federation**.
 
 ## Three systems, three credentials
 
