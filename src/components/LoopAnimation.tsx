@@ -1,6 +1,6 @@
 /**
  * Plays a Remotion composition from src/remotion/ in a blog post. Used through
- * LoopAnimation.astro, which handles the Confluence copy and the no-JS fallback.
+ * LoopAnimation.astro, which handles the no-JS fallback.
  *
  * The animation starts the first time the figure is almost fully in view, so
  * the reader is looking at it rather than at the text above, plays once and

@@ -9,10 +9,6 @@
  * fixed first, so each step is smaller than the last, and the rate levels off
  * below 100%: rare and new kinds of request, the long tail, keep coming. Not
  * measured data, so there are no axis values and no hover layer.
- *
- * A paste into Confluence drops inline SVG, so the Confluence copy of the post
- * shows a PNG of this figure instead. Regenerate it after changing the figure:
- * npm run confluence:figures
  */
 
 const W = 720;
@@ -46,41 +42,37 @@ const desc =
   'levels off below 100%: the long tail of rare and new requests stays.';
 ---
 
-{Astro.locals.confluence ? (
-  <img src="/images/blog/the-missing-test-suite/approval-curve.png" alt={`${title}. ${desc}`} />
-) : (
-  <figure class="approval-curve not-prose my-8">
-    <div class="scroll">
-      <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-labelledby="approval-curve-title approval-curve-desc">
-        <title id="approval-curve-title">{title}</title>
-        <desc id="approval-curve-desc">{desc}</desc>
+<figure class="approval-curve not-prose my-8">
+  <div class="scroll">
+    <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-labelledby="approval-curve-title approval-curve-desc">
+      <title id="approval-curve-title">{title}</title>
+      <desc id="approval-curve-desc">{desc}</desc>
 
-        <rect class="tail" x={plot.left} y={y(1)} width={plot.right - plot.left} height={lastY - y(1)} />
+      <rect class="tail" x={plot.left} y={y(1)} width={plot.right - plot.left} height={lastY - y(1)} />
 
-        <line class="axis" x1={plot.left} y1={plot.bottom} x2={plot.right} y2={plot.bottom} />
-        <line class="axis" x1={plot.left} y1={plot.bottom} x2={plot.left} y2={plot.top - 16} />
-        <line class="ceiling" x1={plot.left} y1={y(1)} x2={plot.right} y2={y(1)} />
-        <text class="label" x={plot.right + 10} y={y(1) + 5}>100%</text>
+      <line class="axis" x1={plot.left} y1={plot.bottom} x2={plot.right} y2={plot.bottom} />
+      <line class="axis" x1={plot.left} y1={plot.bottom} x2={plot.left} y2={plot.top - 16} />
+      <line class="ceiling" x1={plot.left} y1={y(1)} x2={plot.right} y2={y(1)} />
+      <text class="label" x={plot.right + 10} y={y(1) + 5}>100%</text>
 
-        <polyline class="series" points={steps.join(' ')} />
-        <text class="label strong" x={plot.right + 10} y={lastY + 5}>New tickets</text>
+      <polyline class="series" points={steps.join(' ')} />
+      <text class="label strong" x={plot.right + 10} y={lastY + 5}>New tickets</text>
 
-        {Array.from({ length: ROUNDS - 1 }, (_, k) => (
-          <circle class="night" cx={x(k + 1)} cy={y(rate(k + 1))} r="4" />
-        ))}
-        <text class="note" x={x(1) + 10} y={y(rate(1)) + 24}>Nightly run ships the round's fixes</text>
+      {Array.from({ length: ROUNDS - 1 }, (_, k) => (
+        <circle class="night" cx={x(k + 1)} cy={y(rate(k + 1))} r="4" />
+      ))}
+      <text class="note" x={x(1) + 10} y={y(rate(1)) + 24}>Nightly run ships the round's fixes</text>
 
-        <text class="note" x={tailX} y={(y(1) + lastY) / 2 + 5} text-anchor="middle">Long tail</text>
+      <text class="note" x={tailX} y={(y(1) + lastY) / 2 + 5} text-anchor="middle">Long tail</text>
 
-        <text class="axis-title" transform={`translate(${plot.left - 18},${(plot.top + plot.bottom) / 2}) rotate(-90)`} text-anchor="middle">
-          Approved on first review
-        </text>
-        <text class="tick" x={plot.left} y={plot.bottom + 20} text-anchor="middle">Shadow start</text>
-        <text class="tick" x={plot.right} y={plot.bottom + 20} text-anchor="end">Rounds of grading →</text>
-      </svg>
-    </div>
-  </figure>
-)}
+      <text class="axis-title" transform={`translate(${plot.left - 18},${(plot.top + plot.bottom) / 2}) rotate(-90)`} text-anchor="middle">
+        Approved on first review
+      </text>
+      <text class="tick" x={plot.left} y={plot.bottom + 20} text-anchor="middle">Shadow start</text>
+      <text class="tick" x={plot.right} y={plot.bottom + 20} text-anchor="end">Rounds of grading →</text>
+    </svg>
+  </div>
+</figure>
 
 <style>
   /* The palette of the post's other figures (loop-animation.css). */

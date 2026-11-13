@@ -2,10 +2,6 @@
 /**
  * The section map of api-keys-oauth-jwt, with one section's part highlighted
  * (see AuthMap.tsx for the presets). Rendered on the server, no JavaScript.
- *
- * A paste into Confluence drops inline SVG, so the Confluence copy shows a PNG
- * of each preset, map-<preset>.png in the post's image folder. Regenerate them
- * after changing the map: npm run confluence:figures
  */
 import AuthMapSvg, { PRESETS, type PresetName } from './AuthMap';
 import './loop-animation.css';
@@ -16,18 +12,13 @@ interface Props {
 
 const { preset } = Astro.props;
 const { description } = PRESETS[preset];
-const png = `/images/blog/${Astro.params.slug}/map-${preset}.png`;
 ---
 
-{Astro.locals.confluence ? (
-  <img src={png} alt={description} />
-) : (
-  <figure class="auth-map lv-theme not-prose my-8" data-confluence-png={png}>
-    <div class="frame">
-      <AuthMapSvg preset={preset} id={`map-${preset}`} />
-    </div>
-  </figure>
-)}
+<figure class="auth-map lv-theme not-prose my-8" data-figure={`map-${preset}`}>
+  <div class="frame">
+    <AuthMapSvg preset={preset} id={`map-${preset}`} />
+  </div>
+</figure>
 
 <style>
   /* One vertical layout for every width. */

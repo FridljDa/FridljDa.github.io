@@ -16,7 +16,7 @@ test.describe('Figures in Architecture of a First-Level Support Automation', () 
     expect(await greyed(0)).toBe(0);
     expect(await greyed(1)).toBeGreaterThan(0);
     // Both layouts carry the tag; only the one that fits the width is shown.
-    const fallback = page.locator('figure.pipeline-map[data-confluence-png$="/map-default.png"]');
+    const fallback = page.locator('figure.pipeline-map[data-figure="map-default"]');
     await expect(fallback.locator('svg:visible').getByText('Default')).toBeVisible();
   });
 
@@ -49,17 +49,5 @@ test.describe('Figures in Architecture of a First-Level Support Automation', () 
     await page.setViewportSize({ width: 390, height: 844 });
     await expect(map.locator('svg.map-tall')).toBeVisible();
     await expect(map.locator('svg.map-wide')).toBeHidden();
-  });
-
-  test('the Confluence copy shows the PNGs instead', async ({ page }) => {
-    await page.goto(`${POST}/confluence`);
-    const body = page.locator('#body');
-    await expect(body.locator('svg, figure')).toHaveCount(0);
-    const srcs = await body.locator('img').evaluateAll((imgs) => imgs.map((img) => img.getAttribute('src')));
-    const base = 'https://danielfridljand.de/images/blog/first-level-support-automation';
-    for (const png of ['map-overview', 'map-plan', 'intent-dag', 'fetch-scores', 'plan-tree', 'extraction']) {
-      expect(srcs).toContain(`${base}/${png}.png`);
-    }
-    expect(srcs).not.toContain(`${base}/extraction-dark.png`);
   });
 });

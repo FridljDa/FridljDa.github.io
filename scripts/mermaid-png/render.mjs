@@ -2,7 +2,7 @@
  * Renders every ```mermaid fence in an MDX/Markdown file to a PNG.
  *
  * Useful for republishing a post somewhere that cannot render mermaid
- * (Confluence, Google Docs, slides): upload the PNGs and drop them in
+ * (Google Docs, slides): upload the PNGs and drop them in
  * where the fences were.
  *
  *   node scripts/mermaid-png/render.mjs [file] [--out dir] [--scale n] [--theme default|dark|neutral|forest] [--min-width px]

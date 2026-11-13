@@ -14,8 +14,6 @@ const blog = defineCollection({
     tags: z.array(z.string()).default([]),
     image: z.string().optional(),
     math: z.boolean().default(false),
-    // Has a Confluence copy at /post/<slug>/confluence. Few posts do.
-    confluence: z.boolean().default(false),
   }),
 });
 

@@ -19,21 +19,21 @@ test.describe('Figures in Workflow or Agent', () => {
     expect(await greyed(1)).toBeGreaterThan(0);
 
     // The first design has no intent step and no workflow at all.
-    const first = page.locator('figure.decision-map[data-confluence-png$="/map-agent-first.png"] svg:visible');
+    const first = page.locator('figure.decision-map[data-figure="map-agent-first"] svg:visible');
     await expect(first.getByText('Any order')).toBeVisible();
     await expect(first.getByText('Workflow')).toHaveCount(0);
 
     // Before the fallback there is no default: the LLM's one job is reading the message.
-    const workflow = page.locator('figure.decision-map[data-confluence-png$="/map-workflow.png"] svg:visible');
+    const workflow = page.locator('figure.decision-map[data-figure="map-workflow"] svg:visible');
     await expect(workflow.getByText('One job')).toBeVisible();
     await expect(workflow.getByText('Default')).toHaveCount(0);
 
     // Next time mirrors the leftovers: the default moves to the agent and a request type graduates into code.
-    const fallback = page.locator('figure.decision-map[data-confluence-png$="/map-fallback.png"] svg:visible');
+    const fallback = page.locator('figure.decision-map[data-figure="map-fallback"] svg:visible');
     await expect(fallback.getByText('Leftovers')).toBeVisible();
     await expect(fallback.getByText('Other', { exact: true })).toBeVisible();
     // Both layouts carry the labels; only the one that fits the width is shown.
-    const next = page.locator('figure.decision-map[data-confluence-png$="/map-next-time.png"] svg:visible');
+    const next = page.locator('figure.decision-map[data-figure="map-next-time"] svg:visible');
     await expect(next.getByText('Default')).toBeVisible();
     await expect(next.getByText('Graduated', { exact: true })).toBeVisible();
     await expect(next.getByText('Graduate', { exact: true })).toBeVisible();
@@ -82,16 +82,5 @@ test.describe('Figures in Workflow or Agent', () => {
     await page.goto(POST);
     // Polled: until the post's figures settle, the page can be briefly wider.
     await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
-  });
-
-  test('the Confluence copy shows the PNGs instead', async ({ page }) => {
-    await page.goto(`${POST}/confluence`);
-    const body = page.locator('#body');
-    await expect(body.locator('svg, figure')).toHaveCount(0);
-    const srcs = await body.locator('img').evaluateAll((imgs) => imgs.map((img) => img.getAttribute('src')));
-    const base = 'https://danielfridljand.de/images/blog/workflow-vs-agent';
-    for (const png of [...PRESETS.map((p) => `map-${p}`), 'default', 'grid', 'coverage']) {
-      expect(srcs).toContain(`${base}/${png}.png`);
-    }
   });
 });
