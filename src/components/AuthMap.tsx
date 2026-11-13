@@ -1,9 +1,8 @@
 /**
- * The running example of api-keys-oauth-jwt as one top-to-bottom map: the
- * model (the LLM inside the support agent) picks a tool and its arguments, the tools (code)
- * hold the secrets and attach a credential to each call, and the calls go to
- * three systems, each authenticated its own way: the ticketing system by API
- * key, the CRM by an OAuth access token that is a JWT, and an advisor's
+ * The running example of api-keys-oauth-jwt as one top-to-bottom map: our
+ * app holds the secrets and attaches a credential to each call, and the calls
+ * go to three systems, each authenticated its own way: the ticketing system by
+ * API key, the CRM by an OAuth access token that is a JWT, and an advisor's
  * calendar by a token the advisor consented to.
  *
  * Each section of the post shows the same map with its part highlighted and
@@ -12,13 +11,13 @@
  * the server, no JavaScript.
  */
 import type { ReactNode } from 'react';
-import { color, Agent, Store, type Point } from '../remotion/shared';
+import { color, Store, type Point } from '../remotion/shared';
 import { Dim, Tag, ArrowMarker } from './map-parts';
 
-type NodeId = 'agent' | 'tools' | 'ticketing' | 'crm' | 'calendar';
+type NodeId = 'app' | 'ticketing' | 'crm' | 'calendar';
 type SystemId = Extract<NodeId, 'ticketing' | 'crm' | 'calendar'>;
-/** Who a box belongs to, which sets its outline: the model, our code, or someone else's system. */
-type Role = 'model' | 'code' | 'external';
+/** Who a box belongs to, which sets its outline: our code, or someone else's system. */
+type Role = 'code' | 'external';
 
 export interface Preset {
   /** Parts drawn at full strength; everything else is greyed out. Empty means everything. */
@@ -32,22 +31,22 @@ export const PRESETS = {
   overview: {
     focus: [],
     description:
-      'The running example as one map: the model, an LLM, picks a tool and its arguments. The tools, code, hold the secrets and attach a credential to each call: an API key for the ticketing system, an OAuth access token for the CRM, and a token the advisor consented to for the calendar.',
+      'The running example as one map: our app holds the secrets and attaches a credential to each call: an API key for the ticketing system, an OAuth access token for the CRM, and a token the advisor consented to for the calendar.',
   },
   'api-key': {
-    focus: ['tools', 'ticketing'],
+    focus: ['app', 'ticketing'],
     tags: [{ on: 'ticketing', text: 'Static' }],
     description: 'Highlighted: the ticketing system, which takes the same API key on every call until someone rotates it.',
   },
   'client-credentials': {
-    focus: ['tools', 'crm'],
+    focus: ['app', 'crm'],
     tags: [{ on: 'crm', text: 'One hour' }],
-    description: 'Highlighted: the CRM. The tools trade the client secret for an access token at its auth server, and send the token with every call for the hour it lives.',
+    description: 'Highlighted: the CRM. Our app trades the client secret for an access token at its auth server, and sends the token with every call for the hour it lives.',
   },
   'auth-code': {
-    focus: ['tools', 'calendar'],
+    focus: ['app', 'calendar'],
     tags: [{ on: 'calendar', text: 'Consent' }],
-    description: 'Highlighted: the calendar. The advisor consents once, and the tools keep a refresh token per advisor.',
+    description: 'Highlighted: the calendar. The advisor consents once, and our app keeps a refresh token per advisor.',
   },
   jwt: {
     focus: ['crm'],
@@ -55,23 +54,21 @@ export const PRESETS = {
     description: 'Highlighted: the CRM, whose API checks the access token, a JWT, on its own.',
   },
   errors: {
-    focus: ['tools', 'ticketing', 'crm', 'calendar'],
-    tags: [{ on: 'tools', text: 'Retry once' }],
-    description: 'Highlighted: the tools and the three systems, where a call fails with 401 or 403.',
+    focus: ['app', 'ticketing', 'crm', 'calendar'],
+    tags: [{ on: 'app', text: 'Retry once' }],
+    description: 'Highlighted: our app and the three systems, where a call fails with 401 or 403.',
   },
 } satisfies Record<string, Preset>;
 
 export type PresetName = keyof typeof PRESETS;
 
 const STROKE: Record<Role, string> = {
-  model: color('added'),
   code: color('node-border'),
   external: color('other'),
 };
 
 const NODES: Record<NodeId, { name: string; role: Role; detail: string[] }> = {
-  agent: { name: 'Model', role: 'model', detail: ['Picks a tool and its arguments'] },
-  tools: { name: 'Tools', role: 'code', detail: ['Hold the secrets', 'Attach one to each call'] },
+  app: { name: 'Our app', role: 'code', detail: ['Holds the secrets', 'Attaches one to each call'] },
   ticketing: { name: 'Ticketing system', role: 'external', detail: ['API key on every call', 'Valid until rotated'] },
   crm: { name: 'CRM', role: 'external', detail: ['Auth server: secret → token', 'API: checks the JWT itself'] },
   calendar: { name: 'Advisor’s calendar', role: 'external', detail: ['Advisor consents once', 'Refresh token per advisor'] },
@@ -111,9 +108,7 @@ const Calendar = ({ x, y }: Point) => (
 
 function NodeIcon({ id, at }: { id: NodeId; at: Point }): ReactNode {
   switch (id) {
-    case 'agent':
-      return <Agent {...at} scale={0.78} typing={1} />;
-    case 'tools':
+    case 'app':
       return <Store {...at} scale={0.62} />;
     case 'ticketing':
       return <Key {...at} />;
@@ -126,13 +121,13 @@ function NodeIcon({ id, at }: { id: NodeId; at: Point }): ReactNode {
 
 const W = 480;
 const PAD = 16;
-/** Boxes leave room on the left for the line from the tools to the three systems. */
+/** Boxes leave room on the left for the line from our app to the three systems. */
 const BOX = { x: 60, w: 404 };
 const TEXT_X = BOX.x + 84;
 const TITLE = 21;
 const DETAIL = 17;
 const GAP = 34;
-/** The line from the tools down to the systems, left of the boxes. */
+/** The line from our app down to the systems, left of the boxes. */
 const BUS_X = 28;
 
 export default function AuthMap({ preset, id }: { preset: PresetName; id: string }) {
@@ -141,12 +136,12 @@ export default function AuthMap({ preset, id }: { preset: PresetName; id: string
   const on = (n: NodeId) => all || p.focus.includes(n);
 
   let y = PAD + 14;
-  const order: NodeId[] = ['agent', 'tools', ...SYSTEMS];
+  const order: NodeId[] = ['app', ...SYSTEMS];
   const boxes = order.map((n, i) => {
     const h = 54 + NODES[n].detail.length * (DETAIL + 8);
     const b = { id: n, y, h };
     // The systems sit closer together: they hang off one line, not one after another.
-    y += h + (i < 2 ? GAP + 12 : 22);
+    y += h + (i < 1 ? GAP + 12 : 22);
     return b;
   });
   const height = y - 22 + PAD + 36;
@@ -162,19 +157,12 @@ export default function AuthMap({ preset, id }: { preset: PresetName; id: string
         <ArrowMarker id={marker} />
       </defs>
 
-      <Dim on={on('agent') && on('tools')} faded={0.3}>
-        <path d={`M${cx},${at.agent.y + at.agent.h} V${at.tools.y - 4}`} {...edge} markerEnd={`url(#${marker})`} />
-        <text x={cx + 12} y={(at.agent.y + at.agent.h + at.tools.y) / 2} dy="0.35em" fontSize={DETAIL} fontWeight={600} fill={color('text')}>
-          Tool call, no secret
-        </text>
-      </Dim>
-
-      {/* The trunk from the tools down the left margin, lit if any system is. */}
-      <Dim on={on('tools') && SYSTEMS.some(on)} faded={0.3}>
-        <path d={`M${BOX.x},${mid('tools')} H${BUS_X} V${mid('calendar')}`} {...edge} />
+      {/* The trunk from our app down the left margin, lit if any system is. */}
+      <Dim on={on('app') && SYSTEMS.some(on)} faded={0.3}>
+        <path d={`M${BOX.x},${mid('app')} H${BUS_X} V${mid('calendar')}`} {...edge} />
       </Dim>
       {SYSTEMS.map((s) => (
-        <Dim key={s} on={on('tools') && on(s)} faded={0.3}>
+        <Dim key={s} on={on('app') && on(s)} faded={0.3}>
           <path d={`M${BUS_X},${mid(s)} H${BOX.x - 6}`} {...edge} markerEnd={`url(#${marker})`} />
         </Dim>
       ))}
@@ -203,12 +191,12 @@ export default function AuthMap({ preset, id }: { preset: PresetName; id: string
         return <Tag key={t.on} x={BOX.x + BOX.w - width / 2 + 16} y={b.y} text={t.text} size={17} />;
       })}
 
-      <g transform={`translate(${cx - 190} ${height - 18})`} fontSize={18} fontWeight={600}>
-        {(['model', 'code', 'external'] as Role[]).map((r, i) => (
+      <g transform={`translate(${cx - 125} ${height - 18})`} fontSize={18} fontWeight={600}>
+        {(['code', 'external'] as Role[]).map((r, i) => (
           <g key={r} transform={`translate(${i * 125} 0)`}>
             <rect x={0} y={-14} width={16} height={16} rx={4} fill={color('node-bg')} stroke={STROKE[r]} strokeWidth={2.5} />
             <text x={24} y={0} fill={color('muted')}>
-              {{ model: 'LLM', code: 'Our code', external: 'Their API' }[r]}
+              {{ code: 'Our code', external: 'Their API' }[r]}
             </text>
           </g>
         ))}
