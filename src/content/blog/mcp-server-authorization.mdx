@@ -16,28 +16,19 @@ import CodeMarks from '../../components/CodeMarks.astro';
 import Mark from '../../components/Mark.astro';
 
 ## TL;DR
-In [my post on API credentials](/post/api-keys-oauth-jwt), the agent was the caller. Here my code is the API: an MCP server, called by an AI app I didn't build, for a user I have never seen. The app starts with nothing but the server's URL. A `401` points it to a metadata document, which names the authorization server, whose own metadata lists its endpoints. The app identifies itself with a **client ID that is a URL** to its own description, so nobody has to register it in advance. The token itself comes from the authorization code flow with PKCE, plus two additions: a `resource` parameter that binds the token to one MCP server, and an `iss` check on the callback that stops a mix-up attack. On every request, the server checks the token's audience, and it never forwards the token to another API. All of this follows the MCP specification revision `2026-07-28`, as of November 2026.
+In [my post on API credentials](/post/api-keys-oauth-jwt), the agent was the caller. Here my code is the API: an MCP server, called by an AI app I didn't build, for a user I have never seen. The app starts with only the server's URL, and a `401` leads it to the login page. It identifies itself with a **client ID that is a URL**, so nobody registers it in advance. The token comes from the authorization code flow with PKCE, plus a `resource` parameter that binds it to one server and an `iss` check that stops a mix-up attack. The server checks the token's audience and never forwards it. As of the MCP spec revision `2026-07-28`, November 2026.
 
 ## One server, callers I never met
 
-In the earlier post, the support agent called three APIs, and each API's admin handed us a credential: an API key, a client ID and secret, or a client registration for the advisor's calendar. The running example is still the invented Northstar Bank from my posts on support automation.
+The running example is still the invented Northstar Bank from my posts on support automation. In the earlier post, each API's admin handed the support agent a credential. Now Northstar wants its employees to look up accounts from the company's AI assistant, Claude or ChatGPT, so it puts an MCP server in front of its data: `https://mcp.northstar.example.com/mcp`, with tools like `lookup_account` and `open_case`. The [Model Context Protocol](https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization) (MCP) is the standard way for an AI app to discover and call such tools.
 
-Now Northstar wants its employees to look up accounts from the company's AI assistant, Claude or ChatGPT. So Northstar puts an MCP server in front of its data, at `https://mcp.northstar.example.com/mcp`, with tools like `lookup_account` and `open_case`. The [Model Context Protocol](https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization) (MCP) is the standard way for an AI app to discover and call such tools.
-
-The sides have swapped. The advisor from the earlier post asks the assistant about Alex Carter's locked account, and the call arrives at *our* server. The server doesn't know:
-
-- **which app is calling.** Claude, ChatGPT, an IDE: code I didn't write and never registered.
-- **which user it acts for.** An advisor I never configured anywhere in the server.
-
-And the app doesn't know where to log in: it only has the URL someone pasted into its settings.
+The sides have swapped. The advisor from the earlier post asks the assistant about Alex Carter's locked account, and the call arrives at *our* server. The server doesn't know which app is calling, or which user it acts for. And the app doesn't know where to log in: it only has the URL someone pasted into its settings.
 
 <McpAuthMap preset="overview" />
 
 *The running example as one map. Compared with the earlier post, the colors have swapped: the caller isn't ours, the API is. Each section's map highlights its part.*
 
-Every mechanism below answers one of two questions the server can't settle by configuration: *who is this client?* and *where does it get a token for me?*
-
-Authorization is optional in MCP. The spec says servers reached over HTTP **should** follow it, and local servers started over standard input and output (STDIO) **should not**: they read credentials from the environment instead. This post is about the first kind.
+Every mechanism below answers one of two questions: *who is this client?* and *where does it get a token for me?* (Local MCP servers, started over standard input and output, **should not** use any of this: they read credentials from the environment.)
 
 ## Three roles, two of them familiar
 
@@ -45,19 +36,19 @@ Authorization is optional in MCP. The spec says servers reached over HTTP **shou
 
 MCP authorization is OAuth 2.1, with the [same three roles](/post/api-keys-oauth-jwt#oauth-20-trade-a-secret-for-a-short-lived-token) as in the earlier post:
 
-- **Resource server:** the MCP server. It accepts requests with access tokens and checks them.
-- **Client:** the MCP client inside the AI app. It makes requests on behalf of the user.
-- **Authorization server:** issues the access tokens, after the user logged in and agreed. Here it is Northstar's identity provider, with the issuer `https://login.northstar.example.com`.
+- **Resource server:** the MCP server. It checks access tokens.
+- **Client:** the MCP client inside the AI app, acting for the user.
+- **Authorization server:** issues the tokens after the user logs in and agrees. Here, Northstar's identity provider, issuer `https://login.northstar.example.com`.
 
-The MCP server never logs anyone in and never issues a token. The spec leaves the authorization server out of scope on purpose: it can run next to the MCP server or be an existing system like Okta, Entra ID, Auth0 or Keycloak. [OpenAI's docs](https://developers.openai.com/plugins/build/auth) strongly recommend an established identity provider over writing your own, and I agree: Northstar already has one, and its employees already log in there.
+The MCP server never logs anyone in and never issues a token. The authorization server can be an existing system like Okta, Entra ID or Keycloak, and [OpenAI's docs](https://developers.openai.com/plugins/build/auth) strongly recommend that over writing your own. Northstar's employees already log in there.
 
-OAuth 2.1 is still an IETF draft, not an RFC: the MCP spec references draft 13. Everything it adds that this post needs, I explain where it comes up.
-
-## The 401 that starts everything
+## From a 401 to the login page
 
 <McpAuthMap preset="discovery" />
 
-The client's first call carries no token, since it has none. The MCP server answers `401`, and the header says where to go next:
+<AuthSteps figures="mcp" name="discovery" caption="Three requests from a bare URL to the login page. Nothing here is configured in the client in advance.">
+
+The client's first call carries no token (1). The MCP server answers `401`, and the header says where to go next (2):
 
 <CodeMarks marks={{ 'resource_metadata="https://mcp.northstar.example.com/.well-known/oauth-protected-resource/mcp"': 'blue' }}>
 
@@ -69,17 +60,9 @@ WWW-Authenticate: Bearer resource_metadata="https://mcp.northstar.example.com/.w
 
 </CodeMarks>
 
-In the earlier post, a `401` meant "get a new token": the agent knew where. Here it also says *where*: <Mark c="blue">resource_metadata</Mark> is the address of a document that names the authorization server. The `scope` says what this call needs; the spec says the server **should** send it, and clients treat it as the scopes to ask for.
+In the earlier post, a `401` meant "get a new token", and the agent knew where. This one also says *where*.
 
-## Two documents to find the login page
-
-<McpAuthMap preset="discovery" />
-
-<AuthSteps figures="mcp" name="discovery" caption="Three requests from a bare URL to the login page. Nothing here is configured in the client in advance.">
-
-The call without a token (1) gets the `401` above (2).
-
-The client fetches the document it names (3). This is **Protected Resource Metadata**, from [RFC 9728](https://datatracker.ietf.org/doc/html/rfc9728): a JSON document in which the MCP server says which authorization server issues its tokens. MCP servers **must** publish it, and clients **must** use it. The answer (4):
+The client fetches the <Mark c="blue">resource_metadata</Mark> document (3). This is **Protected Resource Metadata** ([RFC 9728](https://datatracker.ietf.org/doc/html/rfc9728)), which MCP servers **must** publish: the server says which authorization server issues its tokens (4).
 
 <CodeMarks marks={{ '"resource": "https://mcp.northstar.example.com/mcp"': 'purple', '"https://login.northstar.example.com"': 'amber' }}>
 
@@ -94,20 +77,9 @@ The client fetches the document it names (3). This is **Protected Resource Metad
 
 </CodeMarks>
 
-- **<Mark c="purple">resource</Mark>** is the server's **canonical URI**: the one agreed-upon URL that names this MCP server. It comes back twice, in the token request and in the token.
-- **`authorization_servers`** lists at least one authorization server, by its <Mark c="amber">issuer</Mark>. If there are several, the client picks.
-- **`scopes_supported`** is meant to be the minimal set for basic use. More scopes come later, when a tool needs them ([step-up](#checking-the-token-on-every-request)).
+<Mark c="purple">resource</Mark> is the server's **canonical URI**, the one URL that names it. It comes back in the token request and in the token. `authorization_servers` names the authorization server by its <Mark c="amber">issuer</Mark>.
 
-When the `401` carries no `resource_metadata`, clients fall back to a well-known URL. Its suffix goes *between* host and path: for a server at `https://example.com/public/mcp`, the document lives at `https://example.com/.well-known/oauth-protected-resource/public/mcp`, with `https://example.com/.well-known/oauth-protected-resource` as the last try.
-
-Next, the client fetches the authorization server's own metadata (5), defined by [RFC 8414](https://datatracker.ietf.org/doc/html/rfc8414) or [OpenID Connect Discovery](https://openid.net/specs/openid-connect-discovery-1_0.html). Authorization servers **must** offer one of the two, and clients **must** handle both:
-
-```http
-GET /.well-known/oauth-authorization-server HTTP/1.1
-Host: login.northstar.example.com
-```
-
-The answer (6) lists its endpoints and what it supports. Only the fields this post uses:
+Then the client fetches the authorization server's own metadata (5), defined by [RFC 8414](https://datatracker.ietf.org/doc/html/rfc8414) or OpenID Connect Discovery, and gets its endpoints and what it supports (6):
 
 <CodeMarks marks={{ '"issuer": "https://login.northstar.example.com"': 'amber', '"client_id_metadata_document_supported": true': 'orange', '"authorization_response_iss_parameter_supported": true': 'amber' }}>
 
@@ -118,8 +90,6 @@ The answer (6) lists its endpoints and what it supports. Only the fields this po
   "token_endpoint": "https://login.northstar.example.com/oauth2/token",
   "jwks_uri": "https://login.northstar.example.com/oauth2/jwks",
   "scopes_supported": ["accounts:read", "cases:write", "offline_access"],
-  "response_types_supported": ["code"],
-  "grant_types_supported": ["authorization_code", "refresh_token"],
   "code_challenge_methods_supported": ["S256"],
   "token_endpoint_auth_methods_supported": ["none", "private_key_jwt"],
   "client_id_metadata_document_supported": true,
@@ -129,11 +99,9 @@ The answer (6) lists its endpoints and what it supports. Only the fields this po
 
 </CodeMarks>
 
-- **`code_challenge_methods_supported`** must include `S256`, the PKCE method. Claude and ChatGPT both require it.
-- **<Mark c="orange">client_id_metadata_document_supported</Mark>** says client IDs may be URLs, the [next section](#who-is-this-client-client-ids-that-are-urls).
-- **<Mark c="amber">authorization_response_iss_parameter_supported</Mark>** promises an `iss` on every callback, the [mix-up section](#what-iss-stops-the-mix-up-attack).
+`S256` is the PKCE method, which Claude and ChatGPT both require. The two flags at the end come up in the next sections: <Mark c="orange">client IDs that are URLs</Mark>, and an <Mark c="amber">iss on every callback</Mark>.
 
-The client checks one thing before using the document (7): the <Mark c="amber">issuer</Mark> inside it **must** be identical to the issuer it built the URL from. Otherwise a document fetched from an attacker's host could claim to be an honest server's.
+Before using the document, the client checks that the <Mark c="amber">issuer</Mark> in it is exactly the one it built the URL from (7). Otherwise a document from an attacker's host could claim to be an honest server's.
 
 </AuthSteps>
 
@@ -141,9 +109,9 @@ The client checks one thing before using the document (7): the <Mark c="amber">i
 
 <McpAuthMap preset="client-id" />
 
-In the earlier post, the calendar provider's admin registered our agent and handed over a `client_id`. Nobody does that here: Northstar can't register every AI app in the world, and the AI app can't register by hand at every MCP server it is pointed at.
+In the earlier post, the calendar provider's admin registered our agent and handed over a `client_id`. Nobody does that here: Northstar can't register every AI app in the world, and the app can't register by hand at every server it meets.
 
-The current answer is a **Client ID Metadata Document** (CIMD, an [IETF draft](https://datatracker.ietf.org/doc/draft-ietf-oauth-client-id-metadata-document/)): the <Mark c="orange">client_id</Mark> *is* an HTTPS URL, and the authorization server reads the client's description from it. For the walkthrough I use an invented client, the Example Assistant:
+The answer is a **Client ID Metadata Document** (CIMD, an [IETF draft](https://datatracker.ietf.org/doc/draft-ietf-oauth-client-id-metadata-document/)): the <Mark c="orange">client_id</Mark> *is* an HTTPS URL, and the authorization server reads the client's description from it. For the walkthrough, an invented client:
 
 <CodeMarks marks={{ '"client_id": "https://assistant.example.com/oauth/client-metadata.json"': 'orange', '"redirect_uris": ["https://assistant.example.com/oauth/callback"]': 'teal' }}>
 
@@ -151,42 +119,29 @@ The current answer is a **Client ID Metadata Document** (CIMD, an [IETF draft](h
 {
   "client_id": "https://assistant.example.com/oauth/client-metadata.json",
   "client_name": "Example Assistant",
-  "client_uri": "https://assistant.example.com",
   "redirect_uris": ["https://assistant.example.com/oauth/callback"],
   "grant_types": ["authorization_code", "refresh_token"],
-  "response_types": ["code"],
   "token_endpoint_auth_method": "none"
 }
 ```
 
 </CodeMarks>
 
-`"token_endpoint_auth_method": "none"` makes it a **public client**: no secret at the token endpoint. As I see it, that fits: the app meets authorization servers nobody set up for it, so there is no one to hand it a secret, and PKCE still ties each code to the login that asked for it.
+`"none"` makes it a **public client**, with no secret. Nobody could have handed it one, and PKCE still ties each code to the login that asked for it.
 
 <AuthSteps figures="mcp" name="client-id" caption="The client's identity is a document it hosts itself. The auth server reads it the first time it sees the URL.">
 
-The client starts the login with the URL as its <Mark c="orange">client_id</Mark> (1). The authorization server sees a URL-formatted client ID and **should** fetch it (2, 3).
+The client starts the login with the URL as its <Mark c="orange">client_id</Mark> (1), and the authorization server fetches it (2, 3).
 
-It **must** check that the `client_id` inside the document equals the URL it fetched, exactly (4).
+It **must** check that the `client_id` inside equals the URL (4), and that the login's `redirect_uri` is one of the document's <Mark c="teal">redirect_uris</Mark> (5). That stops anyone from using this client's ID with their own callback.
 
-It **must** check the `redirect_uri` of the login request against the document's <Mark c="teal">redirect_uris</Mark> (5). This is what stops someone from using the Example Assistant's ID with their own callback.
-
-And it **should** cache the document as its HTTP cache headers say (6).
+It **should** cache the document (6).
 
 </AuthSteps>
 
-Fetching URLs on a client's say-so is a risk of its own: an attacker could point the server at internal addresses. The spec refers to the CIMD draft's security section for that, and for one more point: a consent screen should show the client's hostname prominently, so a look-alike name is harder to slip past the user.
+The older way, **Dynamic Client Registration** (DCR, [RFC 7591](https://datatracker.ietf.org/doc/html/rfc7591)), has the client `POST` itself to a `/register` endpoint for a new ID. [Anthropic's docs](https://claude.com/docs/connectors/building/authentication) say it makes Claude register a new client on every fresh connection. A CIMD ID is one stable identity per app, which an authorization server can allowlist or revoke. DCR is deprecated as of `2026-07-28`.
 
-Before CIMD, MCP used **Dynamic Client Registration** (DCR, [RFC 7591](https://datatracker.ietf.org/doc/html/rfc7591)): the client `POST`s its details to a `/register` endpoint and gets a new client ID back. At scale, that produces huge numbers of near-identical clients; [Anthropic's docs](https://claude.com/docs/connectors/building/authentication) say DCR makes Claude register a new client on every fresh connection. A CIMD client ID is one stable identity per app, which an authorization server can allowlist, rate-limit or revoke. As of `2026-07-28`, DCR is deprecated. It stays for backward compatibility until at least the first spec revision released on or after 2027-07-28. Clients that still use it **must** send `application_type` (`native` for localhost redirects, `web` otherwise), since OpenID Connect servers default to `web` and then reject a localhost redirect.
-
-When a client knows several ways to identify itself, the spec's order is: client information registered in advance for this server, then CIMD if the authorization server advertises it, then DCR, then asking the user.
-
-> **Claude and ChatGPT in practice** (their docs, November 2026)
->
-> - **Claude** uses CIMD only if the metadata has both `client_id_metadata_document_supported: true` and `"none"` in `token_endpoint_auth_methods_supported`; otherwise it falls back to DCR. Its redirect URI on the web, desktop and mobile apps is `https://claude.ai/api/mcp/auth_callback`.
-> - **Claude Code** has its own CIMD, `https://claude.ai/oauth/claude-code-client-metadata`, with loopback redirects on any port, which the authorization server must match ignoring the port.
-> - **ChatGPT** prefers CIMD. Its client ID is `https://chatgpt.com/oauth/client.json` when the authorization server meets the `iss` requirements of the [mix-up section](#what-iss-stops-the-mix-up-attack), and a per-callback URL otherwise.
-> - Both also support client details registered in advance: for Claude, an OAuth client you create whose secret Anthropic holds.
+> **In practice** (November 2026): Claude uses CIMD only if the metadata has both `client_id_metadata_document_supported: true` and `"none"` in `token_endpoint_auth_methods_supported`, otherwise it falls back to DCR. ChatGPT prefers CIMD, with the stable client ID `https://chatgpt.com/oauth/client.json` only if the authorization server meets the `iss` requirements of the [mix-up section](#what-iss-stops-the-mix-up-attack).
 
 ## The authorization code flow, with two additions
 
@@ -196,9 +151,9 @@ From here on it is the [authorization code flow](/post/api-keys-oauth-jwt#author
 
 <AuthSteps figures="mcp" name="authorization-code" caption="The advisor is in the loop for steps 2 and 3. The client checks two things on the callback, the auth server one, and the MCP server the token on every call.">
 
-Before sending the advisor anywhere, the client makes a <Mark c="teal">state</Mark> and a PKCE <Mark c="blue">code_verifier</Mark> with its <Mark c="blue">code_challenge</Mark>, as before (1). It **must** also record the <Mark c="amber">issuer</Mark> from the authorization server metadata it just validated, next to them.
+The client makes a <Mark c="teal">state</Mark> and a PKCE <Mark c="blue">code_verifier</Mark> with its <Mark c="blue">code_challenge</Mark>, as before (1). New: it **must** also record the <Mark c="amber">issuer</Mark> of the authorization server it is about to send the advisor to.
 
-Then it opens the advisor's browser at the authorization endpoint (2), here with one parameter per line, unencoded:
+Then it opens the advisor's browser at the authorization endpoint (2), here one parameter per line, unencoded:
 
 <CodeMarks marks={{ 'client_id=https://assistant.example.com/oauth/client-metadata.json': 'orange', 'state=Xq7pV2mL9sKw': 'teal', 'code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM': 'blue', 'code_challenge_method=S256': 'blue', 'resource=https://mcp.northstar.example.com/mcp': 'purple' }}>
 
@@ -216,11 +171,9 @@ https://login.northstar.example.com/oauth2/authorize
 
 </CodeMarks>
 
-The `scope` comes from the `401` challenge. Without one, the client asks for all of `scopes_supported` from the Protected Resource Metadata, and without that, it leaves `scope` out.
+<Mark c="purple">resource</Mark> is a **resource indicator** ([RFC 8707](https://datatracker.ietf.org/doc/html/rfc8707)): it names the MCP server the token is for, by its canonical URI. The client **must** send it here and in the token request. The `scope` comes from the `401`.
 
-<Mark c="purple">resource</Mark> is a **resource indicator** ([RFC 8707](https://datatracker.ietf.org/doc/html/rfc8707)): it names the API the token is for, using the MCP server's canonical URI. The client **must** send it in both the authorization request and the token request, even if the authorization server ignores it. A canonical URI has a scheme and no fragment: `https://mcp.example.com/mcp` and `https://mcp.example.com:8443` are valid, `mcp.example.com` and `https://mcp.example.com#fragment` aren't. Without a trailing slash is preferred.
-
-The advisor logs in at Northstar's identity provider and approves (3). The authorization server sends the browser back with the <Mark c="pink">code</Mark>, the <Mark c="teal">state</Mark>, and one value more, <Mark c="amber">iss</Mark>, its issuer (4):
+The advisor logs in and approves (3). The browser comes back with the <Mark c="pink">code</Mark>, the <Mark c="teal">state</Mark>, and one value more, <Mark c="amber">iss</Mark> (4):
 
 <CodeMarks marks={{ 'code=SplxlOBeZQQYbYS6WxSbIA': 'pink', 'state=Xq7pV2mL9sKw': 'teal', 'iss=https://login.northstar.example.com': 'amber' }}>
 
@@ -233,9 +186,9 @@ https://assistant.example.com/oauth/callback
 
 </CodeMarks>
 
-The client checks the <Mark c="teal">state</Mark>, as before, and compares <Mark c="amber">iss</Mark> with the issuer it recorded in step 1 (5). Both have to match before the code goes anywhere. [The next section](#what-iss-stops-the-mix-up-attack) shows why.
+The client checks the <Mark c="teal">state</Mark> and compares <Mark c="amber">iss</Mark> with the issuer it recorded (5). [The next section](#what-iss-stops-the-mix-up-attack) shows why.
 
-It trades the <Mark c="pink">code</Mark> at the token endpoint (6), with the <Mark c="blue">code_verifier</Mark> and the same <Mark c="purple">resource</Mark>. A public client sends its <Mark c="orange">client_id</Mark> and no secret:
+It trades the <Mark c="pink">code</Mark> with the <Mark c="blue">code_verifier</Mark> and the same <Mark c="purple">resource</Mark> (6), sending its <Mark c="orange">client_id</Mark> and no secret:
 
 <CodeMarks marks={{ 'code=SplxlOBeZQQYbYS6WxSbIA': 'pink', 'code_verifier=dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk': 'blue', 'client_id=https%3A%2F%2Fassistant.example.com%2Foauth%2Fclient-metadata.json': 'orange', 'resource=https%3A%2F%2Fmcp.northstar.example.com%2Fmcp': 'purple' }}>
 
@@ -254,7 +207,7 @@ grant_type=authorization_code
 
 </CodeMarks>
 
-The authorization server checks the verifier against the challenge (7) and answers with an access token, maybe a refresh token too (8). If the access token is a JWT, its payload could look like this, with the claim names of the [JWT access token profile](https://datatracker.ietf.org/doc/html/rfc9068):
+The authorization server checks the verifier (7) and returns an access token (8). As a JWT, its payload could look like this ([RFC 9068](https://datatracker.ietf.org/doc/html/rfc9068)):
 
 <CodeMarks marks={{ '"aud": "https://mcp.northstar.example.com/mcp"': 'purple', '"client_id": "https://assistant.example.com/oauth/client-metadata.json"': 'orange', '"iss": "https://login.northstar.example.com"': 'amber' }}>
 
@@ -265,16 +218,15 @@ The authorization server checks the verifier against the challenge (7) and answe
   "aud": "https://mcp.northstar.example.com/mcp",
   "client_id": "https://assistant.example.com/oauth/client-metadata.json",
   "scope": "accounts:read",
-  "exp": 1794067200,
-  "iat": 1794063600
+  "exp": 1794067200
 }
 ```
 
 </CodeMarks>
 
-The <Mark c="purple">resource</Mark> from the request came back as the audience, <Mark c="purple">aud</Mark>. OpenAI's docs describe it plainly: the authorization server should copy the `resource` value into the token, commonly as `aud`, so the MCP server can confirm the token was minted for it. `sub` is the advisor, and <Mark c="orange">client_id</Mark> the app that asked.
+The <Mark c="purple">resource</Mark> came back as the audience, <Mark c="purple">aud</Mark>: that is how the MCP server can tell the token was minted for it. `sub` is the advisor, <Mark c="orange">client_id</Mark> the app that asked.
 
-The client sends the token on every call to the MCP server (9). The server checks it (10), as [shown below](#checking-the-token-on-every-request), and answers (11).
+The client sends the token on every call (9), and the server checks it (10) before it answers (11).
 
 </AuthSteps>
 
@@ -282,51 +234,29 @@ The client sends the token on every call to the MCP server (9). The server check
 
 <McpAuthMap preset="mix-up" />
 
-`state` and PKCE stop the two attacks of the earlier post. MCP adds a setting they don't cover: one client connected to many servers, each with its own authorization server, and one of them malicious. The attack this enables is the **mix-up attack**, which the [OAuth security best current practice](https://datatracker.ietf.org/doc/html/rfc9700) describes.
+MCP adds a setting the earlier post's attacks didn't have: one client connected to many servers, each with its own authorization server, and one of them malicious. That enables the **mix-up attack**, described in the [OAuth security best current practice](https://datatracker.ietf.org/doc/html/rfc9700).
 
 {/* TODO(verify): RFC 9700 section number for the mix-up attack (brief suggests 4.4). Link the section once checked. */}
 
 <AuthSteps figures="mcp" name="mix-up" caption="The honest server's iss on the callback doesn't match the server the client started with. The client stops before it sends anything.">
 
-The advisor adds an MCP server that turns out to be malicious, with its own authorization server, Evil AS. The client starts a login there and, as it should, records "this login is with Evil AS" next to its state and verifier (1).
+The advisor adds a malicious MCP server, whose authorization server is Evil AS. The client starts a login and records "this login is with Evil AS" (1).
 
-It sends the advisor's browser to Evil AS's authorization endpoint (2), with its state, its code challenge and its client ID. Evil AS doesn't show a login page. It redirects the browser on to the **honest** authorization server, with the same parameters (3).
+It sends the browser to Evil AS (2), which shows no login page and passes the same request on to the **honest** authorization server (3). The advisor is signed in there and approves (4), and the honest server sends a code for the advisor's real account to the client (5).
 
-The advisor is already signed in there and approves (4). The honest server sends a code for the advisor's real account to the client's callback (5).
+Without an `iss` check, the client looks up the login by `state`, finds Evil AS, and sends it the code *and the PKCE verifier*. The attacker redeems both at the honest server. `state` matched, because it is the client's own value, and PKCE didn't help, because the client handed over the verifier itself.
 
-Without an `iss` check, the client looks up the login by `state`, finds "Evil AS", and sends the code *and the PKCE verifier* to Evil AS's token endpoint. The attacker now holds both and redeems them at the honest server. The `state` matched, because it is the client's own value. PKCE didn't help, because the client handed over the verifier itself. The MCP spec says so directly: PKCE alone doesn't prevent this attack.
-
-With [RFC 9207](https://datatracker.ietf.org/doc/html/rfc9207), the honest server put its own issuer in the callback. The client compares it with the recorded Evil AS, finds a mismatch and stops (6), before the code goes to any token endpoint.
+With [RFC 9207](https://datatracker.ietf.org/doc/html/rfc9207), the honest server put its own issuer in the callback. The client sees it isn't Evil AS and stops (6), before the code goes anywhere.
 
 </AuthSteps>
 
-The rules are short:
-
-- The comparison is an **exact string match**: no case folding, no removing a default port, no trailing-slash or percent-encoding fixes.
-- If the authorization server metadata advertises `authorization_response_iss_parameter_supported: true`, a callback without `iss` is rejected. If it doesn't, a present `iss` is still checked, and a missing one is accepted.
-- It applies to error responses too: on a mismatch, the client must not act on or show the `error` fields.
-- Authorization servers **should** send `iss` today, and the spec expects a future revision to make it a **must**.
-
-One consequence I see: a CIMD client ID is the same URL at every authorization server, so an attacker no longer needs to learn a per-server client ID to run this attack. Portable client IDs make the `iss` check more important, not less.
+The comparison is an exact string match, with no normalizing. As of `2026-07-28`, authorization servers **should** send `iss`, and the spec expects a later revision to make it a **must**. One consequence I see: a CIMD client ID is the same URL everywhere, so the attacker doesn't even need to learn one per server, which makes the check more important.
 
 ## Checking the token on every request
 
 <McpAuthMap preset="token-check" />
 
-Every HTTP request to the MCP server carries the token in the `Authorization` header, never in the query string:
-
-```http
-POST /mcp HTTP/1.1
-Host: mcp.northstar.example.com
-Authorization: Bearer eyJhbGciOiJSUzI1NiIsImtpZCI6ImxvZ2luLTIwMjYtMTEifQ...
-Content-Type: application/json
-MCP-Protocol-Version: 2026-07-28
-
-{"jsonrpc": "2.0", "id": 7, "method": "tools/call",
- "params": {"name": "lookup_account", "arguments": {"account_number": "NSB01234"}}}
-```
-
-The server **must** check that the token was issued for it. The verification is the one from [the earlier post](/post/api-keys-oauth-jwt#if-you-run-the-api-checking-one), with PyJWT; what changed is the <Mark c="purple">audience</Mark>:
+Every request carries the token in the `Authorization` header, never in the URL, and the server **must** check that the token was issued for it. The verification is the one from [the earlier post](/post/api-keys-oauth-jwt#if-you-run-the-api-checking-one); what changed is the <Mark c="purple">audience</Mark>:
 
 <CodeMarks marks={{ 'audience=RESOURCE': 'purple', 'RESOURCE = "https://mcp.northstar.example.com/mcp"': 'purple', 'issuer=ISSUER': 'amber', 'ISSUER = "https://login.northstar.example.com"': 'amber' }}>
 
@@ -357,30 +287,13 @@ def missing_scopes(claims: dict, needed: set[str]) -> set[str]:
 
 </CodeMarks>
 
-- **<Mark c="purple">audience</Mark>** is the MCP server's canonical URI, the same string as `resource` in its metadata. A token Northstar's identity provider minted for another API fails here, even though the signature and issuer are fine.
-- **`sub` is required**, because the server needs to know whose data the call may touch.
-- In a real server, take the issuer and the `jwks_uri` from the authorization server metadata rather than hard-coding them. Opaque tokens are checked by [introspection](https://datatracker.ietf.org/doc/html/rfc7662), as in the earlier post.
+A token Northstar's identity provider minted for another API fails the <Mark c="purple">audience</Mark> check, even with a valid signature. In the official Python SDK, the audience check sits behind `AuthSettings(validate_token_resource=True)`. In version 2.3.0, which I checked, leaving it unset only logs a warning and skips the check.
 
-In the official Python SDK, the server takes a `token_verifier` and an `AuthSettings` with `issuer_url`, `resource_server_url` and `required_scopes`. In version 2.3.0, which I checked, `AuthSettings` also has a `validate_token_resource` flag: left unset, the SDK only warns and does *not* check that the token was issued for this server. Its source says 3.0 will make checking the default. Until then, set it, or check the audience in your verifier as above.
-
-When a check fails, the status code says which layer failed, as in the earlier post:
-
-<CodeMarks marks={{ 'error="invalid_token"': 'orange' }}>
-
-```http
-HTTP/1.1 401 Unauthorized
-WWW-Authenticate: Bearer error="invalid_token",
-                         error_description="The access token expired",
-                         resource_metadata="https://mcp.northstar.example.com/.well-known/oauth-protected-resource/mcp"
-```
-
-</CodeMarks>
-
-A `401` means no token, or an invalid or expired one; the client refreshes or logs in again. A `403` means the token is fine but lacks a scope. In the earlier post, that `403` couldn't be fixed by retrying: the auth server grants what the client is registered for, and there was nobody to ask. Here there is: the advisor can consent to more, and the header says exactly what to ask for.
+A `401` means no token, or an invalid or expired one. A `403` means the token is fine but lacks a scope, and here the story differs from the earlier post. There, retrying a `403` was pointless: the auth server grants what the client is registered for. Here the advisor can consent to more, and the header says what to ask for.
 
 <AuthSteps figures="mcp" name="step-up" caption="A missing scope, fixed: the client asks the advisor for more and keeps what it had.">
 
-The advisor asks the assistant to open a case for Alex, and the client calls `open_case` (1). The token only has `accounts:read` (2), and opening a case needs `cases:write`. The server **should** answer `403` with <Mark c="teal">insufficient_scope</Mark>, the scope it needs, and its metadata URL (3):
+The advisor asks the assistant to open a case for Alex, and the client calls `open_case` (1). The token only has `accounts:read` (2). The server **should** answer with the scope it needs (3):
 
 <CodeMarks marks={{ 'error="insufficient_scope"': 'teal', 'scope="cases:write"': 'teal' }}>
 
@@ -388,110 +301,62 @@ The advisor asks the assistant to open a case for Alex, and the client calls `op
 HTTP/1.1 403 Forbidden
 WWW-Authenticate: Bearer error="insufficient_scope",
                          scope="cases:write",
-                         resource_metadata="https://mcp.northstar.example.com/.well-known/oauth-protected-resource/mcp",
-                         error_description="Opening a case needs cases:write"
+                         resource_metadata="https://mcp.northstar.example.com/.well-known/oauth-protected-resource/mcp"
 ```
 
 </CodeMarks>
 
-The server **should** put all scopes the operation needs into one challenge, not one per retry, and it **must** account for scope hierarchies, where a broader scope implies narrower ones.
+The client asks for the **union** of the old and the new scopes, `accounts:read cases:write` (4), so the token doesn't lose what it could already do.
 
-The client builds the new scope set as the **union** of what it asked for before and what the challenge names, `accounts:read cases:write` (4), so the token doesn't lose what it could already do.
-
-It runs the authorization again with that set (5). The advisor sees a consent screen for the new scope and approves (6), and the client gets a new token (7).
-
-It retries `open_case` (8), and the case is opened (9). The spec asks clients to retry only a few times and then treat it as a permanent failure. Clients acting for a user **should** try this **step-up**; a client using client credentials, with no user to ask, may just give up.
+It runs the authorization again (5), the advisor approves the new scope (6), and the client gets a new token (7). The retry opens the case (8, 9). This is **step-up authorization**.
 
 </AuthSteps>
 
-All of this exists for the one decision the MCP server makes on every call: whose data may this touch? `sub` says which employee is asking, the scopes say what they agreed to. As I see it, that decision belongs in the server, per tool: the advisor may see Alex's account because Alex is their customer, not because the token is valid.
+All of this serves one decision the server makes on every call: whose data may this touch? `sub` says which employee asks, the scopes what they agreed to. The rest is the server's own rule, per tool: the advisor may see Alex's account because Alex is their customer, not because the token is valid.
 
 ## Behind the server: two tokens, two audiences
 
 <McpAuthMap preset="downstream" />
 
-`lookup_account` needs the CRM, and it is tempting to forward the token that just arrived. The spec forbids it: MCP servers **must not** accept or pass on tokens that weren't issued for them. This **token passthrough** has [concrete costs](https://modelcontextprotocol.io/docs/tutorials/security/security_best_practices):
+`lookup_account` needs the CRM, and it is tempting to forward the token that just arrived. The spec forbids this **token passthrough**: MCP servers **must not** accept or pass on tokens that weren't issued for them. The [MCP security best practices](https://modelcontextprotocol.io/docs/tutorials/security/security_best_practices) give the reasons: the downstream API's rate limits and monitoring are bypassed, the audit trail is lost, and a token several services accept lets an attacker who compromises one reach the others.
 
-- Rate limits, validation and monitoring that the downstream API keys on its own audience are bypassed.
-- The MCP server can't tell its clients apart or keep an audit trail.
-- A token that several services accept lets an attacker who compromises one reach the others.
-
-So Northstar's MCP server calls the CRM exactly as the support agent did in the earlier post: with its own [client credentials](/post/api-keys-oauth-jwt#client-credentials-the-agent-as-itself) token.
+So Northstar's MCP server calls the CRM as the support agent did in the earlier post, with its own [client credentials](/post/api-keys-oauth-jwt#client-credentials-the-agent-as-itself) token.
 
 <AuthSteps figures="mcp" name="two-audiences" caption="The advisor's token stops at the MCP server. The CRM sees only the MCP server's own token.">
 
 The client calls with the advisor's token, audience the MCP server (1). The server checks it and reads `sub` and the scopes (2).
 
-It fetches its own token from the CRM's authorization server with its client ID and secret (3), or reuses the one it cached. That token's audience is the CRM, `api.crm.example.com` (4).
-
-It calls the CRM with its own token (5) and gets the account (6).
+It gets its own token for the CRM with its client ID and secret (3, 4), calls the CRM with it (5), and gets the account (6).
 
 It returns only what this advisor may see (7). The CRM trusts the MCP server; the MCP server decides about the advisor.
 
 </AuthSteps>
 
-Two tokens, two audiences, two trust boundaries. If a downstream API must act *as the user*, there are proper ways: the MCP server runs its own OAuth flow at that API, as a client there, or uses OAuth Token Exchange ([RFC 8693](https://datatracker.ietf.org/doc/html/rfc8693)). Both mint a new token for the new audience; neither reuses the old one.
-
-A related problem has a name too: the **confused deputy**. A server that holds real authority, its own credentials to a third-party API, gets tricked into using it for the wrong party. The [MCP security best practices](https://modelcontextprotocol.io/docs/tutorials/security/security_best_practices) describe it for an MCP server that proxies a third-party API under one static client ID, and require per-client consent at the proxy, exact redirect URI matching and `state` validation against it.
-
-## What Claude and ChatGPT expect
-
-<McpAuthMap preset="clients" />
-
-The spec leaves room, and each AI app fills it its own way. From [Anthropic's](https://claude.com/docs/connectors/building/authentication) and [OpenAI's](https://developers.openai.com/plugins/build/auth) docs, as of November 2026.
-
-**Claude:**
-
-- Starts sign-in only on a `401`. A `WWW-Authenticate` header on a `200` is ignored.
-- Uses only the **first** entry of `authorization_servers`.
-- The Protected Resource Metadata's `resource` must equal the server URL exactly as the user typed it into Claude, path included.
-- Asks for the challenge's `scope`, else `scopes_supported`, and adds `offline_access` if the authorization server lists it, to get a refresh token.
-- Refreshes on a `401` and up to five minutes before expiry. Return `invalid_grant` for a dead refresh token, and rotate refresh tokens for public clients: DCR and CIMD register Claude as a public client.
-- Times out after 10 seconds on discovery, registration and token endpoints, 30 seconds on refresh.
-- Calls come from `160.79.104.0/21`, discovery included, so a firewall in front of the identity provider can break the flow.
-- With Microsoft Entra ID, the MCP server URL must be registered as an Application ID URI, or the token request fails with `AADSTS9010010`.
-- No `client_credentials` grant.
-
-**ChatGPT:**
-
-- Gets its stable client ID and redirect URI, `https://chatgpt.com/connector_platform_oauth_redirect`, only if the authorization server meets RFC 9207: it advertises `authorization_response_iss_parameter_supported: true`, uses the exact same issuer string in its metadata and in the Protected Resource Metadata, and returns `iss` in every success and error response. Advertised but missing or wrong, and ChatGPT rejects the response.
-- Authenticates at the token endpoint as a public client or with `private_key_jwt`, from a JWKS it publishes.
-- Expects `resource` copied into the token, commonly as `aud`.
-- Presents an OpenAI-managed mTLS client certificate, and publishes its egress IP ranges.
-- No machine-to-machine grants, no custom API keys.
-
-Both support servers where some tools work without sign-in, and sign-in starts only when a protected tool is called. Claude calls this lazy authentication.
+If a downstream API must act *as the user*, the MCP server gets a new token for it, through its own OAuth flow there or [Token Exchange](https://datatracker.ietf.org/doc/html/rfc8693). It never reuses the one it received.
 
 ## When the company decides, not the user
 
 <McpAuthMap preset="enterprise" />
 
-Everything so far asks the user: each employee, for each MCP server, on a consent screen. With N employees and M servers, IT can't enforce a policy, and onboarding and offboarding are manual. The [Enterprise-Managed Authorization](https://modelcontextprotocol.io/extensions/auth/enterprise-managed-authorization) extension, stable since June 2026, moves the decision to the company's identity provider: admins approve which clients may reach which MCP servers for which groups, and users sign in once.
-
-It matters most where the company and the MCP server belong to different organizations: Northstar's employees using a vendor's MCP server.
+Everything so far asks each employee, for each MCP server, on a consent screen. The [Enterprise-Managed Authorization](https://modelcontextprotocol.io/extensions/auth/enterprise-managed-authorization) extension moves that decision to the company's identity provider: admins approve which apps may reach which servers for which groups, and users sign in once. It matters most where the server belongs to another company, such as a vendor's MCP server used by Northstar's employees.
 
 <McpAuthFigure name="enterprise" />
 
-*The company's IdP decides, but the MCP server's own authorization server still issues the access token.*
+*The company's IdP checks its policy and issues an ID-JAG (Identity Assertion JWT Authorization Grant). The MCP server's own authorization server still issues the access token.*
 
-1. The employee signs in to the AI app through company single sign-on, and the app keeps the ID token.
-2. For one MCP server, the app asks the IdP to exchange it ([Token Exchange](https://datatracker.ietf.org/doc/html/rfc8693)) for an **ID-JAG**, an Identity Assertion JWT Authorization Grant. The IdP checks its policy here: no grant for someone who may not use that server.
-3. The app sends the ID-JAG to the MCP server's authorization server with the [JWT bearer grant](https://datatracker.ietf.org/doc/html/rfc7523) and gets a normal access token. No browser, no consent screen.
-4. It calls the MCP server with that token, as before.
-
-Claude supports it on Team and Enterprise plans; for the authorization server, that means accepting the JWT bearer grant and listing it in `grant_types_supported`, and DCR is not an option. I couldn't confirm ChatGPT support. A follow-up post goes through it in detail.
+Claude supports it on Team and Enterprise plans; I couldn't confirm ChatGPT support. A follow-up post goes through it in detail.
 
 ## Checklist
 
 For an MCP server and its authorization server, before pointing Claude or ChatGPT at it:
 
-- **`401`, not `200` or a tool error,** on a call without a token, with `WWW-Authenticate: Bearer resource_metadata="..."`.
-- **Protected Resource Metadata** served, with `resource` exactly equal to the URL users enter, and the well-known path inserted between host and path.
-- **Authorization server metadata** reachable from the AI app's network, with `S256` in `code_challenge_methods_supported`.
-- **CIMD advertised,** plus `none` in `token_endpoint_auth_methods_supported` for Claude.
-- **`iss` on every authorization response,** and `authorization_response_iss_parameter_supported: true`.
-- **`resource` copied into `aud`,** and the MCP server checks `aud` on every request.
+- **`401`, not `200` or a tool error,** on a call without a token, with `resource_metadata` in `WWW-Authenticate`. Claude ignores the header on a `200`.
+- **Protected Resource Metadata** with `resource` exactly the URL users enter, path included. Claude uses only the first entry of `authorization_servers`.
+- **Authorization server reachable** from the AI app's network: Claude calls from `160.79.104.0/21`, so check the firewall in front of the identity provider.
+- **`S256`** in `code_challenge_methods_supported`.
+- **CIMD advertised,** with `none` in `token_endpoint_auth_methods_supported`.
+- **`iss` on every authorization response,** success and error, and `authorization_response_iss_parameter_supported: true`. ChatGPT needs both for its stable client ID.
+- **`resource` copied into `aud`,** and `aud` checked on every request.
 - **Scopes checked per tool,** with `403 insufficient_scope` naming all needed scopes in one challenge.
-- **Refresh tokens rotated** for public clients, and `invalid_grant` once they are dead.
-- **Redirect URIs registered exactly.**
+- **Refresh tokens rotated** for public clients, with `invalid_grant` once they are dead.
 - **The incoming token never forwarded** downstream.

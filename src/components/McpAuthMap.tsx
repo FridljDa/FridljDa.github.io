@@ -69,10 +69,6 @@ export const PRESETS = {
     tags: [{ on: 'crm', text: 'Own token' }],
     description: 'Highlighted: the MCP server and the CRM behind it. The MCP server calls the CRM with a token of its own, never the one it received.',
   },
-  clients: {
-    focus: ['assistant', 'client'],
-    description: 'Highlighted: the AI app, the assistant and its MCP client, whose requirements the server has to meet.',
-  },
   enterprise: {
     focus: ['client', 'auth'],
     tags: [{ on: 'auth', text: 'IdP decides' }],
