@@ -48,7 +48,7 @@
     "rehype-katex": "^7.0.1",
     "rehype-slug": "^6.0.0",
     "remark-math": "^6.0.0",
-    "remotion": "4.0.525",
+    "remotion": "4.0.539",
     "schema-dts": "^1.1.5",
     "tailwindcss": "^4.2.1",
     "turndown": "^7.2.4",
