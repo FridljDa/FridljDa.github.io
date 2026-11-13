@@ -165,9 +165,9 @@ The CRM's access token starts with `eyJ`, base64 for `{"`: it is a [**JSON Web T
 
 *The CRM's access token, decoded. The claims are what the API checks; the signature is why it can trust them.*
 
-The payload's fields are **claims**: `iss` who issued it, `sub` who it is about (our app here, a user in a delegated flow), `aud` which API it is for, `exp` when it expires, `scope` what it allows.
+The payload's fields are **claims**: `iss` who issued it, `sub` who it is about (our app here, a user in a delegated flow), `aud` which API it is for, `exp` when it expires, `scope` what it allows. The API trusts them only once it has checked the signature, and it does that without asking anyone, in steps 4 to 6 above.
 
-The signature is what JWTs buy: the API verifies the token with the auth server's public key, **without asking anyone**. It fetches the keys once, as a **JWKS** (JSON Web Key Set) at a well-known URL, and picks the one the token's header names as <Mark c="teal">kid</Mark>. These are steps 4 to 6 above:
+**Steps 4 and 5: fetch the keys.** The auth server signs with a private key and publishes the matching public keys as a **JWKS** (JSON Web Key Set) at a well-known URL. The API fetches them once and caches them:
 
 ```http
 GET /.well-known/jwks.json HTTP/1.1
@@ -195,13 +195,11 @@ Host: auth.crm.example.com
 
 `n` and `e` are the RSA public key. Publishing it is safe: it can check signatures, not make them.
 
-- **Signed, not encrypted.** Anyone holding the token can read the claims. No secrets go in them, and until `exp` the token is as good as a password to whoever holds it.
-- **Can't be taken back.** A leaked JWT stays valid until `exp`. That is why access tokens are short-lived, and the long-lived trust sits in something the auth server checks on every use: the client secret here, the refresh token in the calendar flow below. An **opaque** token, a random string the API checks by asking the auth server ([introspection](https://datatracker.ietf.org/doc/html/rfc7662)), is revocable at once, at the cost of a lookup per request. The calendar's tokens below are opaque.
-- **Not meant for the caller.** Our app doesn't need to decode its token: it is addressed to the API, and the provider may change its format. Decoding it is still the fastest way to debug a `403`: the `scope` or `aud` is usually wrong.
+**Step 6: check the token.** The API picks the key the token's header names as <Mark c="teal">kid</Mark>, verifies the signature with it, then checks the claims: issued by the right server, addressed to this API, not expired. Only then does it look at `scope`. No call to the auth server is needed, which is what JWTs buy.
 
-#### If you run the API: checking one
+#### If you run the API: step 6 in code
 
-Step 6 in code. Verifying a JWT is more than checking the signature. With [PyJWT](https://pyjwt.readthedocs.io/):
+Verifying a JWT is more than checking the signature. With [PyJWT](https://pyjwt.readthedocs.io/):
 
 <CodeMarks marks={{ 'algorithms=["RS256"]': 'blue', 'audience="https://api.crm.example.com"': 'orange', 'options={"require": ["exp", "iss", "aud"]}': 'teal' }}>
 
@@ -228,6 +226,14 @@ def verify(token: str) -> dict:
 - **<Mark c="blue">algorithms</Mark>** pins the algorithm. Early libraries trusted the header, so an attacker could set `"alg": "none"` and drop the signature, or switch `RS256` to `HS256` and sign with the *public* key as if it were a shared secret. The [JWT best practices](https://datatracker.ietf.org/doc/html/rfc8725) describe both.
 - **<Mark c="orange">audience</Mark>** stops a token minted for the ticketing API from being replayed against the CRM.
 - **<Mark c="teal">require</Mark>** rejects tokens that leave `exp` out and would otherwise never expire.
+
+#### What that costs
+
+Checking without asking anyone has consequences for everyone who handles the token:
+
+- **Signed, not encrypted.** Anyone holding the token can read the claims. No secrets go in them, and until `exp` the token is as good as a password to whoever holds it.
+- **Can't be taken back.** A leaked JWT stays valid until `exp`. That is why access tokens are short-lived, and the long-lived trust sits in something the auth server checks on every use: the client secret here, the refresh token in the calendar flow below. An **opaque** token, a random string the API checks by asking the auth server ([introspection](https://datatracker.ietf.org/doc/html/rfc7662)), is revocable at once, at the cost of a lookup per request. The calendar's tokens below are opaque.
+- **Not meant for the caller.** Our app doesn't need to decode its token: it is addressed to the API, and the provider may change its format. Decoding it is still the fastest way to debug a `403`: the `scope` or `aud` is usually wrong.
 
 #### Where else JWTs show up
 
