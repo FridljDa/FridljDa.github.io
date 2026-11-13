@@ -38,18 +38,4 @@ test.describe('Loop animations', () => {
     // Polled: until the post's figures settle, the page can be briefly wider.
     await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
   });
-
-  test('the Confluence copies show the PNGs instead', async ({ page }) => {
-    for (const [post, pngs] of [
-      [SUPPORT, ['shadow-loop']],
-      [TEST_SUITE, ['shadow-loop']],
-    ] as const) {
-      await page.goto(`${post}/confluence`);
-      const srcs = await page.locator('#body img').evaluateAll((imgs) => imgs.map((img) => img.getAttribute('src')));
-      for (const png of pngs) {
-        expect(srcs, post).toContain(`https://danielfridljand.de/images/blog/animations/${png}.png`);
-      }
-      await expect(page.locator('#body astro-island')).toHaveCount(0);
-    }
-  });
 });

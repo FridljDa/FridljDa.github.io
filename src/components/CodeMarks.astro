@@ -13,8 +13,8 @@
  *   </CodeMarks>
  *
  * The code is an ordinary fenced block, so its whitespace survives MDX (which
- * strips indentation inside a multi-line {`…`} expression), and the Confluence
- * copy and the post's Markdown show it as a plain code block. Every occurrence
+ * strips indentation inside a multi-line {`…`} expression), and the post's
+ * Markdown shows it as a plain code block. Every occurrence
  * of a key is marked. Looks like the site's other code blocks, without their
  * syntax colours, so only the marks stand out.
  */
@@ -46,12 +46,8 @@ const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const parts = keys.length ? code.split(new RegExp(`(${keys.map(escape).join('|')})`)) : [code];
 ---
 
-{Astro.locals.confluence ? (
-  <Fragment set:html={html} />
-) : (
-  <pre
-    class="astro-code github-dark code-marks"
-    style="background-color:#24292e;color:#e1e4e8;overflow-x:auto;white-space:pre-wrap;word-wrap:break-word"
-    tabindex="0"
-    data-language={lang}><code>{parts.map((p) => (marks[p] ? <span class={`cm cm-${marks[p]}`}>{p}</span> : p))}</code></pre>
-)}
+<pre
+  class="astro-code github-dark code-marks"
+  style="background-color:#24292e;color:#e1e4e8;overflow-x:auto;white-space:pre-wrap;word-wrap:break-word"
+  tabindex="0"
+  data-language={lang}><code>{parts.map((p) => (marks[p] ? <span class={`cm cm-${marks[p]}`}>{p}</span> : p))}</code></pre>

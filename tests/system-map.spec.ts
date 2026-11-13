@@ -17,7 +17,7 @@ test.describe('System map in The Missing Test Suite', () => {
     expect(await greyed(0)).toBe(0);
     expect(await greyed(1)).toBeGreaterThan(0);
     // Both layouts carry the tag; only the one that fits the width is shown.
-    const before = page.locator('figure.system-map[data-confluence-png$="/map-before.png"]');
+    const before = page.locator('figure.system-map[data-figure="map-before"]');
     await expect(before.locator('svg:visible').getByText('Bottleneck')).toBeVisible();
   });
 

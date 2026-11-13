@@ -1,44 +1,29 @@
 /**
- * Renders figures the site draws with CSS or SVG to PNGs, for the Confluence
- * copy of their post (/post/<slug>/confluence): a paste into Confluence keeps
- * images but drops inline SVG and the CSS that lays out HTML figures.
+ * Renders the last frame of every animated figure (LoopAnimation) to a PNG,
+ * which the figure shows when JavaScript is off.
  *
- *   node scripts/confluence/render-figures.mjs [base-url]
+ *   node scripts/animation-stills/render.mjs [base-url]
  *
  * Screenshots each figure from the running site (default http://localhost:4321,
- * so start the dev server first) in light mode on a white background, which
- * stays readable when Confluence itself is in dark mode.
- *
- * Figures come from FIGURES, plus every element in a post with `confluence: true`
- * in its frontmatter that names its PNG in a data-confluence-png attribute (a /images/... URL, as its <img> uses).
+ * so start the dev server first) in light mode on a white background. Figures
+ * are every element in a post that names its PNG in a data-still attribute (a
+ * /images/... URL, as its <img> uses).
  */
 
 import { mkdir, readdir, readFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { chromium } from 'playwright';
 
-const FIGURES = [
-  {
-    post: 'the-missing-test-suite',
-    selector: '.shadow-timeline',
-    out: 'src/assets/images/blog/the-missing-test-suite/shadow-timeline.png',
-  },
-  {
-    post: 'the-missing-test-suite',
-    selector: '.approval-curve',
-    out: 'src/assets/images/blog/the-missing-test-suite/approval-curve.png',
-  },
-];
-
 const BLOG = 'src/content/blog';
 
-// The posts that have a Confluence copy: `confluence: true` in their frontmatter.
-async function confluencePosts() {
+// The posts that embed an animation.
+async function animatedPosts() {
   const posts = [];
   for (const file of await readdir(BLOG)) {
     if (!/\.mdx?$/.test(file)) continue;
-    const frontmatter = (await readFile(`${BLOG}/${file}`, 'utf8')).match(/^---\n([\s\S]*?)\n---/)?.[1] ?? '';
-    if (/^confluence:\s*true\s*$/m.test(frontmatter)) posts.push(file.replace(/\.mdx?$/, ''));
+    if ((await readFile(`${BLOG}/${file}`, 'utf8')).includes('<LoopAnimation')) {
+      posts.push(file.replace(/\.mdx?$/, ''));
+    }
   }
   return posts;
 }
@@ -54,22 +39,19 @@ async function open(page, base, post) {
 }
 
 async function discover(page, base) {
-  const figures = [];
-  for (const post of await confluencePosts()) {
+  const figures = new Map();
+  for (const post of await animatedPosts()) {
     await open(page, base, post);
     const pngs = await page
-      .locator('[data-confluence-png]')
-      .evaluateAll((els) => els.map((el) => el.getAttribute('data-confluence-png')));
+      .locator('[data-still]')
+      .evaluateAll((els) => els.map((el) => el.getAttribute('data-still')));
+    // The same animation in several posts is rendered once.
     for (const png of pngs) {
-      figures.push({
-        post,
-        selector: `[data-confluence-png="${png}"]`,
-        // public/images is a symlink to src/assets/images.
-        out: `src/assets${png}`,
-      });
+      if (!figures.has(png)) figures.set(png, { post, selector: `[data-still="${png}"]`, out: `src/assets${png}` });
     }
   }
-  return figures;
+  // public/images is a symlink to src/assets/images.
+  return [...figures.values()];
 }
 
 async function main() {
@@ -84,17 +66,15 @@ async function main() {
       // Animated figures skip to their final state, so the PNG doesn't catch one mid-way.
       reducedMotion: 'reduce',
     });
-    for (const { post, selector, out } of [...FIGURES, ...(await discover(page, base))]) {
+    for (const { post, selector, out } of await discover(page, base)) {
       await open(page, base, post);
 
       const figure = page.locator(selector);
       if ((await figure.count()) !== 1) {
         throw new Error(`Expected exactly one element matching ${selector} on /post/${post}`);
       }
-      // A figure drawn by a client-side island is ready once the island marks itself so.
-      if (await figure.locator('astro-island').count()) {
-        await figure.locator('[data-ready]').waitFor();
-      }
+      // The island is ready once it marks itself so.
+      await figure.locator('[data-ready]').waitFor();
 
       // Alone on the page, so the sticky header and the chat widget stay out of it.
       await figure.evaluate((el, width) => {

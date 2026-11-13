@@ -4,9 +4,8 @@
  * played by the LoopAnimation island.
  *
  * The island needs JavaScript, so without it the figure shows the PNG of the
- * last frame; so does the Confluence copy of the post, since a paste keeps
- * images but drops the player. Regenerate the PNGs after changing a
- * composition: npm run confluence:figures
+ * last frame. Regenerate the PNGs after changing a composition:
+ * npm run animation:stills
  */
 import LoopAnimation, { type AnimationName } from './LoopAnimation';
 
@@ -20,17 +19,13 @@ const { name, description } = Astro.props;
 const png = `/images/blog/animations/${name}.png`;
 ---
 
-{Astro.locals.confluence ? (
-  <img src={png} alt={description} />
-) : (
-  <figure class="loop-animation lv-theme not-prose my-8" data-confluence-png={png} aria-label={description}>
-    <LoopAnimation client:only="react" name={name}>
-      <div slot="fallback" class="loop-animation-placeholder">
-        <noscript><img src={png} alt={description} /></noscript>
-      </div>
-    </LoopAnimation>
-  </figure>
-)}
+<figure class="loop-animation lv-theme not-prose my-8" data-still={png} aria-label={description}>
+  <LoopAnimation client:only="react" name={name}>
+    <div slot="fallback" class="loop-animation-placeholder">
+      <noscript><img src={png} alt={description} /></noscript>
+    </div>
+  </LoopAnimation>
+</figure>
 
 <style>
   /* The player has a minimum width of its own, which would otherwise widen the

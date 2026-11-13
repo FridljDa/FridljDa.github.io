@@ -8,7 +8,7 @@ test.describe('Figures in From Drawing to Quote', () => {
     const maps = page.locator('figure.quote-map');
     await expect(maps).toHaveCount(12);
 
-    const map = (preset: string) => page.locator(`figure.quote-map[data-confluence-png$="/map-${preset}.png"] svg`);
+    const map = (preset: string) => page.locator(`figure.quote-map[data-figure="map-${preset}"] svg`);
 
     // Before any design there is only a request, an unknown box and an offer.
     await expect(map('clarify').getByText('?', { exact: true })).toBeVisible();
@@ -29,7 +29,7 @@ test.describe('Figures in From Drawing to Quote', () => {
     const figures = page.locator('figure.quote-figure');
     await expect(figures).toHaveCount(6);
 
-    const figure = (name: string) => page.locator(`figure.quote-figure[data-confluence-png$="/${name}.png"] svg`);
+    const figure = (name: string) => page.locator(`figure.quote-figure[data-figure="${name}"] svg`);
     await expect(figure('request').getByText('Missing')).toBeVisible();
     await expect(figure('review').getByText('Differs from similar parts')).toBeVisible();
     await expect(figure('break-even').getByText('same price')).toBeVisible();
