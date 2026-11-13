@@ -17,9 +17,10 @@ import type { ReactNode } from 'react';
 import { color } from '../remotion/shared';
 import { ArrowMarker, Badge, Tag } from './map-parts';
 
-type Role = 'code' | 'external' | 'human' | 'attacker';
+type Role = 'model' | 'code' | 'external' | 'human' | 'attacker';
 
 const STROKE: Record<Role, string> = {
+  model: color('added'),
   code: color('node-border'),
   external: color('other'),
   human: color('ok'),
@@ -140,19 +141,20 @@ function ApiKey({ id }: { id: string }) {
       id={id}
       label={DESCRIPTIONS['api-key']}
       lanes={[
-        { name: 'Admin', role: 'human', x: 72 },
+        { name: 'Model', role: 'model', x: 72 },
         { name: 'Tools', role: 'code', x: 240 },
         { name: 'Ticketing', role: 'external', x: 408 },
       ]}
       rows={[
-        { from: 0, to: 1, label: 'API key, once' },
+        { from: 2, to: 1, label: 'API key, once' },
         { gap: 'On every call after that' },
+        { from: 0, to: 1, label: 'Tool call, no key' },
         { from: 1, to: 2, label: 'Key in the header' },
         { from: 2, label: 'Looks up the key', numbered: true },
         { from: 2, to: 1, label: '201: ticket opened', reply: true },
       ]}
       tag="Same key until rotated"
-      tagStep={4}
+      tagStep={5}
     />
   );
 }
@@ -190,14 +192,14 @@ function AuthorizationCode({ id }: { id: string }) {
       lanes={[
         { name: 'Advisor', role: 'human', x: 60 },
         { name: 'Auth server', role: 'external', x: 180 },
-        { name: 'Our backend', role: 'code', x: 300 },
+        { name: 'Our app', role: 'code', x: 300 },
         { name: 'Calendar', role: 'external', x: 420 },
       ]}
       rows={[
         { from: 0, to: 2, label: 'Connect calendar' },
         { from: 2, label: 'State, verifier, challenge', numbered: true },
         { from: 2, to: 0, label: 'Redirect: state, challenge', reply: true },
-        { from: 0, to: 1, label: 'Log in, approve' },
+        { from: 0, to: 1, label: 'Log in, consent' },
         { from: 1, to: 2, label: 'Code, via browser' },
         { from: 2, label: 'Checks state', numbered: true },
         { from: 2, to: 1, label: 'Code + verifier' },
@@ -223,10 +225,10 @@ function SwappedCode({ id }: { id: string }) {
         { name: 'Attacker', role: 'attacker', x: 60 },
         { name: 'Advisor', role: 'human', x: 180 },
         { name: 'Auth server', role: 'external', x: 300 },
-        { name: 'Our backend', role: 'code', x: 420 },
+        { name: 'Our app', role: 'code', x: 420 },
       ]}
       rows={[
-        { from: 0, to: 2, label: 'Approves own calendar' },
+        { from: 0, to: 2, label: 'Consents, own calendar' },
         { from: 2, to: 0, label: 'Code, kept', reply: true },
         { from: 0, to: 1, label: 'Link with that code' },
         { from: 1, to: 3, label: 'Callback, attacker’s code' },
@@ -247,7 +249,7 @@ function StolenCode({ id }: { id: string }) {
       lanes={[
         { name: 'Advisor', role: 'human', x: 60 },
         { name: 'Attacker', role: 'attacker', x: 180 },
-        { name: 'Our backend', role: 'code', x: 300 },
+        { name: 'Our app', role: 'code', x: 300 },
         { name: 'Auth server', role: 'external', x: 420 },
       ]}
       rows={[
@@ -275,7 +277,7 @@ function SignIn({ id }: { id: string }) {
         { name: 'Advisor', role: 'human', x: 60 },
         { name: 'Our app', role: 'code', x: 180 },
         { name: 'Keycloak', role: 'external', x: 300 },
-        { name: 'Calendar', role: 'external', x: 420 },
+        { name: 'Auth server', role: 'external', x: 420 },
       ]}
       rows={[
         { from: 0, to: 1, label: 'Opens the app' },
@@ -449,21 +451,21 @@ function JwtAnatomy({ id }: { id: string }) {
 
 export const DESCRIPTIONS = {
   'api-key':
-    'API key: the ticketing system’s admin gives our tools an API key once. On every call after that, the tools send the key in a header; the ticketing system looks it up and opens the ticket. The same key works until someone rotates it.',
+    'API key: the ticketing system issues our tools an API key once. On every call after that, the model calls a tool without the key, and the tool sends the key in a header; the ticketing system looks it up and opens the ticket. The same key works until someone rotates it.',
   'client-credentials':
     'Client credentials: the tools send the client ID and secret to the CRM’s auth server and get an access token valid for an hour. They send it as a bearer token to the CRM API, which fetches the auth server’s public keys once, checks the JWT with them and returns Alex’s account.',
   'authorization-code':
-    'Authorization code: the advisor clicks Connect calendar in our app. Our backend makes a new state, a PKCE verifier and its hash, the challenge, for this login, and redirects the advisor to the auth server with the state and the challenge. The advisor logs in and approves; the auth server sends a code back through the browser, and the backend checks the state. It trades code and verifier for an access and a refresh token; the auth server checks the verifier first. The backend then calls the calendar. An hour later it trades the refresh token for a new pair, without the advisor.',
+    'Authorization code: the advisor clicks Connect calendar in our app. Our app makes a new state, a PKCE verifier and its hash, the challenge, for this login, and redirects the advisor to the auth server with the state and the challenge. The advisor logs in and consents; the auth server sends a code back through the browser, and our app checks the state. It trades code and verifier for an access and a refresh token; the auth server checks the verifier first. Our app then calls the calendar. An hour later it trades the refresh token for a new pair, without the advisor.',
   'swapped-code':
-    'A swapped code: the attacker approves access to their own calendar and keeps the code instead of redeeming it. They get the advisor to open a link to our callback with that code. Our backend checks the state against the advisor’s session, finds no match and rejects the login, so the advisor’s session never gets the attacker’s calendar.',
+    'A swapped code: the attacker consents to access to their own calendar and keeps the code instead of redeeming it. They get the advisor to open a link to our callback with that code. Our app checks the state against the advisor’s session, finds no match and rejects the login, so the advisor’s session never gets the attacker’s calendar.',
   'stolen-code':
-    'A stolen code: the advisor’s code leaks to the attacker. The attacker starts their own Connect calendar flow in our app, gets their own state and challenge, and sends our callback the stolen code with their own state. The state matches, so our backend trades the code with the attacker’s verifier. The auth server checks the verifier against the advisor’s challenge, finds no match and answers 400 invalid_grant: no tokens.',
+    'A stolen code: the advisor’s code leaks to the attacker. The attacker starts their own Connect calendar flow in our app, gets their own state and challenge, and sends our callback the stolen code with their own state. The state matches, so our app trades the code with the attacker’s verifier. The auth server checks the verifier against the advisor’s challenge, finds no match and answers 400 invalid_grant: no tokens.',
   'expired-token':
     'An expired token: the tools call the CRM, which checks the token’s exp, finds it passed and answers 401 invalid_token. The tools fetch a new access token from the auth server with the client ID and secret, retry once and get Alex’s account.',
   'missing-scope':
     'A missing scope: the tools try to unlock Alex’s account. The CRM checks the token’s scope, finds only contacts.read and answers 403 insufficient_scope. A new token from the auth server has the same scopes, and the retry gets another 403.',
   'sign-in':
-    'Signing in: the advisor opens our app, which redirects them to the bank’s identity provider, Keycloak. They log in there with password and second factor, and Keycloak starts a session. It sends a code back through the browser; our app trades it with its verifier for an ID token and an access token, and checks the ID token. Later, when the advisor connects their calendar, the calendar provider sends them to Keycloak to log in. Keycloak finds its session, asks for no password and tells the calendar who the advisor is; only the consent screen is left.',
+    'Signing in: the advisor opens our app, which redirects them to the bank’s identity provider, Keycloak. They log in there with password and second factor, and Keycloak starts a session. It sends a code back through the browser; our app trades it with its verifier for an ID token and an access token, and checks the ID token. Later, when the advisor connects their calendar, the calendar’s auth server sends them to Keycloak to log in. Keycloak finds its session, asks for no password and tells the calendar’s auth server who the advisor is; only the consent screen is left.',
   jwt: 'The CRM’s access token is a JWT in three dot-separated parts. The header names the algorithm and the key; the payload holds the claims iss, sub, aud, scope and exp, readable by anyone; the signature over both is made with the auth server’s private key.',
 } as const;
 

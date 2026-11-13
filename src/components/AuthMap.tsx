@@ -1,6 +1,6 @@
 /**
  * The running example of api-keys-oauth-jwt as one top-to-bottom map: the
- * support agent (an LLM) picks a tool and its arguments, the tools (code)
+ * model (the LLM inside the support agent) picks a tool and its arguments, the tools (code)
  * hold the secrets and attach a credential to each call, and the calls go to
  * three systems, each authenticated its own way: the ticketing system by API
  * key, the CRM by an OAuth access token that is a JWT, and an advisor's
@@ -32,7 +32,7 @@ export const PRESETS = {
   overview: {
     focus: [],
     description:
-      'The running example as one map: the support agent, an LLM, picks a tool and its arguments. The tools, code, hold the secrets and attach a credential to each call: an API key for the ticketing system, an OAuth access token for the CRM, and a token the advisor consented to for the calendar.',
+      'The running example as one map: the model, an LLM, picks a tool and its arguments. The tools, code, hold the secrets and attach a credential to each call: an API key for the ticketing system, an OAuth access token for the CRM, and a token the advisor consented to for the calendar.',
   },
   'api-key': {
     focus: ['tools', 'ticketing'],
@@ -70,7 +70,7 @@ const STROKE: Record<Role, string> = {
 };
 
 const NODES: Record<NodeId, { name: string; role: Role; detail: string[] }> = {
-  agent: { name: 'Support agent', role: 'model', detail: ['Picks a tool and its arguments'] },
+  agent: { name: 'Model', role: 'model', detail: ['Picks a tool and its arguments'] },
   tools: { name: 'Tools', role: 'code', detail: ['Hold the secrets', 'Attach one to each call'] },
   ticketing: { name: 'Ticketing system', role: 'external', detail: ['API key on every call', 'Valid until rotated'] },
   crm: { name: 'CRM', role: 'external', detail: ['Auth server: secret → token', 'API: checks the JWT itself'] },
