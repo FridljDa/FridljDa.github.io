@@ -8,7 +8,7 @@ This is a personal website built with Astro, featuring an AI chat functionality 
 - **Styling**: Tailwind CSS
 - **Content**: MDX with math support (KaTeX via remark-math and rehype-katex)
 - **Testing**: Playwright
-- **AI Integration**: Google Gemini API (via @google/generative-ai)
+- **AI Integration**: Google Gemini API (via @google/genai)
 - **Runtime**: Node.js with @astrojs/node adapter
 
 ## Project Structure
