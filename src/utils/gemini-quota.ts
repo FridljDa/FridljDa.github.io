@@ -102,9 +102,33 @@ interface QuotaViolation {
   quotaValue?: string;
 }
 
+/**
+ * The `details` of a Gemini API error. @google/genai puts the JSON error body
+ * in the message, sometimes after a prefix such as "got status: ... ". On
+ * streaming calls that body is wrapped once more: its `error.message` is the
+ * original JSON body as a string.
+ */
+function errorDetails(error: unknown): unknown {
+  let message = error instanceof Error ? error.message : '';
+  for (let depth = 0; depth < 3; depth++) {
+    const start = message.indexOf('{');
+    if (start === -1) return undefined;
+    let body;
+    try {
+      body = JSON.parse(message.slice(start))?.error;
+    } catch {
+      return undefined;
+    }
+    if (body?.details) return body.details;
+    if (typeof body?.message !== 'string') return undefined;
+    message = body.message;
+  }
+  return undefined;
+}
+
 /** The per-day quota violation in a Gemini 429 error, if there is one. */
 function findDailyQuotaViolation(error: unknown): QuotaViolation | undefined {
-  const details = (error as { errorDetails?: unknown } | null)?.errorDetails;
+  const details = errorDetails(error);
   if (!Array.isArray(details)) return undefined;
   for (const detail of details) {
     if (!String(detail?.['@type']).endsWith('google.rpc.QuotaFailure')) continue;

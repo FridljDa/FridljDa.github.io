@@ -12,11 +12,6 @@ export interface ChatErrorResponse {
   message?: string;
 }
 
-export interface GeminiHistoryMessage {
-  role: 'user' | 'model';
-  parts: Array<{ text: string }>;
-}
-
 export interface GeminiQuota {
   /** Estimated questions left today across all models, shared by all visitors */
   remaining: number;

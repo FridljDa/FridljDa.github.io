@@ -52,9 +52,9 @@ export function isRecoverableModelError(error: unknown): boolean {
     return true;
   }
 
-  // Check for server errors (5xx), e.g. "503 The model is overloaded": another model may still answer
+  // Check for model not found (404) and server errors (5xx), e.g. "503 The model is overloaded": another model may still answer
   const status = (error as { status?: unknown } | null)?.status;
-  if ((typeof status === 'number' && status >= 500) || /\[5\d\d /.test(errorMessage)) {
+  if (status === 404 || (typeof status === 'number' && status >= 500) || /\[5\d\d /.test(errorMessage)) {
     return true;
   }
 

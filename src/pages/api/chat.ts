@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenAI, type Content } from '@google/genai';
 import { getCollection, type CollectionEntry } from 'astro:content';
 import { getBlogPostRawMarkdown } from '../../utils/markdown-generator';
 import { cvYamlToMarkdown } from '../../utils/cv-reader';
@@ -18,39 +18,38 @@ import {
   recordModelFailure,
   recordModelSuccess,
 } from '../../utils/gemini-quota';
-import type { ChatMessage, GeminiHistoryMessage } from '../../types/api';
 import type { ZodIssue } from 'zod';
 
 /**
  * Attempts to get a chat stream using the specified model
  */
 async function tryModelChat(
-  genAI: GoogleGenerativeAI,
+  ai: GoogleGenAI,
   modelName: string,
-  history: GeminiHistoryMessage[],
+  history: Content[],
   systemInstruction: string,
   userMessage: string
 ) {
-  const model = genAI.getGenerativeModel({ model: modelName });
-  const chat = model.startChat({
-    history: [
-      {
-        role: 'user',
-        parts: [{ text: systemInstruction }],
-      },
-      {
-        role: 'model',
-        parts: [
-          {
-            text: "I have reviewed Daniel's detailed CV/resume and blog posts. I'm ready to answer questions about his experience, skills, background, publications, certifications, projects, and blog content.",
-          },
-        ],
-      },
-      ...history,
-    ],
-  });
+  const contents: Content[] = [...history, { role: 'user', parts: [{ text: userMessage }] }];
 
-  return await chat.sendMessageStream(userMessage);
+  // Gemma on the Gemini API rejects system instructions, so it gets them as
+  // the opening user turn instead
+  if (modelName.startsWith('gemma')) {
+    return await ai.models.generateContentStream({
+      model: modelName,
+      contents: [
+        { role: 'user', parts: [{ text: systemInstruction }] },
+        { role: 'model', parts: [{ text: 'Understood.' }] },
+        ...contents,
+      ],
+    });
+  }
+
+  return await ai.models.generateContentStream({
+    model: modelName,
+    contents,
+    config: { systemInstruction },
+  });
 }
 
 /**
@@ -96,7 +95,7 @@ export const POST: APIRoute = async ({ request }) => {
 `
       : '';
 
-    const genAI = new GoogleGenerativeAI(apiKey);
+    const ai = new GoogleGenAI({ apiKey });
 
     const blogPosts = await getCollection('blog');
     const cvMarkdown = cvYamlToMarkdown();
@@ -136,7 +135,7 @@ ${challengeNote}
       ${allBlogPostsMarkdown}
     `;
 
-    const history: GeminiHistoryMessage[] = validatedBody.messages.slice(0, -1).map((msg) => ({
+    const history: Content[] = validatedBody.messages.slice(0, -1).map((msg) => ({
       role: msg.role === 'ai' ? 'model' : 'user',
       parts: [{ text: msg.content }],
     }));
@@ -152,7 +151,7 @@ ${challengeNote}
       const modelName = models[i];
       try {
         logger.info(`Attempting to use model: ${modelName}`);
-        result = await tryModelChat(genAI, modelName, history, systemInstruction, lastUserMessage);
+        result = await tryModelChat(ai, modelName, history, systemInstruction, lastUserMessage);
         recordModelSuccess(modelName);
         logger.info(`Successfully using model: ${modelName}`);
         break;
@@ -198,8 +197,8 @@ ${challengeNote}
       async start(controller) {
         const encoder = new TextEncoder();
         try {
-          for await (const chunk of result.stream) {
-            const chunkText = chunk.text();
+          for await (const chunk of result) {
+            const chunkText = chunk.text;
             if (chunkText) {
               controller.enqueue(encoder.encode(chunkText));
             }
