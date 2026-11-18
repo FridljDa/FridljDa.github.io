@@ -13,75 +13,50 @@ image: /images/blog/large-claim-loading/featured.png
 import PricingFigure from '../../components/PricingFigure.astro';
 
 ## TL;DR
-A pure premium is a mean of claim amounts, and in the French motor portfolio freMTPL2 a few amounts decide that mean: the largest 1% of claims carry 38% of the cost. Uncapped, the pure premium of one cross-validation fold is almost twice that of another, and the youngest drivers' relativity rests on three claims. So every model is fitted to claims capped at 18,000, the 99% quantile, and the excess, a third of the cost, comes back as one loading $\ell = 1.51$ on every premium. That loading is fair only if every claim carries the same expected excess. Tested per rating factor, this holds for all but driver age: claims of drivers up to 21 are large twice as often, and the three largest excesses are theirs. The flat loading charges them about 78% of their expected cost. The fix keeps the cap and gives the excess its own frequency by age. And the loading, with a 95% interval from 1.28 to 1.80, is the most uncertain number in the tariff.
+In the French motor portfolio freMTPL2, the largest 1% of claims carry 38% of the cost, enough to make one cross-validation fold look almost twice as expensive as another. So every model is fitted to claims capped at their 99% quantile, and the excess, a third of the cost, comes back as one loading $\ell = 1.51$ on every premium. That is fair only if every claim carries the same expected excess. Tested per rating factor, it holds for all but driver age: claims of drivers up to 21 are large twice as often, and the three largest excesses are theirs, so the flat loading charges them about 78% of their expected cost. And $\ell$ itself, with a 95% interval from 1.28 to 1.80, is the most uncertain number in the tariff.
 
-This is the second of four posts on pricing freMTPL2. The [first](/post/fremtpl2-head-block) is about the data, the [third](/post/tweedie-glm-vs-xgboost) about the model comparison.
+*Second of four posts on pricing freMTPL2, after [the data](/post/fremtpl2-head-block) and before [the model comparison](/post/tweedie-glm-vs-xgboost).*
 
 ## Why cap
 
-### A few claims carry the cost
+### The problem is variance, not bias
 
-The models are trained on a seeded random 80% of the cleaned portfolio, 534,883 policies with 20,879 claims; the other 20% is held out as a test set. On the training claims:
+The models are trained on a random 80% of the cleaned portfolio, 534,883 policies with 20,879 claims. The cap $c$ is the 99% quantile of their claim amounts, 18,000:
 
 <PricingFigure name="split" />
 
-*Training claims split at the cap $c$ = 18,000, the 99% quantile of their amounts: 1% of the claims lie above it, and their part above it is a third of the cost.*
+*Training claims split at the cap: 1% of the claims lie above it, and their part above it is a third of the cost.*
 
-Across the whole portfolio, the single largest claim, 4.1 million, is 6.9% of all claim cost. Counted, the claims sit between a few hundred and a few thousand; weighted by cost, a second mass appears above the cap, spread thinly over two orders of magnitude.
-
-### The problem is variance, not bias
-
-Every quantity a pricing model estimates is a mean of claim amounts over some set of policies: a fold, a segment, a level of a rating factor. Where a handful of claims carry a large share of the cost, that mean is set by those few amounts, and moving one of them to another set moves the estimate. Large claims may well depend on the risk factors (that's tested below), but a few of them can't say how much. It shows in two places.
-
-**The model comparison.** The training policies are dealt into five folds for cross-validation. Claim frequency is the same in all of them, between 0.073 and 0.075, but the pure premium is not:
+Every quantity a pricing model estimates is a mean of claim amounts over some set of policies: a fold, a segment, a level of a rating factor. Where a handful of claims carry a third of the cost, that mean is set by those few amounts, and moving one of them to another set moves the estimate. Claim frequency is the same in all five cross-validation folds, between 0.073 and 0.075; the pure premium is not:
 
 <PricingFigure name="folds" />
 
-*Pure premium per policy-year in each fold and the test set. Uncapped it ranges from 127 to 233, because a single very large claim lands in one set; capped, from 114 to 123.*
+*Pure premium per policy-year in each fold and the test set, uncapped and capped.*
 
-Uncapped, a model's held-out score on a fold would depend more on which fold got the largest claims than on the model.
+Uncapped, a model's score on a fold would depend more on which fold got the largest claims than on the model. The same goes for relativities: in the youngest driver-age band, three claims, the three largest in the portfolio, make up 71% of the raw cost. Capped, the band still costs 2.1 times the next one, an effect all of its claims inform.
 
-**The relativities.** In the youngest driver-age band, 18 to 21, the raw pure premium is 5.3 times the capped one; in every other band it is at most 1.6 times. Three claims, the three largest in the portfolio, make up 71% of that band's raw cost. Had one of them fallen a band later, the band's relativity would have moved with it. Capped, the band still costs 2.1 times the next one: an age effect that all of its claims inform.
+### Cap each claim, load the excess
 
-## Cap each claim, load the excess
-
-### The method
-
-Each claim is capped on its own, before it is added to the policy total:
+Each claim is capped on its own, $Z_{ik}^{(c)} = \min(Z_{ik}, c)$, before it is added to the policy total $S_i^{(c)}$. Every model is fitted to the capped pure premium and predicts $\hat\mu^{(c)}(x)$, and the premium charged is
 
 $$
-Z_{ik}^{(c)} = \min(Z_{ik}, c), \qquad S_i^{(c)} = \sum_{k=1}^{N_i} Z_{ik}^{(c)},
+\hat\mu(x) = \ell\, \hat\mu^{(c)}(x), \qquad \ell = \frac{\sum_{i \in \mathcal I_{\mathrm{train}}} S_i}{\sum_{i \in \mathcal I_{\mathrm{train}}} S_i^{(c)}} = 1.508.
 $$
 
-with $c$ the empirical 99% quantile of the training claim amounts. Every model is fitted to the capped pure premium $S_i^{(c)}/e_i$ and predicts $\hat\mu^{(c)}(x)$. The premium charged is
+If the capped model is balanced, its premiums adding up to the capped training cost, then the loaded premiums add up to the full training cost. So the cap moves cost between policies, from those that happened to have a large claim to everyone, but not out of the tariff. The question is whether it moves it fairly.
+
+## What a flat loading assumes
+
+Split each claim at the cap, $Z = Z^{(c)} + (Z - c)_+$, and write $m^{(c)}(x) = \mathbb E[Z^{(c)} \mid x]$ for the mean capped claim and
 
 $$
-\hat\mu(x) = \ell\, \hat\mu^{(c)}(x), \qquad \ell = \frac{\sum_{i \in \mathcal I_{\mathrm{train}}} S_i}{\sum_{i \in \mathcal I_{\mathrm{train}}} S_i^{(c)}},
+\kappa(x) = \mathbb E[(Z - c)_+ \mid x] = \rho(x)\, \mathbb E[Z - c \mid Z > c, x], \qquad \rho(x) = \mathbb P(Z > c \mid x),
 $$
 
-the ratio of full to capped claim cost on the training policies, here $\ell = 1.508$: the excess is 33.7% of the cost, and $1 / (1 - 0.337) = 1.508$. Since $\ell$ is one constant, it doesn't change how models rank policies, so models can be compared on the capped scale. This split into attritional and large losses is the usual one in motor pricing.
+for the expected excess per claim: how often a claim is large, times by how much. With claim frequency $\lambda(x)$, assume
 
-### It gets the total right
-
-Whatever a flat $\ell$ gets wrong between groups, it gets the portfolio total right, provided the capped model is balanced, its premiums before loading adding up to the observed capped cost:
-
-$$
-\sum_{i \in \mathcal I_{\mathrm{train}}} e_i\, \ell\, \hat\mu^{(c)}(x_i) = \ell \sum_{i \in \mathcal I_{\mathrm{train}}} S_i^{(c)} = \sum_{i \in \mathcal I_{\mathrm{train}}} S_i.
-$$
-
-So the cap moves cost between policies, from those that happened to have a large claim to everyone, not out of the tariff. The balance is exact for a Poisson GLM with an intercept and approximate for the other models; a calibration ratio, total predicted over total observed, measures it out of fold.
-
-### What it assumes
-
-Multiplying by one constant is not arbitrary, but it rests on assumptions worth writing down. Split every claim at the cap, $Z = Z^{(c)} + (Z - c)_+$, and write
-
-- $m^{(c)}(x) = \mathbb E[Z^{(c)} \mid x]$ for the mean capped claim,
-- $\kappa(x) = \mathbb E[(Z - c)_+ \mid x] = \rho(x)\, \mathbb E[Z - c \mid Z > c, x]$ for the expected excess per claim, with $\rho(x) = \mathbb P(Z > c \mid x)$ the probability that a claim is large.
-
-With claim frequency $\lambda(x)$, the full and the capped pure premium are $\mu(x) = \lambda(x)\,\big(m^{(c)}(x) + \kappa(x)\big)$ and $\mu^{(c)}(x) = \lambda(x)\, m^{(c)}(x)$. Assume
-
-- **(L1)** every claim carries the same expected excess, $\kappa(x) = \kappa$: a large claim is an ordinary claim that happened to become expensive, a bodily injury say, which can happen to anyone;
-- **(L2)** the mean capped claim doesn't depend on the features, $m^{(c)}(x) = m^{(c)}$: the rating factors act through the frequency.
+- **(L1)** every claim carries the same expected excess, $\kappa(x) = \kappa$: a large claim is an ordinary claim that turned expensive, which can happen to anyone;
+- **(L2)** the mean capped claim doesn't depend on the features, $m^{(c)}(x) = m^{(c)}$.
 
 Then
 
@@ -89,72 +64,48 @@ $$
 \begin{aligned}
 \mu(x) &= \lambda(x)\,\big(m^{(c)}(x) + \kappa(x)\big) && \\
 &= \lambda(x)\,\big(m^{(c)} + \kappa\big) && \text{(L1), (L2)} \\
-&= \Big(1 + \frac{\kappa}{m^{(c)}}\Big)\, \lambda(x)\, m^{(c)} && \\
-&= \ell\, \mu^{(c)}(x), \qquad \ell = 1 + \frac{\kappa}{m^{(c)}} = \frac{\mathbb E[Z]}{\mathbb E[Z^{(c)}]}. &&
+&= \Big(1 + \frac{\kappa}{m^{(c)}}\Big)\, \lambda(x)\, m^{(c)} = \ell\, \mu^{(c)}(x), &&
 \end{aligned}
 $$
 
-The ratio of full to capped cost estimates exactly this $\ell$. So the flat loading spreads the large claims over all claims equally, and a policy's share of them is proportional to how many claims it is expected to have.
-
-(L2) is mild: if it fails, a group's error is the excess share, a third, times how far its capped claim size deviates from the average, and capped claim size is close to flat across the rating factors. (L1) is the strong one, and it can be tested.
+and the ratio of full to capped cost estimates exactly this $\ell$. (L2) is mild: capped claim size is close to flat across the rating factors. (L1) is the strong one, and it can be tested on the 210 training claims above the cap.
 
 ## Testing (L1)
 
-### How often a claim is large
-
-$\kappa(x)$ has two parts, how often a claim exceeds the cap and by how much. For the first, a [χ² test of independence](https://en.wikipedia.org/wiki/Chi-squared_test) per rating factor asks whether the share of large claims is the same at every level:
-
-$$
-X^2 = \sum_{g \in \mathcal G} \left( \frac{(a_g - n_g \hat\rho)^2}{n_g \hat\rho} + \frac{(b_g - n_g (1 - \hat\rho))^2}{n_g (1 - \hat\rho)} \right),
-$$
-
-where level $g$ has $a_g$ large claims and $b_g$ others, $n_g = a_g + b_g$, and $\hat\rho$ is the overall share. Under independence $X^2$ is approximately $\chi^2$ with $|\mathcal G| - 1$ degrees of freedom.
-
-Five of the seven factors show nothing at the 5% level: vehicle power ($p$ = 0.21), fuel (0.42), region (0.68), vehicle age (0.87) and brand (0.93). Bonus-malus is borderline, with no trend. Driver age is not:
+**How often a claim is large.** Per rating factor, a [χ² test of independence](https://en.wikipedia.org/wiki/Chi-squared_test) asks whether the share of large claims is the same at every level. Five of seven factors show nothing at the 5% level, from vehicle power ($p$ = 0.21) to brand ($p$ = 0.93). Driver age does:
 
 <PricingFigure name="largeshare" />
 
 *Share of training claims above the cap per driver-age band, with exact 95% intervals; dotted, the share over all claims.*
 
-Claims of policyholders aged up to 21 are large 2.3% of the time, 17 of 753, against 1.0% for everyone else. With so few large claims per band, the χ² approximation is rough, so this one comparison, young against the rest, gets [Fisher's exact test](https://en.wikipedia.org/wiki/Fisher%27s_exact_test), which needs no approximation: $p$ = 0.002. Bonus-malus has its highest share at 100, the start value where new drivers enter, so it plausibly shows the same effect.
+Claims of policyholders aged up to 21 are large 2.3% of the time, 17 of 753, against 1.0% for everyone else. With so few large claims per band the χ² approximation is rough, so this one comparison gets [Fisher's exact test](https://en.wikipedia.org/wiki/Fisher%27s_exact_test): $p$ = 0.002.
 
-### How large a large claim is
+**How large a large claim is.** The typical excess is the same for young and older drivers, medians of 18,337 and 19,622, and a rank-based [Mann–Whitney test](https://en.wikipedia.org/wiki/Mann%E2%80%93Whitney_U_test) gives $p$ = 0.61. The top is not: the three largest excesses are all young drivers', although only 17 of the 210 large claims are. If size ignored age, that would happen with probability $\binom{17}{3} / \binom{210}{3} \approx 0.04\%$. The group was chosen after seeing those claims, so read this as a measure of surprise, not a test.
 
-For the second part, the excess above the cap of young policyholders' large claims against everyone else's:
-
-- **The typical excess is the same**: medians of 18,337 and 19,622, and a [Mann–Whitney test](https://en.wikipedia.org/wiki/Mann%E2%80%93Whitney_U_test), which uses ranks only, gives $p$ = 0.61.
-- **The top is not**: the three largest excesses are all young drivers', although only 17 of the 210 large claims are. If size ignored age, the three largest would be a random draw of three from the 210, all three young with probability $\binom{17}{3} / \binom{210}{3} \approx 0.04\%$. The young group was chosen after seeing those claims, so this overstates the evidence; read it as a measure of surprise, not a test.
-
-### What it costs young drivers
-
-(L1) holds for every factor but age, and for age it fails in both parts: young drivers' claims are more often large, and the largest are theirs. Suppose young drivers' claims become large at their own rate $\hat\rho$ and exceed the cap by the pooled mean excess, 80,632. Then the flat $\ell$ charges them
+**What it costs.** For age, (L1) fails in both parts. If young drivers' claims are large at their own rate $\hat\rho$ and exceed the cap by the pooled mean excess, the flat $\ell$ charges them
 
 $$
 \frac{\ell\, m^{(c)}_{\text{young}}}{m^{(c)}_{\text{young}} + \kappa_{\text{young}}} \approx 78\%
 $$
 
-of their expected cost, and everyone else 101%. Since the pooled excess ignores their heavier tail, the shortfall of about 22% is a lower bound.
+of their expected cost, and everyone else 101%. Since the pooled excess ignores their heavier tail, the shortfall of 22% is a lower bound.
 
-Dropping the cap would not fix it. The young band's own ratio of full to capped cost is 6.0, against $\ell = 1.51$, and it is set by three amounts: exactly the variance problem the cap exists for. So the cap stays, and what changes is how the excess is spread. Give the excess its own frequency:
+Dropping the cap wouldn't fix it: the young band's own ratio of full to capped cost is 6.0, set by three amounts, the variance problem the cap exists for. What should change is how the excess is spread. Give it its own frequency,
 
 $$
 \hat\mu(x) = \lambda(x)\,\big(m^{(c)}(x) + \hat\rho_{g(x)}\, \bar\kappa\big),
 $$
 
-with the share of large claims $\hat\rho_g$ estimated per age group $g$ and one pooled mean excess $\bar\kappa$ above the cap. The young-driver loading then rests on how often their claims are large, which 753 claims can estimate, rather than on how large three of them were. A tail model by age, a [generalised Pareto distribution](https://en.wikipedia.org/wiki/Generalized_Pareto_distribution) above the cap, would be the step after.
+with the share of large claims $\hat\rho_g$ per age group $g$ and one pooled mean excess $\bar\kappa$. The young-driver loading then rests on how often their claims are large, which 753 claims can estimate, not on how large three of them were. A [generalised Pareto](https://en.wikipedia.org/wiki/Generalized_Pareto_distribution) tail by age would be the next step.
 
 ## The most uncertain number in the tariff
 
-The excess sits in 210 claims, so $\ell$ is noisy. Resampling the training policies with replacement and recomputing $\ell$ gives its bootstrap distribution:
+The excess sits in 210 claims, so $\ell$ is noisy. Resampling the training policies gives its bootstrap distribution:
 
 <PricingFigure name="loading" />
 
-*The large-claim loading on the training policies with its 95% bootstrap interval, the value without the single largest training excess, and the value the test set would have needed.*
+*The large-claim loading with its 95% bootstrap interval, the value without the single largest training excess, and the value the test set would have needed.*
 
-The 95% interval runs from 1.28 to 1.80, a range of 0.52 on a factor that multiplies every premium. The single largest training excess is 24% of all excess cost; without it, $\ell$ would be 1.39. The test set, 133,721 policies, had few large claims: 30 policies with a claim above the cap, whose excess is 10.6% of its cost, so it would have needed a loading of 1.12. Priced with $\ell = 1.51$, the full premium predicts 1.37 times the test set's full claim cost, while the capped premium predicts 1.017 times its capped cost.
+The single largest excess is 24% of all excess cost. The test set had only 30 policies with a claim above the cap and would have needed $\ell = 1.12$, so the loaded premium predicts 1.37 times its full cost, while the capped premium is within 2% of its capped cost. That isn't a model failure: a year with a few fewer large claims looks exactly like this. It does mean that the factor multiplying every premium is known only to within about ±20%, while the [model comparison that follows](/post/tweedie-glm-vs-xgboost) fights over fractions of a percentage point. Several years of claims, or a tail model above the cap, would improve the premium more than a better model of the capped part could.
 
-That is not a model failure. A year with a few fewer large claims looks exactly like this, and the capped model is calibrated. It does show that the loading should not be estimated from one portfolio year. Several years, or a tail model fitted above the cap, would narrow it more than any change to the model of the capped premium could.
-
-## Why not a robust metric instead
-
-A robust loss, absolute error or Huber, would let the uncapped target in without letting a few claims decide. But a premium is a mean, and a loss that rewards the mean has to let every claim move it in proportion to its size: the scores minimised in expectation by the mean are [exactly the Bregman divergences](https://arxiv.org/abs/0912.0902), and for any of them the difference between two predictions on one policy is affine in the observed amount. Absolute error and Huber reward the median, which is zero for most policies. So the cap goes on the target, where it bounds every claim's leverage on both the fit and the comparison, and the excess comes back through a loading whose assumptions can be written down and checked.
+A flat factor is a modelling assumption like any other. Written down, it turned into two testable statements, and the test found who pays for it.

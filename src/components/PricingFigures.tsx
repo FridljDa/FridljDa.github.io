@@ -608,7 +608,7 @@ function Relativities() {
   );
 }
 
-/** Held-out D² (%) against fitting policies, mean over folds; the GLM at 10,000 policies is far below the chart. */
+/** Held-out D² (%) against fitting policies, mean over folds; the GLM from 30,000 policies. */
 const SIZES = [10000, 30000, 100000, 427906];
 const DATA_SIZE: { model: Model; d2: (number | null)[] }[] = [
   { model: 'glm', d2: [null, 3.2, 3.9, 4.1] },
@@ -616,7 +616,7 @@ const DATA_SIZE: { model: Model; d2: (number | null)[] }[] = [
 ];
 
 const DataSizeDescription =
-  'Held-out D² in percent against the number of fitting policies on a log scale, mean over five folds. Poisson × Gamma XGBoost: 3.2% at 10,000 policies, 3.8% at 30,000, 4.3% at 100,000 and 4.6% at all 427,906. Tweedie GLM: far below zero at 10,000, where it overfits, then 3.2%, 3.9% and 4.1%. TabICL, a single point at its context of 10,000 policies: 2.9%.';
+  'Held-out D² in percent against the number of fitting policies on a log scale, mean over five folds. Poisson × Gamma XGBoost: 3.2% at 10,000 policies, 3.8% at 30,000, 4.3% at 100,000 and 4.6% at all 427,906. Tweedie GLM, from 30,000 policies: 3.2%, 3.9% and 4.1%. TabICL, a single point at its context of 10,000 policies: 2.9%.';
 
 function DataSize() {
   const box = { left: 52, top: 40, right: 540, bottom: 280 };
@@ -641,10 +641,6 @@ function DataSize() {
           {s.d2.map((v, i) => (v === null ? null : <circle key={i} cx={sx(SIZES[i])} cy={sy(v)} r={5} fill={MODEL[s.model].stroke} />))}
         </g>
       ))}
-      <line x1={sx(30000)} y1={sy(3.2)} x2={sx(10000)} y2={box.bottom} stroke={MODEL.glm.stroke} strokeWidth={2} strokeDasharray="4 4" />
-      <text x={sx(10000) + 30} y={box.bottom - 8} fontSize={13} fill={color('muted')}>
-        GLM at 10,000: far below 0
-      </text>
       <rect x={sx(10000) - 7} y={sy(2.9) - 7} width={14} height={14} transform={`rotate(45 ${sx(10000)} ${sy(2.9)})`} fill={MODEL.tabicl.stroke} />
       <g fontSize={15} fill={color('text')}>
         {([
