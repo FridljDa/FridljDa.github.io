@@ -1,0 +1,27 @@
+---
+/**
+ * One of the figures of the freMTPL2 pricing posts (see PricingFigures.tsx).
+ * Rendered on the server, no JavaScript.
+ */
+import { FIGURES, type FigureName } from './PricingFigures';
+import './loop-animation.css';
+
+interface Props {
+  name: FigureName;
+}
+
+const { name } = Astro.props;
+const { component: Figure, width } = FIGURES[name];
+---
+
+<figure class="pricing-figure lv-theme not-prose my-8" data-figure={name}>
+  <div class="frame" style={`max-width: ${width}px`}>
+    <Figure />
+  </div>
+</figure>
+
+<style>
+  .pricing-figure .frame {
+    margin: 0 auto;
+  }
+</style>
