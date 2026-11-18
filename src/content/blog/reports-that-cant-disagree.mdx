@@ -1,0 +1,76 @@
+---
+title: "Reports That Can't Disagree With Their Data"
+pubDate: 2026-11-18T00:00:00.000Z
+tags:
+  - Software Engineering
+  - Data Engineering
+  - Agentic Coding
+description: "An analysis report goes stale the moment a number in its prose is typed by hand. How a motor-pricing analysis keeps every number computed: a Snakemake pipeline that writes small result files, notebooks that may only read them, checks that fail the render on a typed number or a fitted model, and deterministic renders that make every change in the reports a real one."
+---
+
+import PricingFigure from '../../components/PricingFigure.astro';
+
+## TL;DR
+In an analysis report, the prose is where numbers go stale: a sentence says "4.5%" long after a rerun made it 4.4%. The motor-pricing analysis behind three earlier posts, on [the data](/post/fremtpl2-head-block), [large claims](/post/large-claim-loading) and [the model comparison](/post/tweedie-glm-vs-xgboost), is built so that can't happen. A Snakemake pipeline does every computation and writes small result files. Quarto notebooks only read those files and present them, and two checks run before every render: one fails it on any number typed into the prose, the other on any notebook that loads data, fits a model or writes a file. Renders are deterministic, so a rerun that changes no result changes no byte of the committed reports, and a hook refuses a push whose reports are out of date. Most of the code was written with a coding agent; the checks are what make its edits safe to accept.
+
+## Two parts, strictly separated
+
+### The pipeline computes
+
+Every computation is a rule in a [Snakemake](https://snakemake.github.io/) workflow: download, cleaning, the train/test split, the large-claim cap, one job per model and cross-validation fold, the benchmark, the final model. Rules write their outputs to files in layers:
+
+- **bronze**: the raw tables, exactly as downloaded, never edited;
+- **silver**: the cleaned modelling table, one row per policy, with nothing estimated from the data;
+- **gold**: everything that needs training data: the split, the cap, the fitted models and their out-of-fold predictions;
+- **results**: per topic, a `stats.json` of scalars and a few small tables, the only thing a report reads.
+
+All parameters, from the cleaning caps to every model's hyperparameters and the seeds, sit in one config file. Snakemake reruns a rule when its inputs, its parameters or its code change, and only then, so changing one model's learning rate refits that model's five folds and nothing else. The modules a rule imports are listed as its inputs for that reason. The logic lives in a typed package; the rule scripts are wiring, a few lines each, because Snakemake injects its object into a script as a global and so nothing in a script can be imported or tested. A [previous post](/post/snakemake-ticket-analysis-pipeline) has more on Snakemake for iterative pipelines.
+
+### The notebooks present
+
+<PricingFigure name="pipeline" />
+
+*Rules write result files; notebooks only read them. Checks guard the way from the notebooks to the reports.*
+
+A notebook reads only through two functions, `read_stats(topic)` and `read_table(topic, name)`, and then reshapes, plots and explains. Rendering takes seconds. Each notebook gets its own render rule, whose inputs are found by scanning the notebook for the topics it reads, so a notebook re-renders exactly when a result it shows changes.
+
+## The checks
+
+### No typed numbers
+
+Every number in a notebook's prose is an inline expression, evaluated at render time:
+
+```markdown
+It explains `{python} f"{d2[best]:.2%}"` of the constant model's deviance,
+the Tweedie GLM `{python} f"{d2['glm_tweedie']:.2%}"`.
+```
+
+A script runs as Quarto's pre-render step: it blanks out everything that isn't prose, meaning code cells, inline expressions, math, link targets and attributes, removes a short list of allowed patterns such as years and identifiers like `log1p`, and fails the render on any digit that is left. That covers captions and Markdown tables too, which therefore come from code. A line can opt out with a marker, meant for definitional constants such as "exposure lies in (0, 1]", never for results.
+
+Claims about numbers are computed too. "Poisson × Gamma XGBoost has the lowest deviance" names the model from the results, so if a rerun changed the winner, the sentence would change with it, and an argument built on the old winner would read wrong on the page rather than stay quietly false.
+
+### Notebooks may not compute
+
+A second pre-render script scans every code cell for direct data access, writes, `.fit(`, imports of modelling libraries, and calls into the pipeline's computations. A notebook that wants a new number has to get it from a rule. That keeps every result in one place, computed once, with the same folds and seeds as every other, and it keeps renders fast enough to iterate on prose.
+
+### Renders are deterministic
+
+A report committed to git is only reviewable if a rerun that changes nothing changes nothing in the diff. Three things broke that by default:
+
+- **Plotly figures get a random div ID** per render. A small wrapper sets IDs from a counter and inlines plotly.js once per notebook, so the HTML stays self-contained.
+- **Matplotlib's SVG output hashes float clip boxes into its IDs**, which differ in the last digit between machines. The few matplotlib figures are PNGs.
+- **Tables get random IDs** too, fixed the same way.
+
+With that, a pre-push hook re-renders every report from the existing results, without running a single data or model rule, and refuses the push if the committed reports differ. Static checks run in CI on every push: ruff with every rule on, `mypy --strict`, both notebook checks and a dry run of the pipeline.
+
+## One model too slow for CI
+
+TabICL, the tabular foundation model in the comparison, takes minutes on a laptop GPU and would take hours on CI's two CPU cores. So its out-of-fold predictions are frozen: computed locally and committed with a fingerprint, a hash of the training rows it sees (rounded, so last-digit float differences between machines don't count), its parameters and the source of its wrapper class. On a machine without TabICL, the pipeline reuses the frozen predictions only if the fingerprint still matches; otherwise it stops and asks for a local rerun. The frozen numbers can't go stale without anyone noticing.
+
+One limit remains: XGBoost's floating-point results differ between macOS and Linux, and early stopping can then keep a different number of trees. Headline metrics move in the third digit, sensitive diagnostics such as permutation importance more. So all committed reports come from one run on one machine, and the reports say so.
+
+## Why this matters more with a coding agent
+
+The conventions above live in an `AGENTS.md` at the repository's root, written for coding agents and humans alike, and most commits were made together with one. An agent is quick to write a paragraph around a figure, and just as quick to write a number into it that it remembers from an earlier run. Here that number fails the render. An agent asked for a new statistic in a notebook can't compute it there; it has to add it to a rule, where it is computed with everything else. Reviewing such a change means reading a diff of code and a diff of rendered reports, and the second one only shows what really changed.
+
+[The Missing Test Suite](/post/the-missing-test-suite) argues that once code is cheap, the bottleneck is knowing whether the output is right. For an analysis, part of that can be made mechanical: not whether the method is sound, which still takes a reader who knows the field, but whether the report says what the data say.
