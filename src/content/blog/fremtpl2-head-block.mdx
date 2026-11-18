@@ -13,99 +13,66 @@ image: /images/blog/fremtpl2-head-block/featured.png
 import PricingFigure from '../../components/PricingFigure.astro';
 
 ## TL;DR
-The French motor portfolio freMTPL2 is in textbooks, scikit-learn's examples and countless notebooks. Its policy table is sorted by ID, and every one of its first 9,387 policies has a claim, against 3.7% of the rest. The block reports 2.07 claims per policy-year, 28 times the rest of the portfolio, and 97% of its policies have claims with no amount. It is not a sample of the portfolio, so I drop it: that removes 27.5% of the claims but only 1.1% of the claim cost, and the claim frequency falls from 0.101 to 0.074. Three more checks shape the model: exposure is part of the target, never a feature, because short contracts claim four times as often; frequency drifts along the policy ID, so the split is random; and two vehicle ages are codes for "unknown".
+The French motor portfolio freMTPL2 is in textbooks, scikit-learn's examples and countless notebooks. Every one of its first 9,387 policies has a claim, against 3.7% of the rest. The block reports 28 times the claim frequency of the portfolio, and 97% of its policies have claims with no amount. It is not a sample of the portfolio, so it goes: that removes 27.5% of the claims but 1.1% of the claim cost. Three smaller checks also shape the model: short contracts claim four times as often per year, frequency drifts along the policy ID, and two vehicle ages are codes.
 
-This is the first of four posts on pricing this portfolio. The [second](/post/large-claim-loading) is about large claims, the [third](/post/tweedie-glm-vs-xgboost) compares a Tweedie GLM, XGBoost and the tabular foundation model TabICL, and the [fourth](/post/reports-that-cant-disagree) is about the pipeline that keeps every number in the reports traceable.
+*First of four posts on pricing freMTPL2, followed by [large claims](/post/large-claim-loading), [the model comparison](/post/tweedie-glm-vs-xgboost) and [the pipeline](/post/reports-that-cant-disagree).*
 
-## The task
+## The data
 
-### What we price
+freMTPL2 is a French motor third-party liability portfolio from the [CASdatasets](https://github.com/dutangc/CASdatasets) R package, published on OpenML as two tables: [freMTPL2freq](https://www.openml.org/d/41214), one row per policy, and [freMTPL2sev](https://www.openml.org/d/41215), one row per claim amount. Together they hold 678,013 policies from one accounting year. Each policy $i$ has risk features $x_i$ (driver age, bonus-malus, vehicle age, power, brand and fuel, population density, region), an exposure $e_i$, the fraction of the year it was in force, and $N_i$ claims with total amount $S_i$.
 
-freMTPL2 is a French motor third-party liability portfolio from the [CASdatasets](https://github.com/dutangc/CASdatasets) R package, also on OpenML as two tables: [freMTPL2freq](https://www.openml.org/d/41214), one row per policy, and [freMTPL2sev](https://www.openml.org/d/41215), one row per claim. As downloaded, they hold 678,013 policies and 26,639 claim amounts from one accounting year. Each policy $i$ has:
-
-- **Risk features** $x_i$: driver age, bonus-malus, vehicle age, power, brand and fuel, population density, region, and an area code.
-- **Exposure** $e_i \in (0, 1]$: the fraction of the year the contract was in force.
-- **Claims**: their number $N_i \in \mathbb N_0$ and amounts $Z_{i1}, \dots, Z_{iN_i}$, with total $S_i = \sum_{k=1}^{N_i} Z_{ik}$.
-
-The quantity to price is the pure premium, the expected claim cost per policy-year,
-
-$$
-\mu(x) = \mathbb E\!\left[\frac{S}{e} \;\middle|\; x, e\right].
-$$
-
-If the number of claims is proportional to exposure, $\mathbb E[N \mid x, e] = e\,\lambda(x)$, the claim sizes don't depend on exposure, and count and sizes are independent given $x$, then Wald's identity gives $\mathbb E[S \mid x, e] = e\,\lambda(x)\,m(x)$, so
-
-$$
-\mu(x) = \lambda(x)\, m(x):
-$$
-
-claim frequency per year times mean claim size, and the same for every exposure. Both parts are means over policies, so every row that enters them has to be a policy from this portfolio, with the claims it really had.
+The quantity to price is the pure premium, the expected claim cost per policy-year, $\mu(x) = \mathbb E[S/e \mid x, e]$. It is a mean over policies, as are the claim frequency and the mean claim size it splits into. So every row has to be a policy of this portfolio, with the claims it really had.
 
 ## The head block
 
 ### A block of claimants
 
-The policy table is sorted by `IDpol`. Its first rows all have a claim, and so do the rows after them: every one of the first 9,387 policies, up to ID 24,951, has $N_i \ge 1$. Outside this block, 3.7% of policies have a claim. If the block were a random draw from the same portfolio, the chance that all 9,387 policies have one would be about $0.037^{9387} \approx 10^{-13451}$.
+The policy table is sorted by `IDpol`, and every one of the first 9,387 policies, up to ID 24,951, has a claim. Outside this block 3.7% of policies do. If the block were a random draw from the same portfolio, the chance that all of its policies have a claim would be about $0.037^{9387} \approx 10^{-13451}$.
 
 <PricingFigure name="idblocks" />
 
-*Claims per policy-year by block of policy IDs in the raw data, log scale. The head block reports 2.07; the blocks after it, from 0.089 down to 0.063.*
+*Claims per policy-year by block of policy IDs in the raw data, log scale.*
 
-The block differs from the rest in everything else as well:
+The block differs in everything else too:
 
-- **Frequency.** It reports 2.07 claims per policy-year, 28 times the 0.074 of the rest. On its own it lifts the portfolio's claim frequency from 0.074 to 0.101.
-- **No amounts.** 96.9% of its policies report claims but have no row in the claim table, against 0.09% of the claimants outside it. Of all policies with claims but no amount, 99.8% sit in the block.
+- **Frequency.** 2.07 claims per policy-year, 28 times the 0.074 of the rest. On its own it lifts the portfolio frequency to 0.101.
+- **No amounts.** 96.9% of its policies report claims that have no row in the claim table, against 0.09% of claimants outside it.
 - **A sharp edge.** All of this changes at one ID, not gradually.
 
-How the block was put together isn't documented: a claims extract appended to the portfolio, or rows from another source. Whatever it was, it is no sample of the portfolio, and nothing in it can estimate a frequency or a pure premium.
+How the block got there isn't documented: a claims extract appended to the portfolio, perhaps, or rows from another source. Either way, nothing in it can estimate a frequency or a pure premium.
 
 ### What dropping it costs
 
-So the block goes, all 9,387 policies, including the 293 that do have claim amounts. Keeping only those would still bias the frequency, since they were selected for having claimed.
+So all 9,387 policies go, including the 293 that do have amounts, since they were selected for having claimed.
 
 <PricingFigure name="headblock" />
 
-*Share of each quantity that dropping the head block removes, relative to the data before the step.*
+*Share of each quantity that dropping the head block removes.*
 
-The block is small in everything the pure premium is made of, and large in the claim count. Its claims are almost all claims without an amount, so for the target they are zeros that shouldn't be zeros. The portfolio pure premium barely moves, from 167.1 to 167.5 per policy-year.
+The block is small in everything the pure premium is made of and large in the claim count, because its claims are almost all claims without an amount: for the target, zeros that shouldn't be zeros. The portfolio pure premium barely moves, from 167.1 to 167.5 per policy-year.
 
-Two other ways of handling it don't work. A flag for "in the block" can't be set for new policies. And setting the claim count to zero wherever there is no amount, as [scikit-learn's Tweedie example](https://scikit-learn.org/stable/auto_examples/linear_model/plot_tweedie_regression_insurance_claims.html) does, removes most of the inflated frequency but turns about 9,000 policies that did report a claim into claim-free ones, with their features.
+The alternatives don't work. A flag for "in the block" can't be set for a new policy. Setting the claim count to zero wherever there is no amount, as [scikit-learn's Tweedie example](https://scikit-learn.org/stable/auto_examples/linear_model/plot_tweedie_regression_insurance_claims.html) does, removes the inflated frequency but keeps about 9,000 policies that did claim as claim-free ones.
 
-## The other checks
-
-### Claims without a policy, or without an amount
-
-Two smaller mismatches between the tables:
-
-- **195 claim rows belong to 6 IDs that aren't in the policy table**, 1.3% of the total claim amount. Without a policy there are no features and no exposure to attribute them to, so they go.
-- **22 policies outside the block report a claim but have no claim row.** They are scattered over the portfolio, isolated records rather than a second block. Kept with an amount of zero, they would count as claims in a frequency model and pull the mean claim size down, so they go too.
-
-After that, the claim count of every policy equals its number of claim rows, except for one policy whose count is set to match, so the frequency and the severity models see the same claims. The modelling table holds 668,604 policies and 26,137 claims.
+## Three smaller checks
 
 ### Exposure is part of the target
 
-Exposure is the fraction of the year a contract was in force: 24.8% of policies were in force all year, 75.1% started or ended during it. 1,224 policies have exposures above one year, up to 2.01, impossible within a one-year window; they are capped at one, as in the [reference treatment of this dataset](https://papers.ssrn.com/sol3/papers.cfm?abstract_id=3164764) and in scikit-learn's example.
-
-The pure premium above assumes that claims scale with exposure. Annualised, short contracts should then claim about as often as long ones. They don't:
+75% of contracts started or ended during the year. Under the usual assumption that claims scale with exposure, short contracts should claim about as often per year as long ones. They don't:
 
 <PricingFigure name="exposure" />
 
-*Claims per policy-year by exposure band, relative to the whole portfolio, with the policy-years in each band below. The shortest contracts claim 4.2 times as often per year as the average.*
+*Claims per policy-year by exposure band, relative to the whole portfolio, with the policy-years in each band below.*
 
-Short contracts are often contracts that ended because of a claim: the car was written off, or the contract cancelled. So exposure is not independent of the claim count, and the proportionality fails at the short end.
+Short contracts are often contracts that ended because of a claim: the car was written off, or the contract cancelled. That is still no reason to make exposure a feature. A premium is quoted for a year before anyone knows when the contract ends, and a model priced at $e = 1$ would charge everyone like the contracts that survived the year. So exposure enters only as a weight or a $\log e_i$ offset, the [standard treatment in tariff GLMs](https://link.springer.com/book/10.1007/978-3-642-10791-7), and the excess on short contracts stays a known limitation. Exposures above one year, 1,224 of them, are capped at one, as in the [reference treatment of this data](https://papers.ssrn.com/sol3/papers.cfm?abstract_id=3164764).
 
-That is still no reason to use exposure as a feature. A premium is quoted for a year before anyone knows when the contract will end, and a model that let $\mu$ depend on $e$ and priced at $e = 1$ would charge everyone like the contracts that survived the year, which are selected for having had no write-off. So exposure enters only as a weight, or as a $\log e_i$ offset, the [standard treatment in tariff GLMs](https://link.springer.com/book/10.1007/978-3-642-10791-7); the excess frequency of short contracts stays a known limitation of a per-year target.
+### Frequency drifts along the ID
 
-### Frequency drifts along the policy ID
-
-Even after the head block, claim frequency falls steadily with the ID, from 0.089 in the first million to 0.063 above five million (figure above). IDs are probably assigned over time, so later contracts are newer ones. The risk factors explain little of the drift: on the training policies, claims observed over claims expected by a main-effects Poisson GLM still fall from 1.18 in the first ID block to 0.88 in the last.
-
-Two consequences. `IDpol` is never a feature, since new policies get new IDs. And the train/test split is random rather than by ID, since an ID-based split would mix a shift in base frequency into the model comparison.
+After the head block, claim frequency still falls steadily with the ID, from 0.089 in the first million to 0.063 above five million (first figure). IDs are probably assigned over time, and the risk factors explain little of the drift: a main-effects Poisson GLM's observed over expected claims still fall from 1.18 to 0.88 across the ID blocks. So `IDpol` is never a feature, and the train/test split is random rather than by ID, which would mix a shift in base frequency into the model comparison.
 
 ### Two vehicle ages are codes
 
-Vehicle age runs from 0 to 100 years. Above 50 years no age has more than 6 policies, and none has an age from 86 to 98; then 99 and 100 hold 23 and 25. A real tail doesn't jump at two round numbers after an empty stretch, and these vehicles are 46% diesel, like the portfolio's 49%, which cars built a century ago would not be. So 99 and 100 read as codes for "unknown", are set missing, and are later filled with the training median. The tail itself, like the thin top of bonus-malus, holds valid values and stays: how a thin tail enters a model is a modelling choice, not a cleaning step.
+Above 50 years no vehicle age has more than six policies, and none has an age from 86 to 98; then 99 and 100 hold 23 and 25. These vehicles are 46% diesel, like the portfolio's 49%, which cars built a century ago would not be. So 99 and 100 are codes for "unknown", set missing and later filled with the training median. The real thin tail stays: how it enters a model is a modelling choice, not a cleaning step.
 
 ## Before pricing on public data
 
-A public dataset has been used so often that its quirks feel like features of the problem. Before fitting anything, two checks are cheap and found the block here: plot the target against the row order, which is the order someone wrote the file in, and check that each table agrees with the other about every policy. A block of rows that differs in everything at once, with an edge at one ID, is not a segment of the portfolio but a hint about how the file was made.
+A dataset that has been used this often feels pre-cleaned. Two cheap checks found the block here: plot the target against the row order, which is the order someone wrote the file in, and check that the two tables agree about every policy. A block that differs in everything at once, with an edge at one ID, isn't a segment of the portfolio; it is a trace of how the file was made.
