@@ -39,14 +39,6 @@ A pre-render script blanks out everything that isn't prose (code, inline express
 
 **Renders are deterministic.** Committed reports are only reviewable if a rerun that changes nothing changes nothing in the diff. Plotly gives every figure a random div ID, so a wrapper sets IDs from a counter; matplotlib's SVGs hash float clip boxes into their IDs, so its few figures are PNGs; tables get fixed IDs. A pre-push hook then re-renders every report from the existing results and refuses the push if the committed reports differ. CI runs the static checks: ruff with every rule on, `mypy --strict`, both notebook checks and a dry run of the pipeline.
 
-## What the checks caught
-
-Computed prose doesn't make a number right, only traceable. In the data-size study, the GLM's mean $D^2$ on 10,000 rows rendered as a 43-digit negative percentage. The sentence around it was computed, so the absurd value went straight into the report rather than being smoothed over by hand, and the cause was easy to trace: one fold's GLM extrapolated its log-linear bonus-malus tail from a handful of policies, and its premiums overflowed. The fix holds the tail constant above the largest value seen in fitting, as the splines already were.
-
-## A model too slow for CI
-
-TabICL, the tabular foundation model in the comparison, takes minutes on a laptop GPU and would take hours on CI's two CPU cores. So its out-of-fold predictions are committed with a fingerprint: a hash of the training rows it sees (rounded, so last-digit float differences between machines don't count), its parameters and the source of its wrapper. Without TabICL installed, the pipeline reuses the frozen predictions only while the fingerprint matches, and otherwise stops and asks for a local rerun. XGBoost's results still differ in the third digit between macOS and Linux, so all committed reports come from one machine, and the reports say so.
-
 ## Why this matters with a coding agent
 
 The conventions live in an `AGENTS.md`, written for coding agents and humans alike, and most commits were made together with one. An agent writes a paragraph around a figure quickly, and just as quickly writes into it a number it remembers from an earlier run. Here that fails the render. Asked for a new statistic in a notebook, it can't compute it there; it has to add it to a rule. Reviewing its change means reading a diff of code and a diff of rendered reports, and the second shows only what really changed.
