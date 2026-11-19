@@ -1,0 +1,178 @@
+---
+title: "A Tweedie Model Assumes Claim Size Moves. In freMTPL2 It Barely Does"
+pubDate: 2026-11-19T00:00:00.000Z
+tags:
+  - Statistics
+  - Insurance
+  - Math
+math: true
+description: "The pure premium splits into claim frequency times mean claim size, from three assumptions and no distribution. Poisson, gamma and Tweedie each answer one part of it, and each fits the French motor portfolio freMTPL2 well enough for the mean and badly for the shape. A single Tweedie model also assumes that 70% of every relativity is claim size. In the data it is about 10%."
+image: /images/blog/frequency-times-severity/featured.png
+---
+
+import PricingFigure from '../../components/PricingFigure.astro';
+
+## TL;DR
+The pure premium is claim frequency times mean claim size, $\mu = \lambda\, m$. That follows from three assumptions about means, not from any distribution. The distributions come in afterwards, one per part: Poisson for how many claims, gamma for how large, and Tweedie, their compound, for the total. On the French motor portfolio freMTPL2 each describes the shape of the data poorly and the mean well enough, which is all a GLM needs. The one assumption that fails is hidden in the Tweedie model: with power $p = 1.7$ and a constant dispersion, it puts 70% of every relativity, on the log scale, into claim size. In the data, pure premiums differ by a factor of 4.2 across segments and claim sizes by 1.3: about 10%. Fitting frequency and severity apart drops that constraint, and uses each claim rather than each policy's total.
+
+*First of four posts on pricing freMTPL2, followed by [large claims](/post/large-claim-loading), [the model comparison](/post/tweedie-glm-vs-xgboost) and [the pipeline](/post/reports-that-cant-disagree).*
+
+## What we price
+
+[freMTPL2](https://www.openml.org/d/41214) is a French motor third-party liability portfolio from one accounting year: 678,013 policies with their [claim amounts](https://www.openml.org/d/41215). Each policy $i$ has risk features $x_i$ (driver age, bonus-malus, vehicle age, power, brand and fuel, population density, region), an exposure $e_i \in (0, 1]$, the fraction of the year it was in force, and $N_i$ claims of amounts $Z_{i1}, \dots, Z_{iN_i}$ with total $S_i$. Before anything else, a block of 9,387 policies at the top of the file goes: all of them have claims, nearly all without an amount, so they are no sample of the portfolio.
+
+The quantity to price is the pure premium, the expected claim cost per policy-year,
+
+$$
+\mu(x) = \mathbb E\big[Y \mid x, e\big], \qquad Y = \frac{S}{e}.
+$$
+
+<PricingFigure name="claimpath" />
+
+*One policy over its exposure: how many claims arrive, and how large each is.*
+
+## The decomposition
+
+### Three assumptions
+
+Drop the index $i$ and fix one policy's $(x, e)$. Its claims are the first $N$ of a sequence of potential amounts $Z_1, Z_2, \dots$, so $S = \sum_{k=1}^{N} Z_k$, and $S = 0$ if $N = 0$. Assume, for some functions $\lambda, m$ of the features,
+
+- **(A1)** claims scale with exposure: $\mathbb E[N \mid x, e] = e\, \lambda(x)$;
+- **(A2)** claim sizes don't depend on exposure: $\mathbb E[Z_k \mid x, e] = m(x)$ for every $k$;
+- **(A3)** how many claims and how large they are are independent: $N \perp (Z_k)_{k \ge 1} \mid (x, e)$.
+
+### The derivation
+
+Condition on the number of claims first. On $\{N = n\}$,
+
+$$
+\begin{aligned}
+\mathbb E[S \mid N = n, x, e]
+  &= \mathbb E\Big[\textstyle\sum_{k=1}^{n} Z_k \,\Big|\, N = n, x, e\Big] && \text{on } \{N = n\} \\
+  &= \textstyle\sum_{k=1}^{n} \mathbb E[Z_k \mid N = n, x, e] && \text{linearity, finite sum} \\
+  &= \textstyle\sum_{k=1}^{n} \mathbb E[Z_k \mid x, e] && \text{(A3)} \\
+  &= n\, m(x) && \text{(A2)},
+\end{aligned}
+$$
+
+so $\mathbb E[S \mid N, x, e] = N\, m(x)$. Then average over $N$:
+
+$$
+\begin{aligned}
+\mathbb E[S \mid x, e]
+  &= \mathbb E\big[\mathbb E[S \mid N, x, e] \mid x, e\big] && \text{tower property} \\
+  &= m(x)\, \mathbb E[N \mid x, e] && m(x) \text{ is known given } x \\
+  &= e\, \lambda(x)\, m(x) && \text{(A1)}, \\[4pt]
+\mu(x) = \tfrac{1}{e}\, \mathbb E[S \mid x, e]
+  &= \lambda(x)\, m(x) && \text{for every } e.
+\end{aligned}
+$$
+
+This is [Wald's identity](https://doi.org/10.1007/978-3-540-88233-6) for the collective risk model: the pure premium is claim frequency per year times mean claim size. Two things follow.
+
+- **No distribution is needed.** Only means and (A3). Poisson, gamma and Tweedie enter later, for the variance and the loss a model minimises, not for what it estimates.
+- **Exposure is not a feature.** The last line holds for every $e$, so $\mu$ is a function of $x$ alone, and $e$ enters a model only as a weight or a $\log e$ offset, the [standard treatment in tariff GLMs](https://doi.org/10.1007/978-3-642-10791-7). The premium is quoted for a year before anyone knows when the contract will end.
+
+### Where (A1) fails
+
+(A1) says a policy in force for half a year expects half the claims of a full year. Short contracts claim more than that:
+
+<PricingFigure name="exposure" />
+
+*Claims per policy-year by exposure band, relative to the whole portfolio, with the policy-years in each band below.*
+
+Short contracts are often contracts that ended because of a claim: the car was written off, the contract cancelled. Exposure is then a consequence of the claim, not a cause, and a model that used it as a feature would price every new policy like the contracts that survived the year. So exposure stays out of $x$, and the excess on short contracts stays a known limitation of the decomposition.
+
+## One distribution per part
+
+A GLM estimates the mean from two things: the link and the variance function $\mathcal V$, with $\mathrm{Var} = \phi\, \mathcal V(\text{mean}) / \text{weight}$. The full density never enters the estimating equations. So the question for each family below isn't whether it describes the data, but whether its variance function does. Each is compared with 534,883 training policies and their 20,879 claims, without any features, and claims are capped at 18,000 ([the second post](/post/large-claim-loading) explains why).
+
+| | Poisson | Gamma | Tweedie, $p \in (1, 2)$ |
+|---|---|---|---|
+| models | claim count $N \in \mathbb N_0$ | claim size $Z \in (0, \infty)$ | pure premium $Y \in [0, \infty)$ |
+| $\mathcal V(\nu)$ | $\nu$ | $\nu^2$ | $\nu^p$ |
+
+### Poisson: how many
+
+$$
+\mathbb P(N = n \mid x, e) = \frac{\big(e\lambda(x)\big)^n}{n!}\, e^{-e\lambda(x)}, \quad n \in \mathbb N_0, \qquad \mathbb E[N] = \mathrm{Var}(N) = e\, \lambda(x).
+$$
+
+**Why.** If claims arrive independently at a constant rate $\lambda(x)$ per year, the count over $e$ years is exactly Poisson with mean $e\,\lambda(x)$. Exposure enters as the offset $\log e$, with no parameter to estimate: (A1) is built in.
+
+<PricingFigure name="counts" />
+
+*Training policies by number of claims, observed and under a Poisson with one common rate of 0.074 claims per policy-year, each policy with its own exposure.*
+
+**How well.** The bulk fits: 515,206 policies without a claim against 514,592 expected. The tail doesn't: 1,087 policies with two or more claims against 575. Some of that is the features, which give each policy its own $\lambda(x_i)$; the rest is overdispersion, $\mathrm{Var}(N) > \mathbb E[N]$. Overdispersion widens the standard errors, but the Poisson score equations need only the mean, so the estimate of $\lambda(x)$ stays consistent. A negative binomial would fit the tail better and estimate the same means.
+
+### Gamma: how large
+
+$$
+Z \mid x \sim \mathrm{Gamma}\big(\text{shape } \alpha,\ \text{mean } m(x)\big), \qquad \mathbb E[Z \mid x] = m(x), \qquad \mathrm{Var}(Z \mid x) = \frac{m(x)^2}{\alpha}.
+$$
+
+**Why.** Claim sizes are positive and right-skewed, and under the gamma their standard deviation is proportional to their mean: a segment whose claims are twice as large has claims twice as spread, so a relativity is a change of scale. Its deviance depends on $z / \hat m$ only, so a few large claims don't dominate the fit as they would under least squares.
+
+**How well.** The shape fits badly. The moment estimate $\hat\alpha = 0.45$ makes the gamma put 19% of the claims below about 100, where 6.9% are observed; it has no room for the spike of flat-rate settlements in the middle, and its exponential tail is too light, which is one more reason to cap. The variance function holds, which is what the GLM uses: across 68 one-way groups (levels of each feature, deciles of the numeric ones), the coefficient of variation stays between 1.15 and 1.65, around the portfolio's $1/\sqrt{\hat\alpha} = 1.48$.
+
+### Tweedie: the total
+
+Put the two together: given $x$ and $e$,
+
+$$
+N \sim \mathrm{Poisson}\big(e\,\lambda(x)\big), \qquad Z_1, Z_2, \dots \overset{\text{iid}}{\sim} \mathrm{Gamma}\big(\alpha,\ m(x)\big), \qquad N \perp (Z_k)_{k \ge 1}.
+$$
+
+$S$ then has a point mass at zero and a continuous positive part, and by the law of total variance, $\mathrm{Var}(S \mid x, e) = e\,\lambda(x)\, \mathbb E[Z^2 \mid x]$, so
+
+$$
+\mathrm{Var}(Y \mid x, e) = \frac{\lambda(x)\, m(x)^2\, (1 + 1/\alpha)}{e} = \frac{\phi\, \mu(x)^p}{e}, \qquad p = \frac{\alpha + 2}{\alpha + 1}, \qquad \phi = \frac{\lambda(x)^{1-p}\, m(x)^{2-p}}{2 - p}.
+$$
+
+That is the [Tweedie family](https://doi.org/10.1080/03461238.1994.10413930) with power $p \in (1, 2)$ and exposure as prior weight: one model for $Y$ directly, zeros included. The gamma shape fixes the power: $\hat\alpha = 0.454$ gives $\hat p = 1.688$, and $p = 1.7$ is used throughout. The zeros fit: 96.32% of training policies have no claim, the compound model expects 96.21%.
+
+## What a single Tweedie model assumes
+
+The derivation hides an assumption. A Tweedie GLM has one dispersion $\phi$ for all policies, and $\phi$ above depends on $x$ through $\lambda(x)^{1-p} m(x)^{2-p}$. Holding it constant ties claim size to frequency:
+
+$$
+\begin{aligned}
+\lambda(x)^{1-p}\, m(x)^{2-p} = \text{const}
+  &\iff m(x) \propto \lambda(x)^{(p-1)/(2-p)} && \\
+  &\iff \mu(x) = \lambda(x)\, m(x) \propto \lambda(x)^{1/(2-p)} && \mu = \lambda\, m \\
+  &\iff \lambda(x) \propto \mu(x)^{2-p}, \quad m(x) \propto \mu(x)^{p-1}. &&
+\end{aligned}
+$$
+
+So a single Tweedie model splits every relativity between frequency and claim size in fixed proportions: at $p = 1.7$, 30% of it, on the log scale, is frequency and 70% claim size. A segment that costs twice the average should have claims $2^{0.7} = 1.62$ times as large. The 68 one-way groups say otherwise:
+
+<PricingFigure name="sizes" />
+
+*Capped pure premium against mean capped claim size per one-way group of the training data, log scales with the same factor per unit on both axes; dashed, the slope a single Tweedie model with $p = 1.7$ assumes.*
+
+- **Segments differ in frequency.** Pure premiums range from 75 to 312 per policy-year, a factor of 4.2; mean claim sizes from 1,409 to 1,890, a factor of 1.3. Regressed on each other on the log scale, claim size has slope 0.1, not 0.7.
+- **Bonus-malus shows it most.** From the best class to the worst, the pure premium rises by a factor of 3.8 and the mean claim size by 1.10. Bonus-malus moves only with a policyholder's own claims, so it measures how often they claim, not how much.
+- **The variance agrees.** If claim size is flat, $\mathrm{Var}(Y \mid x, e) = \lambda(x)\, m^2 (1 + 1/\alpha) / e$ grows like $\mu^1$, not $\mu^{1.7}$. Across the same groups the weighted variance of the pure premium grows with slope 1.21: much closer to one.
+
+What does the wrong constraint cost? Not consistency: the Tweedie score equations, like the Poisson ones, need only the mean, so the estimate of $\mu(x)$ still converges to the right thing. It weights segments by the wrong variance, so it uses the data less efficiently: it trusts expensive segments too little.
+
+## Same target, more data
+
+Fitting frequency and severity apart drops the constraint, and it does more. A policy shows more than its total $S_i$: also its count $N_i$ and each amount $Z_{ik}$. $S_i$ alone can't tell one large claim from two medium ones. Under (A3), with sizes iid given $x$, their joint density factorises:
+
+$$
+\begin{aligned}
+f(n, z_1, \dots, z_n \mid x, e)
+  &= \mathbb P(N = n \mid x, e)\; f(z_1, \dots, z_n \mid N = n, x, e) && \text{conditioning on } N \\
+  &= \underbrace{\mathbb P(N = n \mid x, e)}_{\text{depends on } \lambda \text{ only}} \;\prod_{k=1}^{n} \underbrace{f(z_k \mid x)}_{\text{on } m \text{ only}} && \text{(A3), iid sizes, (A2)}.
+\end{aligned}
+$$
+
+So the log-likelihood is a sum of a term in $\lambda$ and a term in $m$, maximised separately: $\lambda$ from the counts of all policies, a Poisson GLM with offset $\log e_i$; $m$ from the individual amounts of the policies with claims, a gamma GLM; and $\hat\mu = \hat\lambda\, \hat m$ by Wald's identity. A Tweedie model collapses the observations of each policy into one number before fitting; the split collapses them only at the end.
+
+In [the model comparison](/post/tweedie-glm-vs-xgboost), that helps the boosted trees and not the GLMs. Poisson × gamma XGBoost beats Tweedie XGBoost by 0.17 points of explained deviance, while the Poisson × gamma GLM trails the Tweedie GLM by 0.24. The likely reason is the flat claim size: the gamma GLM spends a full set of coefficients on a signal that is barely there, and its noise multiplies into every premium, while the trees stop early on the severity part and leave it nearly flat. In both the winner and the data, the tariff is a frequency model with a claim size attached.
+
+## The order of the argument
+
+The decomposition comes first and needs only means. The distributions come second, each chosen for its variance function, each wrong about the shape of the data and right enough about the mean. And the useful question about a model is not which family it uses but what it assumes about how the parts move together: a single Tweedie model answers that question before seeing the data, and on freMTPL2 it answers it wrong.

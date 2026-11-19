@@ -15,7 +15,7 @@ import PricingFigure from '../../components/PricingFigure.astro';
 ## TL;DR
 In the French motor portfolio freMTPL2, the largest 1% of claims carry 38% of the cost, enough to make one cross-validation fold look almost twice as expensive as another. So every model is fitted to claims capped at their 99% quantile, and the excess, a third of the cost, comes back as one loading $\ell = 1.51$ on every premium. That is fair only if every claim carries the same expected excess. Tested per rating factor, it holds for all but driver age: claims of drivers up to 21 are large twice as often, and the three largest excesses are theirs, so the flat loading charges them about 78% of their expected cost. And $\ell$ itself, with a 95% interval from 1.28 to 1.80, is the most uncertain number in the tariff.
 
-*Second of four posts on pricing freMTPL2, after [the data](/post/fremtpl2-head-block) and before [the model comparison](/post/tweedie-glm-vs-xgboost).*
+*Second of four posts on pricing freMTPL2, after [frequency and severity](/post/frequency-times-severity) and before [the model comparison](/post/tweedie-glm-vs-xgboost).*
 
 ## Why cap
 

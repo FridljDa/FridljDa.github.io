@@ -16,7 +16,7 @@ import PricingFigure from '../../components/PricingFigure.astro';
 ## TL;DR
 A premium is a mean, so the metric that picks a pricing model must be minimised by the mean and weight policies by exposure. That rules out MAE, MSE and the Gini, and leaves the Tweedie deviance, read as $D^2$, the share of the constant model's deviance a model explains. On the French motor portfolio freMTPL2, a Poisson frequency × gamma severity XGBoost explains 4.54% in cross-validation, the Tweedie GLM 4.10%. Tiny, but paired by fold it is 5.3 standard errors, and on the untouched test set the gain is 0.42 points with a 95% interval from 0.23 to 0.61. The model's premium is driven by bonus-malus, almost entirely through claim frequency. TabICL, a tabular foundation model that never trains on the data, trails because it sees only 10,000 policies; with the same 10,000, it gets 92% of the trees' $D^2$.
 
-*Third of four posts on pricing freMTPL2. The [first](/post/fremtpl2-head-block) cleans the data, the [second](/post/large-claim-loading) caps large claims at 18,000; everything here is on that cleaned, capped target.*
+*Third of four posts on pricing freMTPL2. The [first](/post/frequency-times-severity) splits the pure premium into frequency and severity, the [second](/post/large-claim-loading) caps large claims at 18,000; everything here is on that cleaned, capped target.*
 
 ## Choosing the metric
 

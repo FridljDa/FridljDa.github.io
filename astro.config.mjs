@@ -20,6 +20,9 @@ export default defineConfig({
     '/post/the-missing-compiler': '/post/the-missing-test-suite',
     '/post/the-missing-compiler/linkedin': '/post/the-missing-test-suite/linkedin',
     '/post/the-missing-compiler.md': '/post/the-missing-test-suite.md',
+    // The freMTPL2 head-block post was replaced as the first of the pricing series.
+    '/post/fremtpl2-head-block': '/post/frequency-times-severity',
+    '/post/fremtpl2-head-block.md': '/post/frequency-times-severity.md',
   },
   // Enable Server-Side Rendering
   output: 'server',

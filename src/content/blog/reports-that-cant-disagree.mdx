@@ -12,7 +12,7 @@ image: /images/blog/reports-that-cant-disagree/featured.png
 import PricingFigure from '../../components/PricingFigure.astro';
 
 ## TL;DR
-In an analysis report, the prose is where numbers go stale: a sentence still says 4.5% long after a rerun made it 4.4%. The motor-pricing analysis behind three earlier posts, on [the data](/post/fremtpl2-head-block), [large claims](/post/large-claim-loading) and [the model comparison](/post/tweedie-glm-vs-xgboost), is built so that can't happen. A pipeline computes everything; notebooks may only read its results; a check fails the render on any number typed into the prose; and renders are deterministic, so every change to the committed reports is a real one. Most of the code was written with a coding agent, and these checks are what make its edits safe to accept.
+In an analysis report, the prose is where numbers go stale: a sentence still says 4.5% long after a rerun made it 4.4%. The motor-pricing analysis behind three earlier posts, on [frequency and severity](/post/frequency-times-severity), [large claims](/post/large-claim-loading) and [the model comparison](/post/tweedie-glm-vs-xgboost), is built so that can't happen. A pipeline computes everything; notebooks may only read its results; a check fails the render on any number typed into the prose; and renders are deterministic, so every change to the committed reports is a real one. Most of the code was written with a coding agent, and these checks are what make its edits safe to accept.
 
 ## The pipeline computes, the notebooks present
 
