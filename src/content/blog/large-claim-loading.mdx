@@ -6,14 +6,14 @@ tags:
   - Insurance
   - Math
 math: true
-description: "In freMTPL2, 1% of claims carry a third of the cost, most likely severe bodily injuries whose cost is set by the victim, not by the rating factors. Why no model should be trusted with them, how each claim is capped and the excess loaded back as one factor, what that factor assumes, and why it is the most uncertain number in the tariff."
+description: "In freMTPL2, 1% of claims carry a third of the cost, most likely severe bodily injuries whose cost is set by the victim, not the rating factors. Why no model is trusted with them, how each claim is capped and the excess loaded back as one factor, and why that factor is the most uncertain number in the tariff."
 image: /images/blog/large-claim-loading/featured.png
 ---
 
 import PricingFigure from '../../components/PricingFigure.astro';
 
 ## TL;DR
-In the French motor portfolio freMTPL2, the largest 1% of claims carry 38% of the cost, and the single largest, 4.1 million, carries 6.9% on its own. Claims like these are most likely severe bodily injuries: someone is hurt badly enough that the insurer pays for their care and lost income, often for the rest of their life. Their cost depends on the victim, not on the policyholder's driver age or car, and there are far too few to learn from. So no model is trusted with them. Every model is fitted to claims capped at their 99% quantile, 18,000, and the excess, a third of the cost, comes back as one loading $\ell = 1.51$ on every premium. That keeps the total right and the models stable. It assumes that every claim is equally likely to turn into a large one, which holds for every rating factor but, perhaps, the youngest drivers. And $\ell$ itself, with a 95% interval from 1.28 to 1.80, is the most uncertain number in the tariff.
+In the French motor portfolio freMTPL2, the largest 1% of claims carry 38% of the cost; the largest, 4.1 million, carries 6.9% alone. Claims like these are most likely severe bodily injuries, whose cost is set by the victim, not by the policyholder's features, and there are far too few to learn from. So every model is fitted to claims capped at 18,000, and the excess, a third of the cost, comes back as one loading $\ell = 1.51$ on every premium. That keeps the total right and the models stable, and makes $\ell$, with a 95% interval from 1.28 to 1.80, the most uncertain number in the tariff.
 
 *Second of four posts on pricing freMTPL2, after [frequency and severity](/post/frequency-times-severity) and before [the model comparison](/post/tweedie-glm-vs-xgboost).*
 
@@ -21,12 +21,7 @@ In the French motor portfolio freMTPL2, the largest 1% of claims carry 38% of th
 
 ### Where large claims come from
 
-Motor third-party liability pays for the damage a policyholder causes to others. Damage to a car or a fence has a ceiling: what it costs to repair or replace. Damage to a person has none. In France, compulsory motor liability cover for bodily injury is unlimited by law, and a severe injury means paying for the victim's medical care, adapted housing, help at home and lost income, often as an annuity for the rest of their life. Such claims take years to settle, and their amount in the data is partly an estimate.
-
-freMTPL2 doesn't say which claims are bodily injuries, so this is an inference: claims to cars rarely reach six figures, and the tail here runs to 4,075,401. Either way, two things follow:
-
-- **Their size isn't a property of the policy.** How badly someone is hurt, how old they are and what they earned decides the amount. Driver age or bonus-malus may say how often a policy causes an accident, hardly whether it is the one in a hundred thousand that costs millions.
-- **There are too few to learn from.** 210 training claims lie above 18,000. A model that fits them learns where those 210 fell.
+Damage to a car has a ceiling; damage to a person doesn't. In France, motor liability cover for bodily injury is unlimited by law, and a severe injury can mean paying for the victim's care and lost income for the rest of their life. freMTPL2 doesn't label claim types, but car damage rarely reaches six figures, and the tail here runs to 4,075,401. The size of such a claim depends on how badly someone is hurt, not on driver age or bonus-malus, and 210 training claims above 18,000 are too few to learn where they fall.
 
 ### The problem is variance, not bias
 
@@ -42,7 +37,7 @@ Every quantity a pricing model estimates is a mean of claim amounts over some se
 
 *Pure premium per policy-year in each fold and the test set, uncapped and capped.*
 
-Uncapped, a model's score on a fold would depend more on which fold got the largest claims than on the model. The same goes for relativities: in the youngest driver-age band, three claims, the three largest in the portfolio, make up 71% of the raw cost. Capped, the band still costs 2.1 times the next one, an effect all of its claims inform.
+Uncapped, a model's score on a fold would depend more on which fold got the largest claims than on the model, and a relativity on where three claims fell.
 
 ### Cap each claim, load the excess
 
@@ -81,31 +76,13 @@ and the ratio of full to capped cost estimates exactly this $\ell$. (L2) is mild
 
 ## Checking (L1)
 
-**How often a claim is large.** Per rating factor, a [χ² test of independence](https://en.wikipedia.org/wiki/Chi-squared_test) asks whether the share of large claims is the same at every level. Five of seven factors show nothing at the 5% level, from vehicle power ($p$ = 0.21) to brand ($p$ = 0.93). Driver age does:
+Per rating factor, a [χ² test](https://en.wikipedia.org/wiki/Chi-squared_test) asks whether the share of large claims is the same at every level. Most show nothing. Driver age hints at something:
 
 <PricingFigure name="largeshare" />
 
 *Share of training claims above the cap per driver-age band, with exact 95% intervals; dotted, the share over all claims.*
 
-Claims of policyholders aged up to 21 are large 2.3% of the time, 17 of 753, against 1.0% for everyone else. With so few large claims per band the χ² approximation is rough, so this one comparison gets [Fisher's exact test](https://en.wikipedia.org/wiki/Fisher%27s_exact_test): $p$ = 0.002.
-
-**How large a large claim is.** The typical excess is the same for young and older drivers, medians of 18,337 and 19,622, and a rank-based [Mann–Whitney test](https://en.wikipedia.org/wiki/Mann%E2%80%93Whitney_U_test) gives $p$ = 0.61. The top is not: the three largest excesses are all young drivers', although only 17 of the 210 large claims are. If size ignored age, that would happen with probability $\binom{17}{3} / \binom{210}{3} \approx 0.04\%$. The group was chosen after seeing those claims, so read this as a measure of surprise, not a test.
-
-**What it would cost.** If young drivers' claims are large at their own rate $\hat\rho$ and exceed the cap by the pooled mean excess, the flat $\ell$ charges them
-
-$$
-\frac{\ell\, m^{(c)}_{\text{young}}}{m^{(c)}_{\text{young}} + \kappa_{\text{young}}} \approx 78\%
-$$
-
-of their expected cost, and everyone else 101%. That rests on 17 large claims, so read it as a direction rather than a number to price on.
-
-Dropping the cap wouldn't fix it: the young band's own ratio of full to capped cost is 6.0, set by three amounts, the variance problem the cap exists for. What should change is how the excess is spread. Give it its own frequency,
-
-$$
-\hat\mu(x) = \lambda(x)\,\big(m^{(c)}(x) + \hat\rho_{g(x)}\, \bar\kappa\big),
-$$
-
-with the share of large claims $\hat\rho_g$ per age group $g$ and one pooled mean excess $\bar\kappa$. The young-driver loading then rests on how often their claims are large, which 753 claims can estimate, not on how large three of them were. A [generalised Pareto](https://en.wikipedia.org/wiki/Generalized_Pareto_distribution) tail by age would be the next step.
+Claims of drivers up to 21 are large 2.3% of the time, 17 of 753, against 1.0% for everyone else ([Fisher's exact test](https://en.wikipedia.org/wiki/Fisher%27s_exact_test): $p$ = 0.002). Seventeen claims are too few to price on, so the loading stays flat; with more years of data, the share of large claims per age group would be the first thing to give its own factor.
 
 ## The most uncertain number in the tariff
 
@@ -115,6 +92,6 @@ The excess sits in 210 claims, so $\ell$ is noisy. Resampling the training polic
 
 *The large-claim loading with its 95% bootstrap interval, the value without the single largest training excess, and the value the test set would have needed.*
 
-The single largest excess is 24% of all excess cost. The test set had only 30 policies with a claim above the cap and would have needed $\ell = 1.12$, so the loaded premium predicts 1.37 times its full cost, while the capped premium is within 2% of its capped cost. That isn't a model failure: a year with a few fewer large claims looks exactly like this. It does mean that the factor multiplying every premium is known only to within about ±20%, while the [model comparison that follows](/post/tweedie-glm-vs-xgboost) fights over fractions of a percentage point. Several years of claims, or a tail model above the cap, would improve the premium more than a better model of the capped part could.
+The single largest excess is 24% of all excess cost. The test set had only 30 policies with a claim above the cap and would have needed $\ell = 1.12$: a year with a few fewer large claims looks exactly like that. So the factor multiplying every premium is known only to within about ±20%, while the [model comparison that follows](/post/tweedie-glm-vs-xgboost) fights over fractions of a percentage point. More years of claims would improve the premium more than a better model of the capped part could.
 
-Capping is not a trick to make the models look better. It separates what the rating factors can price, how often a policy claims and what an ordinary claim costs, from what they can't: the rare claim that pays for someone's life. The first goes to the model, the second to one factor that is shared by everyone and stated with its uncertainty.
+Capping separates what the rating factors can price, how often a policy claims and what an ordinary claim costs, from what they can't: the rare claim that pays for someone's life.
