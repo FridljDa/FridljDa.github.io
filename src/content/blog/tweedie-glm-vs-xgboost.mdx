@@ -1,5 +1,5 @@
 ---
-title: "XGBoost Beats the Tweedie GLM by Half a Point, and It's Real"
+title: "How to Pick a Pricing Model When the Usual Metrics Mislead"
 pubDate: 2026-11-18T01:00:00.000Z
 tags:
   - ML
@@ -7,22 +7,20 @@ tags:
   - Statistics
   - Insurance
 math: true
-description: "Pure premium on the French motor portfolio freMTPL2: a Tweedie GLM, frequency × severity GLMs, two XGBoost models and the tabular foundation model TabICL, compared on one metric chosen for the job. Poisson × Gamma XGBoost wins by 0.4 percentage points of explained deviance, a gain that is small, paired-significant across folds and confirmed on an untouched test set."
+description: "A premium is a mean, and most model-selection metrics reward something else: MAE the median, RMSE the few largest claims, the Gini only the ranking. What a pricing comparison needs instead, the Tweedie deviance read as D² with calibration as a second check, and how to tell a gain of half a point from noise, on the French motor portfolio freMTPL2."
 image: /images/blog/tweedie-glm-vs-xgboost/featured.png
 ---
 
 import PricingFigure from '../../components/PricingFigure.astro';
 
 ## TL;DR
-A premium is a mean, so the metric that picks a pricing model must be minimised by the mean and weight policies by exposure. That rules out MAE, MSE and the Gini, and leaves the Tweedie deviance, read as $D^2$, the share of the constant model's deviance a model explains. On the French motor portfolio freMTPL2, a Poisson frequency × gamma severity XGBoost explains 4.54% in cross-validation, the Tweedie GLM 4.10%. Tiny, but paired by fold it is 5.3 standard errors, and on the untouched test set the gain is 0.42 points with a 95% interval from 0.23 to 0.61. The model's premium is driven by bonus-malus, almost entirely through claim frequency. TabICL, a tabular foundation model that never trains on the data, trails because it sees only 10,000 policies; with the same 10,000, it gets 92% of the trees' $D^2$.
+Comparing pricing models runs into two problems. The usual metrics reward the wrong thing: absolute error is minimised by the median, zero for most policies; squared error is decided by the few largest claims; the Gini ignores the level, so a premium ten times too high scores the same. And the differences between good models are tiny, so noise decides a naive comparison. The fix is a metric minimised by the mean that weights each policy by its exposure and variance, the Tweedie deviance read as $D^2$, with calibration as a second check, and comparisons paired by fold and on the same test policies. On freMTPL2 that separates a gain of 0.4 points of $D^2$ from noise: a Poisson × gamma XGBoost beats the Tweedie GLM, and the gain holds on untouched test data.
 
 *Third of four posts on pricing freMTPL2. The [first](/post/frequency-times-severity) splits the pure premium into frequency and severity, the [second](/post/large-claim-loading) caps large claims at 18,000; everything here is on that cleaned, capped target.*
 
-## Choosing the metric
+## The problem: most metrics reward the wrong thing
 
-### Three requirements
-
-We price $\mu(x) = \mathbb E[Y \mid x, e]$, the expected claim cost per policy-year $Y = S/e$. The metric must
+We price $\mu(x) = \mathbb E[Y \mid x, e]$, the expected claim cost per policy-year $Y = S/e$. A metric that picks the model must
 
 - **(i)** be minimised in expectation by the true mean, so a lower score means a better premium;
 - **(ii)** weight policies by the information they carry: a month of exposure says less than a year;
@@ -37,9 +35,9 @@ The usual suspects fail:
 | Log-scale error | the geometric mean, below the mean | (i) |
 | Gini of the ordered Lorenz curve | any increasing transform of the mean | (i): $\hat\mu$ and $10\,\hat\mu$ score the same |
 
-The Gini is popular in pricing because it measures how well a tariff separates risks, and a competitor with a better ranking takes the policies we overcharge. But it can't tell a right premium from one ten times too high, and a better ranking already lowers the deviance below. (iii) can't be met by any metric that meets (i): the scores minimised by the mean are [exactly the Bregman divergences](https://arxiv.org/abs/0912.0902), and under each of them a claim moves the comparison in proportion to its size. That is what the cap is for.
+The Gini is popular in pricing because it measures how well a tariff separates risks. But it can't tell a right premium from one ten times too high. (iii) can't be met by any metric that meets (i): the scores minimised by the mean are [exactly the Bregman divergences](https://arxiv.org/abs/0912.0902), and under each of them a claim moves the comparison in proportion to its size. That is what the cap is for.
 
-### The Tweedie deviance, read as $D^2$
+## The solution: Tweedie deviance, read as $D^2$
 
 For a power $p \in (1, 2)$, the Tweedie unit deviance and its exposure-weighted mean over a set $A$ of held-out policies are
 
@@ -48,106 +46,47 @@ d_p(y, \hat\mu) = 2 \left( \frac{y^{2-p}}{(1-p)(2-p)} - \frac{y\, \hat\mu^{1-p}}
 D_p(\hat\mu; A) = \frac{\sum_{i \in A} e_i\, d_p\big(y_i^{(c)}, \hat\mu_i\big)}{\sum_{i \in A} e_i}.
 $$
 
-$d_p$ is a Bregman divergence, so (i) holds whatever the true distribution of $Y$. Under a Tweedie model, $\mathrm{Var}(Y \mid x, e) = \phi\, \mu(x)^p / e$ and $D_p$ is the log-likelihood up to constants: each residual is divided by its variance, which is (ii). $p = 1.7$ is fixed once from a moment estimate on the training data; recomputed for every $p$ from 1.2 to 1.9, the ranking below doesn't change.
+- **It is minimised by the mean.** $d_p$ is a Bregman divergence, so (i) holds whatever the true distribution of $Y$.
+- **It weights by variance.** Under a Tweedie model, $\mathrm{Var}(Y \mid x, e) = \phi\, \mu(x)^p / e$ and $D_p$ is the log-likelihood up to constants: each residual is divided by its variance, which is (ii). $p = 1.7$ comes from the [gamma shape of the claims](/post/frequency-times-severity); recomputed for every $p$ from 1.2 to 1.9, the ranking below doesn't change.
+- **It reads as a share.** $D_p$ depends on $p$ and on the currency, so it is reported as $D^2 = 1 - D_p(\hat\mu; A) / D_p(\bar y; A)$, the share of the constant model's deviance a model explains. Models are compared by the difference of their $D^2$, not by a ratio, which would make 0.4 points look like an 11% improvement.
 
-$D_p$ depends on $p$ and on the currency, so it is reported as $D^2 = 1 - D_p(\hat\mu; A) / D_p(\bar y; A)$, with $\bar y$ the mean premium of the fitting data. $D^2 = 0$ is the constant model. Models are compared by the difference of their $D^2$, not by a ratio, which would make 0.4 points look like an 11% improvement.
-
-### Calibration, the second check
-
-The deviance barely sees the level. Scale the true mean by $s$: the first derivative of the expected deviance vanishes at the mean, so
+**Calibration, the second check.** The deviance barely sees the level. Scale the true mean by $s$: the first derivative of the expected deviance vanishes at the mean, so
 
 $$
 \mathbb E\big[d_p(Y, s\mu)\big] - \mathbb E\big[d_p(Y, \mu)\big] = (s - 1)^2\, \mu^{2-p} + O\big((s-1)^3\big).
 $$
 
-A tariff 3% too high loses almost nothing in deviance and misprices the whole portfolio by 3%. So the deviance picks the model, and calibration, total predicted over total observed, overall and by decile, checks that the winner charges the right level.
+A tariff 3% too high loses almost nothing in deviance and misprices the whole portfolio by 3%. So the deviance picks the model, and calibration, total predicted over total observed, checks that the winner charges the right level.
 
-## The candidates
+## Telling a real gain from noise
 
-All models predict the annual capped pure premium, and all but TabICL use exposure as a weight, which for a log link has the same gradient as a $\log e_i$ offset.
+Single-digit $D^2$ is normal for a pure premium: most of the variation is whether and how much a policy happens to claim, which no feature predicts. So good models differ by fractions of a point, and a fold with an unlucky claim is hard for every model. Two things keep that noise out:
 
-| Model | Specification |
-|---|---|
-| Constant | $\hat\mu = \bar y$ |
-| Tweedie GLM | $\log \mu(x) = \beta_0 + h(x)^\top \beta$, Tweedie deviance, small ridge penalty |
-| Poisson × Gamma GLM | Poisson frequency $\lambda(x)$ and gamma mean claim size $m(x)$, each log-linear in $h(x)$; $\hat\mu = \hat\lambda\, \hat m$ |
-| Tweedie XGBoost | $\log \mu(x) = \sum_{t=1}^{T} f_t(x)$, regression trees, Tweedie loss |
-| Poisson × Gamma XGBoost | the GLM pair with each linear predictor replaced by a sum of trees |
-| TabICL | a pretrained transformer's prediction given a context of training rows |
+- **Pair by fold.** For the best model $b$ and a model $m$, each fitted without fold $F_k$ and scored on it, $\Delta_k = D_p\big(\hat\mu_m^{(-k)}; F_k\big) - D_p\big(\hat\mu_b^{(-k)}; F_k\big)$ and $\mathrm{SE} = s_\Delta / \sqrt K$. The fold's luck cancels in the difference. Then the [one-standard-error rule](https://doi.org/10.1201/9781315139470): take the simplest model within one SE of the best, because simpler models are easier to explain and to file with a regulator.
+- **Pair on the test set.** The winner and the reference are refitted on all training policies and scored once on test policies set aside before anything was fitted. A bootstrap that resamples the same policies for both models gives an interval for their difference, not just for each.
 
-$h(x)$ is the GLM design: cubic B-splines in driver age, bonus-malus and vehicle age, log density, and one-hot categories with thin levels grouped. The trees take the raw features with native categorical splits, are monotone in bonus-malus, and stop early on an inner validation split; their other hyperparameters are defaults, not tuned.
+## The result, briefly
 
-[TabICL](https://arxiv.org/abs/2602.11139) is a tabular foundation model under a BSD licence. It isn't trained on the portfolio: it stores 10,000 random policies as context, and a prediction is a forward pass that attends to them. It takes no weights, so exposure is an input, set to one at prediction, and a one-feature GLM on other fitting rows recalibrates its too-sharp raw predictions.
-
-## The result
-
-### Cross-validation
-
-Each model is fitted on four of five folds and scored on the fifth:
-
-| Model | $D^2$ | Calibration |
-|---|---:|---:|
-| Constant | 0.00% | 1.001 |
-| Tweedie GLM | 4.10% | 1.007 |
-| Poisson × Gamma GLM | 3.86% | 0.997 |
-| Tweedie XGBoost | 4.37% | 1.001 |
-| **Poisson × Gamma XGBoost** | **4.54%** | 0.988 |
-| TabICL | 2.94% | 1.047 |
-
-Single-digit $D^2$ is normal for a pure premium: most of the variation is whether and how much a policy happens to claim, which no feature predicts. What matters is the gap to the GLM, fold by fold:
+Six models, each predicting the capped pure premium: a constant, a Tweedie GLM with splines and ridge penalty (the industry standard), Poisson × gamma GLMs, the same two set-ups with [XGBoost](https://xgboost.readthedocs.io/) trees, monotone in bonus-malus, and the tabular foundation model [TabICL](https://arxiv.org/abs/2602.11139).
 
 <PricingFigure name="gains" />
 
 *Each model's $D^2$ minus the Tweedie GLM's on the same held-out fold (dots) and the mean (bar), in percentage points.*
 
-### Is it real?
+- **Cross-validation.** Poisson × gamma XGBoost explains 4.54% of the deviance, the Tweedie GLM 4.10%. Paired by fold, the GLM is 5.3 standard errors behind.
+- **Test set.** On 133,721 untouched policies the gain is 0.42 points, with a 95% interval from 0.23 to 0.61, positive in all 200 resamples. The two models' own intervals overlap; their difference doesn't, because both are scored on the same policies.
+- **Calibration.** The winner predicts 1.017 times the test set's capped cost, the constant model 1.038: the test policies simply claimed less.
+- **TabICL** trails at 2.94%: it sees only 10,000 policies as context. On the same 10,000, it gets 92% of the trees' $D^2$.
 
-A fold with an unlucky claim is hard for every model, so models are compared paired by fold. For the best model $b$ and a model $m$, with $\hat\mu^{(-k)}$ fitted without fold $F_k$,
+## What the winner learned
 
-$$
-\Delta_k = D_p\big(\hat\mu_m^{(-k)}; F_k\big) - D_p\big(\hat\mu_b^{(-k)}; F_k\big), \qquad \mathrm{SE} = \frac{s_\Delta}{\sqrt K}.
-$$
-
-The rule is the one-standard-error rule of [Breiman et al.](https://doi.org/10.1201/9781315139470): take the simplest model, in the order of the table, within one SE of the best. Simpler models are easier to explain and to file with a regulator, so they win ties. The Tweedie GLM is 5.3 standard errors behind, the Tweedie XGBoost 2.3. The folds share most of their training data, so these errors are somewhat optimistic, but not fivefold. Splitting frequency and severity helps the trees and costs the GLMs a quarter point.
-
-### On the test set
-
-The winner and the GLM were refitted on all training policies and scored once on the test set: 133,721 policies set aside before anything was fitted. A bootstrap over test policies, 200 resamples with the same policies for both models, gives the intervals:
-
-- Poisson × Gamma XGBoost explains 5.21% (4.64% to 5.81%), the Tweedie GLM 4.79% (4.17% to 5.39%).
-- The intervals overlap, but both models are scored on the same resampled policies, so most of the noise cancels in their difference: the gain is 0.42 points, from 0.23 to 0.61, positive in all 200 resamples.
-
-<PricingFigure name="calibration" />
-
-*Observed against charged capped premium per decile of equal exposure in the test set, log scales; on the dotted diagonal a decile pays what it is charged.*
-
-Observed cost rises from 31 to 328 per policy-year across the deciles, so the ordering holds on unseen policies, and no decile is off by more than 15. The line climbs slightly faster than the diagonal, the cautious under-spread that early stopping produces. In total the model predicts 1.017 times the capped cost, but the constant model predicts 1.038: the test policies simply claimed less than the training policies.
-
-## What the model learned
-
-Trees have no coefficients, so the model is read in two ways. [Permutation importance](https://arxiv.org/abs/1801.01489) shuffles one feature across the test policies: shuffling bonus-malus drops $D^2$ from 5.21% to −2.97%, 71% of the total importance, followed by driver age with 10%. [Partial dependence](https://doi.org/10.1214/aos/1013203451) shows the shape: set a feature to one value for every policy, average the premium, divide by the average premium. For a multiplicative model that is the tariff's relativity curve.
+Trees have no coefficients, so the model is read through [partial dependence](https://doi.org/10.1214/aos/1013203451): set one feature to a value for every policy, average the premium, divide by the average premium. For a multiplicative model that is the relativity curve of a tariff.
 
 <PricingFigure name="relativities" />
 
 *Partial dependence on bonus-malus and driver age, relative to the average premium; each panel has its own scale.*
 
-- **Bonus-malus is the tariff.** From 50 to 106 the premium rises by a factor of 6.7. Bonus-malus moves only with the policyholder's own claims, so it measures the individual claim frequency no other factor can.
-- **Driver age is not U-shaped.** It falls from 1.14 at 20 to 0.75 near 28, rises to 1.24 near 49 and ends at 1.30 at 80. The middle peak fits parents whose children drive the car too, and part of the young-driver effect is already in their high starting bonus-malus.
-- **It is all frequency.** Bonus-malus moves claim frequency by a factor of 6.3 and mean claim size by 1.07. The rating factors decide how often a policy claims, hardly how much.
+- **Bonus-malus is the tariff.** From 50 to 106 the premium rises by a factor of 6.7, almost all of it claim frequency. Bonus-malus moves only with the policyholder's own claims, so it measures what no other factor can.
+- **Driver age is not U-shaped.** It falls from 1.14 at 20 to 0.75 near 28 and rises to 1.24 near 49, which fits parents whose children drive the car too.
 
-## TabICL: the learner or the data?
-
-TabICL's context of 10,000 policies, about 365 of them with a claim, is 2.3% of a fitting set. To separate the learner from the data, the GLM and the boosted pair were refitted on random subsamples of the fitting folds, the smallest being exactly TabICL's context:
-
-<PricingFigure name="datasize" />
-
-*Held-out $D^2$ against the number of fitting policies, mean over five folds; TabICL is the point at its context size. The GLM is shown from 30,000 policies.*
-
-- **With equal data, it is close to the trees.** On the same 10,000 rows TabICL reaches 2.9%, the boosted pair 3.2%: 92% of it, without being trained on the portfolio.
-- **The context limits it.** The boosted pair gains 1.5 points from 10,000 policies to the full fitting set, about the whole gap to TabICL. TabICL can't follow: every predicted row attends to every context row, so on a laptop GPU it sees 43 times fewer policies.
-
-A tabular foundation model is a learned prior: it does most of the work when rows are few and loses its head start as data grows. For a portfolio this size, boosted trees are the better use of the data.
-
-## What the GLM keeps
-
-The boosted model wins by a margin that is small and real. What it gives up is a tariff that can be filed line by line, so the Tweedie GLM stays as the reference, and the obvious next step is a GLM that keeps most of the gain by adding the interactions the trees find, such as driver age with bonus-malus. And the largest uncertainty in the premium isn't in this comparison at all: it is the [large-claim loading](/post/large-claim-loading), which multiplies every premium and is known only to within about ±20%.
+The gain is small and real, and what it costs is a tariff that can be filed line by line. So the Tweedie GLM stays as the reference, and the next step is a GLM with the interactions the trees find, such as driver age with bonus-malus. The largest uncertainty in the premium isn't in this comparison at all: it is the [large-claim loading](/post/large-claim-loading), known only to within about ±20%.

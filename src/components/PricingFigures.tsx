@@ -20,9 +20,7 @@
  *
  * tweedie-glm-vs-xgboost:
  * - gains: per fold, each model's D² minus the Tweedie GLM's.
- * - calibration: observed against charged premium per decile, test set.
  * - relativities: partial dependence on bonus-malus and driver age.
- * - datasize: D² against the number of fitting policies, with TabICL.
  *
  * reports-that-cant-disagree:
  * - pipeline: rules write results, notebooks only read them, checks stand
@@ -600,52 +598,6 @@ function Gains() {
 }
 
 /** Exposure-weighted mean charged and observed capped premium per decile of the prediction, test set. */
-const DECILES = [
-  [44, 31],
-  [59, 52],
-  [68, 66],
-  [76, 68],
-  [85, 84],
-  [96, 81],
-  [110, 111],
-  [130, 142],
-  [168, 174],
-  [317, 328],
-];
-
-const CalibrationDescription =
-  'Ten points, one per decile of equal exposure in the test set, of the observed capped claim cost per policy-year against the premium charged, both on log scales, with the diagonal where the two are equal. From the cheapest decile, charged 44 and observed 31, to the dearest, charged 317 and observed 328. The points rise with the diagonal and lie close to it, except the cheapest, which lies below.';
-
-function Calibration() {
-  const box = { left: 64, top: 30, right: 556, bottom: 330 };
-  const sx = log(25, 400, box.left, box.right);
-  const sy = log(25, 400, box.bottom, box.top);
-  const ticks = [25, 50, 100, 200, 400];
-  return (
-    <Svg height={392} label={CalibrationDescription}>
-      <Title x={4} y={18}>
-        Observed per policy-year
-      </Title>
-      <YGrid ticks={ticks} sy={sy} left={box.left} right={box.right} format={String} />
-      <XGrid ticks={ticks} sx={sx} top={box.top} bottom={box.bottom} format={String} />
-      <line x1={sx(25)} y1={sy(25)} x2={sx(400)} y2={sy(400)} stroke={color('text')} strokeWidth={1.5} strokeDasharray="5 4" />
-      <path d={DECILES.map(([c, o], i) => `${i ? 'L' : 'M'}${sx(c)},${sy(o)}`).join(' ')} fill="none" stroke={MODEL.xgbfs.stroke} strokeWidth={2} />
-      {DECILES.map(([c, o], i) => (
-        <circle key={i} cx={sx(c)} cy={sy(o)} r={6} fill={MODEL.xgbfs.stroke} stroke={color('surface')} strokeWidth={1.5} />
-      ))}
-      <text x={sx(44) + 10} y={sy(31) + 4} fontSize={14} fill={color('text')}>
-        charged 44, claimed 31
-      </text>
-      <text x={sx(317) - 10} y={sy(328) - 12} textAnchor="end" fontSize={14} fill={color('text')}>
-        charged 317, claimed 328
-      </text>
-      <text x={(box.left + box.right) / 2} y={box.bottom + 46} textAnchor="middle" fontSize={14} fill={color('muted')}>
-        Charged per policy-year (capped premium, log scale)
-      </text>
-    </Svg>
-  );
-}
-
 /** Partial dependence of the final model, relative to the average premium. */
 const BM_PD = [
   [50, 0.68],
@@ -724,60 +676,6 @@ function Relativities() {
 }
 
 /** Held-out D² (%) against fitting policies, mean over folds; the GLM from 30,000 policies. */
-const SIZES = [10000, 30000, 100000, 427906];
-const DATA_SIZE: { model: Model; d2: (number | null)[] }[] = [
-  { model: 'glm', d2: [null, 3.2, 3.9, 4.1] },
-  { model: 'xgbfs', d2: [3.2, 3.8, 4.3, 4.6] },
-];
-
-const DataSizeDescription =
-  'Held-out D² in percent against the number of fitting policies on a log scale, mean over five folds. Poisson × Gamma XGBoost: 3.2% at 10,000 policies, 3.8% at 30,000, 4.3% at 100,000 and 4.6% at all 427,906. Tweedie GLM, from 30,000 policies: 3.2%, 3.9% and 4.1%. TabICL, a single point at its context of 10,000 policies: 2.9%.';
-
-function DataSize() {
-  const box = { left: 52, top: 40, right: 540, bottom: 280 };
-  const sx = log(8000, 500000, box.left, box.right);
-  const sy = lin(2, 5, box.bottom, box.top);
-  const line = (d2: (number | null)[]) =>
-    d2
-      .map((v, i) => (v === null ? null : `${sx(SIZES[i])},${sy(v)}`))
-      .filter(Boolean)
-      .map((p, i) => `${i ? 'L' : 'M'}${p}`)
-      .join(' ');
-  return (
-    <Svg height={380} label={DataSizeDescription}>
-      <Title x={4} y={20}>
-        Held-out D² (%)
-      </Title>
-      <YGrid ticks={[2, 3, 4, 5]} sy={sy} left={box.left} right={box.right} format={String} />
-      <XGrid ticks={SIZES} sx={sx} top={box.bottom} bottom={box.bottom} format={(v) => (v > 400000 ? 'all 427,906' : thousands(v))} />
-      {DATA_SIZE.map((s) => (
-        <g key={s.model}>
-          <path d={line(s.d2)} fill="none" stroke={MODEL[s.model].stroke} strokeWidth={3} strokeLinejoin="round" />
-          {s.d2.map((v, i) => (v === null ? null : <circle key={i} cx={sx(SIZES[i])} cy={sy(v)} r={5} fill={MODEL[s.model].stroke} />))}
-        </g>
-      ))}
-      <rect x={sx(10000) - 7} y={sy(2.9) - 7} width={14} height={14} transform={`rotate(45 ${sx(10000)} ${sy(2.9)})`} fill={MODEL.tabicl.stroke} />
-      <g fontSize={15} fill={color('text')}>
-        {([
-          { m: 'xgbfs', x: 0 },
-          { m: 'glm', x: 248 },
-          { m: 'tabicl', x: 396 },
-        ] as { m: Model; x: number }[]).map(({ m, x }) => (
-          <g key={m}>
-            <line x1={box.left + x} x2={box.left + x + 22} y1={box.bottom + 56} y2={box.bottom + 56} stroke={MODEL[m].stroke} strokeWidth={m === 'tabicl' ? 10 : 3} />
-            <text x={box.left + x + 30} y={box.bottom + 56} dy="0.35em">
-              {m === 'tabicl' ? 'TabICL' : MODEL[m].label}
-            </text>
-          </g>
-        ))}
-      </g>
-      <text x={(box.left + box.right) / 2} y={box.bottom + 90} textAnchor="middle" fontSize={14} fill={color('muted')}>
-        Fitting policies (log scale)
-      </text>
-    </Svg>
-  );
-}
-
 /* reports-that-cant-disagree */
 
 const PipelineDescription =
@@ -846,9 +744,7 @@ export const FIGURES = {
   largeshare: { component: LargeShare, description: LargeShareDescription, width: 600 },
   loading: { component: Loading, description: LoadingDescription, width: 600 },
   gains: { component: Gains, description: GainsDescription, width: 600 },
-  calibration: { component: Calibration, description: CalibrationDescription, width: 560 },
   relativities: { component: Relativities, description: RelativitiesDescription, width: 600 },
-  datasize: { component: DataSize, description: DataSizeDescription, width: 600 },
   pipeline: { component: Pipeline, description: PipelineDescription, width: 600 },
 } satisfies Record<string, { component: ComponentType; description: string; width: number }>;
 
