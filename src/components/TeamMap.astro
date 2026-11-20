@@ -1,0 +1,51 @@
+---
+/**
+ * The design map of one-agent-many-teams, with one section's part highlighted
+ * (see TeamMap.tsx for the presets). Rendered on the server, no
+ * JavaScript.
+ */
+import TeamMapSvg, { PRESETS, type Preset, type PresetName } from './TeamMap';
+import './loop-animation.css';
+
+interface Props {
+  preset: PresetName;
+}
+
+const { preset } = Astro.props;
+const { description, small }: Preset = PRESETS[preset];
+---
+
+<figure class:list={['team-map lv-theme not-prose my-8', { small }]} data-figure={`map-${preset}`}>
+  <div class="frame">
+    <TeamMapSvg preset={preset} id={`map-${preset}`} />
+  </div>
+</figure>
+
+<style>
+  /* As in SystemMap.astro: below this width the wide map's labels get too
+     small, so phones get the top-to-bottom layout instead. */
+  .team-map {
+    container-type: inline-size;
+  }
+  .team-map :global(svg) {
+    display: block;
+  }
+  .team-map :global(.map-tall) {
+    display: none;
+  }
+  /* Wider than the other posts' small maps, so their labels stay readable. */
+  :global(.prose) .team-map.small .frame {
+    max-width: 600px;
+    margin: 0 auto;
+  }
+  @container (max-width: 560px) {
+    .team-map :global(.map-wide) {
+      display: none;
+    }
+    .team-map :global(.map-tall) {
+      display: block;
+      max-width: 400px;
+      margin: 0 auto;
+    }
+  }
+</style>
