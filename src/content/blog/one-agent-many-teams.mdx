@@ -9,10 +9,15 @@ description: "Splitting an agent into subagents owned by different teams copies 
 image: /images/blog/one-agent-many-teams/featured.png
 ---
 
+import TeamMap from '../../components/TeamMap.astro';
+import TeamFigure from '../../components/TeamFigure.astro';
+
 ## TL;DR
 Anthropic [advises against](https://claude.com/resources/articles/building-agents-when-to-fold-subagents-into-your-main-agent-loop) splitting an agent into subagents along team lines, and I agree: I've seen products fail that way. I've also seen enterprise products fail when one team had to own everything and the other teams couldn't ship without it. The way out is to split ownership at build time rather than at runtime. One platform team owns the agent loop, the system prompt and the end-to-end evals. Feature teams never touch the model or the agent design; they contribute three things through fixed interfaces: MCP servers, skills and eval datasets.
 
-{/* FIGURE: org chart → architecture, both ways. Left: three teams → three subagents behind a router. Right: three teams → tools, skills, evals feeding one loop owned by the platform team. */}
+<TeamFigure name="shapes" />
+
+*Three ways to split one agent among the same three teams. The first two copy the org chart, into the runtime or into a queue; the third keeps one loop and lets every team plug into it.*
 
 ## What goes wrong when the architecture copies the org chart
 
@@ -20,7 +25,13 @@ The running example is invented to protect the client, but the projects behind i
 
 The obvious design gives each team its own subagent, with a router in front that decides which one a message goes to. Each team writes its own prompt, picks its own tools and ships on its own schedule. It looks like good engineering: clear ownership, no team waits for another.
 
-Then Alex Carter writes in: their account is locked, and the card they tried in the meantime was blocked too. The router has to pick one subagent. Whichever it picks hands half the problem to the other, and each handoff loses detail. Anthropic's article calls this out by name: the agent architecture becomes "a copy of their org chart (Conway's law at work)", and information passed between agents degrades "with each handoff". It lists more symptoms I recognise: a system prompt where "every team adds a sentence", evals that each team grades for itself so nobody sees the whole conversation, and in one comparison a single loop running about twice as fast as the multi-agent version.
+Then Alex Carter writes in: their account is locked, and the card they tried in the meantime was blocked too. The router has to pick one subagent. Whichever it picks hands half the problem to the other, and each handoff loses detail.
+
+<TeamFigure name="handoff" />
+
+*Accounts passes the card on, but not the lock or the account number, so Cards asks Alex for something Alex already wrote.*
+
+Anthropic's article calls this out by name: the agent architecture becomes "a copy of their org chart (Conway's law at work)", and information passed between agents degrades "with each handoff". It lists more symptoms I recognise: a system prompt where "every team adds a sentence", evals that each team grades for itself so nobody sees the whole conversation, and in one comparison a single loop running about twice as fast as the multi-agent version.
 
 The customer never sees the org chart. They see one conversation, and it is only as good as the worst handoff in it.
 
@@ -52,22 +63,37 @@ monday.com's post names no model, and neither post says which models the problem
 
 At runtime there is one agent loop. At build time there are many owners, and each owns a different kind of thing:
 
-| Who | Owns | Doesn't touch |
-| --- | --- | --- |
-| Platform team | The agent loop, the system prompt, model choice, the end-to-end eval set, the release gate | Domain logic |
-| Feature teams | Their MCP servers, their skills, their eval datasets | The model, the prompt, the agent design |
+<TeamMap preset="overview" />
 
-**MCP servers are the tools.** Accounts ships an MCP server with `accounts_lookup` and `accounts_send_unlock_link`; Cards ships one with `cards_get_status`. They register it with a central gateway such as [LiteLLM's MCP gateway](https://docs.litellm.ai/docs/mcp), which handles authentication, permissions and which tools the agent sees. A team can change its server's internals whenever it likes, as long as the tool interface holds. Authentication belongs to the gateway, not to every team's server: an [enterprise MCP platform write-up](https://newsletter.optimistengineer.com/p/building-an-enterprise-mcp-platform-594) makes the same point. Sierra learned the other half [building its gateway](https://sierra.ai/blog/building-sierras-mcp-gateway-an-engineering-iceberg): once the central team stopped configuring each integration itself and handed that to the people who own each service, contributions came from well beyond the original two leads.
+*The platform team owns the loop, the system prompt, the model choice, the gateway and the eval gate. Feature teams never touch those; each contributes a skill, an MCP server and eval cases.*
 
-**Skills are how the team works.** Accounts writes the skill for a locked account: look the customer up, never ask for what we can find, check the security flag before any unlock. That knowledge lives with the team that has it, not in a shared system prompt everyone appends to. The agent loads the skill when a message needs it. Shopify got the same effect another way: [their tools return the relevant instructions with their data](https://shopify.engineering/building-production-ready-agentic-systems), so the instructions live in the tool's code. The catch is timing: the model sees a tool's instructions only after it has called the tool, too late to help it choose which tool to call. A skill the agent can find before it acts covers that case.
+### Skills: how each team works
 
-**Eval datasets are the contract.** Accounts contributes cases like Alex's, with the reply an expert would accept, to a shared eval store such as [MLflow](https://mlflow.org/docs/latest/genai/). The platform team runs every team's cases against the whole agent, so a change in Cards that breaks a locked-account conversation fails the gate, whoever made it.
+<TeamMap preset="skills" />
+
+Accounts writes the skill for a locked account: look the customer up, never ask for what we can find, check the security flag before any unlock. That knowledge lives with the team that has it, not in a shared system prompt everyone appends to. The agent loads the skill when a message needs it. Shopify got the same effect another way: [their tools return the relevant instructions with their data](https://shopify.engineering/building-production-ready-agentic-systems), so the instructions live in the tool's code. The catch is timing: the model sees a tool's instructions only after it has called the tool, too late to help it choose which tool to call. A skill the agent can find before it acts covers that case.
+
+### Tools: one MCP server per team
+
+<TeamMap preset="tools" />
+
+Accounts ships an MCP server with `accounts_lookup` and `accounts_send_unlock_link`; Cards ships one with `cards_get_status`. They register it with a central gateway such as [LiteLLM's MCP gateway](https://docs.litellm.ai/docs/mcp), which handles authentication, permissions and which tools the agent sees. A team can change its server's internals whenever it likes, as long as the tool interface holds. Authentication belongs to the gateway, not to every team's server: an [enterprise MCP platform write-up](https://newsletter.optimistengineer.com/p/building-an-enterprise-mcp-platform-594) makes the same point. Sierra learned the other half [building its gateway](https://sierra.ai/blog/building-sierras-mcp-gateway-an-engineering-iceberg): once the central team stopped configuring each integration itself and handed that to the people who own each service, contributions came from well beyond the original two leads.
+
+### Evals: the contract between teams
+
+<TeamMap preset="evals" />
+
+Accounts contributes cases like Alex's, with the reply an expert would accept, to a shared eval store such as [MLflow](https://mlflow.org/docs/latest/genai/). The platform team runs every team's cases against the whole agent, so when a change in Cards breaks a locked-account conversation, Accounts hears about it, whoever made it.
 
 That last point is what keeps the platform team from becoming the bottleneck: it maintains the gate instead of reviewing every change. A gate can couple teams too, though, so it needs a few rules:
 
 - **A change that passes needs no sign-off.** When Accounts changes a tool it already owns and the evals pass, Accounts merges it. The platform team only looks at changes to the shape of the agent: a new tool, a changed interface, a tool opened to more callers.
 - **A team is blocked by its own failures.** If any red case blocked every merge, one flaky Payments case would stop Cards from shipping. A change is blocked by its own domain's cases plus a short list of conversations nobody may break, such as unlocking a flagged account. Other failures go to their owners as reports.
 - **Every team has an off switch.** Accounts can disable its own tool at any time without asking anyone, and the agent treats it like any other outage.
+
+<TeamFigure name="gate" />
+
+*Which failing cases block a change: its own team's and the must-not-break set. A Cards change that breaks a Payments case is reported to Payments, and Cards ships.*
 
 The coupling between teams moves out of meetings and into a test suite.
 

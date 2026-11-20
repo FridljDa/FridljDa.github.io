@@ -1,0 +1,50 @@
+---
+/**
+ * One of the figures of one-agent-many-teams (see TeamFigures.tsx). Rendered
+ * on the server, no JavaScript.
+ */
+import { FIGURES, type FigureName } from './TeamFigures';
+import './loop-animation.css';
+
+interface Props {
+  name: FigureName;
+}
+
+const { name } = Astro.props;
+const { component: Figure, description, width } = FIGURES[name];
+---
+
+<figure class="team-figure lv-theme not-prose my-8" data-figure={name}>
+  <div class="frame" style={`--width: ${width}px`}>
+    <Figure />
+  </div>
+</figure>
+
+<style>
+  /* As in TeamMap.astro: in a narrow column the wide layout's type gets
+     too small, so phones get the figure's narrower layout instead. */
+  .team-figure {
+    container-type: inline-size;
+  }
+  .team-figure .frame {
+    max-width: var(--width);
+    margin: 0 auto;
+  }
+  .team-figure :global(svg) {
+    display: block;
+  }
+  .team-figure :global(.figure-tall) {
+    display: none;
+  }
+  @container (max-width: 560px) {
+    .team-figure .frame {
+      max-width: 460px;
+    }
+    .team-figure :global(.figure-wide) {
+      display: none;
+    }
+    .team-figure :global(.figure-tall) {
+      display: block;
+    }
+  }
+</style>
