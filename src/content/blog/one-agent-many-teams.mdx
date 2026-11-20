@@ -13,7 +13,7 @@ import TeamMap from '../../components/TeamMap.astro';
 import TeamFigure from '../../components/TeamFigure.astro';
 
 ## TL;DR
-Anthropic [advises against](https://claude.com/resources/articles/building-agents-when-to-fold-subagents-into-your-main-agent-loop) splitting an agent into subagents along team lines, and I've seen products fail that way. I've also seen the opposite fail: one team owns the agent, and every other team waits on it. Customers need one coherent conversation; teams need to ship without each other. So keep one agent and split who owns its parts: a platform team owns the agent loop, and feature teams that contribute skills, MCP servers and eval cases without touching the model or the prompt. A shared eval gate catches what one team breaks for another, scoped so that one team's failures don't block another team's releases.
+Anthropic [advises against](https://claude.com/resources/articles/building-agents-when-to-fold-subagents-into-your-main-agent-loop) splitting an agent into subagents along team lines, and I've seen products fail that way. I've also seen the opposite fail: one team owns the agent, and every other team waits on it. Customers need one coherent conversation; teams need to ship without each other. So keep one agent and split who owns its parts: a platform team owns the agent loop, and feature teams contribute skills, MCP servers and eval cases without touching the model or the prompt. A shared eval gate catches what one team breaks for another, scoped so that one team's failures don't block another team's releases.
 
 <TeamFigure name="shapes" />
 

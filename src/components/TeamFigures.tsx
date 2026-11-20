@@ -68,6 +68,15 @@ const Router = ({ x, y, w = 100, h = 48 }: Point & { w?: number; h?: number }) =
   </g>
 );
 
+/** A team, never one person: one person in front of two colleagues, as Experts draws the experts. */
+const Team = ({ x, y, scale = 1, fill }: Point & { scale?: number; fill: string }) => (
+  <g transform={`translate(${x} ${y}) scale(${scale})`}>
+    <Person x={-15} y={-6} scale={0.78} fill={fill} opacity={0.75} />
+    <Person x={15} y={-6} scale={0.78} fill={fill} opacity={0.75} />
+    <Person x={0} y={4} fill={fill} />
+  </g>
+);
+
 /** The customer's message: an envelope in a circle. */
 const Message = ({ x, y, r = 26 }: Point & { r?: number }) => (
   <g>
@@ -125,7 +134,7 @@ function OneTeam({ id }: { id: string }) {
       </Text>
       {TEAMS.map((t, i) => (
         <g key={t.name}>
-          <Person x={xs[i]} y={74} scale={1.1} fill={t.color} />
+          <Team x={xs[i]} y={74} scale={1.1} fill={t.color} />
           <Text x={xs[i]} y={118} size={NAME} fill={t.color}>
             {t.name}
           </Text>
@@ -138,7 +147,7 @@ function OneTeam({ id }: { id: string }) {
       ))}
       <path d="M150,212 V226" {...edge} markerEnd={`url(#${id})`} />
       <rect x={95} y={232} width={110} height={56} rx={10} fill={color('node-bg')} stroke={color('node-border')} strokeWidth={2.5} />
-      <Person x={150} y={262} scale={1} fill={color('added')} />
+      <Team x={150} y={260} scale={1} fill={color('added')} />
       <Text x={150} y={310} size={NAME}>
         Agent team
       </Text>
@@ -165,7 +174,7 @@ function OneLoop({ id }: { id: string }) {
       {TEAMS.map((t, i) => (
         <g key={t.name}>
           {i !== 1 && <path d={`M${xs[i]},224 C${xs[i]},150 ${i === 0 ? 70 : 230},110 ${i === 0 ? 102 : 198},110`} {...edge} markerEnd={`url(#${id})`} />}
-          <Person x={xs[i]} y={248} scale={1.1} fill={t.color} />
+          <Team x={xs[i]} y={248} scale={1.1} fill={t.color} />
           <Text x={xs[i]} y={292} size={NAME} fill={t.color}>
             {t.name}
           </Text>
