@@ -8,9 +8,6 @@
  * - handoff: Alex's message through the subagent design. The router sends it
  *   to Accounts, which hands the card to Cards; the handoff carries only
  *   part of what Alex wrote, so Cards asks for the account number again.
- * - gate: which failing eval cases block a team's change. Its own domain's
- *   cases and the must-not-break set block it; other teams' cases are only
- *   reported to their owners.
  *
  * Drawn in the style of the post's map (TeamMap.tsx) and the figures of
  * workflow-vs-agent (palette, icons, short labels); the prose explains them.
@@ -65,6 +62,15 @@ const Router = ({ x, y, w = 100, h = 48 }: Point & { w?: number; h?: number }) =
   <g>
     <rect x={x - w / 2} y={y - h / 2} width={w} height={h} rx={10} fill={color('node-bg')} stroke={color('node-border')} strokeWidth={2.5} />
     <path d={`M${x},${y - 14} L${x + 14},${y} L${x},${y + 14} L${x - 14},${y} Z`} fill={color('surface')} stroke={color('node-border')} strokeWidth={2.5} strokeLinejoin="round" />
+  </g>
+);
+
+/** A team, never one person: one person in front of two colleagues, as Experts draws the experts. */
+const Team = ({ x, y, scale = 1, fill }: Point & { scale?: number; fill: string }) => (
+  <g transform={`translate(${x} ${y}) scale(${scale})`}>
+    <Person x={-15} y={-6} scale={0.78} fill={fill} opacity={0.75} />
+    <Person x={15} y={-6} scale={0.78} fill={fill} opacity={0.75} />
+    <Person x={0} y={4} fill={fill} />
   </g>
 );
 
@@ -125,7 +131,7 @@ function OneTeam({ id }: { id: string }) {
       </Text>
       {TEAMS.map((t, i) => (
         <g key={t.name}>
-          <Person x={xs[i]} y={74} scale={1.1} fill={t.color} />
+          <Team x={xs[i]} y={74} scale={1.1} fill={t.color} />
           <Text x={xs[i]} y={118} size={NAME} fill={t.color}>
             {t.name}
           </Text>
@@ -138,7 +144,7 @@ function OneTeam({ id }: { id: string }) {
       ))}
       <path d="M150,212 V226" {...edge} markerEnd={`url(#${id})`} />
       <rect x={95} y={232} width={110} height={56} rx={10} fill={color('node-bg')} stroke={color('node-border')} strokeWidth={2.5} />
-      <Person x={150} y={262} scale={1} fill={color('added')} />
+      <Team x={150} y={260} scale={1} fill={color('added')} />
       <Text x={150} y={310} size={NAME}>
         Agent team
       </Text>
@@ -165,7 +171,7 @@ function OneLoop({ id }: { id: string }) {
       {TEAMS.map((t, i) => (
         <g key={t.name}>
           {i !== 1 && <path d={`M${xs[i]},224 C${xs[i]},150 ${i === 0 ? 70 : 230},110 ${i === 0 ? 102 : 198},110`} {...edge} markerEnd={`url(#${id})`} />}
-          <Person x={xs[i]} y={248} scale={1.1} fill={t.color} />
+          <Team x={xs[i]} y={248} scale={1.1} fill={t.color} />
           <Text x={xs[i]} y={292} size={NAME} fill={t.color}>
             {t.name}
           </Text>
@@ -355,110 +361,9 @@ function Handoff() {
   );
 }
 
-// ---------------------------------------------------------------- gate
-
-const GateDescription =
-  'A grid of which failing eval cases block a change. Rows: a change by Accounts, by Cards, by Payments. Columns: the Accounts cases, the Cards cases, the Payments cases, and the must-not-break set. A change is blocked by failures in its own team’s cases and in the must-not-break set; failures in another team’s cases are reported to that team and don’t block.';
-
-interface GateLayout {
-  width: number;
-  height: number;
-  size: number;
-  cell: { w: number; h: number };
-  cols: number[];
-  rows: number[];
-  /** The baseline of the column headers' first line. */
-  head: number;
-  /** Each row's team: left of its cells on wide screens, above them on phones. */
-  rowLabels: Label[];
-  rowPrefix: string;
-}
-
-const GATE_WIDE: GateLayout = {
-  width: 770,
-  height: 330,
-  size: 18,
-  cell: { w: 120, h: 62 },
-  cols: [284, 420, 556, 700],
-  rows: [116, 192, 268],
-  head: 30,
-  rowLabels: [116, 192, 268].map((y) => ({ x: 4, y: y + 6, anchor: 'start' })),
-  rowPrefix: 'Change by ',
-};
-
-const GATE_TALL: GateLayout = {
-  width: 440,
-  height: 400,
-  size: 17,
-  cell: { w: 98, h: 54 },
-  cols: [52, 162, 272, 386],
-  rows: [130, 236, 342],
-  head: 26,
-  rowLabels: [130, 236, 342].map((y) => ({ x: 4, y: y - 36, anchor: 'start' })),
-  rowPrefix: 'Change by ',
-};
-
-const HEADS = [...TEAMS.map((t) => ({ top: t.name, bottom: 'cases', fill: t.color })), { top: 'Must not', bottom: 'break', fill: undefined }];
-
-function GateSvg({ layout, className }: { layout: GateLayout; className: string }) {
-  const { cell, size } = layout;
-  return (
-    <Svg viewBox={`0 0 ${layout.width} ${layout.height}`} label={GateDescription} className={className}>
-      {HEADS.map((h, j) => (
-        <g key={h.top}>
-          <Text x={layout.cols[j]} y={layout.head} size={size} fill={h.fill}>
-            {h.top}
-          </Text>
-          <Text x={layout.cols[j]} y={layout.head + size + 4} size={size - 2} muted>
-            {h.bottom}
-          </Text>
-        </g>
-      ))}
-      {TEAMS.map((team, i) => (
-        <g key={team.name}>
-          <text {...layout.rowLabels[i]} textAnchor={layout.rowLabels[i].anchor} fontSize={size} fontWeight={600} fill={color('muted')}>
-            {layout.rowPrefix}
-            <tspan fill={team.color}>{team.name}</tspan>
-          </text>
-          {layout.cols.map((cx, j) => {
-            const cy = layout.rows[i];
-            const blocks = j === i || j === HEADS.length - 1;
-            const box = { x: cx - cell.w / 2, y: cy - cell.h / 2, width: cell.w, height: cell.h, rx: 10 };
-            return blocks ? (
-              <g key={j}>
-                <rect {...box} fill={color('node-bg')} stroke={color('bad')} strokeWidth={2.5} />
-                <text x={cx} y={cy} dy="0.35em" textAnchor="middle" fontSize={size} fontWeight={700} fill={color('bad')}>
-                  Blocks
-                </text>
-              </g>
-            ) : (
-              <g key={j}>
-                <rect {...box} fill="none" stroke={color('edge')} strokeWidth={2} strokeDasharray="5 4" />
-                <text x={cx} y={cy} dy="0.35em" textAnchor="middle" fontSize={size - 1} fontWeight={500} fill={color('muted')}>
-                  Reports
-                </text>
-              </g>
-            );
-          })}
-        </g>
-      ))}
-    </Svg>
-  );
-}
-
-function Gate() {
-  return (
-    <>
-      <GateSvg layout={GATE_WIDE} className="figure-wide" />
-      <GateSvg layout={GATE_TALL} className="figure-tall" />
-    </>
-  );
-}
-
 export const FIGURES = {
   shapes: { component: Shapes, description: ShapesDescription, width: 760 },
   handoff: { component: Handoff, description: HandoffDescription, width: 760 },
-  gate: { component: Gate, description: GateDescription, width: 620 },
 } satisfies Record<string, { component: ComponentType; description: string; width: number }>;
 
 export type FigureName = keyof typeof FIGURES;

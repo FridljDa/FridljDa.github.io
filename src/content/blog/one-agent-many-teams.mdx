@@ -13,7 +13,7 @@ import TeamMap from '../../components/TeamMap.astro';
 import TeamFigure from '../../components/TeamFigure.astro';
 
 ## TL;DR
-Anthropic [advises against](https://claude.com/resources/articles/building-agents-when-to-fold-subagents-into-your-main-agent-loop) splitting an agent into subagents along team lines, and I've seen products fail that way. I've also seen the opposite fail: one team owns the agent, and every other team waits on it. Customers need one coherent conversation; teams need to ship without each other. So keep one agent and split who owns its parts: a platform team owns the agent loop, and feature teams that contribute skills, MCP servers and eval cases without touching the model or the prompt. A shared eval gate catches what one team breaks for another, scoped so that one team's failures don't block another team's releases.
+Anthropic [advises against](https://claude.com/resources/articles/building-agents-when-to-fold-subagents-into-your-main-agent-loop) splitting an agent into subagents along team lines, and I've seen products fail that way. I've also seen the opposite fail: one team owns the agent, and every other team waits on it. Customers need one coherent conversation; teams need to ship without each other. So keep one agent and split who owns its parts: a platform team owns the agent loop, and feature teams contribute skills, MCP servers and eval cases without touching the model or the prompt. One central eval set, which every team adds cases to, runs on each pull request; a team merges once its change hasn't broken another team's conversations.
 
 <TeamFigure name="shapes" />
 
@@ -73,23 +73,14 @@ Accounts runs an MCP server with `accounts_lookup` and `accounts_send_unlock_lin
 
 <TeamMap preset="evals" />
 
-Accounts contributes cases like Alex's, with the reply an expert would accept, to a shared eval store such as [MLflow](https://mlflow.org/docs/latest/genai/). The platform team runs every team's cases against the whole agent on every change, its own included.
+There is one central eval set for the one agent, stored in a tool such as [MLflow](https://mlflow.org/docs/latest/genai/). Every team adds cases to it: Accounts adds cases like Alex's, with the reply an expert would accept. The platform team runs the whole set on every pull request, its own included.
 
 ## Keeping the teams independent
 
-In one loop, a team's change can break another team's conversations. These four rules let each team ship without waiting for the others, while the evals still catch what it breaks:
+In one loop, a team's change can break another team's conversations. The balance is delicate: with too much central control, teams wait on the platform team again; with too little, the agent falls back into team-shaped pieces. So every change takes the same self-service path, a pull request:
 
-- **No sign-off for passing changes.** The platform team reviews only new tools, changed interfaces and wider access.
-- **Blocked only by your own failures.** A change is blocked by its own domain's cases and a short must-not-break list, such as unlocking a flagged account. Other failures are reported to their owners, so one flaky Payments case can't stop Cards from shipping.
-- **An off switch per team.** A team can disable its own tool without asking.
-- **A team prefix on every tool.** `accounts_lookup`, not `lookup`, so a misfiring tool has an obvious owner.
+1. Cards opens a pull request that adds a tool, say `cards_order_replacement`, together with eval cases for it. CI rejects a new tool that comes without cases.
+2. CI runs the central eval set, now including Cards' new cases, against the whole agent.
+3. If the existing cases aren't significantly broken, Cards merges. Someone from the platform team may have to approve, but they check the eval results, not Cards' domain logic.
 
-<TeamFigure name="gate" />
-
-*Only a change's own cases and the must-not-break set block it. A Cards change that breaks a Payments case is reported to Payments, and Cards ships.*
-
-## What it costs
-
-The platform team owns the prompt and the gate, and decides what no single team can, such as which of two vaguely described tools should take a request. That is too much for one person: if the only reviewer is away, no team can add a tool. It needs at least two people who can review.
-
-The feature teams have work too: a team without eval cases has no protection when another team breaks its flow; ten example conversations with the reply an expert would accept are enough to start.
+The platform team maintains that path and the interfaces behind it: the loop, the gateway and the eval set. Its job is to keep the path self-service, not to review every team's work. If teams start waiting on it, it has become the bottleneck this design was meant to remove.
