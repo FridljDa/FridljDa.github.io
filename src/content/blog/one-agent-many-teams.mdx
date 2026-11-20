@@ -31,13 +31,21 @@ If the agent team owns the account lookup, the card-block tool and the knowledge
 
 So the question isn't subagents or one loop. It's how to get one loop at runtime without one team at build time.
 
-## What the vendors say
+## What others report
 
-{/* TODO(owner): market table from public sources. Suggested columns: vendor | runtime architecture they recommend | who owns what | how teams contribute | source link (on the vendor name). Rows to consider: Sierra, Decagon, Salesforce Agentforce, OpenAI Agents SDK, Google ADK, Microsoft Copilot Studio, Anthropic. */}
+The published reports don't agree, and almost all of them come from vendors or vendor-hosted blogs, Anthropic's included. I found no independent post-mortem of a team that went from one loop back to separate agents.
 
-| Vendor | Recommended architecture | How teams contribute |
+| Who | Runtime design | What they report |
 | --- | --- | --- |
-| TODO | TODO | TODO |
+| [Anthropic](https://claude.com/resources/articles/building-agents-when-to-fold-subagents-into-your-main-agent-loop) (Oct 2026) | One loop, skills and tools loaded as needed | Agents split by team copy the org chart; a single loop often matched or beat them on quality, cost and latency |
+| [Shopify Sidekick](https://shopify.engineering/building-production-ready-agentic-systems) (Aug 2025) | One loop | The system prompt grew into conflicting special cases; they moved instructions out of it and into the tools |
+| [Cognition](https://cognition.com/blog/dont-build-multi-agents) (Jun 2025) | One agent | With subagents, decisions get dispersed and context isn't shared well enough |
+| [Sierra's MCP gateway](https://sierra.ai/blog/building-sierras-mcp-gateway-an-engineering-iceberg) | One gateway, many owners | The central team configuring every integration became the bottleneck; service owners took over |
+| [monday.com Sidekick](https://langchain.com/blog/building-monday-com-sidekick-why-capable-agents-need-more-than-just-tools) (Aug 2026) | Started with one loop, moved to an orchestrator with subagents | Adding one tool broke unrelated workflows and testing became combinatorial; subagents gave clearer ownership |
+
+Two things stand out. The ownership half of the design is the best supported: Sierra's gateway is the clearest case of central infrastructure with owners spread across teams. The single-loop half works, but its coupling cost is real, and it shows up in two places: in tool selection, and in evals where one team's change breaks another team's flow. Shopify kept the loop and moved instructions into the tools. monday.com hit the same wall and split the loop up.
+
+monday.com's post names no model, and neither post says which models the problems came from. How badly tool choice degrades as tools pile up depends heavily on the model, so a 2025 failure says little about a 2026 model. Whichever way a vendor blog points, your own evals with your model and your tool count are better evidence.
 
 ## Split ownership at build time, not at runtime
 
@@ -48,9 +56,9 @@ At runtime there is one agent loop. At build time there are many owners, and eac
 | Platform team | The agent loop, the system prompt, model choice, the end-to-end eval set, the release gate | Domain logic |
 | Feature teams | Their MCP servers, their skills, their eval datasets | The model, the prompt, the agent design |
 
-**MCP servers are the tools.** Accounts ships an MCP server with `lookup_account` and `send_unlock_link`; Cards ships one with `get_card_status`. They register it with a central gateway such as [LiteLLM's MCP gateway](https://docs.litellm.ai/docs/mcp), which handles authentication, permissions and which tools the agent sees. A team can change its server's internals whenever it likes, as long as the tool interface holds.
+**MCP servers are the tools.** Accounts ships an MCP server with `lookup_account` and `send_unlock_link`; Cards ships one with `get_card_status`. They register it with a central gateway such as [LiteLLM's MCP gateway](https://docs.litellm.ai/docs/mcp), which handles authentication, permissions and which tools the agent sees. A team can change its server's internals whenever it likes, as long as the tool interface holds. Authentication belongs to the gateway, not to every team's server: an [enterprise MCP platform write-up](https://newsletter.optimistengineer.com/p/building-an-enterprise-mcp-platform-594) makes the same point. Sierra learned the other half [building its gateway](https://sierra.ai/blog/building-sierras-mcp-gateway-an-engineering-iceberg): once the central team stopped configuring each integration itself and handed that to the people who own each service, contributions came from well beyond the original two leads.
 
-**Skills are how the team works.** Accounts writes the skill for a locked account: look the customer up, never ask for what we can find, check the security flag before any unlock. That knowledge lives with the team that has it, not in a shared system prompt everyone appends to. The agent loads the skill when a message needs it.
+**Skills are how the team works.** Accounts writes the skill for a locked account: look the customer up, never ask for what we can find, check the security flag before any unlock. That knowledge lives with the team that has it, not in a shared system prompt everyone appends to. The agent loads the skill when a message needs it. Shopify got the same effect another way: [their tools return the relevant instructions with their data](https://shopify.engineering/building-production-ready-agentic-systems), so the instructions live in the tool's code. The catch is timing: the model sees a tool's instructions only after it has called the tool, too late to help it choose which tool to call. A skill the agent can find before it acts covers that case.
 
 **Eval datasets are the contract.** Accounts contributes cases like Alex's, with the reply an expert would accept, to a shared eval store such as [MLflow](https://mlflow.org/docs/latest/genai/). The platform team runs every team's cases against the whole agent, so a change in Cards that breaks a locked-account conversation fails the gate, whoever made it.
 
@@ -66,6 +74,10 @@ And eval datasets only work as a contract if teams write good ones. Ten golden c
 
 Some subagents still earn their place: a separate permission boundary, parallel research with a context window you can throw away, or verification by a model that hasn't seen the reasoning it checks. Those are splits by context. A split by team is the one to avoid.
 
+## When to split after all
+
+The coupling monday.com describes is the price of one loop, so measure it instead of arguing about it. Two numbers are enough: how often a team's change is blocked because it breaks another team's evals, and how often a domain regresses after a change it didn't make. While they stay low, the single loop is paying for itself. If one domain keeps climbing, give that domain its own agent and expose it to the main loop as a tool, with one interface and its own evals. That is the documented next step, not a failure, and it is a split you made on evidence rather than because of the org chart.
+
 ## Summary
 
-Keep the teams independent and the agent whole. One loop at runtime, owned by a platform team; feature teams contribute MCP servers, skills and eval datasets, and a shared eval gate decides what ships.
+Keep the teams independent and the agent whole. One loop at runtime, owned by a platform team; feature teams contribute MCP servers, skills and eval datasets, and a shared eval gate decides what ships. Track how often teams break each other, and split off a domain only when that number says so.
