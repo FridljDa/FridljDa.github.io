@@ -13,17 +13,17 @@ import TeamMap from '../../components/TeamMap.astro';
 import TeamFigure from '../../components/TeamFigure.astro';
 
 ## TL;DR
-Anthropic [advises against](https://claude.com/resources/articles/building-agents-when-to-fold-subagents-into-your-main-agent-loop) splitting an agent into subagents along team lines, and I've seen products fail that way. I've also seen the opposite fail: one team owns the agent, and every other team waits on it. Customers need one coherent conversation; teams need to ship without each other. So split ownership at build time, not at runtime: one agent loop owned by a platform team, and feature teams that contribute skills, MCP servers and eval cases without touching the model or the prompt. A shared eval gate catches what one team breaks for another, scoped so that one team's failures don't block another team's releases.
+Anthropic [advises against](https://claude.com/resources/articles/building-agents-when-to-fold-subagents-into-your-main-agent-loop) splitting an agent into subagents along team lines, and I've seen products fail that way. I've also seen the opposite fail: one team owns the agent, and every other team waits on it. Customers need one coherent conversation; teams need to ship without each other. So keep one agent and split who owns its parts: a platform team owns the agent loop, and feature teams that contribute skills, MCP servers and eval cases without touching the model or the prompt. A shared eval gate catches what one team breaks for another, scoped so that one team's failures don't block another team's releases.
 
 <TeamFigure name="shapes" />
 
-*Three ways to split one agent among three teams. The first couples the teams at runtime, the second at build time; the third keeps one loop and lets each team ship on its own.*
+*Three ways to split one agent among three teams. In the first, the teams' agents pass the customer between them; in the second, every team waits for one; in the third, one agent serves the customer and each team ships its own parts.*
 
 ## Subagents per team: the handoffs break the conversation
 
 The running example is invented to protect the client, but the projects behind it are real. Northstar Bank automates its first-level support. Three teams own the systems the agent needs: Accounts (logins, locks), Cards (blocks, replacements) and Payments (transfers, limits).
 
-The obvious design gives each team its own subagent behind a router. Each team writes its own prompt, picks its own tools and ships on its own schedule. The teams are independent; the conversation isn't.
+The obvious design gives each team its own subagent behind a router. Each team writes its own prompt, picks its own tools and ships on its own schedule. The teams are independent, but each subagent sees only its part of the customer's problem.
 
 Alex Carter writes in: their account is locked, and the card they tried in the meantime was blocked too. The router has to pick one subagent, and whichever it picks hands half the problem to the other.
 
@@ -35,9 +35,9 @@ Anthropic's article names the pattern: the architecture becomes "a copy of their
 
 ## One team owns the agent: everyone else waits
 
-The article's fix is one agent loop: one model, one context window, skills and tools loaded as needed. But one loop easily becomes one team. If the agent team owns the account lookup, the card tools and the bank's procedure for a locked account, every change in Accounts, Cards or Payments queues behind it, and the teams who know their systems best end up writing tickets. In large organisations I've seen this stop products as surely as subagent sprawl does.
+The article's fix is one agent loop: one model, one context window, skills and tools loaded as needed. But one loop easily becomes one team. If the agent team owns the account lookup, the card tools and the bank's procedure for a locked account, every change in Accounts, Cards or Payments queues behind it, and the teams who know their systems best end up writing tickets. In large organisations I've seen products stall this way too.
 
-Independence isn't a nice-to-have. A team that can't change its own part without coordinating with three others stops changing it. The question is how to get one loop at runtime while every team still ships on its own.
+A team that has to coordinate with three others before changing its own part changes it less often. The question is how to get one loop at runtime while every team still ships on its own.
 
 ## What others report
 
@@ -49,7 +49,7 @@ Independence isn't a nice-to-have. A team that can't change its own part without
 | [Sierra's MCP gateway](https://sierra.ai/blog/building-sierras-mcp-gateway-an-engineering-iceberg) | One gateway, many owners | A central team configuring every integration became the bottleneck; service owners took over |
 | [monday.com Sidekick](https://langchain.com/blog/building-monday-com-sidekick-why-capable-agents-need-more-than-just-tools) (Aug 2026) | One loop, then an orchestrator with subagents | Adding one tool broke unrelated workflows and testing became combinatorial; subagents gave clearer ownership |
 
-Almost all of these come from vendors or vendor-hosted blogs, Anthropic's included, and I found no independent post-mortem. They agree that central infrastructure with distributed owners works. They disagree on the price of one loop: shared tool selection and shared evals couple the teams. Shopify kept the loop and moved instructions into the tools; monday.com split it up. monday.com's post names no model, and tool selection depends heavily on the model, so your own evals on your model are better evidence than either.
+Almost all of these come from vendors or vendor-hosted blogs, Anthropic's included, and I found no independent post-mortem. They agree that a shared gateway works when each team configures its own part. They disagree on what one loop costs: one team's new tool can change which tool the model picks for another team's request, and one team's change can fail another team's evals. Shopify kept the loop and moved instructions into the tools; monday.com split it up. monday.com's post names no model, and tool selection depends heavily on the model, so your own evals on your model are better evidence than either.
 
 ## One loop, many owners
 
@@ -69,7 +69,7 @@ Accounts writes the skill for a locked account: look the customer up, never ask 
 
 Accounts runs an MCP server with `accounts_lookup` and `accounts_send_unlock_link`; Cards runs one with `cards_get_status`. Each registers with a central gateway such as [LiteLLM's](https://docs.litellm.ai/docs/mcp), which handles authentication and decides which tools the agent sees, so no team builds auth itself, as an [enterprise MCP platform write-up](https://newsletter.optimistengineer.com/p/building-an-enterprise-mcp-platform-594) also argues. Behind a stable interface, a team changes its server whenever it likes. Sierra's gateway scaled once each service's owners, not a central team, configured its integration.
 
-### Evals: the contract
+### Evals: one shared test suite
 
 <TeamMap preset="evals" />
 
@@ -77,7 +77,7 @@ Accounts contributes cases like Alex's, with the reply an expert would accept, t
 
 ## Keeping the teams independent
 
-One loop couples the teams at runtime: they share the model's context and can break each other's conversations. Four rules keep that coupling in the test suite:
+In one loop, a team's change can break another team's conversations. These four rules let each team ship without waiting for the others, while the evals still catch what it breaks:
 
 - **No sign-off for passing changes.** The platform team reviews only new tools, changed interfaces and wider access.
 - **Blocked only by your own failures.** A change is blocked by its own domain's cases and a short must-not-break list, such as unlocking a flagged account. Other failures are reported to their owners, so one flaky Payments case can't stop Cards from shipping.
@@ -90,6 +90,6 @@ One loop couples the teams at runtime: they share the model's context and can br
 
 ## What it costs
 
-The platform team holds the prompt, the gate and the calls no single team can make, such as which of two vaguely described tools should take a request. Staff it like a product team, not one person.
+The platform team owns the prompt and the gate, and decides what no single team can, such as which of two vaguely described tools should take a request. That is too much for one person: if the only reviewer is away, no team can add a tool. It needs at least two people who can review.
 
-The feature teams have work too. Anthropic's article notes that tool choice degrades past 30 to 50 tool definitions, so tools need descriptions by what the customer wants, not one per backend API. And a team without eval cases has no protection when another team breaks its flow; ten golden cases is a start.
+The feature teams have work too. Anthropic's article notes that tool choice degrades past 30 to 50 tool definitions, so each team should offer a few tools grouped by what the customer wants, such as unlocking an account, rather than one tool per backend endpoint. And a team without eval cases has no protection when another team breaks its flow; ten example conversations with the reply an expert would accept are enough to start.

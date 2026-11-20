@@ -13,6 +13,6 @@ I've also seen the opposite fail. When one team owns the whole agent, every othe
 
 What I'd do is the third panel in the picture below, "One loop, many owners". A platform team owns the agent loop, the system prompt and a shared eval gate. Each feature team contributes three things without touching the model or the prompt: a skill that says how it handles its cases, an MCP server with its tools, and eval cases.
 
-One loop does couple the teams: they share the model's context and can break each other's conversations. The gate keeps that coupling in a test suite instead of in meetings. A change that passes needs no sign-off. A team is blocked only by its own cases and a short list of conversations nobody may break; if it breaks another team's case, that team gets a report, and the change still ships.
+One loop does couple the teams: they share the model's context and can break each other's conversations. The shared evals catch what one team breaks for another, so no team has to wait for the others to release. A change that passes needs no sign-off. A team is blocked only by its own cases and a short list of conversations nobody may break; if it breaks another team's case, that team gets a report, and the change still ships.
 
 #AIAgents #LLM #SoftwareArchitecture #PlatformEngineering
