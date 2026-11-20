@@ -1,0 +1,71 @@
+---
+title: "One Agent, Many Teams: Fold the Subagents, Not the Teams"
+pubDate: 2026-11-20T00:00:00.000Z
+tags:
+  - AI
+  - Architecture
+  - Agents
+description: "Splitting an agent into subagents owned by different teams copies the org chart into the architecture, and the product suffers. Putting one team in charge of everything doesn't scale either. Split the ownership at build time instead: one agent loop at runtime, with feature teams contributing tools, skills and evals through fixed interfaces."
+---
+
+## TL;DR
+Anthropic [advises against](https://claude.com/resources/articles/building-agents-when-to-fold-subagents-into-your-main-agent-loop) splitting an agent into subagents along team lines, and I agree: I've seen products fail that way. I've also seen enterprise products fail when one team had to own everything and the other teams couldn't ship without it. The way out is to split ownership at build time rather than at runtime. One platform team owns the agent loop, the system prompt and the end-to-end evals. Feature teams never touch the model or the agent design; they contribute three things through fixed interfaces: MCP servers, skills and eval datasets.
+
+{/* FIGURE: org chart → architecture, both ways. Left: three teams → three subagents behind a router. Right: three teams → tools, skills, evals feeding one loop owned by the platform team. */}
+
+## What goes wrong when the architecture copies the org chart
+
+The running example is invented to protect the client, but the projects behind it are real. Northstar Bank automates its first-level support. Three teams own the systems a support agent needs: Accounts (logins, locks, profile data), Cards (blocks, replacements) and Payments (transfers, limits).
+
+The obvious design gives each team its own subagent, with a router in front that decides which one a message goes to. Each team writes its own prompt, picks its own tools and ships on its own schedule. It looks like good engineering: clear ownership, no team waits for another.
+
+Then Alex Carter writes in: their account is locked, and the card they tried in the meantime was blocked too. The router has to pick one subagent. Whichever it picks hands half the problem to the other, and each handoff loses detail. Anthropic's article calls this out by name: the agent architecture becomes "a copy of their org chart (Conway's law at work)", and information passed between agents degrades "with each handoff". It lists more symptoms I recognise: a system prompt where "every team adds a sentence", evals that each team grades for itself so nobody sees the whole conversation, and in one comparison a single loop running about twice as fast as the multi-agent version.
+
+The customer never sees the org chart. They see one conversation, and it is only as good as the worst handoff in it.
+
+## What goes wrong when one team owns everything
+
+The fix the article points to is a single agent loop: one model, one context window, with tools and skills loaded as needed. But "one loop" easily becomes "one team", and that fails in a different way.
+
+If the agent team owns the account lookup, the card-block tool and the knowledge of how the bank handles a locked account, every change in Accounts, Cards or Payments queues behind it. The agent team becomes the bottleneck, and the domain teams, who know their systems best, are reduced to writing tickets for it. In large organisations I've seen this coupling stop products as surely as the subagent sprawl did: nobody could ship without everybody else.
+
+So the question isn't subagents or one loop. It's how to get one loop at runtime without one team at build time.
+
+## What the vendors say
+
+{/* TODO(owner): market table from public sources. Suggested columns: vendor | runtime architecture they recommend | who owns what | how teams contribute | source link (on the vendor name). Rows to consider: Sierra, Decagon, Salesforce Agentforce, OpenAI Agents SDK, Google ADK, Microsoft Copilot Studio, Anthropic. */}
+
+| Vendor | Recommended architecture | How teams contribute |
+| --- | --- | --- |
+| TODO | TODO | TODO |
+
+## Split ownership at build time, not at runtime
+
+At runtime there is one agent loop. At build time there are many owners, and each owns a different kind of thing:
+
+| Who | Owns | Doesn't touch |
+| --- | --- | --- |
+| Platform team | The agent loop, the system prompt, model choice, the end-to-end eval set, the release gate | Domain logic |
+| Feature teams | Their MCP servers, their skills, their eval datasets | The model, the prompt, the agent design |
+
+**MCP servers are the tools.** Accounts ships an MCP server with `lookup_account` and `send_unlock_link`; Cards ships one with `get_card_status`. They register it with a central gateway such as [LiteLLM's MCP gateway](https://docs.litellm.ai/docs/mcp), which handles authentication, permissions and which tools the agent sees. A team can change its server's internals whenever it likes, as long as the tool interface holds.
+
+**Skills are how the team works.** Accounts writes the skill for a locked account: look the customer up, never ask for what we can find, check the security flag before any unlock. That knowledge lives with the team that has it, not in a shared system prompt everyone appends to. The agent loads the skill when a message needs it.
+
+**Eval datasets are the contract.** Accounts contributes cases like Alex's, with the reply an expert would accept, to a shared eval store such as [MLflow](https://mlflow.org/docs/latest/genai/). The platform team runs every team's cases against the whole agent, so a change in Cards that breaks a locked-account conversation fails the gate, whoever made it.
+
+That last point is what keeps the platform team from becoming the bottleneck. It doesn't review each tool or skill; it maintains the gate. A feature team ships when its change passes everyone's evals, without asking. The coupling between teams moves out of meetings and into a test suite.
+
+## What it costs
+
+The platform team still holds a lot. It has to be staffed like a product team rather than one person, or it becomes the single point of failure this design was meant to remove. It decides what goes into the system prompt, and teams will lobby it.
+
+The interfaces have to be designed, too. A tool named `do_account_stuff` defeats the agent's tool choice, and the article notes that tool choice degrades past 30 to 50 tool definitions. Someone has to keep the catalogue coherent: tools grouped by what the customer wants rather than one per backend API, skills that don't overlap.
+
+And eval datasets only work as a contract if teams write good ones. Ten golden cases per team is a start, as the article says. A team that contributes none has no protection when someone else breaks its flow.
+
+Some subagents still earn their place: a separate permission boundary, parallel research with a context window you can throw away, or verification by a model that hasn't seen the reasoning it checks. Those are splits by context. A split by team is the one to avoid.
+
+## Summary
+
+Keep the teams independent and the agent whole. One loop at runtime, owned by a platform team; feature teams contribute MCP servers, skills and eval datasets, and a shared eval gate decides what ships.
