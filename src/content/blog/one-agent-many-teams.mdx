@@ -77,7 +77,7 @@ Accounts contributes cases like Alex's, with the reply an expert would accept, t
 
 ## Keeping the teams independent
 
-In one loop, a team's change can break another team's conversations. These four rules let each team ship without waiting for the others, while the evals still catch what it breaks:
+In one loop, a team's change can break another team's conversations. The balance is delicate: with too much central control, teams wait on the platform team again; with too little, the agent falls back into team-shaped pieces. These four rules let each team ship without waiting for the others, while the evals still catch what it breaks:
 
 - **No sign-off for passing changes.** The platform team reviews only new tools, changed interfaces and wider access.
 - **Blocked only by your own failures.** A change is blocked by its own domain's cases and a short must-not-break list, such as unlocking a flagged account. Other failures are reported to their owners, so one flaky Payments case can't stop Cards from shipping.
@@ -87,9 +87,3 @@ In one loop, a team's change can break another team's conversations. These four 
 <TeamFigure name="gate" />
 
 *Only a change's own cases and the must-not-break set block it. A Cards change that breaks a Payments case is reported to Payments, and Cards ships.*
-
-## What it costs
-
-The platform team owns the prompt and the gate, and decides what no single team can, such as which of two vaguely described tools should take a request. That is too much for one person: if the only reviewer is away, no team can add a tool. It needs at least two people who can review.
-
-The feature teams have work too: a team without eval cases has no protection when another team breaks its flow; ten example conversations with the reply an expert would accept are enough to start.

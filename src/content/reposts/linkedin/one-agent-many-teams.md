@@ -3,7 +3,7 @@ status: draft
 image: /images/blog/one-agent-many-teams/linkedin/three-ways.png
 comments:
   - text: |
-      The full post, with what Shopify, Sierra, Cognition and monday.com report about one loop versus subagents, how skills, MCP servers and eval cases each plug in, and what the platform team costs: https://danielfridljand.de/post/one-agent-many-teams
+      The full post, with what Shopify, Sierra, Cognition and monday.com report about one loop versus subagents, and how skills, MCP servers and eval cases each plug in: https://danielfridljand.de/post/one-agent-many-teams
 ---
 When several teams build one AI agent, split the ownership between them, not the agent.
 
