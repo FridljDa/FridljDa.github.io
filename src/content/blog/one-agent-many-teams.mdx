@@ -93,7 +93,3 @@ One loop couples the teams at runtime: they share the model's context and can br
 The platform team holds the prompt, the gate and the calls no single team can make, such as which of two vaguely described tools should take a request. Staff it like a product team, not one person.
 
 The feature teams have work too. Anthropic's article notes that tool choice degrades past 30 to 50 tool definitions, so tools need descriptions by what the customer wants, not one per backend API. And a team without eval cases has no protection when another team breaks its flow; ten golden cases is a start.
-
-## When to split after all
-
-Split by context, not by team: a separate permission boundary, or a verifier that shouldn't see the reasoning it checks. Beyond that, measure how often a team's change breaks another domain's cases. If one domain keeps climbing, give it its own agent, exposed to the main loop as a single tool. Then the split follows the evidence, not the org chart.
