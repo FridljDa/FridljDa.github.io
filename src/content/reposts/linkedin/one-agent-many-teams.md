@@ -13,6 +13,6 @@ I've also seen the opposite fail. When one team owns the whole agent, every othe
 
 What I'd do is the third panel in the picture below, "One loop, many owners". A platform team owns the agent loop, the system prompt and a shared eval gate. Each feature team contributes three things without touching the model or the prompt: a skill that says how it handles its cases, an MCP server with its tools, and eval cases.
 
-One loop does couple the teams: they share the model's context and can break each other's conversations. So changes go through pull requests: a team that adds a tool opens one, the shared eval set runs, and if the existing cases still pass, the team merges. The platform team maintains that path and shouldn't become the bottleneck.
+One loop does couple the teams: they share the model's context and can break each other's conversations. So changes go through pull requests: a team that adds a tool adds eval cases for it to one central eval set, CI runs the whole set, and if the existing cases aren't significantly broken, the team merges. The platform team maintains that path and shouldn't become the bottleneck.
 
 #AIAgents #LLM #SoftwareArchitecture #PlatformEngineering

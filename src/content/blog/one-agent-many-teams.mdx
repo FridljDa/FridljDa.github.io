@@ -13,7 +13,7 @@ import TeamMap from '../../components/TeamMap.astro';
 import TeamFigure from '../../components/TeamFigure.astro';
 
 ## TL;DR
-Anthropic [advises against](https://claude.com/resources/articles/building-agents-when-to-fold-subagents-into-your-main-agent-loop) splitting an agent into subagents along team lines, and I've seen products fail that way. I've also seen the opposite fail: one team owns the agent, and every other team waits on it. Customers need one coherent conversation; teams need to ship without each other. So keep one agent and split who owns its parts: a platform team owns the agent loop, and feature teams contribute skills, MCP servers and eval cases without touching the model or the prompt. Teams merge their own changes through pull requests, once a shared eval set shows they haven't broken another team's conversations.
+Anthropic [advises against](https://claude.com/resources/articles/building-agents-when-to-fold-subagents-into-your-main-agent-loop) splitting an agent into subagents along team lines, and I've seen products fail that way. I've also seen the opposite fail: one team owns the agent, and every other team waits on it. Customers need one coherent conversation; teams need to ship without each other. So keep one agent and split who owns its parts: a platform team owns the agent loop, and feature teams contribute skills, MCP servers and eval cases without touching the model or the prompt. One central eval set, which every team adds cases to, runs on each pull request; a team merges once its change hasn't broken another team's conversations.
 
 <TeamFigure name="shapes" />
 
@@ -73,14 +73,14 @@ Accounts runs an MCP server with `accounts_lookup` and `accounts_send_unlock_lin
 
 <TeamMap preset="evals" />
 
-Accounts contributes cases like Alex's, with the reply an expert would accept, to a shared eval store such as [MLflow](https://mlflow.org/docs/latest/genai/). Every pull request is checked against these cases, the platform team's included.
+There is one central eval set for the one agent, stored in a tool such as [MLflow](https://mlflow.org/docs/latest/genai/). Every team adds cases to it: Accounts adds cases like Alex's, with the reply an expert would accept. The platform team runs the whole set on every pull request, its own included.
 
 ## Keeping the teams independent
 
 In one loop, a team's change can break another team's conversations. The balance is delicate: with too much central control, teams wait on the platform team again; with too little, the agent falls back into team-shaped pieces. So every change takes the same self-service path, a pull request:
 
-1. Cards opens a pull request that adds a tool, say `cards_order_replacement`.
-2. The pull request runs the shared eval set: every team's cases against the whole agent.
-3. If the existing cases still pass, within an agreed tolerance, Cards merges. Someone from the platform team may have to approve, but they check the eval results, not Cards' domain logic.
+1. Cards opens a pull request that adds a tool, say `cards_order_replacement`, together with eval cases for it. CI rejects a new tool that comes without cases.
+2. CI runs the central eval set, now including Cards' new cases, against the whole agent.
+3. If the existing cases aren't significantly broken, Cards merges. Someone from the platform team may have to approve, but they check the eval results, not Cards' domain logic.
 
 The platform team maintains that path and the interfaces behind it: the loop, the gateway and the eval set. Its job is to keep the path self-service, not to review every team's work. If teams start waiting on it, it has become the bottleneck this design was meant to remove.
