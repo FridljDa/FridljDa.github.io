@@ -77,29 +77,23 @@ Accounts contributes cases like Alex's, with the reply an expert would accept, t
 
 ## Keeping the teams independent
 
-One loop couples the teams at runtime: they share a context window, compete for the model's tool choice, and can break each other's conversations. These rules keep that coupling in the test suite instead of in meetings:
+One loop couples the teams at runtime: they share the model's context and can break each other's conversations. Four rules keep that coupling in the test suite:
 
-- **A passing change needs no sign-off.** When Accounts changes a tool it owns and the evals pass, Accounts merges. The platform team reviews only changes to the agent's shape: a new tool, a changed interface, a tool opened to more callers.
-- **A team is blocked only by its own failures.** If every red case blocked every merge, one flaky Payments case would stop Cards from shipping. A change is blocked by its own domain's cases and a short must-not-break list, such as unlocking a flagged account. Other failures go to their owners as reports.
-- **Every team has an off switch.** Accounts can disable its own tool without asking, and the agent handles it like any outage.
-- **Every tool name carries its team.** `accounts_lookup`, not `lookup`: no clashes, and a misfiring tool has an obvious owner.
+- **No sign-off for passing changes.** The platform team reviews only new tools, changed interfaces and wider access.
+- **Blocked only by your own failures.** A change is blocked by its own domain's cases and a short must-not-break list, such as unlocking a flagged account. Other failures are reported to their owners, so one flaky Payments case can't stop Cards from shipping.
+- **An off switch per team.** A team can disable its own tool without asking.
+- **A team prefix on every tool.** `accounts_lookup`, not `lookup`, so a misfiring tool has an obvious owner.
 
 <TeamFigure name="gate" />
 
-*A Cards change that breaks a Payments case is reported to Payments, and Cards ships. Only its own cases and the must-not-break set block it.*
-
-One coupling no rule removes: a vaguely described tool can take calls meant for another team's. Settling that is the platform team's job.
+*Only a change's own cases and the must-not-break set block it. A Cards change that breaks a Payments case is reported to Payments, and Cards ships.*
 
 ## What it costs
 
-The platform team holds the prompt, the gate and the arbitration between teams. It needs staffing like a product team, not one person, or it becomes the single point of failure the design was meant to remove.
+The platform team holds the prompt, the gate and the calls no single team can make, such as which of two vaguely described tools should take a request. Staff it like a product team, not one person.
 
-The tool catalogue needs care. The article notes that tool choice degrades past 30 to 50 tool definitions, so group tools by what the customer wants rather than one per backend API, and load them on demand.
-
-The gate is only as good as its cases. Ten golden cases per team is a start, as the article says; a team that contributes none has no protection when another team breaks its flow.
+The feature teams have work too. Anthropic's article notes that tool choice degrades past 30 to 50 tool definitions, so tools need descriptions by what the customer wants, not one per backend API. And a team without eval cases has no protection when another team breaks its flow; ten golden cases is a start.
 
 ## When to split after all
 
-Some splits earn their place: a separate permission boundary, parallel research in a context you throw away, or a verifier that hasn't seen the reasoning it checks. Those split by context, not by team.
-
-For the rest, measure the coupling instead of arguing about it: how often a team's change breaks another domain's cases, and how often a domain regresses after a change it didn't make. If one domain keeps climbing, give it its own agent, exposed to the main loop as a single tool with its own evals. Then the split follows the evidence, not the org chart.
+Split by context, not by team: a separate permission boundary, or a verifier that shouldn't see the reasoning it checks. Beyond that, measure how often a team's change breaks another domain's cases. If one domain keeps climbing, give it its own agent, exposed to the main loop as a single tool. Then the split follows the evidence, not the org chart.
