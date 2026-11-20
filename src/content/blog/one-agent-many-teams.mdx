@@ -13,7 +13,7 @@ import TeamMap from '../../components/TeamMap.astro';
 import TeamFigure from '../../components/TeamFigure.astro';
 
 ## TL;DR
-Anthropic [advises against](https://claude.com/resources/articles/building-agents-when-to-fold-subagents-into-your-main-agent-loop) splitting an agent into subagents along team lines, and I've seen products fail that way. I've also seen the opposite fail: one team owns the agent, and every other team waits on it. Customers need one coherent conversation; teams need to ship without each other. So keep one agent and split who owns its parts: a platform team owns the agent loop, and feature teams contribute skills, MCP servers and eval cases without touching the model or the prompt. One central eval set, which every team adds cases to, runs on each pull request; a team merges once its change hasn't broken another team's conversations.
+Anthropic [advises against](https://claude.com/resources/articles/building-agents-when-to-fold-subagents-into-your-main-agent-loop) splitting an agent into subagents along team lines, and I've seen products fail that way. The opposite doesn't work either: when one team owns the agent, every other team waits on it. Customers need one coherent conversation; teams need to ship without each other. So keep one agent and split who owns its parts: a platform team owns the agent loop, and feature teams contribute skills, MCP servers and eval cases without touching the model or the prompt. One central eval set, which every team adds cases to, runs on each pull request; a team merges once its change hasn't broken another team's conversations.
 
 <TeamFigure name="shapes" />
 
@@ -35,7 +35,7 @@ Anthropic's article names the pattern: the architecture becomes "a copy of their
 
 ## One team owns the agent: everyone else waits
 
-The article's fix is one agent loop: one model, one context window, skills and tools loaded as needed. But one loop easily becomes one team. If the agent team owns the account lookup, the card tools and the bank's procedure for a locked account, every change in Accounts, Cards or Payments queues behind it, and the teams who know their systems best end up writing tickets. In large organisations I've seen products stall this way too.
+The article's fix is one agent loop: one model, one context window, skills and tools loaded as needed. But one loop easily becomes one team. If the agent team owns the account lookup, the card tools and the bank's procedure for a locked account, every change in Accounts, Cards or Payments queues behind it, and the teams who know their systems best end up writing tickets. I've seen projects struggle when teams were coupled so tightly that none could work on its own.
 
 A team that has to coordinate with three others before changing its own part changes it less often. The question is how to get one loop at runtime while every team still ships on its own.
 
