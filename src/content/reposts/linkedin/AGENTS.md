@@ -109,7 +109,7 @@ message or supporting points changed. Don't carry every new detail across.
   comment is common because links in the text are widely reported, though not
   documented, to reduce reach. Don't announce it in the text ("Full post in
   the first comment"): readers can see the comments.
-- **Hashtags:** 3–5 at the end, on their own line.
+- **No hashtags.** The owner doesn't use them. A version that was already posted keeps the ones it was posted with, since the file records what went out.
 - **Mentions** (`@Name`) only resolve when typed in LinkedIn's composer, so add
   them there after pasting.
 
