@@ -28,5 +28,3 @@ What a shared conversation would help with:
 The obvious downside: most people would feel uneasy sharing their AI conversations with everyone.
 
 The simplest version might just be Slack, where the Claude Code team already works in the open: everyone is there, and the integration exists. HumanLayer could be an interesting alternative.
-
-#AgenticCoding #CodeReview #SoftwareEngineering #AI

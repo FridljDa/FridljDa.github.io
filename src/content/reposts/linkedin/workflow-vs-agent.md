@@ -18,5 +18,3 @@ An agent with a set of tools doesn't need all of that written out first. It won'
 Code would then take over a request type only once it has earned it, as in the picture below: the type is common and the graders keep rejecting the agent's drafts for it, or its action can't be undone. Everything else stays with the agent.
 
 Full post in the first comment.
-
-#AIAgents #LLM #SoftwareArchitecture #CustomerSupport
