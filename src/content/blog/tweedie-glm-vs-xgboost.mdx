@@ -16,7 +16,7 @@ import PricingFigure from '../../components/PricingFigure.astro';
 ## TL;DR
 Comparing pricing models runs into two problems. The usual metrics reward the wrong thing: absolute error is minimised by the median, zero for most policies; squared error is decided by the few largest claims; the Gini ignores the level, so a premium ten times too high scores the same. And the differences between good models are tiny, so noise decides a naive comparison. The fix is a metric minimised by the mean that weights each policy by its exposure and variance, the Tweedie deviance read as $D^2$, with calibration as a second check, and comparisons paired by fold and on the same test policies. On freMTPL2 that separates a gain of 0.4 points of $D^2$ from noise: a Poisson × gamma XGBoost beats the Tweedie GLM, and the gain holds on untouched test data.
 
-*Third of four posts on pricing freMTPL2. The [first](/post/frequency-times-severity) splits the pure premium into frequency and severity, the [second](/post/large-claim-loading) caps large claims at 18,000; everything here is on that cleaned, capped target.*
+*Third of four posts on pricing freMTPL2. The [first](/post/frequency-times-severity) splits the pure premium into frequency and severity, the [second](/post/large-claim-loading) caps large claims at 18,000; everything here is on that cleaned, capped target. The code and rendered reports are in [mtpl-pricing](https://github.com/FridljDa/mtpl-pricing).*
 
 ## The problem: most metrics reward the wrong thing
 
