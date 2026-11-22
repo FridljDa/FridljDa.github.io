@@ -15,7 +15,7 @@ import PricingFigure from '../../components/PricingFigure.astro';
 ## TL;DR
 The pure premium is claim frequency times mean claim size, $\mu = \lambda\, m$. That follows from three assumptions about means, not from any distribution. The distributions come in afterwards, one per part: Poisson for how many claims, gamma for how large, and Tweedie, their compound, for the total. On the French motor portfolio freMTPL2 each describes the shape of the data poorly and the mean well enough, which is all a GLM needs. The one assumption that fails is hidden in the Tweedie model: with power $p = 1.7$ and a constant dispersion, it puts 70% of every relativity, on the log scale, into claim size. In the data, pure premiums differ by a factor of 4.2 across segments and claim sizes by 1.3: about 10%. Fitting frequency and severity apart drops that constraint, and uses each claim rather than each policy's total.
 
-*First of four posts on pricing freMTPL2, followed by [large claims](/post/large-claim-loading), [the model comparison](/post/tweedie-glm-vs-xgboost) and [the pipeline](/post/reports-that-cant-disagree).*
+*First of four posts on pricing freMTPL2, followed by [large claims](/post/large-claim-loading), [the model comparison](/post/tweedie-glm-vs-xgboost) and [the pipeline](/post/reports-that-cant-disagree). The code and rendered reports are in [mtpl-pricing](https://github.com/FridljDa/mtpl-pricing).*
 
 ## What we price
 
